@@ -1,0 +1,390 @@
+"use client";
+import { FormEvent, useState, useEffect, useCallback, useMemo } from "react";
+import { useRef } from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import "./Navbar.css";
+import { getUser, refreshCurrentUserFromServer, subscribeToAuthChanges } from "@/lib/auth";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { TranslationKey } from "@/lib/i18n";
+
+import { RiMenu2Line } from "react-icons/ri";
+import { FiSearch } from "react-icons/fi";
+import { FaRegUser } from "react-icons/fa6";
+import { RiShoppingBagLine } from "react-icons/ri";
+import { MdOutlineClose } from "react-icons/md";
+import { FiHeart } from "react-icons/fi";
+import { FiMoon, FiSun } from "react-icons/fi";
+
+import Badge from "@mui/material/Badge";
+
+const BASE_LINKS = [
+  { href: "/", key: "nav_home" as TranslationKey },
+  { href: "/shop", key: "nav_shop" as TranslationKey },
+  { href: "/about", key: "nav_about" as TranslationKey },
+  { href: "/blog", key: "nav_blog" as TranslationKey },
+  { href: "/contact", key: "nav_contact" as TranslationKey },
+];
+
+export default function Navbar() {
+  const { locale, setLocale, t } = useLocale();
+  const router = useRouter();
+  const pathname = usePathname();
+  const cartItems = useSelector((state: RootState) => state.cart.itemsById);
+
+  const [menuMobileOpen, setMenuMobileOpen] = useState(false);
+  const [hasUser, setHasUser] = useState(false);
+  const [isAdminUser, setIsAdminUser] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [isNavHidden, setIsNavHidden] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      const currentTheme = document.documentElement.getAttribute("data-theme");
+      if (currentTheme === "dark" || currentTheme === "light") {
+        setTheme(currentTheme);
+      }
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", nextTheme);
+    localStorage.setItem("theme", nextTheme);
+    setTheme(nextTheme);
+  };
+
+  const fetchSearchHistory = useCallback(async () => {
+    try {
+      const response = await fetch("/api/products/search-history?limit=8", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        setSearchHistory([]);
+        return;
+      }
+      const data = await response.json();
+      setSearchHistory(Array.isArray(data) ? data : []);
+    } catch {
+      setSearchHistory([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    const syncAuthState = () => {
+      const user = getUser();
+      setHasUser(!!user);
+      setIsAdminUser(user?.role === "admin");
+      void fetchSearchHistory();
+      void refreshCurrentUserFromServer().then((refreshed) => {
+        if (!refreshed) {
+          setHasUser(false);
+          setIsAdminUser(false);
+          return;
+        }
+        setHasUser(true);
+        setIsAdminUser(refreshed.role === "admin");
+        void fetchSearchHistory();
+      });
+    };
+
+    syncAuthState();
+    return subscribeToAuthChanges(syncAuthState);
+  }, [fetchSearchHistory]);
+
+  useEffect(() => {
+    const query = searchTerm.trim();
+    if (!showHistory || !query) {
+      return;
+    }
+
+    let isCancelled = false;
+    const timeoutId = setTimeout(() => {
+      void fetch(`/api/products/suggest?q=${encodeURIComponent(query)}&limit=8`, {
+        method: "GET",
+        cache: "no-store",
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            return [];
+          }
+          const data = await response.json();
+          return Array.isArray(data) ? data : [];
+        })
+        .then((data: string[]) => {
+          if (!isCancelled) {
+            setSearchSuggestions(data);
+          }
+        })
+        .catch(() => {
+          if (!isCancelled) {
+            setSearchSuggestions([]);
+          }
+        });
+    }, 200);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [searchHistory, searchTerm, showHistory]);
+
+  const dropdownSuggestions = useMemo(() => {
+    const query = searchTerm.trim();
+    if (!showHistory) {
+      return [];
+    }
+    if (!query) {
+      return searchHistory;
+    }
+    return searchSuggestions;
+  }, [searchHistory, searchSuggestions, searchTerm, showHistory]);
+
+  const toggleMenuMobile = () => {
+    setMenuMobileOpen((prev) => !prev);
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
+  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const query = searchTerm.trim();
+
+    router.push(query ? `/shop?q=${encodeURIComponent(query)}` : "/shop");
+    setShowHistory(false);
+    scrollToTop();
+  };
+
+  const closeMobileMenu = useCallback(() => {
+    setMenuMobileOpen(false);
+  }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = menuMobileOpen ? "hidden" : "auto";
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [menuMobileOpen]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (menuMobileOpen) {
+        setIsNavHidden(false);
+        return;
+      }
+
+      const currentY = window.scrollY;
+      if (currentY <= 16) {
+        setIsNavHidden(false);
+        lastScrollY.current = currentY;
+        return;
+      }
+
+      const scrollingDown = currentY > lastScrollY.current + 4;
+      const scrollingUp = currentY < lastScrollY.current - 4;
+
+      if (scrollingDown) {
+        setIsNavHidden(true);
+      } else if (scrollingUp) {
+        setIsNavHidden(false);
+      }
+
+      lastScrollY.current = currentY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [menuMobileOpen]);
+
+  const navLinks = useMemo(() => {
+    if (isAdminUser) {
+      return [...BASE_LINKS, { href: "/admin", key: "nav_admin" as TranslationKey }];
+    }
+    return BASE_LINKS;
+  }, [isAdminUser]);
+
+  const isCurrentLink = useCallback(
+    (href: string) => {
+      if (href === "/") return pathname === "/";
+      return pathname.startsWith(href);
+    },
+    [pathname]
+  );
+
+  const handleSelectHistory = async (value: string) => {
+    setSearchTerm(value);
+    setShowHistory(false);
+    try {
+      const response = await fetch(`/api/products?q=${encodeURIComponent(value)}`, {
+        method: "GET",
+        cache: "no-store",
+      });
+      const data = await response.json().catch(() => []);
+      const products = Array.isArray(data) ? data : [];
+
+      const lowered = value.trim().toLowerCase();
+      const exactMatch = products.find((product: { productName?: string; productID?: string }) => {
+        const productName = String(product?.productName ?? "").trim().toLowerCase();
+        const productID = String(product?.productID ?? "").trim().toLowerCase();
+        return productName === lowered || productID === lowered;
+      });
+
+      const targetProduct = exactMatch ?? products[0];
+      if (targetProduct?.productID) {
+        router.push(
+          `/shop?q=${encodeURIComponent(value)}&focus=${encodeURIComponent(targetProduct.productID)}`,
+          { scroll: true }
+        );
+      } else {
+        router.push(`/shop?q=${encodeURIComponent(value)}`, { scroll: true });
+      }
+    } catch {
+      router.push(`/shop?q=${encodeURIComponent(value)}`, { scroll: true });
+    }
+  };
+
+  return (
+    <>
+      <div className="announcementBar">
+        {t("announcement_bar")}
+      </div>
+      <nav className={`navBar ${isNavHidden ? "navBarHidden" : ""}`}>
+        <div className="logoContainer">
+          <Link href="/" onClick={scrollToTop} aria-label="Uomo Home">
+            <img src="/logo.png" alt="Uomo" />
+          </Link>
+        </div>
+
+        <button
+          className="mobileMenuButton"
+          type="button"
+          aria-label={menuMobileOpen ? "Close menu" : "Open menu"}
+          onClick={toggleMenuMobile}
+        >
+          {menuMobileOpen ? <MdOutlineClose size={22} /> : <RiMenu2Line size={22} />}
+        </button>
+
+        <div className={`linkContainer ${menuMobileOpen ? "linkContainerOpen" : ""}`}>
+          <ul>
+            {navLinks.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  onClick={() => {
+                    scrollToTop();
+                    closeMobileMenu();
+                  }}
+                  className={isCurrentLink(link.href) ? "activeLink" : ""}
+                >
+                  {t(link.key)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="iconContainer">
+          <button
+            type="button"
+            className="themeToggleButton"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? t("theme_to_light") : t("theme_to_dark")}
+            title={theme === "dark" ? t("theme_to_light") : t("theme_to_dark")}
+          >
+            {theme === "dark" ? <FiSun size={18} /> : <FiMoon size={18} />}
+          </button>
+          <label className="localeSelectWrap" aria-label={t("language_label")}>
+            <select
+              className="localeSelect"
+              value={locale}
+              onChange={(event) => setLocale(event.target.value === "ja" ? "ja" : "en")}
+            >
+              <option value="en">English</option>
+              <option value="ja">日本語</option>
+            </select>
+          </label>
+          <div
+            className="navSearchWrap"
+            onBlur={() => setTimeout(() => setShowHistory(false), 120)}
+          >
+            <form className="navSearchForm" onSubmit={handleSearch}>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                onFocus={() => {
+                  setShowHistory(true);
+                  void fetchSearchHistory();
+                }}
+                placeholder={t("search_placeholder")}
+                aria-label={t("search_aria")}
+              />
+              <button type="submit" aria-label={t("search_aria")}>
+                <FiSearch size={18} />
+              </button>
+            </form>
+            {dropdownSuggestions.length > 0 && (
+              <div className="searchHistoryDropdown">
+                {dropdownSuggestions.map((item) => (
+                  <button
+                    type="button"
+                    key={item}
+                    className="searchHistoryItem"
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      void handleSelectHistory(item);
+                    }}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <span>
+            <Link href={hasUser ? "/profile" : "/login"} aria-label={t("account_aria")}>
+              <FaRegUser size={22} onClick={scrollToTop} />
+            </Link>
+          </span>
+          <span>
+            <Link href="/cart" aria-label={t("cart_aria")}>
+              <Badge
+                badgeContent={Object.values(cartItems).reduce((sum, item) => {
+                  return sum + (item.quantity ?? 0);
+                }, 0)}
+                color="primary"
+                anchorOrigin={{
+                  vertical: "bottom",
+                  horizontal: "right",
+                }}
+              >
+                <RiShoppingBagLine size={22} onClick={scrollToTop} />
+              </Badge>
+            </Link>
+          </span>
+          <span>
+            <Link href={"/wishlist"} aria-label={t("wishlist_aria")}>
+              <FiHeart size={22} onClick={scrollToTop} />
+            </Link>
+          </span>
+        </div>
+      </nav>
+
+      {menuMobileOpen ? <button className="mobileBackdrop" onClick={closeMobileMenu} aria-label="Close menu" /> : null}
+    </>
+  );
+}

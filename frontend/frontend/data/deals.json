@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "name": "Spring Coat",
+    "price": 120,
+    "discount_price": 90,
+    "endTime": "2025-12-28T00:00:00Z",
+    "image": "/images/coat.jpg"
+  },
+  {
+    "id": 2,
+    "name": "Winter Shoes",
+    "price": 80,
+    "discount_price": 65,
+    "endTime": "2025-12-05T00:00:00Z",
+    "image": "/images/shoes.jpg"
+  }
+]

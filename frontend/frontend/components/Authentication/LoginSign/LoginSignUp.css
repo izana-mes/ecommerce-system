@@ -1,0 +1,300 @@
+.loginSignUpSection {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 50px;
+  padding-bottom: 70px;
+  background-color: #000;
+  color: #fff;
+}
+
+.loginSignUpContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 55px;
+}
+
+.loginSignUpTabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 50px;
+}
+
+.loginSignUpTabs p {
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  text-transform: uppercase;
+  font-size: 16px;
+  font-weight: 600;
+  position: relative;
+  transition: color 0.3s;
+  color: #b3b3b3;
+  text-decoration: none;
+}
+
+.loginSignUpTabs p:hover {
+  color: #ffffff;
+}
+
+.loginSignUpTabs p.active {
+  color: #ffffff;
+}
+
+.loginSignUpTabs p.active::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #fff;
+}
+
+.loginSignUpTabs p:not(.active)::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: #fff;
+  transition: width 0.2s ease, left 0.2s ease;
+}
+
+.loginSignUpTabs p:not(.active):hover::after {
+  width: 100%;
+  left: 0;
+  transition-delay: 0.2s;
+}
+
+/* Tab1 Content */
+
+.loginSignUpTabsContentLogin form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 500px;
+}
+
+.loginSignUpTabsContentLogin .googleLoginButton {
+  width: 500px;
+  margin-bottom: 12px;
+}
+
+.loginSignUpTabsContentLogin form input {
+  padding: 20px;
+  border: 2px solid #9a9a9a;
+  outline-color: #ffffff;
+  background-color: #000;
+  color: #fff;
+  caret-color: #ffffff;
+}
+
+.loginSignUpForgetPass {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 10px;
+}
+
+.loginSignUpForgetPass label {
+  display: flex;
+  align-items: center;
+}
+
+.loginSignUpForgetPass a {
+  font-size: 14px;
+  color: #fff;
+}
+
+/* custom radio button */
+
+.loginSignUpForgetPass label input {
+  appearance: none;
+  border: 2px solid #e4e4e4;
+  position: relative;
+  cursor: pointer;
+  outline: none;
+  padding: 6px !important;
+}
+
+.loginSignUpForgetPass label input:checked {
+  border: 2px solid #ffffff;
+}
+
+.loginSignUpForgetPass label input::after {
+  content: "";
+  display: block;
+  width: 8px;
+  height: 8px;
+  background-color: #ffffff;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.2s ease-in-out;
+}
+
+.loginSignUpForgetPass label input:checked::after {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* custom radio button end */
+
+.loginSignUpForgetPass p {
+  color: #767676;
+  font-size: 14px;
+}
+
+.loginSignUpTabsContentLogin button {
+  padding: 20px;
+  background-color: #ffffff;
+  color: #111111;
+  border: 1px solid #ffffff;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.loginSignUpTabsContentLogin button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.loginSignUpTabsContentLoginText {
+  padding-top: 20px;
+}
+
+.loginSignUpTabsContentLoginText p {
+  font-size: 14px;
+  text-align: center;
+  color: #767676;
+}
+
+.loginSignUpTabsContentLoginText p span {
+  color: black;
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+/* Tab Content 2 */
+
+.loginSignUpTabsContentRegister form {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  width: 500px;
+}
+
+.loginSignUpTabsContentRegister input {
+  padding: 20px;
+  border: 2px solid #9a9a9a;
+  outline-color: #ffffff;
+  background-color: #000;
+  color: #fff;
+  caret-color: #ffffff;
+}
+
+.loginSignUpTabsContentRegister p {
+  color: #767676;
+  font-size: 14px;
+}
+
+.loginSignUpTabsContentRegister button {
+  padding: 20px;
+  background-color: #ffffff;
+  color: #111111;
+  border: 1px solid #ffffff;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.loginSignUpTabsContentVerify form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 500px;
+}
+
+.loginSignUpTabsContentVerify input {
+  padding: 20px;
+  border: 2px solid #9a9a9a;
+  outline-color: #ffffff;
+  background-color: #000;
+  color: #fff;
+  caret-color: #ffffff;
+}
+
+.loginSignUpTabsContentVerify p {
+  color: #767676;
+  font-size: 14px;
+}
+
+.loginSignUpTabsContentVerify button {
+  padding: 20px;
+  background-color: #ffffff;
+  color: #111111;
+  border: 1px solid #ffffff;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.loginSignUpTabsContentVerify button.secondaryButton {
+  background-color: transparent;
+  color: #fff;
+  border: 1px solid #9a9a9a;
+}
+
+.loginSignUpTabsContentLogin form input::placeholder,
+.loginSignUpTabsContentRegister input::placeholder,
+.loginSignUpTabsContentVerify input::placeholder {
+  color: #d4d4d4;
+  opacity: 1;
+}
+
+@media screen and (max-width: 450px) {
+  .loginSignUpSection {
+    padding-bottom: 30px;
+  }
+
+  .loginSignUpTabsContentLogin form {
+    width: 330px;
+  }
+
+  .loginSignUpTabsContentLogin .googleLoginButton {
+    width: 330px;
+  }
+
+  .loginSignUpTabsContentRegister form {
+    width: 330px;
+  }
+
+  .loginSignUpTabsContentVerify form {
+    width: 330px;
+  }
+}
+
+@media screen and (max-width: 320px) {
+  .loginSignUpTabsContentLogin form {
+    width: 280px;
+  }
+
+  .loginSignUpTabsContentLogin .googleLoginButton {
+    width: 280px;
+  }
+
+  .loginSignUpTabsContentRegister form {
+    width: 280px;
+  }
+
+  .loginSignUpTabsContentVerify form {
+    width: 280px;
+  }
+}

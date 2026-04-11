@@ -1,0 +1,229 @@
+.collection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 30rem;
+  grid-gap: 30px;
+  margin: 85px 0;
+  animation: collectionReveal 0.7s ease both;
+}
+
+.collectionLeft {
+  position: relative;
+  overflow: hidden;
+  background-image: url("/Collection/collection1.jpg");
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 30px;
+  gap: 10px;
+  background-color: #eff0f1;
+  animation: collectionPanelIn 0.75s ease 0.08s both;
+}
+
+.collectionLeft::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.28) 45%, transparent 70%);
+  transform: translateX(-125%);
+  animation: collectionShimmer 7s ease-in-out 1s infinite;
+  pointer-events: none;
+}
+
+.col-link {
+  display: flex;
+}
+
+.col-link a {
+  position: relative;
+  text-decoration: none;
+  transition: transform 0.2s ease;
+}
+
+.col-link a:hover {
+  transform: scale(1.1);
+  transition-delay: 0.2s;
+}
+
+.col-link a::after {
+  content: "";
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 0;
+  height: 3px;
+  background-color: #1b1b1b;
+  transition: width 0.2s ease;
+}
+
+.col-link a:hover::after {
+  width: 100%;
+  transition-delay: 0.2s;
+}
+
+.col-p,
+.col-h3,
+.col-link {
+  color: #1b1b1b;
+}
+
+.collectionRight {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  grid-gap: 30px;
+  animation: collectionPanelIn 0.75s ease 0.15s both;
+}
+
+.collectionTop {
+  position: relative;
+  overflow: hidden;
+  background-image: url("/Collection/collection2.jpg");
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 30px;
+  gap: 5px;
+  background-color: #eff0f1;
+  animation: collectionPanelIn 0.75s ease 0.2s both;
+}
+
+.collectionBottom {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 30px;
+}
+
+.box1 {
+  position: relative;
+  overflow: hidden;
+  background-image: url("/Collection/collection3.jpg");
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding: 30px;
+  gap: 5px;
+  background-color: #eff0f1;
+  animation: collectionPanelIn 0.75s ease 0.25s both;
+}
+
+.box2 {
+  position: relative;
+  overflow: hidden;
+  background-color: #f4e5e0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 30px;
+  gap: 5px;
+  animation: collectionPanelIn 0.75s ease 0.3s both;
+}
+
+.collectionTop::before,
+.box1::before,
+.box2::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.22), transparent 40%);
+  opacity: 0.6;
+  animation: collectionGlow 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.col-p {
+  text-transform: uppercase;
+  font-size: 14px;
+}
+
+.col-h3 {
+  text-transform: uppercase;
+  font-size: 26px;
+  font-weight: 500;
+}
+
+.col-h3 span {
+  font-weight: bolder;
+}
+
+.col-h5 {
+  text-transform: uppercase;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+@keyframes collectionReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes collectionPanelIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes collectionShimmer {
+  0%,
+  45% {
+    transform: translateX(-125%);
+  }
+  52% {
+    transform: translateX(125%);
+  }
+  100% {
+    transform: translateX(125%);
+  }
+}
+
+@keyframes collectionGlow {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collection,
+  .collectionLeft,
+  .collectionRight,
+  .collectionTop,
+  .box1,
+  .box2 {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  .collectionLeft::before,
+  .collectionTop::before,
+  .box1::before,
+  .box2::before {
+    animation: none !important;
+  }
+}

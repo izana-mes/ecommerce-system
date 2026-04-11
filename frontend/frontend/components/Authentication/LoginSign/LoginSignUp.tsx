@@ -1,0 +1,545 @@
+"use client";
+
+import React, { useState, FormEvent } from "react";
+import "./LoginSignUp.css";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { useAppDispatch } from "@/store";
+import { clearCart, fetchCartAsync } from "@/store/cartSlice";
+import { clearWishList, fetchWishlistAsync } from "@/store/wishListSlice";
+import { logout as clearAuth, setAuth } from "@/lib/auth";
+
+const LoginSignUp = () => {
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState("tabButton1");
+  const [loading, setLoading] = useState(false);
+  
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  
+  // Register form state
+  const [registerUsername, setRegisterUsername] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+  const [registerFirstName, setRegisterFirstName] = useState("");
+  const [registerLastName, setRegisterLastName] = useState("");
+  const [verifyEmail, setVerifyEmail] = useState("");
+  const [verifyOtp, setVerifyOtp] = useState("");
+
+  const getErrorMessage = (error: unknown, fallback: string) =>
+    error instanceof Error ? error.message : fallback;
+  const resolveRole = async (
+    profile: { role?: string; roles?: string[] } | null | undefined,
+    accessToken: string
+  ): Promise<"user" | "admin"> => {
+    if (profile?.role === "admin") return "admin";
+    if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_ADMIN")) return "admin";
+
+    try {
+      const adminCheck = await fetch("/api/auth/admin?page=0&size=1", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (adminCheck.ok) return "admin";
+    } catch {
+      // Best effort only; fallback to user role.
+    }
+
+    return "user";
+  };
+
+  const handleTab = (tab: string) => {
+    setActiveTab(tab);
+    // Clear form errors when switching tabs
+    setLoginEmail("");
+    setLoginPassword("");
+    setRegisterUsername("");
+    setRegisterEmail("");
+    setRegisterPassword("");
+    setRegisterFirstName("");
+    setRegisterLastName("");
+    setVerifyEmail("");
+    setVerifyOtp("");
+  };
+
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Clear any previous auth and per-user state before logging in a new user
+      clearAuth();
+      dispatch(clearCart());
+      dispatch(clearWishList());
+
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: loginEmail,
+          password: loginPassword,
+        }),
+      });
+
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error("Invalid response from server");
+      }
+
+      if (!response.ok) {
+        // Spring wraps errors in ApiResponse: { success: false, message: "..." }
+        const errorMessage =
+          data?.message || data?.data?.message || data?.error || data?.details || "Login failed";
+        if (errorMessage.toLowerCase().includes("verify your email")) {
+          setVerifyEmail(loginEmail);
+          setActiveTab("tabButton3");
+        }
+        console.error("Login error:", errorMessage, data);
+        throw new Error(errorMessage);
+      }
+
+      // Spring wraps success in ApiResponse: { success: true, data: { access_token, refresh_token, ... } }
+      const authData = data?.data;
+      const accessToken = authData?.access_token;
+
+      if (!accessToken) {
+        throw new Error("Invalid response: Missing access token");
+      }
+
+      let resolvedUser = {
+        email: loginEmail,
+        role: "user" as "user" | "admin",
+        firstName: undefined as string | undefined,
+        lastName: undefined as string | undefined,
+        id: undefined as string | number | undefined,
+      };
+
+      try {
+        const meResponse = await fetch("/api/auth/me", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        const meData = await meResponse.json();
+        const profile = meData?.data;
+        if (meResponse.ok && profile?.email) {
+          const role = await resolveRole(profile, accessToken);
+          resolvedUser = {
+            email: profile.email,
+            role,
+            firstName: profile.firstName || undefined,
+            lastName: profile.lastName || undefined,
+            id: profile.id,
+          };
+        }
+      } catch {
+        // Keep fallback resolvedUser when profile endpoint is temporarily unavailable.
+      }
+
+      // Store token and user data using shared auth helper
+      setAuth(accessToken, resolvedUser, rememberMe);
+
+      // Load cart and wishlist for the newly logged-in user
+      dispatch(fetchCartAsync());
+      dispatch(fetchWishlistAsync());
+
+      toast.success("Login successful!", {
+        duration: 2000,
+        style: {
+          backgroundColor: "#07bc0c",
+          color: "#fff",
+        },
+        iconTheme: {
+          primary: "#fff",
+          secondary: "#07bc0c",
+        },
+      });
+
+      // Redirect to home page
+      setTimeout(() => {
+        router.push("/");
+        router.refresh();
+      }, 1000);
+    } catch (error: unknown) {
+      console.error("Login error details:", error);
+      const errorMessage = getErrorMessage(
+        error,
+        "Login failed. Please check your credentials and try again."
+      );
+      toast.error(errorMessage, {
+        duration: 3000,
+        style: {
+          backgroundColor: "#fb0404",
+          color: "#fff",
+        },
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: registerUsername,
+          email: registerEmail,
+          password: registerPassword,
+          firstName: registerFirstName || null,
+          lastName: registerLastName || null,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || "Registration failed");
+      }
+
+      toast.success("Registration successful! Enter OTP from your email.", {
+        duration: 2000,
+        style: {
+          backgroundColor: "#07bc0c",
+          color: "#fff",
+        },
+        iconTheme: {
+          primary: "#fff",
+          secondary: "#07bc0c",
+        },
+      });
+
+      // Move user directly to email verification screen
+      setVerifyEmail(registerEmail);
+      setActiveTab("tabButton3");
+      setRegisterUsername("");
+      setRegisterPassword("");
+      setRegisterFirstName("");
+      setRegisterLastName("");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Registration failed"), {
+        duration: 2000,
+        style: {
+          backgroundColor: "#fb0404",
+          color: "#fff",
+        },
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: verifyEmail,
+          otp: verifyOtp,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || "OTP verification failed");
+      }
+
+      toast.success("Email verified! You can login now.", {
+        duration: 2000,
+        style: {
+          backgroundColor: "#07bc0c",
+          color: "#fff",
+        },
+      });
+
+      setLoginEmail(verifyEmail);
+      setVerifyOtp("");
+      setActiveTab("tabButton1");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "OTP verification failed"), {
+        duration: 2500,
+        style: {
+          backgroundColor: "#fb0404",
+          color: "#fff",
+        },
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!verifyEmail) {
+      toast.error("Please enter your email first");
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await fetch("/api/auth/resend-otp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: verifyEmail }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || "Failed to resend OTP");
+      }
+
+      toast.success("OTP resent. Check your email.");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Failed to resend OTP"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = () => {
+    const configuredBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+    const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!configuredBackendUrl?.trim() && !configuredApiUrl?.trim()) {
+      toast.error(
+        "Google login is not configured. Set NEXT_PUBLIC_BACKEND_URL (e.g. https://your-api.onrender.com) or NEXT_PUBLIC_API_URL in Vercel."
+      );
+      return;
+    }
+    const backendUrl = configuredBackendUrl
+      || configuredApiUrl?.replace(/\/api\/?$/, "")
+      || window.location.origin;
+    if (backendUrl.replace(/\/+$/, "") === window.location.origin.replace(/\/+$/, "")) {
+      toast.error(
+        "NEXT_PUBLIC_BACKEND_URL must be your Spring Boot server URL (Render), not the Vercel frontend."
+      );
+      return;
+    }
+    const frontendRedirectUri = `${window.location.origin}/oauth/callback`;
+    const oauthUrl = new URL("/oauth2/authorization/google", backendUrl);
+
+    oauthUrl.searchParams.set("frontend_redirect_uri", frontendRedirectUri);
+    window.location.href = oauthUrl.toString();
+  };
+
+  return (
+    <>
+      <div className="loginSignUpSection">
+        <div className="loginSignUpContainer">
+          <div className="loginSignUpTabs">
+            <p
+              onClick={() => handleTab("tabButton1")}
+              className={activeTab === "tabButton1" ? "active" : ""}
+            >
+              Login
+            </p>
+            <p
+              onClick={() => handleTab("tabButton2")}
+              className={activeTab === "tabButton2" ? "active" : ""}
+            >
+              Register
+            </p>
+            <p
+              onClick={() => handleTab("tabButton3")}
+              className={activeTab === "tabButton3" ? "active" : ""}
+            >
+              Verify Email
+            </p>
+          </div>
+          <div className="loginSignUpTabsContent">
+            {/* tab1 - Login */}
+
+            {activeTab === "tabButton1" && (
+              <div className="loginSignUpTabsContentLogin">
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={loading}
+                  className="googleLoginButton"
+                >
+                  Continue with Google
+                </button>
+                <form onSubmit={handleLogin}>
+                  <input
+                    type="email"
+                    placeholder="Email address *"
+                    required
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    disabled={loading}
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password *"
+                    required
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    disabled={loading}
+                  />
+                  <div className="loginSignUpForgetPass">
+                    <label>
+                      <input
+                        type="checkbox"
+                        className="brandRadio"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        disabled={loading}
+                      />
+                      <p>Remember me</p>
+                    </label>
+                    <p>
+                      <Link href="/resetPassword">Lost password?</Link>
+                    </p>
+                  </div>
+                  <button type="submit" disabled={loading}>
+                    {loading ? "Logging in..." : "Log In"}
+                  </button>
+                </form>
+                <div className="loginSignUpTabsContentLoginText">
+                  <p>
+                    No account yet?{" "}
+                    <span
+                      onClick={() => handleTab("tabButton2")}
+                      style={{ cursor: "pointer", color: "#c32929" }}
+                    >
+                      Create Account
+                    </span>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Tab2 - Register */}
+
+            {activeTab === "tabButton2" && (
+              <div className="loginSignUpTabsContentRegister">
+                <form onSubmit={handleRegister}>
+                  <input
+                    type="text"
+                    placeholder="Username *"
+                    required
+                    value={registerUsername}
+                    onChange={(e) => setRegisterUsername(e.target.value)}
+                    disabled={loading}
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email address *"
+                    required
+                    value={registerEmail}
+                    onChange={(e) => setRegisterEmail(e.target.value)}
+                    disabled={loading}
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password * (min 6 characters)"
+                    required
+                    minLength={6}
+                    value={registerPassword}
+                    onChange={(e) => setRegisterPassword(e.target.value)}
+                    disabled={loading}
+                  />
+                  <input
+                    type="text"
+                    placeholder="First Name (optional)"
+                    value={registerFirstName}
+                    onChange={(e) => setRegisterFirstName(e.target.value)}
+                    disabled={loading}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Last Name (optional)"
+                    value={registerLastName}
+                    onChange={(e) => setRegisterLastName(e.target.value)}
+                    disabled={loading}
+                  />
+                  <p>
+                    Your personal data will be used to support your experience
+                    throughout this website, to manage access to your account,
+                    and for other purposes described in our
+                    <Link
+                      href="/terms"
+                      style={{ textDecoration: "none", color: "#c32929" }}
+                    >
+                      {" "}
+                      privacy policy
+                    </Link>
+                    .
+                  </p>
+                  <button type="submit" disabled={loading}>
+                    {loading ? "Registering..." : "Register"}
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {/* Tab3 - Verify Email */}
+            {activeTab === "tabButton3" && (
+              <div className="loginSignUpTabsContentVerify">
+                <form onSubmit={handleVerifyOtp}>
+                  <input
+                    type="email"
+                    placeholder="Email address *"
+                    required
+                    value={verifyEmail}
+                    onChange={(e) => setVerifyEmail(e.target.value)}
+                    disabled={loading}
+                  />
+                  <input
+                    type="text"
+                    placeholder="6-digit verification code *"
+                    required
+                    pattern="[0-9]{6}"
+                    maxLength={6}
+                    value={verifyOtp}
+                    onChange={(e) => setVerifyOtp(e.target.value.replace(/\D/g, ""))}
+                    disabled={loading}
+                  />
+                  <p>Enter the 6-digit OTP sent to your Gmail address.</p>
+                  <button type="submit" disabled={loading}>
+                    {loading ? "Verifying..." : "Verify Code"}
+                  </button>
+                  <button
+                    type="button"
+                    className="secondaryButton"
+                    onClick={handleResendOtp}
+                    disabled={loading}
+                  >
+                    Resend Code
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default LoginSignUp;

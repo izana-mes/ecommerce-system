@@ -1,0 +1,20 @@
+package com.example.shop.modules.order.dto;
+
+import lombok.Builder;
+import lombok.Data;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Data
+@Builder
+public class OrderHistoryItemDto {
+    private String orderNumber;
+    private BigDecimal totalAmount;
+    private String currency;
+    private String paymentMethod;
+    private String paymentStatus;
+    private String orderStatus;
+    private int itemCount;
+    private LocalDateTime createdAt;
+}

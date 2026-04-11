@@ -1,0 +1,135 @@
+spring:
+  application:
+    name: shop-backend
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:shop}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  mail:
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  # Google OAuth: use profile "oauth" and set SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_* (see application-oauth.yml).
+
+  data:
+    redis:
+      # Upstash and other cloud Redis URLs must use TLS: rediss:// (not redis://).
+      url: ${SPRING_DATA_REDIS_URL:redis://${REDIS_HOST:localhost}:${REDIS_PORT:6379}}
+      # 2s is often too tight for cross-region TLS handshakes on cold start (e.g. Render → Upstash).
+      timeout: ${REDIS_TIMEOUT:10s}
+
+  rabbitmq:
+    addresses: ${SPRING_RABBITMQ_URI:amqp://${RABBITMQ_USERNAME:guest}:${RABBITMQ_PASSWORD:guest}@${RABBITMQ_HOST:localhost}:${RABBITMQ_PORT:5672}}
+    listener:
+      simple:
+        default-requeue-rejected: false
+
+server:
+  port: ${PORT:8080}
+
+logging:
+  level:
+    root: INFO
+
+application:
+  server:
+    url: ${APPLICATION_SERVER_URL:http://localhost:8080}
+
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:3000}
+
+  # Comma-separated. Defaults to FRONTEND_URL so Render only needs FRONTEND_URL set.
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:${FRONTEND_URL:http://localhost:3000}}
+
+  security:
+    auth-cookie:
+      name: ${AUTH_COOKIE_NAME:access_token}
+    jwt:
+      secret-key: ${JWT_SECRET_KEY:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+      expiration: 86400000
+      refresh-token:
+        expiration: 604800000
+      email-verification:
+        expiration: 86400000
+      password-reset:
+        expiration: 3600000
+  bootstrap:
+    admin:
+      enabled: ${ADMIN_BOOTSTRAP_ENABLED:true}
+      email: ${ADMIN_BOOTSTRAP_EMAIL:admin@example.com}
+      password: ${ADMIN_BOOTSTRAP_PASSWORD:admin123}
+      first-name: ${ADMIN_BOOTSTRAP_FIRST_NAME:Admin}
+      last-name: ${ADMIN_BOOTSTRAP_LAST_NAME:User}
+  search-history:
+    max-entries: ${SEARCH_HISTORY_MAX_ENTRIES:10}
+    ttl-days: ${SEARCH_HISTORY_TTL_DAYS:30}
+  cache:
+    ttl:
+      products-all-seconds: ${CACHE_TTL_PRODUCTS_ALL_SECONDS:300}
+      products-search-seconds: ${CACHE_TTL_PRODUCTS_SEARCH_SECONDS:180}
+      products-suggest-seconds: ${CACHE_TTL_PRODUCTS_SUGGEST_SECONDS:180}
+      products-inventory-health-seconds: ${CACHE_TTL_PRODUCTS_INVENTORY_HEALTH_SECONDS:30}
+      admin-dashboard-seconds: ${CACHE_TTL_ADMIN_DASHBOARD_SECONDS:30}
+  internal:
+    notify-token: ${INTERNAL_NOTIFY_TOKEN:}
+  reviews:
+    max-entries: ${REVIEWS_MAX_ENTRIES:200}
+    ttl-days: ${REVIEWS_TTL_DAYS:180}
+  payment:
+    vnpay:
+      hash-secret: ${VNPAY_HASH_SECRET:}
+  messaging:
+    exchange: ${MESSAGING_EXCHANGE:shop.events}
+    queue:
+      payment-ipn: ${MESSAGING_QUEUE_PAYMENT_IPN:payment.ipn.process}
+      payment-ipn-dlq: ${MESSAGING_QUEUE_PAYMENT_IPN_DLQ:payment.ipn.process.dlq}
+      order-paid-email: ${MESSAGING_QUEUE_ORDER_PAID_EMAIL:order.paid.email}
+      order-paid-email-dlq: ${MESSAGING_QUEUE_ORDER_PAID_EMAIL_DLQ:order.paid.email.dlq}
+      order-created: ${MESSAGING_QUEUE_ORDER_CREATED:order.created}
+      order-created-dlq: ${MESSAGING_QUEUE_ORDER_CREATED_DLQ:order.created.dlq}
+      email-general: ${MESSAGING_QUEUE_EMAIL_GENERAL:email.general}
+      email-general-dlq: ${MESSAGING_QUEUE_EMAIL_GENERAL_DLQ:email.general.dlq}
+      low-stock-alert: ${MESSAGING_QUEUE_LOW_STOCK_ALERT:inventory.low-stock.alert}
+      low-stock-alert-dlq: ${MESSAGING_QUEUE_LOW_STOCK_ALERT_DLQ:inventory.low-stock.alert.dlq}
+      order-status-changed: ${MESSAGING_QUEUE_ORDER_STATUS_CHANGED:order.status.changed}
+      order-status-changed-dlq: ${MESSAGING_QUEUE_ORDER_STATUS_CHANGED_DLQ:order.status.changed.dlq}
+      review-submitted: ${MESSAGING_QUEUE_REVIEW_SUBMITTED:review.submitted}
+      review-submitted-dlq: ${MESSAGING_QUEUE_REVIEW_SUBMITTED_DLQ:review.submitted.dlq}
+      audit-event: ${MESSAGING_QUEUE_AUDIT_EVENT:audit.event}
+      audit-event-dlq: ${MESSAGING_QUEUE_AUDIT_EVENT_DLQ:audit.event.dlq}
+    routing-key:
+      payment-ipn: ${MESSAGING_ROUTING_KEY_PAYMENT_IPN:payment.vnpay.ipn}
+      order-paid-email: ${MESSAGING_ROUTING_KEY_ORDER_PAID_EMAIL:notification.order.paid.email}
+      order-created: ${MESSAGING_ROUTING_KEY_ORDER_CREATED:order.created}
+      email-general: ${MESSAGING_ROUTING_KEY_EMAIL_GENERAL:email.general.send}
+      low-stock-alert: ${MESSAGING_ROUTING_KEY_LOW_STOCK_ALERT:inventory.low-stock.alert}
+      order-status-changed: ${MESSAGING_ROUTING_KEY_ORDER_STATUS_CHANGED:order.status.changed}
+      review-submitted: ${MESSAGING_ROUTING_KEY_REVIEW_SUBMITTED:review.submitted}
+      audit-event: ${MESSAGING_ROUTING_KEY_AUDIT_EVENT:audit.event}
+  inventory:
+    low-stock-threshold: ${LOW_STOCK_THRESHOLD:5}
+

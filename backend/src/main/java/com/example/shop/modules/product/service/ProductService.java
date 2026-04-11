@@ -1,0 +1,30 @@
+package com.example.shop.modules.product.service;
+
+import com.example.shop.modules.product.dto.ProductDto;
+import com.example.shop.modules.product.dto.StockAdjustmentItemDto;
+
+import java.util.List;
+import java.util.Map;
+
+public interface ProductService {
+
+    List<ProductDto> getAllProducts();
+
+    List<ProductDto> searchProducts(String keyword);
+
+    List<String> searchSuggestions(String keyword, int limit);
+
+    ProductDto createProduct(ProductDto productDto);
+
+    List<ProductDto> saveAllProducts(List<ProductDto> products);
+
+    ProductDto updateProduct(String productID, ProductDto productDto);
+
+    void deleteProduct(String productID);
+
+    Map<String, Object> getInventoryHealth(int lowStockThreshold);
+
+    void validateAndReserveStock(List<StockAdjustmentItemDto> items);
+
+    void releaseStock(List<StockAdjustmentItemDto> items);
+}
