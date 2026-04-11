@@ -1,7 +1,6 @@
 databases:
   - name: ecommerce-postgres
     databaseName: shop
-    user: postgres
     plan: free
 
 services:
