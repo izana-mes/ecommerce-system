@@ -7,13 +7,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
  * SMTP implementation of the EmailService.
- * Uses JavaMailSender to send emails.
- * Methods are @Async to avoid blocking the main thread.
+ * Sends synchronously so callers (e.g. password reset) get a real error if SMTP fails
+ * instead of returning success while mail fails in the background.
  */
 @Service
 @RequiredArgsConstructor
@@ -27,7 +26,6 @@ public class SmtpEmailService implements EmailService {
     private String senderEmail;
 
     @Override
-    @Async
     public void sendEmail(String to, String subject, String content) {
         log.info("Sending email to: {}", to);
         try {
@@ -48,7 +46,6 @@ public class SmtpEmailService implements EmailService {
     }
 
     @Override
-    @Async
     public void sendVerificationEmail(String to, String name, String token) {
         String subject = "Verify your email address";
         String content = templateService.generateVerificationEmail(name, token);
@@ -56,7 +53,6 @@ public class SmtpEmailService implements EmailService {
     }
 
     @Override
-    @Async
     public void sendPasswordResetEmail(String to, String name, String token) {
         String subject = "Reset your password";
         String content = templateService.generatePasswordResetEmail(name, token);
@@ -64,7 +60,6 @@ public class SmtpEmailService implements EmailService {
     }
 
     @Override
-    @Async
     public void sendOtpEmail(String to, String name, String otp) {
         String subject = "Your verification code";
         String content = templateService.generateOtpEmail(name, otp);
