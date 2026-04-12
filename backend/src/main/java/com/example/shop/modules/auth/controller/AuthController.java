@@ -3,7 +3,10 @@ package com.example.shop.modules.auth.controller;
 import com.example.shop.common.response.ApiResponse;
 import com.example.shop.modules.auth.dto.request.*;
 import com.example.shop.modules.auth.dto.response.AuthenticationResponse;
+import com.example.shop.modules.auth.security.AccessTokenCookieWriter;
 import com.example.shop.modules.auth.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +35,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService service;
+    private final AccessTokenCookieWriter accessTokenCookieWriter;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthenticationResponse>> register(
@@ -41,14 +45,22 @@ public class AuthController {
 
     @PostMapping("/authenticate")
     public ResponseEntity<ApiResponse<AuthenticationResponse>> authenticate(
-            @Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(ApiResponse.success(service.authenticate(request)));
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
+        AuthenticationResponse body = service.authenticate(request);
+        accessTokenCookieWriter.addCookie(httpRequest, httpResponse, body.getAccessToken());
+        return ResponseEntity.ok(ApiResponse.success(body));
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<AuthenticationResponse>> refreshToken(
-            @Valid @RequestBody RefreshTokenRequest request) {
-        return ResponseEntity.ok(ApiResponse.success(service.refreshToken(request.getRefreshToken())));
+            @Valid @RequestBody RefreshTokenRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
+        AuthenticationResponse body = service.refreshToken(request.getRefreshToken());
+        accessTokenCookieWriter.addCookie(httpRequest, httpResponse, body.getAccessToken());
+        return ResponseEntity.ok(ApiResponse.success(body));
     }
 
     @GetMapping("/verify-email")

@@ -49,6 +49,8 @@ spring:
 
 server:
   port: ${PORT:8080}
+  # So request.isSecure() and redirects respect HTTPS when behind Render / other reverse proxies.
+  forward-headers-strategy: ${SERVER_FORWARD_HEADERS_STRATEGY:framework}
 
 logging:
   level:

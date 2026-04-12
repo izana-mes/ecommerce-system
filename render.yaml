@@ -25,6 +25,9 @@ services:
       # Public site URL(s). CORS defaults to this (see application.cors.allowed-origins).
       - key: FRONTEND_URL
         sync: false
+      # Optional: comma-separated if you have several Vercel preview URLs (must match browser origin exactly).
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
       # Backend public URL, e.g. https://ecommerce-backend.onrender.com
       - key: APPLICATION_SERVER_URL
         sync: false

@@ -2,6 +2,9 @@
 .DS_Store
 .vscode/
 
+# Backend secrets (use .env.example as template)
+backend/.env
+
 # Backend build and local Maven caches
 backend/target/
 backend/.m2/

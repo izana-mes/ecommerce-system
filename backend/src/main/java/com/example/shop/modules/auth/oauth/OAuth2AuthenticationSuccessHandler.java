@@ -1,12 +1,12 @@
 package com.example.shop.modules.auth.oauth;
 
+import com.example.shop.modules.auth.security.AccessTokenCookieWriter;
 import com.example.shop.modules.auth.security.JwtProvider;
 import com.example.shop.modules.role.entity.Role;
 import com.example.shop.modules.role.repository.RoleRepository;
 import com.example.shop.modules.user.entity.User;
 import com.example.shop.modules.user.repository.UserRepository;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -29,15 +29,10 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     private final RoleRepository roleRepository;
     private final JwtProvider jwtProvider;
     private final OAuth2CookieAuthorizationRequestRepository authRequestRepository;
+    private final AccessTokenCookieWriter accessTokenCookieWriter;
 
     @Value("${application.frontend.url:http://localhost:3000}")
     private String frontendUrl;
-
-    @Value("${application.security.auth-cookie.name:access_token}")
-    private String cookieName;
-
-    @Value("${application.security.jwt.expiration:86400000}")
-    private long jwtExpirationMs;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
@@ -64,7 +59,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                 .orElseGet(() -> createGoogleUser(email, sub, givenName, familyName, emailVerified));
 
         String jwt = jwtProvider.generateAccessToken(user);
-        setAuthCookie(response, jwt);
+        accessTokenCookieWriter.addCookie(request, response, jwt);
 
         // Fragment is not sent to the frontend server; needed when the SPA is on a different
         // origin than the API (e.g. Vercel + Render) because the HttpOnly cookie stays on the API host.
@@ -108,15 +103,6 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         // Ensure verified true for Google regardless (policy choice)
         user.setEmailVerified(true);
         return userRepository.save(user);
-    }
-
-    private void setAuthCookie(HttpServletResponse response, String jwt) {
-        Cookie cookie = new Cookie(cookieName, jwt);
-        cookie.setHttpOnly(true);
-        cookie.setPath("/");
-        cookie.setMaxAge((int) (jwtExpirationMs / 1000));
-        // Secure/SameSite are not configurable via javax Cookie; use reverse proxy in prod or add headers manually.
-        response.addCookie(cookie);
     }
 
     private String resolveRedirectTarget(HttpServletRequest request) {
