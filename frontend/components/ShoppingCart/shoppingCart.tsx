@@ -59,6 +59,17 @@ function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
+async function parseJsonSafely<T>(response: Response): Promise<T | null> {
+  const raw = await response.text().catch(() => "");
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
 export default function ShoppingCart() {
   const dispatch = useAppDispatch();
   const searchParams = useSearchParams();
@@ -261,7 +272,7 @@ export default function ShoppingCart() {
         },
       });
       if (checkoutHealthResponse.ok) {
-        const checkoutHealth = (await checkoutHealthResponse.json()) as CheckoutHealthResponse;
+        const checkoutHealth = await parseJsonSafely<CheckoutHealthResponse>(checkoutHealthResponse);
         if (checkoutHealth?.canCheckout === false) {
           const firstInvalidItem = checkoutHealth.invalidItems?.[0];
           const blockedMessage = firstInvalidItem
@@ -313,7 +324,14 @@ export default function ShoppingCart() {
         }),
       });
 
-      const data = await response.json();
+      const data = await parseJsonSafely<{
+        error?: string;
+        message?: string;
+        data?: {
+          orderId?: number;
+          orderNumber?: string;
+        };
+      }>(response);
       if (!response.ok) {
         throw new Error(data?.error || data?.message || "Failed to place order");
       }
@@ -331,7 +349,12 @@ export default function ShoppingCart() {
           },
           body: JSON.stringify({ orderId }),
         });
-        const paymentData = await paymentResponse.json();
+        const paymentData = await parseJsonSafely<{
+          error?: string;
+          data?: {
+            paymentUrl?: string;
+          };
+        }>(paymentResponse);
         if (!paymentResponse.ok) {
           throw new Error(paymentData?.error || "Cannot create VNPAY payment URL");
         }
