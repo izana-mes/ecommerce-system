@@ -16,7 +16,10 @@ services:
     envVars:
       - key: PORT
         value: 10000
-      # Render sets RENDER=true; backend disables RabbitMQ + uses in-memory cache unless you override.
+      # Ensures RabbitMQ/Redis are not pointed at localhost unless you override (see RenderIntegrationEnvironmentPostProcessor).
+      - key: RENDER
+        value: "true"
+      # Render also sets RENDER_EXTERNAL_URL automatically; RENDER above covers blueprint/manual deploys.
       # Render Postgres: use connectionString (host/port are not valid fromDatabase properties for Postgres).
       - key: DATABASE_URL
         fromDatabase:

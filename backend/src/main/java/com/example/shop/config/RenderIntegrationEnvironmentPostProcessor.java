@@ -12,8 +12,9 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 
 /**
- * When running on Render ({@code RENDER=true}), apply safe defaults so the app starts without
- * Redis/RabbitMQ on localhost: use in-process cache and disable Rabbit unless explicitly enabled.
+ * When running on Render, apply safe defaults so the app does not try Redis/RabbitMQ on
+ * {@code localhost} (connection refused in logs). Render usually sets {@code RENDER} or
+ * {@code RENDER_EXTERNAL_URL}; we also honor explicit {@code RENDER=true} from {@code render.yaml}.
  * Explicit environment variables always win (they are usually defined in earlier property sources).
  */
 @Order(Ordered.HIGHEST_PRECEDENCE + 10)
@@ -26,7 +27,7 @@ public class RenderIntegrationEnvironmentPostProcessor implements EnvironmentPos
 
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
-        if (!"true".equalsIgnoreCase(environment.getProperty("RENDER"))) {
+        if (!isRunningOnRender(environment)) {
             return;
         }
         Map<String, Object> defaults = new HashMap<>();
@@ -44,5 +45,18 @@ public class RenderIntegrationEnvironmentPostProcessor implements EnvironmentPos
         if (!defaults.isEmpty()) {
             environment.getPropertySources().addLast(new MapPropertySource("renderIntegrationDefaults", defaults));
         }
+    }
+
+    private static boolean isRunningOnRender(ConfigurableEnvironment environment) {
+        if ("true".equalsIgnoreCase(environment.getProperty("RENDER"))) {
+            return true;
+        }
+        if (StringUtils.hasText(environment.getProperty("RENDER_EXTERNAL_URL"))) {
+            return true;
+        }
+        if (StringUtils.hasText(environment.getProperty("RENDER_SERVICE_ID"))) {
+            return true;
+        }
+        return false;
     }
 }

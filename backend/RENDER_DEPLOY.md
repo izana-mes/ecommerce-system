@@ -30,6 +30,8 @@ If you use Redis and RabbitMQ in production, also set:
 - `REDIS_HOST`, `REDIS_PORT`
 - `RABBITMQ_HOST`, `RABBITMQ_PORT`, `RABBITMQ_USERNAME`, `RABBITMQ_PASSWORD`
 
+If you see endless `AmqpConnectException: Connection refused` to `localhost:5672`, the app is trying to use RabbitMQ without a broker. Either add a real RabbitMQ URL, or set **`RENDER=true`** (included in `render.yaml`) so the backend disables Rabbit by default, or set **`SPRING_RABBITMQ_ENABLED=false`** in the Render dashboard.
+
 ## 3) Update Vercel Frontend Variables
 
 In your Vercel project, set:
