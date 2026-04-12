@@ -36,16 +36,6 @@ type HistoryResponse = {
   size: number;
 };
 
-async function parseJsonSafely<T>(response: Response): Promise<T | null> {
-  const raw = await response.text().catch(() => "");
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
-}
-
 function formatMoney(value: number, currency: string): string {
   try {
     return new Intl.NumberFormat("en-US", {
@@ -88,16 +78,12 @@ export default function OrdersPage() {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
-        const data = (await parseJsonSafely<Partial<HistoryResponse> & {
+        const data = (await response.json()) as Partial<HistoryResponse> & {
           message?: string;
           error?: string;
-        }>(response)) || {};
+        };
 
         if (!response.ok) {
-          if (response.status === 401) {
-            router.replace("/login");
-            return;
-          }
           throw new Error(data?.message || data?.error || "Failed to fetch order history");
         }
 

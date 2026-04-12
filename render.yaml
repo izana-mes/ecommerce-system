@@ -1,6 +1,7 @@
 databases:
   - name: ecommerce-postgres
     databaseName: shop
+    user: postgres
     plan: free
 
 services:
@@ -15,10 +16,6 @@ services:
     envVars:
       - key: PORT
         value: 10000
-      - key: SPRING_RABBITMQ_ENABLED
-        value: "false"
-      - key: RENDER
-        value: "true"
       # Render sets RENDER=true; backend disables RabbitMQ + uses in-memory cache unless you override.
       # Render Postgres: use connectionString (host/port are not valid fromDatabase properties for Postgres).
       - key: DATABASE_URL
