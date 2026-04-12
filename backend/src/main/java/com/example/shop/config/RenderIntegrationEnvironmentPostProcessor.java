@@ -13,8 +13,9 @@ import org.springframework.core.env.MapPropertySource;
 
 /**
  * When running on Render, apply safe defaults so the app does not try Redis/RabbitMQ on
- * {@code localhost} (connection refused in logs). Render usually sets {@code RENDER} or
- * {@code RENDER_EXTERNAL_URL}; we also honor explicit {@code RENDER=true} from {@code render.yaml}.
+ * {@code localhost} (connection refused in logs). Detection uses {@code RENDER}, Render-provided
+ * vars, or a Render Postgres {@code DATABASE_URL} ({@code dpg-} host / {@code .render.com}).
+ * RabbitMQ stays enabled if {@code SPRING_RABBITMQ_URI} (or addresses) is set.
  * Explicit environment variables always win (they are usually defined in earlier property sources).
  */
 @Order(Ordered.HIGHEST_PRECEDENCE + 10)
@@ -31,7 +32,7 @@ public class RenderIntegrationEnvironmentPostProcessor implements EnvironmentPos
             return;
         }
         Map<String, Object> defaults = new HashMap<>();
-        if (environment.getProperty("spring.rabbitmq.enabled") == null) {
+        if (environment.getProperty("spring.rabbitmq.enabled") == null && !hasExternalRabbitBroker(environment)) {
             defaults.put("spring.rabbitmq.enabled", "false");
         }
         String cacheBackend = environment.getProperty("app.cache.backend");
@@ -57,6 +58,27 @@ public class RenderIntegrationEnvironmentPostProcessor implements EnvironmentPos
         if (StringUtils.hasText(environment.getProperty("RENDER_SERVICE_ID"))) {
             return true;
         }
-        return false;
+        return looksLikeRenderDatabaseUrl(environment.getProperty("DATABASE_URL"));
+    }
+
+    private static boolean looksLikeRenderDatabaseUrl(String databaseUrl) {
+        if (!StringUtils.hasText(databaseUrl)) {
+            return false;
+        }
+        String u = databaseUrl.toLowerCase();
+        return u.contains("dpg-") || u.contains(".render.com");
+    }
+
+    private static boolean hasExternalRabbitBroker(ConfigurableEnvironment environment) {
+        if (StringUtils.hasText(environment.getProperty("SPRING_RABBITMQ_URI"))) {
+            return true;
+        }
+        if (StringUtils.hasText(environment.getProperty("SPRING_RABBITMQ_ADDRESSES"))) {
+            return true;
+        }
+        String host = environment.getProperty("RABBITMQ_HOST");
+        return StringUtils.hasText(host)
+                && !"localhost".equalsIgnoreCase(host.trim())
+                && !"127.0.0.1".equals(host.trim());
     }
 }
