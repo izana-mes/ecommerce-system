@@ -41,7 +41,10 @@ spring:
       # 2s is often too tight for cross-region TLS handshakes on cold start (e.g. Render → Upstash).
       timeout: ${REDIS_TIMEOUT:10s}
 
+  # Off by default so cloud deploys (Render) do not spin on localhost:5672. Set SPRING_RABBITMQ_ENABLED=true
+  # when using a real broker (local Docker or SPRING_RABBITMQ_URI for CloudAMQP).
   rabbitmq:
+    enabled: ${SPRING_RABBITMQ_ENABLED:false}
     uri: ${SPRING_RABBITMQ_URI:amqp://${RABBITMQ_USERNAME:guest}:${RABBITMQ_PASSWORD:guest}@${RABBITMQ_HOST:localhost}:${RABBITMQ_PORT:5672}}
     listener:
       simple:
