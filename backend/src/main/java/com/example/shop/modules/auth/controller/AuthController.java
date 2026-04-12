@@ -99,7 +99,9 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
             @AuthenticationPrincipal UserDetails userDetails) {
-        service.logout(userDetails.getUsername());
+        if (userDetails != null && userDetails.getUsername() != null) {
+            service.logout(userDetails.getUsername());
+        }
         return ResponseEntity.ok(ApiResponse.success(null, "Logged out successfully"));
     }
 }

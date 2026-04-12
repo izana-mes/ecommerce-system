@@ -45,13 +45,13 @@ export async function POST(request: NextRequest) {
   const hashSecret = process.env.VNPAY_HASH_SECRET?.trim();
   const vnpUrl =
     process.env.VNPAY_URL?.trim() || "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-  const returnUrl = process.env.VNPAY_RETURN_URL?.trim();
+  const returnUrl = process.env.VNPAY_RETURN_URL?.trim() || `${request.nextUrl.origin}/payment/vnpay-return`;
 
   if (!tmnCode || !hashSecret || !returnUrl) {
     return NextResponse.json(
       {
         error:
-          "Missing VNPAY config. Required: VNPAY_TMN_CODE, VNPAY_HASH_SECRET, VNPAY_RETURN_URL",
+          "Missing VNPAY config. Required: VNPAY_TMN_CODE, VNPAY_HASH_SECRET",
       },
       { status: 500 }
     );

@@ -42,7 +42,7 @@ spring:
       timeout: ${REDIS_TIMEOUT:10s}
 
   rabbitmq:
-    addresses: ${SPRING_RABBITMQ_URI:amqp://${RABBITMQ_USERNAME:guest}:${RABBITMQ_PASSWORD:guest}@${RABBITMQ_HOST:localhost}:${RABBITMQ_PORT:5672}}
+    uri: ${SPRING_RABBITMQ_URI:amqp://${RABBITMQ_USERNAME:guest}:${RABBITMQ_PASSWORD:guest}@${RABBITMQ_HOST:localhost}:${RABBITMQ_PORT:5672}}
     listener:
       simple:
         default-requeue-rejected: false
@@ -101,7 +101,7 @@ application:
     ttl-days: ${REVIEWS_TTL_DAYS:180}
   payment:
     vnpay:
-      hash-secret: ${VNPAY_HASH_SECRET:}
+      hash-secret: ${VNPAY_HASH_SECRET:BVJUNHLRJVJ5U6MQSL1WHVCHN1V2J1D4}
   messaging:
     exchange: ${MESSAGING_EXCHANGE:shop.events}
     queue:

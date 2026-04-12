@@ -11,7 +11,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d shop"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d shop" ]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -24,7 +24,7 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -41,7 +41,7 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -64,6 +64,11 @@ services:
       RABBITMQ_USERNAME: guest
       RABBITMQ_PASSWORD: guest
       INTERNAL_NOTIFY_TOKEN: "change-me-in-env"
+      VNPAY_HASH_SECRET: "BVJUNHLRJVJ5U6MQSL1WHVCHN1V2J1D4"
+      SPRING_MAIL_HOST: smtp.gmail.com
+      SPRING_MAIL_PORT: 587
+      SPRING_MAIL_USERNAME: "nguyennguyenhuy357@gmail.com"
+      SPRING_MAIL_PASSWORD: "eulalawrence"
     depends_on:
       postgres:
         condition: service_healthy
@@ -73,7 +78,7 @@ services:
         condition: service_healthy
 
   frontend:
-    build: ./frontend
+    build: .
     restart: always
     ports:
       - "3000:3000"
@@ -87,6 +92,10 @@ services:
       DB_NAME: shop
       DB_USER: postgres
       DB_PASSWORD: "08092005"
+      VNPAY_TMN_CODE: "1993TQTF"
+      VNPAY_HASH_SECRET: "BVJUNHLRJVJ5U6MQSL1WHVCHN1V2J1D4"
+      VNPAY_URL: "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
+      VNPAY_RETURN_URL: "http://localhost:3000/payment/vnpay-return"
     depends_on:
       - backend
 
