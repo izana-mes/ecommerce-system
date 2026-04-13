@@ -62,21 +62,11 @@ async function resolveRoleFromServer(token: string): Promise<"user" | "admin"> {
     if (profile?.role === "admin") return "admin";
     if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_ADMIN")) return "admin";
   } catch {
-    // Fallback check below.
-  }
-
-  try {
-    const adminCheck = await fetch("/api/auth/admin?page=0&size=1", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return adminCheck.ok ? "admin" : "user";
-  } catch {
+    // If profile lookup fails, keep default user role.
     return "user";
   }
+
+  return "user";
 }
 
 export async function refreshCurrentUserFromServer(): Promise<User | null> {

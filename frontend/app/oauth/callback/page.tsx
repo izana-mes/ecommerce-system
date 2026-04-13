@@ -8,28 +8,11 @@ import { useAppDispatch } from "@/store";
 import { fetchCartAsync } from "@/store/cartSlice";
 import { fetchWishlistAsync } from "@/store/wishListSlice";
 
-async function resolveRole(
-  profile: { role?: string; roles?: string[] } | null | undefined,
-  accessToken: string | null
-): Promise<"user" | "admin"> {
+function resolveRole(
+  profile: { role?: string; roles?: string[] } | null | undefined
+): "user" | "admin" {
   if (profile?.role === "admin") return "admin";
   if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_ADMIN")) return "admin";
-
-  try {
-    const adminCheck = await fetch("/api/auth/admin?page=0&size=1", {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...(accessToken?.trim()
-          ? { Authorization: /^bearer\s+/i.test(accessToken.trim()) ? accessToken.trim() : `Bearer ${accessToken.trim()}` }
-          : {}),
-      },
-    });
-    if (adminCheck.ok) return "admin";
-  } catch {
-    // Best effort only.
-  }
 
   return "user";
 }
@@ -84,7 +67,7 @@ function OAuthCallbackContent() {
           throw new Error(backendMsg || hint);
         }
 
-        const role = await resolveRole(userData, tokenFromFragment);
+        const role = resolveRole(userData);
         if (tokenFromFragment) {
           setAuth(tokenFromFragment, {
             id: userData.id,

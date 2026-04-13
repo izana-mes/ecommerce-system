@@ -32,25 +32,11 @@ const LoginSignUp = () => {
 
   const getErrorMessage = (error: unknown, fallback: string) =>
     error instanceof Error ? error.message : fallback;
-  const resolveRole = async (
-    profile: { role?: string; roles?: string[] } | null | undefined,
-    accessToken: string
-  ): Promise<"user" | "admin"> => {
+  const resolveRole = (
+    profile: { role?: string; roles?: string[] } | null | undefined
+  ): "user" | "admin" => {
     if (profile?.role === "admin") return "admin";
     if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_ADMIN")) return "admin";
-
-    try {
-      const adminCheck = await fetch("/api/auth/admin?page=0&size=1", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-      if (adminCheck.ok) return "admin";
-    } catch {
-      // Best effort only; fallback to user role.
-    }
 
     return "user";
   };
@@ -136,7 +122,7 @@ const LoginSignUp = () => {
         const meData = await meResponse.json();
         const profile = meData?.data;
         if (meResponse.ok && profile?.email) {
-          const role = await resolveRole(profile, accessToken);
+          const role = resolveRole(profile);
           resolvedUser = {
             email: profile.email,
             role,
@@ -323,28 +309,10 @@ const LoginSignUp = () => {
   };
 
   const handleGoogleLogin = () => {
-    const configuredBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-    const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!configuredBackendUrl?.trim() && !configuredApiUrl?.trim()) {
-      toast.error(
-        "Google login is not configured. Set NEXT_PUBLIC_BACKEND_URL (e.g. https://your-api.onrender.com) or NEXT_PUBLIC_API_URL in Vercel."
-      );
-      return;
-    }
-    const backendUrl = configuredBackendUrl
-      || configuredApiUrl?.replace(/\/api\/?$/, "")
-      || window.location.origin;
-    if (backendUrl.replace(/\/+$/, "") === window.location.origin.replace(/\/+$/, "")) {
-      toast.error(
-        "NEXT_PUBLIC_BACKEND_URL must be your Spring Boot server URL (Render), not the Vercel frontend."
-      );
-      return;
-    }
     const frontendRedirectUri = `${window.location.origin}/oauth/callback`;
-    const oauthUrl = new URL("/oauth2/authorization/google", backendUrl);
-
-    oauthUrl.searchParams.set("frontend_redirect_uri", frontendRedirectUri);
-    window.location.href = oauthUrl.toString();
+    const oauthStartUrl = new URL("/api/auth/oauth/google/start", window.location.origin);
+    oauthStartUrl.searchParams.set("frontend_redirect_uri", frontendRedirectUri);
+    window.location.href = oauthStartUrl.toString();
   };
 
   return (
