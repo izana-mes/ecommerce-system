@@ -267,11 +267,13 @@ export default function ShoppingCart() {
       });
       if (checkoutHealthResponse.ok) {
         const checkoutHealth = (await checkoutHealthResponse.json()) as CheckoutHealthResponse;
-        if (checkoutHealth?.canCheckout === false) {
-          const firstInvalidItem = checkoutHealth.invalidItems?.[0];
-          const blockedMessage = firstInvalidItem
-            ? `Cannot checkout: ${firstInvalidItem.productName} has only ${firstInvalidItem.availableQuantity} item(s) available.`
-            : "Cannot checkout due to unavailable stock.";
+        const invalidItems = checkoutHealth.invalidItems ?? [];
+        const blockingInvalidItem = buyNowProductId
+          ? invalidItems.find((item) => String(item.productID) === String(buyNowProductId))
+          : invalidItems[0];
+
+        if (blockingInvalidItem) {
+          const blockedMessage = `Cannot checkout: ${blockingInvalidItem.productName} has only ${blockingInvalidItem.availableQuantity} item(s) available.`;
           toast.error(blockedMessage);
           dispatch(fetchCartAsync());
           return;
