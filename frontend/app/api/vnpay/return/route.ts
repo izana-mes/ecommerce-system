@@ -222,7 +222,7 @@ export async function GET(request: NextRequest) {
              payment_reference = ?,
              status = ?,
              paid_at = ?,
-             metadata = ?
+             metadata = ?::jsonb
          WHERE order_id = ?`,
         [
           transactionNo || txnRef,
@@ -320,7 +320,7 @@ export async function GET(request: NextRequest) {
         confirmationEmailSent = true;
         try {
           await conn.execute(
-            "UPDATE payments SET metadata = ? WHERE order_id = ?",
+            "UPDATE payments SET metadata = ?::jsonb WHERE order_id = ?",
             [
               JSON.stringify({
                 ...existingMetadata,

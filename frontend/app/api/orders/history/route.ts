@@ -17,10 +17,6 @@ function toInt(input: string | null, fallback: number): number {
   return Math.max(0, Math.floor(parsed));
 }
 
-function normalizeEmail(value: string | undefined | null): string {
-  return String(value || "").trim().toLowerCase();
-}
-
 export async function GET(request: Request) {
   const authHeader = getAuthHeader(request);
   const cookieHeader = getCookieHeader(request);
@@ -30,21 +26,6 @@ export async function GET(request: Request) {
   }
 
   try {
-    const meResponse = await fetch(`${API_URL}/v1/auth/me`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
-    });
-    const meData = await meResponse.json().catch(() => null);
-    const email = normalizeEmail(meData?.data?.email as string | undefined);
-
-    if (!meResponse.ok || !email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const page = toInt(searchParams.get("page"), 0);
     const size = Math.min(50, Math.max(1, toInt(searchParams.get("size"), 10)));
@@ -67,7 +48,22 @@ export async function GET(request: Request) {
       );
     }
 
-    const allOrders = Array.isArray(historyData?.data) ? historyData.data : [];
+    const allOrders = (Array.isArray(historyData?.data) ? historyData.data : []).map(
+      (order: Record<string, unknown>, index: number) => ({
+        id: Number(order.id ?? startFallbackId(page, size, index)),
+        order_number: String(order.order_number ?? order.orderNumber ?? ""),
+        subtotal: Number(order.subtotal ?? order.total_amount ?? order.totalAmount ?? 0),
+        shipping_fee: Number(order.shipping_fee ?? order.shippingFee ?? 0),
+        vat: Number(order.vat ?? 0),
+        total_amount: Number(order.total_amount ?? order.totalAmount ?? 0),
+        currency: String(order.currency ?? "USD"),
+        payment_method: String(order.payment_method ?? order.paymentMethod ?? ""),
+        payment_status: String(order.payment_status ?? order.paymentStatus ?? ""),
+        order_status: String(order.order_status ?? order.orderStatus ?? ""),
+        created_at: String(order.created_at ?? order.createdAt ?? new Date().toISOString()),
+        items: Array.isArray(order.items) ? order.items : [],
+      })
+    );
     const start = page * size;
     const content = allOrders.slice(start, start + size);
     const totalElements = allOrders.length;
@@ -87,4 +83,8 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
+}
+
+function startFallbackId(page: number, size: number, index: number): number {
+  return page * size + index + 1;
 }

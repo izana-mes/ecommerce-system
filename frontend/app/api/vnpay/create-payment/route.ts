@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
 
     await conn.execute(
       `UPDATE payments
-       SET provider = 'vnpay', method = 'VNPAY', payment_reference = ?, status = 'pending', metadata = ?
+       SET provider = 'vnpay', method = 'VNPAY', payment_reference = ?, status = 'pending', metadata = ?::jsonb
        WHERE order_id = ?`,
       [order.order_number, JSON.stringify({ ...existingMetadata, gateway: "vnpay", tmnCode }), order.id]
     );
