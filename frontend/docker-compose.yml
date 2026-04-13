@@ -85,6 +85,7 @@ services:
     environment:
       # Used by Next.js route handlers (server-side) to call the backend from inside Docker.
       NEXT_PUBLIC_API_URL: http://backend:8080/api
+      NEXT_PUBLIC_BACKEND_URL: http://localhost:8080
       INTERNAL_NOTIFY_TOKEN: "change-me-in-env"
       DB_CLIENT: postgres
       DB_HOST: postgres
