@@ -63,12 +63,14 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_USERNAME: guest
       RABBITMQ_PASSWORD: guest
-      INTERNAL_NOTIFY_TOKEN: "change-me-in-env"
+      INTERNAL_NOTIFY_TOKEN: "PuKPK7EwWVfNo7Yowb1J4gA6bDnu3DUts34DvlYC1Ec="
       VNPAY_HASH_SECRET: "BVJUNHLRJVJ5U6MQSL1WHVCHN1V2J1D4"
       SPRING_MAIL_HOST: smtp.gmail.com
       SPRING_MAIL_PORT: 587
       SPRING_MAIL_USERNAME: "nguyennguyenhuy357@gmail.com"
-      SPRING_MAIL_PASSWORD: "eulalawrence"
+      SPRING_MAIL_PASSWORD: "jpqc sddr qkpa orad"
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID: "928539770730-s8pslq9dhq1u5phejab9ncv896b42sd8.apps.googleusercontent.com"
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET: "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"
     depends_on:
       postgres:
         condition: service_healthy
@@ -84,9 +86,10 @@ services:
       - "3000:3000"
     environment:
       # Used by Next.js route handlers (server-side) to call the backend from inside Docker.
+      BACKEND_API_BASE_URL: http://backend:8080/api
       NEXT_PUBLIC_API_URL: http://backend:8080/api
       NEXT_PUBLIC_BACKEND_URL: http://localhost:8080
-      INTERNAL_NOTIFY_TOKEN: "change-me-in-env"
+      INTERNAL_NOTIFY_TOKEN: "PuKPK7EwWVfNo7Yowb1J4gA6bDnu3DUts34DvlYC1Ec="
       DB_CLIENT: postgres
       DB_HOST: postgres
       DB_PORT: 5432

@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 function backendOrigin(): string {
-  return backendApiBaseUrl().replace(/\/api\/?$/, "").replace(/\/+$/, "");
+  const publicBackend = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+  return publicBackend.replace(/\/+$/, "");
 }
 
 export async function GET(request: Request) {
