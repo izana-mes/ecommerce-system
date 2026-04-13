@@ -68,6 +68,7 @@ export default function ShoppingCart() {
   const cartItems = Object.values(cartItemsById);
   const totalPrice = useAppSelector(selectCartTotalAmount);
 
+  const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<CartTab>("cartTab1");
   const [payments, setPayments] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState("Direct Bank Transfer");
@@ -93,6 +94,10 @@ export default function ShoppingCart() {
   const requestedStep = (searchParams.get("step") || "").trim().toLowerCase();
   const requestedBuyNow = (searchParams.get("buyNow") || "").trim();
   const requestedPayment = (searchParams.get("payment") || "").trim().toLowerCase();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     dispatch(fetchCartAsync());
@@ -400,7 +405,7 @@ export default function ShoppingCart() {
               handleTabClick("cartTab2");
               setPayments(false);
             }}
-            disabled={cartItems.length === 0}
+            disabled={mounted && cartItems.length === 0}
           >
             <div className="shoppingCartTabsNumber">
               <h3>02</h3>
@@ -717,7 +722,7 @@ export default function ShoppingCart() {
                     handleTabClick("cartTab2");
                     scrollToTop();
                   }}
-                  disabled={cartItems.length === 0}
+                  disabled={mounted && cartItems.length === 0}
                 >
                   Proceed to Checkout
                 </button>

@@ -35,7 +35,20 @@ spring:
           starttls:
             enable: true
 
-  # Google OAuth: use profile "oauth" and set SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_* (see application-oauth.yml).
+  # Google OAuth: credentials are read from SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID / _SECRET.
+  # When these are blank the OAuth route simply won't work, but the app still starts.
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID:}
+            client-secret: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET:}
+            scope:
+              - openid
+              - profile
+              - email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
 
   data:
     redis:
