@@ -9,6 +9,7 @@ import "./Navbar.css";
 import { getUser, refreshCurrentUserFromServer, subscribeToAuthChanges } from "@/lib/auth";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TranslationKey } from "@/lib/i18n";
+import confetti from "canvas-confetti";
 
 import { RiMenu2Line } from "react-icons/ri";
 import { FiSearch } from "react-icons/fi";
@@ -255,6 +256,12 @@ export default function Navbar() {
 
       const targetProduct = exactMatch ?? products[0];
       if (targetProduct?.productID) {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          zIndex: 9999
+        });
         router.push(
           `/shop?q=${encodeURIComponent(value)}&focus=${encodeURIComponent(targetProduct.productID)}`,
           { scroll: true }
