@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -49,7 +50,8 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthenticationResponse register(RegisterRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+        String normalizedEmail = normalizeEmail(request.getEmail());
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
             throw new BusinessException("Email already pending or in use", HttpStatus.CONFLICT);
         }
 
@@ -59,7 +61,7 @@ public class AuthServiceImpl implements AuthService {
         User user = User.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
-                .email(request.getEmail())
+                .email(normalizedEmail)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .roles(List.of(userRole))
                 .isActive(true)
@@ -87,9 +89,9 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthenticationResponse authenticate(LoginRequest request) {
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+                new UsernamePasswordAuthenticationToken(normalizeEmail(request.getEmail()), request.getPassword()));
 
-        User user = userRepository.findByEmail(request.getEmail())
+        User user = userRepository.findByEmailIgnoreCase(normalizeEmail(request.getEmail()))
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
 
         if (!user.isEmailVerified()) {
@@ -141,8 +143,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void resendVerificationEmail(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BusinessException("User not found", HttpStatus.NOT_FOUND));
+        User user = findUserByEmailOrThrow(email);
 
         if (user.isEmailVerified()) {
             throw new BusinessException("Email already verified", HttpStatus.BAD_REQUEST);
@@ -160,14 +161,14 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void verifyOtp(VerifyOtpRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BusinessException("User not found", HttpStatus.NOT_FOUND));
+        String normalizedEmail = normalizeEmail(request.getEmail());
+        User user = findUserByEmailOrThrow(normalizedEmail);
 
         if (user.isEmailVerified()) {
             throw new BusinessException("Email already verified", HttpStatus.BAD_REQUEST);
         }
 
-        otpService.validateAndConsumeOtp(request.getEmail(), request.getOtp());
+        otpService.validateAndConsumeOtp(normalizedEmail, request.getOtp());
 
         user.setEmailVerified(true);
         userRepository.save(user);
@@ -176,8 +177,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void resendOtp(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BusinessException("User not found", HttpStatus.NOT_FOUND));
+        User user = findUserByEmailOrThrow(email);
 
         if (user.isEmailVerified()) {
             throw new BusinessException("Email already verified", HttpStatus.BAD_REQUEST);
@@ -195,8 +195,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void requestPasswordReset(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BusinessException("User not found", HttpStatus.NOT_FOUND));
+        User user = findUserByEmailOrThrow(email);
 
         String token = tokenService.createPasswordResetToken(user);
         emailMessagePublisher.publish(EmailMessage.builder()
@@ -223,8 +222,16 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void logout(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BusinessException("User not found", HttpStatus.NOT_FOUND));
+        User user = findUserByEmailOrThrow(email);
         tokenService.revokeRefreshToken(user);
+    }
+
+    private User findUserByEmailOrThrow(String email) {
+        return userRepository.findByEmailIgnoreCase(normalizeEmail(email))
+                .orElseThrow(() -> new BusinessException("User not found", HttpStatus.NOT_FOUND));
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase(Locale.ROOT);
     }
 }

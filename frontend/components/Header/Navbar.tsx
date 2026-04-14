@@ -12,6 +12,7 @@ import { TranslationKey } from "@/lib/i18n";
 
 import { RiMenu2Line } from "react-icons/ri";
 import { FiSearch } from "react-icons/fi";
+import { FiCheckCircle } from "react-icons/fi";
 import { FaRegUser } from "react-icons/fa6";
 import { RiShoppingBagLine } from "react-icons/ri";
 import { MdOutlineClose } from "react-icons/md";
@@ -41,6 +42,8 @@ export default function Navbar() {
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [showSearchPopup, setShowSearchPopup] = useState(false);
+  const [searchPopupText, setSearchPopupText] = useState("");
   const [isNavHidden, setIsNavHidden] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const lastScrollY = useRef(0);
@@ -167,6 +170,10 @@ export default function Navbar() {
 
     router.push(query ? `/shop?q=${encodeURIComponent(query)}` : "/shop");
     setShowHistory(false);
+    if (query) {
+      setSearchPopupText(query);
+      setShowSearchPopup(true);
+    }
     scrollToTop();
   };
 
@@ -229,6 +236,8 @@ export default function Navbar() {
   const handleSelectHistory = async (value: string) => {
     setSearchTerm(value);
     setShowHistory(false);
+    setSearchPopupText(value);
+    setShowSearchPopup(true);
     try {
       const response = await fetch(`/api/products?q=${encodeURIComponent(value)}`, {
         method: "GET",
@@ -257,6 +266,16 @@ export default function Navbar() {
       router.push(`/shop?q=${encodeURIComponent(value)}`, { scroll: true });
     }
   };
+
+  useEffect(() => {
+    if (!showSearchPopup) {
+      return;
+    }
+    const timeoutId = window.setTimeout(() => {
+      setShowSearchPopup(false);
+    }, 1800);
+    return () => window.clearTimeout(timeoutId);
+  }, [showSearchPopup]);
 
   return (
     <>
@@ -385,6 +404,14 @@ export default function Navbar() {
       </nav>
 
       {menuMobileOpen ? <button className="mobileBackdrop" onClick={closeMobileMenu} aria-label="Close menu" /> : null}
+      {showSearchPopup ? (
+        <div className="searchSuccessPopup" role="status" aria-live="polite">
+          <FiCheckCircle size={18} />
+          <span>
+            Search successful{searchPopupText ? `: ${searchPopupText}` : ""}
+          </span>
+        </div>
+      ) : null}
     </>
   );
 }

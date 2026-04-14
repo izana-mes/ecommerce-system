@@ -47,6 +47,18 @@ body {
   overflow-x: clip;
 }
 
+.pageTransition {
+  will-change: opacity, transform, filter;
+}
+
+.pageTransitionEnter {
+  animation: pageIn 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.keyframePulseSoft {
+  animation: pulseSoft 1.2s ease-in-out infinite;
+}
+
 .homeTrustStrip {
   margin: 28px 0;
   padding: 0 16px;
@@ -93,13 +105,44 @@ body {
   filter: blur(0);
 }
 
+@keyframes pageIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.995);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes pulseSoft {
+  0% {
+    transform: scale(1);
+    opacity: 0.84;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.84;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reveal-scroll,
-  .reveal-visible {
+  .reveal-visible,
+  .pageTransitionEnter,
+  .keyframePulseSoft {
     opacity: 1 !important;
     transform: none !important;
     filter: none !important;
     transition: none !important;
+    animation: none !important;
   }
 }
 

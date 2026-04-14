@@ -18,6 +18,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.stream.Collectors;
 
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
  * and return a consistent ApiResponse format.
  */
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
         @ExceptionHandler(BusinessException.class)
@@ -111,9 +113,9 @@ public class GlobalExceptionHandler {
 
         @ExceptionHandler(Exception.class)
         public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception e) {
-                e.printStackTrace(); // In production, use a logger
+                log.error("Unhandled exception", e);
                 return ResponseEntity
                                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body(ApiResponse.error("An internal error occurred: " + e.getMessage()));
+                                .body(ApiResponse.error("An internal error occurred. Please try again later."));
         }
 }

@@ -279,6 +279,23 @@
   display: none;
 }
 
+.searchSuccessPopup {
+  position: fixed;
+  right: 20px;
+  bottom: 24px;
+  z-index: 80;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.16) 0%, rgba(16, 185, 129, 0.1) 100%), var(--surface-1);
+  color: var(--foreground);
+  box-shadow: 0 10px 26px rgba(16, 24, 40, 0.2);
+  animation: searchPopupInOut 1.8s ease both;
+}
+
 @keyframes navSlideDown {
   0% {
     opacity: 0;
@@ -312,6 +329,25 @@
   }
 }
 
+@keyframes searchPopupInOut {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.96);
+  }
+  18% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  82% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.98);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .navBar,
   .linkContainer ul li,
@@ -320,6 +356,10 @@
     animation: none !important;
     transform: none !important;
     opacity: 1 !important;
+  }
+
+  .searchSuccessPopup {
+    animation: none !important;
   }
 }
 
