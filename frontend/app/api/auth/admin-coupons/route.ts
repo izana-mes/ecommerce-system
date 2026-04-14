@@ -1,0 +1,246 @@
+import { NextResponse } from "next/server";
+import { getConnection } from "@/lib/db";
+
+type DiscountType = "percentage" | "fixed";
+
+function toPositiveInt(value: string | null, fallback: number): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return Math.floor(parsed);
+}
+
+function normalizeDiscountType(value: unknown): DiscountType | null {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "percentage" || normalized === "fixed") {
+    return normalized;
+  }
+  return null;
+}
+
+function isMissingTableError(message: string): boolean {
+  const lower = message.toLowerCase();
+  return lower.includes("coupons") && (
+    lower.includes("doesn't exist") ||
+    lower.includes("does not exist") ||
+    lower.includes("relation") ||
+    lower.includes("no such table")
+  );
+}
+
+export async function GET(request: Request) {
+  const conn = await getConnection();
+  try {
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(0, toPositiveInt(searchParams.get("page"), 1) - 1);
+    const size = Math.min(100, toPositiveInt(searchParams.get("size"), 15));
+    const q = String(searchParams.get("q") || "").trim();
+    const whereSql = q ? "WHERE LOWER(code) LIKE LOWER(?)" : "";
+    const whereParams = q ? [`%${q}%`] : [];
+
+    const [countRows] = await conn.execute<Array<{ total: number }>>(
+      `SELECT COUNT(*) AS total FROM coupons ${whereSql}`,
+      whereParams
+    );
+    const totalElements = Number(countRows?.[0]?.total || 0);
+    const totalPages = Math.max(1, Math.ceil(totalElements / size));
+
+    const [rows] = await conn.execute<
+      Array<{
+        id: number;
+        code: string;
+        title: string;
+        description: string | null;
+        discount_type: DiscountType;
+        discount_value: number;
+        min_order_amount: number;
+        max_discount_amount: number | null;
+        usage_limit: number | null;
+        usage_count: number;
+        starts_at: string | null;
+        expires_at: string | null;
+        is_active: number;
+        created_at: string;
+        updated_at: string;
+      }>
+    >(
+      `SELECT id, code, title, description, discount_type, discount_value, min_order_amount, max_discount_amount,
+              usage_limit, usage_count, starts_at, expires_at, is_active, created_at, updated_at
+       FROM coupons
+       ${whereSql}
+       ORDER BY created_at DESC
+       LIMIT ? OFFSET ?`,
+      [...whereParams, size, page * size]
+    );
+
+    return NextResponse.json({
+      content: rows.map((row) => ({
+        ...row,
+        is_active: Boolean(row.is_active),
+      })),
+      totalElements,
+      totalPages,
+      number: page,
+      size,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (isMissingTableError(message)) {
+      return NextResponse.json({
+        content: [],
+        totalElements: 0,
+        totalPages: 1,
+        number: 0,
+        size: 15,
+        unavailable: true,
+        details: "coupons table is missing",
+      });
+    }
+    return NextResponse.json({ error: "Failed to fetch coupons", details: message }, { status: 500 });
+  } finally {
+    await conn.end();
+  }
+}
+
+export async function POST(request: Request) {
+  const conn = await getConnection();
+  try {
+    const body = await request.json();
+    const code = String(body?.code || "").trim().toUpperCase();
+    const title = String(body?.title || "").trim();
+    const description = String(body?.description || "").trim() || null;
+    const discountType = normalizeDiscountType(body?.discount_type);
+    const discountValue = Number(body?.discount_value ?? 0);
+    const minOrderAmount = Number(body?.min_order_amount ?? 0);
+    const maxDiscountAmount = body?.max_discount_amount == null ? null : Number(body?.max_discount_amount);
+    const usageLimit = body?.usage_limit == null ? null : Number(body?.usage_limit);
+    const startsAt = String(body?.starts_at || "").trim() || null;
+    const expiresAt = String(body?.expires_at || "").trim() || null;
+    const isActive = body?.is_active === false ? 0 : 1;
+
+    if (!code || !title || !discountType) {
+      return NextResponse.json(
+        { error: "code, title and discount_type are required" },
+        { status: 400 }
+      );
+    }
+    if (!Number.isFinite(discountValue) || discountValue <= 0) {
+      return NextResponse.json({ error: "discount_value must be > 0" }, { status: 400 });
+    }
+    if (discountType === "percentage" && discountValue > 100) {
+      return NextResponse.json({ error: "percentage discount cannot exceed 100" }, { status: 400 });
+    }
+
+    await conn.execute(
+      `INSERT INTO coupons (
+        code, title, description, discount_type, discount_value, min_order_amount, max_discount_amount,
+        usage_limit, usage_count, starts_at, expires_at, is_active
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+      [
+        code,
+        title,
+        description,
+        discountType,
+        discountValue,
+        Number.isFinite(minOrderAmount) && minOrderAmount > 0 ? minOrderAmount : 0,
+        maxDiscountAmount != null && Number.isFinite(maxDiscountAmount) && maxDiscountAmount > 0
+          ? maxDiscountAmount
+          : null,
+        usageLimit != null && Number.isFinite(usageLimit) && usageLimit > 0 ? usageLimit : null,
+        startsAt,
+        expiresAt,
+        isActive,
+      ]
+    );
+
+    return NextResponse.json({ success: true, message: "Coupon created successfully" }, { status: 201 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: "Failed to create coupon", details: message }, { status: 500 });
+  } finally {
+    await conn.end();
+  }
+}
+
+export async function PATCH(request: Request) {
+  const conn = await getConnection();
+  try {
+    const body = await request.json();
+    const id = Number(body?.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+    }
+
+    const updates: string[] = [];
+    const params: Array<string | number | null> = [];
+
+    if (body.code != null) {
+      updates.push("code = ?");
+      params.push(String(body.code).trim().toUpperCase());
+    }
+    if (body.title != null) {
+      updates.push("title = ?");
+      params.push(String(body.title).trim());
+    }
+    if (body.description != null) {
+      updates.push("description = ?");
+      const description = String(body.description).trim();
+      params.push(description || null);
+    }
+    if (body.discount_type != null) {
+      const discountType = normalizeDiscountType(body.discount_type);
+      if (!discountType) {
+        return NextResponse.json({ error: "Invalid discount_type" }, { status: 400 });
+      }
+      updates.push("discount_type = ?");
+      params.push(discountType);
+    }
+    if (body.discount_value != null) {
+      const value = Number(body.discount_value);
+      if (!Number.isFinite(value) || value <= 0) {
+        return NextResponse.json({ error: "discount_value must be > 0" }, { status: 400 });
+      }
+      updates.push("discount_value = ?");
+      params.push(value);
+    }
+    if (body.min_order_amount != null) {
+      updates.push("min_order_amount = ?");
+      params.push(Math.max(0, Number(body.min_order_amount) || 0));
+    }
+    if (body.max_discount_amount !== undefined) {
+      const value = body.max_discount_amount;
+      updates.push("max_discount_amount = ?");
+      params.push(value == null ? null : Math.max(0, Number(value) || 0));
+    }
+    if (body.usage_limit !== undefined) {
+      const value = body.usage_limit;
+      updates.push("usage_limit = ?");
+      params.push(value == null ? null : Math.max(0, Number(value) || 0));
+    }
+    if (body.starts_at !== undefined) {
+      updates.push("starts_at = ?");
+      params.push(body.starts_at ? String(body.starts_at).trim() : null);
+    }
+    if (body.expires_at !== undefined) {
+      updates.push("expires_at = ?");
+      params.push(body.expires_at ? String(body.expires_at).trim() : null);
+    }
+    if (body.is_active !== undefined) {
+      updates.push("is_active = ?");
+      params.push(body.is_active ? 1 : 0);
+    }
+
+    if (updates.length === 0) {
+      return NextResponse.json({ error: "No valid update fields provided" }, { status: 400 });
+    }
+
+    updates.push("updated_at = CURRENT_TIMESTAMP");
+    await conn.execute(`UPDATE coupons SET ${updates.join(", ")} WHERE id = ?`, [...params, id]);
+
+    return NextResponse.json({ success: true, message: "Coupon updated successfully" });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: "Failed to update coupon", details: message }, { status: 500 });
+  } finally {
+    await conn.end();
+  }
+}

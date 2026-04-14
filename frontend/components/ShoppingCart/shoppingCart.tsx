@@ -54,6 +54,14 @@ type CheckoutForm = {
 };
 
 type CheckoutErrorFields = Partial<Record<keyof CheckoutForm, string>>;
+type AppliedCoupon = {
+  couponId: number;
+  code: string;
+  title: string;
+  discountType: "percentage" | "fixed";
+  discountValue: number;
+  discountAmount: number;
+};
 
 function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -91,6 +99,9 @@ export default function ShoppingCart() {
     notes: "",
   });
   const [checkoutErrors, setCheckoutErrors] = useState<CheckoutErrorFields>({});
+  const [couponCode, setCouponCode] = useState("");
+  const [couponApplying, setCouponApplying] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
   const requestedStep = (searchParams.get("step") || "").trim().toLowerCase();
   const requestedBuyNow = (searchParams.get("buyNow") || "").trim();
   const requestedPayment = (searchParams.get("payment") || "").trim().toLowerCase();
@@ -146,6 +157,15 @@ export default function ShoppingCart() {
     () => checkoutItems.reduce((sum, item) => sum + item.productPrice * (item.quantity ?? 1), 0),
     [checkoutItems]
   );
+  const shippingFee = checkoutSubtotal === 0 ? 0 : 5;
+  const vatAmount = checkoutSubtotal === 0 ? 0 : 11;
+  const discountAmount = Math.min(checkoutSubtotal, Number(appliedCoupon?.discountAmount || 0));
+  const checkoutGrandTotal = Math.max(0, checkoutSubtotal + shippingFee + vatAmount - discountAmount);
+
+  useEffect(() => {
+    if (!appliedCoupon) return;
+    setAppliedCoupon(null);
+  }, [checkoutSubtotal]);
 
   const handleCheckoutFieldChange = (field: keyof CheckoutForm, value: string | boolean) => {
     setCheckoutForm((prev) => ({
@@ -311,6 +331,8 @@ export default function ShoppingCart() {
           currency: "USD",
           shippingFee: checkoutSubtotal === 0 ? 0 : 5,
           vat: checkoutSubtotal === 0 ? 0 : 11,
+          couponCode: appliedCoupon?.code,
+          couponDiscount: discountAmount,
           items: checkoutItems.map((item) => ({
             productID: item.productID,
             productName: item.productName,
@@ -376,6 +398,44 @@ export default function ShoppingCart() {
       toast.error(message);
     } finally {
       setIsPlacingOrder(false);
+    }
+  };
+
+  const handleApplyCoupon = async () => {
+    const normalizedCode = couponCode.trim().toUpperCase();
+    if (!normalizedCode) {
+      toast.error("Please enter a coupon code");
+      return;
+    }
+    if (checkoutSubtotal <= 0) {
+      toast.error("Add items to cart before applying coupon");
+      return;
+    }
+
+    setCouponApplying(true);
+    try {
+      const response = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: normalizedCode,
+          subtotal: checkoutSubtotal,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || "Coupon is not valid");
+      }
+      const coupon = data?.data as AppliedCoupon;
+      setAppliedCoupon(coupon);
+      setCouponCode(coupon.code);
+      toast.success(`Coupon applied: -$${Number(coupon.discountAmount || 0).toFixed(2)}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Coupon is not valid";
+      setAppliedCoupon(null);
+      toast.error(message);
+    } finally {
+      setCouponApplying(false);
     }
   };
 
@@ -554,13 +614,19 @@ export default function ShoppingCart() {
                         {cartItems.length > 0 && (
                           <div className="shopCartFooterContainer">
                             <form>
-                              <input type="text" placeholder="Coupon Code" />
+                              <input
+                                type="text"
+                                placeholder="Coupon Code"
+                                value={couponCode}
+                                onChange={(event) => setCouponCode(event.target.value)}
+                              />
                               <button
                                 onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                                   e.preventDefault();
+                                  void handleApplyCoupon();
                                 }}
                               >
-                                Apply Coupon
+                                {couponApplying ? "Applying..." : "Apply Coupon"}
                               </button>
                             </form>
                             <button
@@ -657,13 +723,19 @@ export default function ShoppingCart() {
                       <div className="shopCartFooter">
                         <div className="shopCartFooterContainer">
                           <form>
-                            <input type="text" placeholder="Coupon Code" />
+                            <input
+                              type="text"
+                              placeholder="Coupon Code"
+                              value={couponCode}
+                              onChange={(event) => setCouponCode(event.target.value)}
+                            />
                             <button
                               onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                                 e.preventDefault();
+                                void handleApplyCoupon();
                               }}
                             >
-                              Apply Coupon
+                              {couponApplying ? "Applying..." : "Apply Coupon"}
                             </button>
                           </form>
                           <button
@@ -713,8 +785,14 @@ export default function ShoppingCart() {
                       <td>${(totalPrice === 0 ? 0 : 11).toFixed(2)}</td>
                     </tr>
                     <tr>
+                      <th>Discount</th>
+                      <td style={{ color: discountAmount > 0 ? "#188038" : undefined }}>
+                        -${discountAmount.toFixed(2)}
+                      </td>
+                    </tr>
+                    <tr>
                       <th>Total</th>
-                      <td>${(totalPrice === 0 ? 0 : totalPrice + 16).toFixed(2)}</td>
+                      <td>${Math.max(0, totalPrice + (totalPrice === 0 ? 0 : 16) - discountAmount).toFixed(2)}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -893,15 +971,21 @@ export default function ShoppingCart() {
                         </tr>
                         <tr>
                           <th>Shipping</th>
-                          <td>${(checkoutSubtotal === 0 ? 0 : 5).toFixed(2)}</td>
+                          <td>${shippingFee.toFixed(2)}</td>
                         </tr>
                         <tr>
                           <th>VAT</th>
-                          <td>${(checkoutSubtotal === 0 ? 0 : 11).toFixed(2)}</td>
+                          <td>${vatAmount.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                          <th>Discount</th>
+                          <td style={{ color: discountAmount > 0 ? "#188038" : undefined }}>
+                            -${discountAmount.toFixed(2)}
+                          </td>
                         </tr>
                         <tr>
                           <th>Total</th>
-                          <td>${(checkoutSubtotal === 0 ? 0 : checkoutSubtotal + 16).toFixed(2)}</td>
+                          <td>${checkoutGrandTotal.toFixed(2)}</td>
                         </tr>
                       </tbody>
                     </table>

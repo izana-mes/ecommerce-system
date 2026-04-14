@@ -33,6 +33,8 @@ type CreateOrderRequest = {
   currency?: string;
   shippingFee?: number;
   vat?: number;
+  couponCode?: string;
+  couponDiscount?: number;
   items: OrderItemInput[];
 };
 
@@ -152,6 +154,8 @@ export async function POST(request: NextRequest) {
     const shippingCountry = trimToNull(body.shippingCountry);
     const notes = trimToNull(body.notes);
     const paymentMethod = String(body.paymentMethod || "").trim();
+    const couponCode = String(body.couponCode || "").trim().toUpperCase();
+    const couponDiscount = Number(body.couponDiscount ?? 0);
 
     if (!effectiveEmail || !paymentMethod || !Array.isArray(body?.items)) {
       return NextResponse.json(
@@ -217,7 +221,10 @@ export async function POST(request: NextRequest) {
     );
     const shippingFee = toMoney(body.shippingFee ?? (subtotal > 0 ? 5 : 0));
     const vat = toMoney(body.vat ?? (subtotal > 0 ? 11 : 0));
-    const totalAmount = toMoney(subtotal + shippingFee + vat);
+    const safeCouponDiscount = Number.isFinite(couponDiscount)
+      ? Math.max(0, Math.min(couponDiscount, subtotal))
+      : 0;
+    const totalAmount = toMoney(subtotal + shippingFee + vat - safeCouponDiscount);
     const currency = (body.currency || "USD").toUpperCase().slice(0, 3);
     const orderNumber = generateOrderNumber();
 
@@ -286,6 +293,15 @@ export async function POST(request: NextRequest) {
       ]
     );
 
+    if (couponCode && safeCouponDiscount > 0) {
+      await conn.execute(
+        `UPDATE coupons
+         SET usage_count = usage_count + 1, updated_at = CURRENT_TIMESTAMP
+         WHERE code = ?`,
+        [couponCode]
+      );
+    }
+
     await conn.commit();
 
     return NextResponse.json(
@@ -297,6 +313,7 @@ export async function POST(request: NextRequest) {
           subtotal,
           shippingFee,
           vat,
+          discount: safeCouponDiscount,
           totalAmount,
           currency,
           paymentStatus: "pending",
