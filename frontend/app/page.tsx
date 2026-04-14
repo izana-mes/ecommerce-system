@@ -8,9 +8,11 @@ import Instagram from "@/components/Home/Instagram/Instagram";
 
 export default function HomePage() {
   return (
-    <>
-      <Banner />
-      <section className="homeTrustStrip">
+    <div className="animate-slide-up">
+      <div className="animate-float" style={{ animationDuration: '4s' }}>
+        <Banner />
+      </div>
+      <section className="homeTrustStrip animate-bounce-soft">
         <article>
           <h3>Fast Dispatch</h3>
           <p>Orders placed before 2PM ship the same day.</p>
@@ -24,12 +26,16 @@ export default function HomePage() {
           <p>Earn points on every purchase and unlock perks.</p>
         </article>
       </section>
-      <CollectionBox />
+      <div className="animate-slide-up">
+        <CollectionBox />
+      </div>
       <DealTimer />
-      <HeroSection />
+      <div className="animate-slide-up">
+        <HeroSection />
+      </div>
       <Trendy />
       <LimitedEdition />
       <Instagram />
-    </>
+    </div>
   );
 }

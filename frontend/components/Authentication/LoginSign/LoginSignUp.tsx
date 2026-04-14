@@ -9,6 +9,7 @@ import { useAppDispatch } from "@/store";
 import { clearCart, fetchCartAsync } from "@/store/cartSlice";
 import { clearWishList, fetchWishlistAsync } from "@/store/wishListSlice";
 import { logout as clearAuth, setAuth } from "@/lib/auth";
+import confetti from "canvas-confetti";
 
 const LoginSignUp = () => {
   const dispatch = useAppDispatch();
@@ -152,6 +153,14 @@ const LoginSignUp = () => {
           primary: "#fff",
           secondary: "#07bc0c",
         },
+      });
+
+      // Confetti effect for successful login
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 },
+        zIndex: 9999,
       });
 
       // Redirect to home page

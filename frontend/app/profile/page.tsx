@@ -16,6 +16,7 @@ import { useAppDispatch } from "@/store";
 import { clearCart } from "@/store/cartSlice";
 import { clearWishList } from "@/store/wishListSlice";
 import toast from "react-hot-toast";
+import confetti from "canvas-confetti";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -52,6 +53,14 @@ export default function ProfilePage() {
     toast.success("Logged out successfully", {
       duration: 2000,
       style: { backgroundColor: "#07bc0c", color: "#fff" },
+    });
+
+    confetti({
+      particleCount: 100,
+      spread: 60,
+      origin: { y: 0.8 },
+      zIndex: 9999,
+      colors: ['#bb0000', '#ffffff'],
     });
 
     router.replace("/login");

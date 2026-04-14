@@ -108,14 +108,58 @@ body {
 @keyframes pageIn {
   0% {
     opacity: 0;
-    transform: translate3d(0, 14px, 0) scale(0.995);
-    filter: blur(2px);
+    transform: translate3d(0, 20px, 0) scale(0.98);
+    filter: blur(4px);
   }
   100% {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
     filter: blur(0);
   }
+}
+
+@keyframes floatAnimation {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes slideUpFade {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounceSoftAnimation {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-float {
+  animation: floatAnimation 3s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slideUpFade 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-bounce-soft {
+  animation: bounceSoftAnimation 2s ease-in-out infinite;
 }
 
 @keyframes pulseSoft {
