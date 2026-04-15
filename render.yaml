@@ -51,13 +51,9 @@ services:
         sync: false
       - key: SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET
         sync: false
-      - key: RABBITMQ_HOST
+      - key: SPRING_RABBITMQ_ENABLED
         sync: false
-      - key: RABBITMQ_PORT
-        value: "5672"
-      - key: RABBITMQ_USERNAME
-        sync: false
-      - key: RABBITMQ_PASSWORD
+      - key: SPRING_RABBITMQ_URI
         sync: false
       - key: REDIS_HOST
         sync: false
