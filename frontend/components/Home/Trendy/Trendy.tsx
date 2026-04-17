@@ -11,7 +11,8 @@ import {
   addToWishlistAsync,
   wishListProduct,
 } from "@/store/wishListSlice";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { DataStore } from "@/data/StoreData";
 import { useProducts } from "@/hooks/useProducts";
 import { isAuthenticated } from "@/lib/auth";
@@ -33,6 +34,7 @@ export default function Trendy() {
   const [authAction, setAuthAction] = useState<"cart" | "wishlist">("cart");
   const [selectedProduct, setSelectedProduct] = useState<DataStore | null>(null);
   const [buyNowProductId, setBuyNowProductId] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
   const cartItems = useAppSelector((state: RootState) => state.cart.itemsById);
   const handleCartClick = (product: DataStore) => {
@@ -172,6 +174,10 @@ export default function Trendy() {
   const closeProductModal = () => {
     setSelectedProduct(null);
   };
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleBuyNow = async (product: DataStore) => {
     if (!isAuthenticated()) {
@@ -636,7 +642,7 @@ export default function Trendy() {
           </Link>
         </div>
       </div>
-      {selectedProduct && (
+      {isClient && selectedProduct && createPortal(
         <div className="trendyProductModalOverlay" onClick={closeProductModal}>
           <div
             className="trendyProductModal"
@@ -699,7 +705,8 @@ export default function Trendy() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       <AuthRequiredModal
         open={showAuthRequiredModal}

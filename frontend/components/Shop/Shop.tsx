@@ -19,6 +19,7 @@ import {
 import { getToken, isAuthenticated } from "@/lib/auth";
 import { DataStore } from "@/data/StoreData";
 import { useProducts } from "@/hooks/useProducts";
+import { createPortal } from "react-dom";
 
 import Filter from "./Filters/Filter";
 import AuthRequiredModal from "@/components/Common/AuthRequiredModal";
@@ -122,9 +123,14 @@ export default function Shop() {
   const [reviewEditCommentDraft, setReviewEditCommentDraft] = useState("");
   const [showAuthRequiredModal, setShowAuthRequiredModal] = useState(false);
   const [buyNowProductId, setBuyNowProductId] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
   const cartItems = useAppSelector((state: RootState) => state.cart.itemsById);
   const wishListItems = useAppSelector((state) => state.wishList.itemsById);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const resolveAvailableStock = (product: DataStore) =>
     product.active === false ? 0 : Number(product.stockQuantity ?? 25);
@@ -913,7 +919,7 @@ export default function Shop() {
         </div>
       </div>
 
-      {selectedProduct && (
+      {isClient && selectedProduct && createPortal(
         <div className="sdProductModalOverlay" onClick={closeProductModal}>
           <div
             className="sdProductModal"
@@ -1114,7 +1120,8 @@ export default function Shop() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       <AuthRequiredModal
         open={showAuthRequiredModal}
