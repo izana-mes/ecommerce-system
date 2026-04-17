@@ -12,6 +12,8 @@ type AdminUser = {
   firstName?: string;
   lastName?: string;
   active: boolean;
+  role?: string;
+  roles?: string[];
 };
 
 type PagedUsers = {
@@ -338,6 +340,12 @@ function formatCurrency(value: number, currency = "USD"): string {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function resolveAdminUserRole(user: { role?: string; roles?: string[] }): "user" | "admin" {
+  if ((user.role || "").toLowerCase() === "admin") return "admin";
+  if (Array.isArray(user.roles) && user.roles.some((role) => role.toUpperCase() === "ROLE_ADMIN")) return "admin";
+  return "user";
 }
 
 function buildRatingAnalytics(reviews: AdminReview[]): RatingAnalyticsSummary {
@@ -673,7 +681,13 @@ export default function AdminPage() {
         }
 
         const payload = (data?.data ?? data) as PagedUsers;
-        setUsers(payload?.content ?? []);
+        const normalizedUsers = Array.isArray(payload?.content)
+          ? payload.content.map((user) => ({
+              ...user,
+              role: resolveAdminUserRole(user),
+            }))
+          : [];
+        setUsers(normalizedUsers);
         setUserPage(payload?.number ?? targetPage);
         setUserTotalPages(Math.max(1, payload?.totalPages ?? 1));
         setLastUpdatedAt(new Date().toISOString());
@@ -1213,6 +1227,59 @@ export default function AdminPage() {
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update user", {
+        duration: 2500,
+        style: { backgroundColor: "#fb0404", color: "#fff" },
+      });
+    } finally {
+      setUserProcessingId(null);
+    }
+  };
+
+  const handleUpdateUserRole = async (user: AdminUser, nextRole: "user" | "admin") => {
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    const currentRole = resolveAdminUserRole(user);
+    if (currentRole === nextRole) {
+      return;
+    }
+
+    setUserProcessingId(user.id);
+    try {
+      const response = await fetch("/api/auth/admin", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userId: user.id, role: nextRole }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || "Failed to update user role");
+      }
+
+      setUsers((prev) =>
+        prev.map((item) =>
+          item.id === user.id
+            ? {
+                ...item,
+                role: nextRole,
+                roles: nextRole === "admin" ? ["ROLE_USER", "ROLE_ADMIN"] : ["ROLE_USER"],
+              }
+            : item
+        )
+      );
+      await fetchDashboard();
+      toast.success(`User role updated to ${nextRole}`, {
+        duration: 2000,
+        style: { backgroundColor: "#07bc0c", color: "#fff" },
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update user role", {
         duration: 2500,
         style: { backgroundColor: "#fb0404", color: "#fff" },
       });
@@ -2510,24 +2577,39 @@ export default function AdminPage() {
                       <tr>
                         <th>Email</th>
                         <th>Name</th>
+                        <th>Role</th>
                         <th>Status</th>
-                        <th>Action</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {users.length === 0 ? (
                         <tr>
-                          <td colSpan={4} className="adminEmpty">
+                          <td colSpan={5} className="adminEmpty">
                             No users found.
                           </td>
                         </tr>
                       ) : (
                         users.map((user) => {
                           const isProcessing = userProcessingId === user.id;
+                          const role = resolveAdminUserRole(user);
                           return (
                             <tr key={user.id}>
                               <td>{user.email}</td>
                               <td>{[user.firstName, user.lastName].filter(Boolean).join(" ") || "-"}</td>
+                              <td>
+                                <select
+                                  className="productInput"
+                                  value={role}
+                                  disabled={isProcessing}
+                                  onChange={(event) =>
+                                    void handleUpdateUserRole(user, event.target.value as "user" | "admin")
+                                  }
+                                >
+                                  <option value="user">User</option>
+                                  <option value="admin">Admin</option>
+                                </select>
+                              </td>
                               <td>
                                 <span className={user.active ? "statusActive" : "statusInactive"}>
                                   {user.active ? "Active" : "Inactive"}

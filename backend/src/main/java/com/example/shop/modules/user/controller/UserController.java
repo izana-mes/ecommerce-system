@@ -3,6 +3,7 @@ package com.example.shop.modules.user.controller;
 import com.example.shop.common.audit.AdminAuditLogger;
 import com.example.shop.common.response.ApiResponse;
 import com.example.shop.modules.user.dto.request.ChangePasswordRequest;
+import com.example.shop.modules.user.dto.request.UpdateUserRoleRequest;
 import com.example.shop.modules.user.dto.request.UpdateProfileRequest;
 import com.example.shop.modules.user.dto.response.UserResponse;
 import com.example.shop.modules.user.dto.response.UserSummaryResponse;
@@ -32,6 +33,7 @@ import java.util.UUID;
  * - GET  /api/v1/users/{id}         - Get user by ID (admin)
  * - POST /api/v1/users/{id}/deactivate - Deactivate user (admin)
  * - POST /api/v1/users/{id}/activate   - Activate user (admin)
+ * - PUT  /api/v1/users/{id}/role       - Update user role (admin)
  *
  * All endpoints require authentication.
  * Admin endpoints require ROLE_ADMIN.
@@ -137,6 +139,26 @@ public class UserController {
         userService.activateUser(id);
         adminAuditLogger.log("USER_ACTIVATE", actorEmail(actor), Map.of("targetUserId", id.toString()));
         return ResponseEntity.ok(ApiResponse.success(null, "User activated successfully"));
+    }
+
+    /**
+     * Update user role (admin only).
+     */
+    @PutMapping("/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<UserResponse>> updateUserRole(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody UpdateUserRoleRequest request,
+            @AuthenticationPrincipal UserDetails actor
+    ) {
+        String actorUsername = actorEmail(actor);
+        UserResponse user = userService.updateUserRole(id, request.getRole(), actorUsername);
+        adminAuditLogger.log(
+                "USER_ROLE_UPDATE",
+                actorUsername,
+                Map.of("targetUserId", id.toString(), "role", request.getRole())
+        );
+        return ResponseEntity.ok(ApiResponse.success(user, "User role updated successfully"));
     }
 
     private String actorEmail(UserDetails actor) {

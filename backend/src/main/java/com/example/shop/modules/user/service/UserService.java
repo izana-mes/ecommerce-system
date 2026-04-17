@@ -1,6 +1,8 @@
 package com.example.shop.modules.user.service;
 
 import com.example.shop.common.exception.BusinessException;
+import com.example.shop.modules.role.entity.Role;
+import com.example.shop.modules.role.repository.RoleRepository;
 import com.example.shop.modules.user.dto.request.ChangePasswordRequest;
 import com.example.shop.modules.user.dto.request.UpdateProfileRequest;
 import com.example.shop.modules.user.dto.response.UserResponse;
@@ -15,6 +17,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,6 +40,7 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
     /**
@@ -169,5 +175,62 @@ public class UserService {
                 .orElseThrow(() -> new BusinessException("User not found", HttpStatus.NOT_FOUND));
         user.setActive(true);
         userRepository.save(user);
+    }
+
+    /**
+     * Update user role (admin only).
+     */
+    @Transactional
+    public UserResponse updateUserRole(UUID id, String requestedRole, String actorEmail) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("User not found", HttpStatus.NOT_FOUND));
+
+        String normalizedRole = normalizeRequestedRole(requestedRole);
+
+        if (actorEmail != null
+                && actorEmail.equalsIgnoreCase(user.getEmail())
+                && "ROLE_USER".equals(normalizedRole)) {
+            throw new BusinessException("You cannot remove admin role from your own account", HttpStatus.BAD_REQUEST);
+        }
+
+        Role userRole = findOrCreateSystemRole("ROLE_USER");
+        List<Role> nextRoles = new ArrayList<>();
+        nextRoles.add(userRole);
+
+        if ("ROLE_ADMIN".equals(normalizedRole)) {
+            Role adminRole = findOrCreateSystemRole("ROLE_ADMIN");
+            nextRoles.add(adminRole);
+        }
+
+        user.setRoles(nextRoles);
+        User savedUser = userRepository.save(user);
+        return UserResponse.fromEntity(savedUser);
+    }
+
+    private String normalizeRequestedRole(String requestedRole) {
+        if (requestedRole == null) {
+            throw new BusinessException("Role is required", HttpStatus.BAD_REQUEST);
+        }
+
+        String normalized = requestedRole.trim().toUpperCase(Locale.ROOT);
+        if (normalized.isEmpty()) {
+            throw new BusinessException("Role is required", HttpStatus.BAD_REQUEST);
+        }
+
+        if ("ADMIN".equals(normalized)) {
+            normalized = "ROLE_ADMIN";
+        } else if ("USER".equals(normalized)) {
+            normalized = "ROLE_USER";
+        }
+
+        if (!"ROLE_USER".equals(normalized) && !"ROLE_ADMIN".equals(normalized)) {
+            throw new BusinessException("Unsupported role. Allowed values: user, admin", HttpStatus.BAD_REQUEST);
+        }
+        return normalized;
+    }
+
+    private Role findOrCreateSystemRole(String roleName) {
+        return roleRepository.findByName(roleName)
+                .orElseGet(() -> roleRepository.save(Role.builder().name(roleName).build()));
     }
 }
