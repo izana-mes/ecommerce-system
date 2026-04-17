@@ -114,8 +114,13 @@ public class GlobalExceptionHandler {
         @ExceptionHandler(Exception.class)
         public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception e) {
                 log.error("Unhandled exception", e);
+                String details = e.getMessage();
+                if ((details == null || details.isBlank()) && e.getCause() != null) {
+                        details = e.getCause().getMessage();
+                }
+                String safeDetails = (details == null || details.isBlank()) ? "unknown" : details;
                 return ResponseEntity
                                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body(ApiResponse.error("An internal error occurred. Please try again later."));
+                                .body(ApiResponse.error("An internal error occurred. Details: " + safeDetails));
         }
 }

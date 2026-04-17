@@ -382,18 +382,25 @@ public class OrderServiceImpl implements OrderService {
             return;
         }
 
-        Set<String> orderedProductIds = lines.stream()
-                .map(line -> line.product().getProductID())
-                .collect(Collectors.toSet());
+        try {
+            Set<String> orderedProductIds = lines.stream()
+                    .map(line -> line.product().getProductID())
+                    .collect(Collectors.toSet());
 
-        List<CartItem> cartItems = cartItemRepository.findByUser(user);
-        if (cartItems.isEmpty()) {
-            return;
+            List<CartItem> cartItems = cartItemRepository.findByUser(user);
+            if (cartItems.isEmpty()) {
+                return;
+            }
+
+            cartItems.stream()
+                    .filter(item -> orderedProductIds.contains(item.getProductID()))
+                    .forEach(cartItemRepository::delete);
+        } catch (Exception e) {
+            // Cart cleanup is best-effort and must not fail order creation.
+            log.warn("Skipping cart cleanup for user {} after order placement: {}",
+                    user.getEmail(),
+                    e.getMessage());
         }
-
-        cartItems.stream()
-                .filter(item -> orderedProductIds.contains(item.getProductID()))
-                .forEach(cartItemRepository::delete);
     }
 
     private String generateOrderNumber() {
