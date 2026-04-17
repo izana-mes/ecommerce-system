@@ -163,11 +163,9 @@ const LoginSignUp = () => {
         zIndex: 9999,
       });
 
-      // Redirect to home page
-      setTimeout(() => {
-        router.push("/");
-        router.refresh();
-      }, 1000);
+      // Redirect to home page immediately after successful login
+      router.replace("/");
+      router.refresh();
     } catch (error: unknown) {
       console.error("Login error details:", error);
       const errorMessage = getErrorMessage(

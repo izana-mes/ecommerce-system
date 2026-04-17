@@ -18,6 +18,7 @@ const POSTGRES_URL_ENV_KEYS = [
   "POSTGRES_PRISMA_URL",
   "POSTGRES_URL_NON_POOLING",
 ] as const;
+const MYSQL_URL_ENV_KEYS = ["MYSQL_URL", "MYSQL_DATABASE_URL", "JAWSDB_URL"] as const;
 
 function firstEnv(keys: readonly string[]): string | undefined {
   for (const key of keys) {
@@ -35,20 +36,47 @@ function getDbClient(): DbClient {
   if (client === "mysql") {
     return "mysql";
   }
-
-  if (firstEnv(POSTGRES_URL_ENV_KEYS)) {
-    return "postgres";
-  }
-
-  if ((process.env.DB_PORT || "").trim() === "5432") {
-    return "postgres";
-  }
-
-  return "mysql";
+  return "postgres";
 }
 
 function getPostgresConnectionString(): string | undefined {
   return firstEnv(POSTGRES_URL_ENV_KEYS);
+}
+
+function getMysqlConnectionString(): string | undefined {
+  return firstEnv(MYSQL_URL_ENV_KEYS);
+}
+
+function isCloudRuntime(): boolean {
+  return (
+    process.env.NODE_ENV === "production" ||
+    process.env.VERCEL === "1" ||
+    /^(1|true)$/i.test((process.env.RENDER || "").trim())
+  );
+}
+
+function hasEnvValue(key: string): boolean {
+  return Boolean(process.env[key] && process.env[key]!.trim().length > 0);
+}
+
+function hasExplicitDbConfig(client: DbClient): boolean {
+  if (client === "postgres") {
+    return (
+      Boolean(getPostgresConnectionString()) ||
+      (hasEnvValue("DB_HOST") && hasEnvValue("DB_USER") && hasEnvValue("DB_NAME"))
+    );
+  }
+  return (
+    Boolean(getMysqlConnectionString()) ||
+    (hasEnvValue("DB_HOST") && hasEnvValue("DB_USER") && hasEnvValue("DB_NAME"))
+  );
+}
+
+function missingDbConfigMessage(client: DbClient): string {
+  if (client === "postgres") {
+    return "Missing PostgreSQL configuration. Set DB_CLIENT=postgres and DATABASE_URL (recommended) or DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME.";
+  }
+  return "Missing DB configuration. Set MYSQL_URL (recommended) or DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME.";
 }
 
 function resolvePgConfig() {
@@ -89,9 +117,9 @@ export function getDbRuntimeInfo(): { client: DbClient; host: string; port: stri
     }
   }
 
-  const host = process.env.DB_HOST || "localhost";
-  const port = process.env.DB_PORT || (client === "postgres" ? "5432" : "3306");
-  const user = process.env.DB_USER || (client === "postgres" ? "postgres" : "root");
+  const host = process.env.DB_HOST || "<not-set>";
+  const port = process.env.DB_PORT || "<not-set>";
+  const user = process.env.DB_USER || "<not-set>";
   return { client, host, port, user };
 }
 
@@ -152,9 +180,19 @@ export async function getConnection(): Promise<DbConnection> {
   const client = getDbClient();
 
   try {
+    if (isCloudRuntime() && !hasExplicitDbConfig(client)) {
+      throw new Error(missingDbConfigMessage(client));
+    }
+
     if (client === "postgres") {
       const pgClient = await pgPool.connect();
       return createPostgresAdapter(pgClient);
+    }
+
+    const mysqlUrl = getMysqlConnectionString();
+    if (mysqlUrl) {
+      const mysqlConn = await mysql.createConnection(mysqlUrl);
+      return createMysqlAdapter(mysqlConn);
     }
 
     const mysqlConn = await mysql.createConnection({
