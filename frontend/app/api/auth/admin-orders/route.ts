@@ -99,8 +99,12 @@ export async function GET(request: Request) {
         { status: response.status }
       );
     }
-    const sourceOrders = Array.isArray(payload?.data) ? payload.data : [];
-    let rows = sourceOrders.map((item, index) => normalizeOrder(item, page * size + index + 1));
+    const sourceOrders: BackendOrder[] = Array.isArray(payload?.data)
+      ? (payload.data as BackendOrder[])
+      : [];
+    let rows = sourceOrders.map((item: BackendOrder, index: number) =>
+      normalizeOrder(item, page * size + index + 1)
+    );
 
     if (q) {
       const keyword = q.toLowerCase();
