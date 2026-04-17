@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { getConnection } from "@/lib/db";
+import { getConnection, getDbRuntimeInfo } from "@/lib/db";
 
 export async function GET() {
   const startTime = Date.now();
+  const dbInfo = getDbRuntimeInfo();
   let dbStatus = "connected";
   let dbLatencyMs = 0;
   let dbError = "";
@@ -44,8 +45,8 @@ export async function GET() {
     },
     environment: {
       nodeEnv: process.env.NODE_ENV || "development",
-      dbClient: process.env.DB_CLIENT || "mysql",
-      dbHost: process.env.DB_HOST || "localhost",
+      dbClient: dbInfo.client,
+      dbHost: dbInfo.host,
     },
   });
 }

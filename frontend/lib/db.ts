@@ -2,6 +2,7 @@ import mysql from "mysql2/promise";
 import { Pool, PoolClient } from "pg";
 
 type AnyParams = any[];
+type DbClient = "mysql" | "postgres";
 
 export interface DbConnection {
   execute<T = any>(sql: string, params?: AnyParams): Promise<[T, any?]>;
@@ -11,12 +12,87 @@ export interface DbConnection {
   end(): Promise<void>;
 }
 
-function getDbClient(): "mysql" | "postgres" {
+const POSTGRES_URL_ENV_KEYS = [
+  "DATABASE_URL",
+  "POSTGRES_URL",
+  "POSTGRES_PRISMA_URL",
+  "POSTGRES_URL_NON_POOLING",
+] as const;
+
+function firstEnv(keys: readonly string[]): string | undefined {
+  for (const key of keys) {
+    const value = process.env[key]?.trim();
+    if (value) return value;
+  }
+  return undefined;
+}
+
+function getDbClient(): DbClient {
   const client = (process.env.DB_CLIENT || "").toLowerCase();
   if (client === "postgres" || client === "postgresql" || client === "pg") {
     return "postgres";
   }
+  if (client === "mysql") {
+    return "mysql";
+  }
+
+  if (firstEnv(POSTGRES_URL_ENV_KEYS)) {
+    return "postgres";
+  }
+
+  if ((process.env.DB_PORT || "").trim() === "5432") {
+    return "postgres";
+  }
+
   return "mysql";
+}
+
+function getPostgresConnectionString(): string | undefined {
+  return firstEnv(POSTGRES_URL_ENV_KEYS);
+}
+
+function resolvePgConfig() {
+  const connectionString = getPostgresConnectionString();
+  if (connectionString) {
+    const sslModeRequired =
+      /(^|[?&])sslmode=require(&|$)/i.test(connectionString) ||
+      /^(1|true|required|require)$/i.test((process.env.DB_SSL || "").trim()) ||
+      /^(1|true|required|require)$/i.test((process.env.PGSSLMODE || "").trim());
+    return {
+      connectionString,
+      ...(sslModeRequired ? { ssl: { rejectUnauthorized: false } } : {}),
+    };
+  }
+
+  return {
+    host: process.env.DB_HOST || "localhost",
+    port: Number(process.env.DB_PORT || 5432),
+    user: process.env.DB_USER || "postgres",
+    password: process.env.DB_PASSWORD || "",
+    database: process.env.DB_NAME || "postgres",
+  };
+}
+
+export function getDbRuntimeInfo(): { client: DbClient; host: string; port: string; user: string } {
+  const client = getDbClient();
+  const connectionString = getPostgresConnectionString();
+
+  if (client === "postgres" && connectionString) {
+    try {
+      const parsed = new URL(connectionString);
+      const host = parsed.hostname || process.env.DB_HOST || "localhost";
+      const port = parsed.port || process.env.DB_PORT || "5432";
+      const user = decodeURIComponent(parsed.username || process.env.DB_USER || "postgres");
+      return { client, host, port, user };
+    } catch {
+      // Fall through to env-based reporting below if URL parsing fails.
+    }
+  }
+
+  const host = process.env.DB_HOST || "localhost";
+  const port = process.env.DB_PORT || (client === "postgres" ? "5432" : "3306");
+  const user = process.env.DB_USER || (client === "postgres" ? "postgres" : "root");
+  return { client, host, port, user };
 }
 
 function convertQuestionToDollarParams(sql: string): string {
@@ -70,13 +146,7 @@ function createMysqlAdapter(conn: mysql.Connection): DbConnection {
   };
 }
 
-const pgPool = new Pool({
-  host: process.env.DB_HOST || "localhost",
-  port: Number(process.env.DB_PORT || 5432),
-  user: process.env.DB_USER || "postgres",
-  password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "postgres",
-});
+const pgPool = new Pool(resolvePgConfig());
 
 export async function getConnection(): Promise<DbConnection> {
   const client = getDbClient();
@@ -96,9 +166,7 @@ export async function getConnection(): Promise<DbConnection> {
     });
     return createMysqlAdapter(mysqlConn);
   } catch (error: any) {
-    const host = process.env.DB_HOST || "localhost";
-    const port = process.env.DB_PORT || (client === "postgres" ? "5432" : "3306");
-    const user = process.env.DB_USER || (client === "postgres" ? "postgres" : "root");
+    const { host, port, user } = getDbRuntimeInfo();
     console.error("Database connection error", error?.message || error);
     throw new Error(
       `Database connection failed (${client}) host=${host} port=${port} user=${user}: ${error?.message || error}`
