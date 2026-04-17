@@ -36,9 +36,9 @@ function isPaymentStatus(value: string): value is PaymentStatus {
 }
 
 export async function GET(request: Request) {
-  const conn = await getConnection();
-
+  let conn: Awaited<ReturnType<typeof getConnection>> | null = null;
   try {
+    conn = await getConnection();
     const { searchParams } = new URL(request.url);
 
     const page = Math.max(0, toPositiveNumber(searchParams.get("page"), 1) - 1);
@@ -166,14 +166,16 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   } finally {
-    await conn.end();
+    if (conn) {
+      await conn.end();
+    }
   }
 }
 
 export async function PATCH(request: Request) {
-  const conn = await getConnection();
-
+  let conn: Awaited<ReturnType<typeof getConnection>> | null = null;
   try {
+    conn = await getConnection();
     const body = (await request.json()) as {
       orderId?: number;
       orderStatus?: string;
@@ -303,7 +305,9 @@ export async function PATCH(request: Request) {
       data: updatedOrder || null,
     });
   } catch (error: unknown) {
-    await conn.rollback();
+    if (conn) {
+      await conn.rollback().catch(() => undefined);
+    }
     const message = error instanceof Error ? error.message : String(error);
     console.error("Error updating admin order:", message);
     return NextResponse.json(
@@ -311,7 +315,9 @@ export async function PATCH(request: Request) {
       { status: 500 }
     );
   } finally {
-    await conn.end();
+    if (conn) {
+      await conn.end();
+    }
   }
 }
 

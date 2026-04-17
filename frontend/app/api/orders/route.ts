@@ -41,7 +41,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(data, { status: backendResponse.status });
+    if (!backendResponse.ok) {
+      const payload =
+        data && typeof data === "object"
+          ? data
+          : {
+              error: `Backend /orders failed with status ${backendResponse.status}`,
+              details: rawText || backendResponse.statusText || "Unknown backend error",
+            };
+      return NextResponse.json(payload, { status: backendResponse.status });
+    }
+
+    return NextResponse.json(data ?? { success: true }, { status: backendResponse.status });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to create order";
     console.error("Error proxying order creation:", message);

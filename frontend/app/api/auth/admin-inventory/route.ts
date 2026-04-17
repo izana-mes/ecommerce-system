@@ -43,9 +43,9 @@ function asNumber(value: unknown, fallback = 0): number {
 }
 
 export async function GET(request: Request) {
-  const conn = await getConnection();
-
+  let conn: Awaited<ReturnType<typeof getConnection>> | null = null;
   try {
+    conn = await getConnection();
     const authHeader = getAuthHeader(request);
     const { searchParams } = new URL(request.url);
     const lowStockThreshold = Math.max(1, Number(searchParams.get("lowStockThreshold") ?? 5) || 5);
@@ -177,6 +177,8 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   } finally {
-    await conn.end();
+    if (conn) {
+      await conn.end();
+    }
   }
 }
