@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { getConnection } from "@/lib/db";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_URL = backendApiBaseUrl();
@@ -43,9 +42,7 @@ function asNumber(value: unknown, fallback = 0): number {
 }
 
 export async function GET(request: Request) {
-  let conn: Awaited<ReturnType<typeof getConnection>> | null = null;
   try {
-    conn = await getConnection();
     const authHeader = getAuthHeader(request);
     const { searchParams } = new URL(request.url);
     const lowStockThreshold = Math.max(1, Number(searchParams.get("lowStockThreshold") ?? 5) || 5);
@@ -106,21 +103,7 @@ export async function GET(request: Request) {
     const lowStockItems = normalizeHealthItems(backendHealth.lowStockItems);
     const outOfStockItems = normalizeHealthItems(backendHealth.outOfStockItems);
 
-    const [soldRows] = await conn.execute<Array<{ product_id: string; sold_qty: number }>>(
-      `SELECT oi.product_id, COALESCE(SUM(oi.quantity), 0) AS sold_qty
-       FROM order_items oi
-       INNER JOIN orders o ON o.id = oi.order_id
-       WHERE o.order_status <> 'cancelled'
-       GROUP BY oi.product_id`
-    );
-
-    const soldByProductId = new Map<string, number>();
-    for (const row of soldRows) {
-      soldByProductId.set(row.product_id, asNumber(row.sold_qty, 0));
-    }
-
     const enriched = products.map((p) => {
-      const soldQty = soldByProductId.get(p.productID) ?? 0;
       const healthItem =
         [...lowStockItems, ...outOfStockItems].find((item) => item.productID === p.productID) || null;
       const stockQuantity = healthItem?.stockQuantity ?? Math.max(0, asNumber(p.stockQuantity, 0));
@@ -132,7 +115,7 @@ export async function GET(request: Request) {
         stockQuantity,
         reservedInCarts,
         availableToSell,
-        soldQty,
+        soldQty: 0,
         active: p.active !== false,
       };
     });
@@ -176,9 +159,5 @@ export async function GET(request: Request) {
       { error: "Failed to fetch inventory health", details: message },
       { status: 500 }
     );
-  } finally {
-    if (conn) {
-      await conn.end();
-    }
   }
 }
