@@ -37,6 +37,33 @@ function getDbClient(): DbClient {
   if (client === "mysql") {
     return "mysql";
   }
+
+  // Auto-detect when DB_CLIENT is not set (common on hosted envs).
+  const pgUrl = getPostgresConnectionString();
+  const mysqlUrl = getMysqlConnectionString();
+  const portHint = String(process.env.DB_PORT || process.env.PGPORT || "").trim();
+  const hasSharedDbParts = hasEnvValue("DB_HOST") && hasEnvValue("DB_USER") && hasEnvValue("DB_NAME");
+  const hasPgConfig =
+    Boolean(pgUrl) ||
+    hasEnvValue("PGHOST") ||
+    hasEnvValue("PGUSER") ||
+    hasEnvValue("PGDATABASE") ||
+    (hasSharedDbParts && portHint === "5432");
+  const hasMysqlConfig =
+    Boolean(mysqlUrl) ||
+    hasEnvValue("MYSQL_HOST") ||
+    hasEnvValue("MYSQL_USER") ||
+    hasEnvValue("MYSQL_DATABASE") ||
+    (hasSharedDbParts && (portHint === "3306" || portHint.length === 0));
+
+  if (hasMysqlConfig && !hasPgConfig) {
+    return "mysql";
+  }
+  if (hasPgConfig && !hasMysqlConfig) {
+    return "postgres";
+  }
+
+  // Keep existing default when ambiguous to avoid surprise behavior.
   return "postgres";
 }
 
