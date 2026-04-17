@@ -14,6 +14,7 @@ export interface DbConnection {
 
 const POSTGRES_URL_ENV_KEYS = [
   "DATABASE_URL",
+  "RENDER_DATABASE_URL",
   "POSTGRES_URL",
   "POSTGRES_PRISMA_URL",
   "POSTGRES_URL_NON_POOLING",
@@ -63,7 +64,8 @@ function hasExplicitDbConfig(client: DbClient): boolean {
   if (client === "postgres") {
     return (
       Boolean(getPostgresConnectionString()) ||
-      (hasEnvValue("DB_HOST") && hasEnvValue("DB_USER") && hasEnvValue("DB_NAME"))
+      (hasEnvValue("DB_HOST") && hasEnvValue("DB_USER") && hasEnvValue("DB_NAME")) ||
+      (hasEnvValue("PGHOST") && hasEnvValue("PGUSER") && hasEnvValue("PGDATABASE"))
     );
   }
   return (
@@ -93,11 +95,11 @@ function resolvePgConfig() {
   }
 
   return {
-    host: process.env.DB_HOST || "localhost",
-    port: Number(process.env.DB_PORT || 5432),
-    user: process.env.DB_USER || "postgres",
-    password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_NAME || "postgres",
+    host: process.env.DB_HOST || process.env.PGHOST || "localhost",
+    port: Number(process.env.DB_PORT || process.env.PGPORT || 5432),
+    user: process.env.DB_USER || process.env.PGUSER || "postgres",
+    password: process.env.DB_PASSWORD || process.env.PGPASSWORD || "",
+    database: process.env.DB_NAME || process.env.PGDATABASE || "postgres",
   };
 }
 
@@ -117,9 +119,9 @@ export function getDbRuntimeInfo(): { client: DbClient; host: string; port: stri
     }
   }
 
-  const host = process.env.DB_HOST || "<not-set>";
-  const port = process.env.DB_PORT || "<not-set>";
-  const user = process.env.DB_USER || "<not-set>";
+  const host = process.env.DB_HOST || process.env.PGHOST || "<not-set>";
+  const port = process.env.DB_PORT || process.env.PGPORT || "<not-set>";
+  const user = process.env.DB_USER || process.env.PGUSER || "<not-set>";
   return { client, host, port, user };
 }
 

@@ -1,19 +1,28 @@
 import { NextResponse } from "next/server";
-import { getConnection, getDbRuntimeInfo } from "@/lib/db";
+import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 export async function GET() {
   const startTime = Date.now();
-  const dbInfo = getDbRuntimeInfo();
-  let dbStatus = "connected";
+  const apiBase = backendApiBaseUrl();
+  let dbStatus = "unknown";
   let dbLatencyMs = 0;
   let dbError = "";
 
   try {
-    const conn = await getConnection();
+    // Use Spring backend round-trip as health signal; frontend should not open DB connections.
     const dbStart = Date.now();
-    await conn.execute("SELECT 1 AS ping");
+    const response = await fetch(`${apiBase}/products?limit=1`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+    });
     dbLatencyMs = Date.now() - dbStart;
-    await conn.end();
+    if (!response.ok) {
+      dbStatus = "error";
+      dbError = `Backend health probe failed with status ${response.status}`;
+    } else {
+      dbStatus = "ok";
+    }
   } catch (err: unknown) {
     dbStatus = "error";
     dbError = err instanceof Error ? err.message : String(err);
@@ -45,8 +54,7 @@ export async function GET() {
     },
     environment: {
       nodeEnv: process.env.NODE_ENV || "development",
-      dbClient: dbInfo.client,
-      dbHost: dbInfo.host,
+      backendApiBase: apiBase,
     },
   });
 }
