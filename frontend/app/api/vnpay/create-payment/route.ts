@@ -65,8 +65,9 @@ export async function POST(request: NextRequest) {
   const usdToVndRate = Number(process.env.VNPAY_USD_TO_VND_RATE || 26000);
   const minVndAmount = Number(process.env.VNPAY_MIN_AMOUNT_VND || 5000);
 
-  const conn = await getConnection();
+  let conn: Awaited<ReturnType<typeof getConnection>> | null = null;
   try {
+    conn = await getConnection();
     const [rows] = await conn.execute<OrderRow[]>(
       "SELECT id, order_number, total_amount, currency, payment_status FROM orders WHERE id = ? LIMIT 1",
       [body.orderId]
@@ -149,6 +150,8 @@ export async function POST(request: NextRequest) {
     );
     return NextResponse.json({ error: "Failed to create VNPAY payment URL" }, { status: 500 });
   } finally {
-    await conn.end();
+    if (conn) {
+      await conn.end();
+    }
   }
 }

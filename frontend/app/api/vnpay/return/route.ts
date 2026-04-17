@@ -149,8 +149,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ valid: false, message: "Invalid signature" }, { status: 400 });
   }
 
-  const conn = await getConnection();
+  let conn: Awaited<ReturnType<typeof getConnection>> | null = null;
   try {
+    conn = await getConnection();
     const [rows] = await conn.execute<OrderRow[]>(
       `SELECT id, order_number, customer_email, customer_first_name, customer_last_name, customer_phone,
               shipping_address_line1, shipping_address_line2, shipping_city, shipping_state,
@@ -386,10 +387,14 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    await conn.rollback();
+    if (conn) {
+      await conn.rollback().catch(() => undefined);
+    }
     console.error("VNPAY return verify error:", error instanceof Error ? error.message : String(error));
     return NextResponse.json({ valid: false, message: "Server error" }, { status: 500 });
   } finally {
-    await conn.end();
+    if (conn) {
+      await conn.end();
+    }
   }
 }

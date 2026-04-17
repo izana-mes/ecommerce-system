@@ -52,8 +52,9 @@ export async function GET(request: NextRequest) {
     return jsonRsp("97", "Invalid signature");
   }
 
-  const conn = await getConnection();
+  let conn: Awaited<ReturnType<typeof getConnection>> | null = null;
   try {
+    conn = await getConnection();
     const [rows] = await conn.execute<OrderRow[]>(
       "SELECT id, total_amount, payment_status, order_status FROM orders WHERE order_number = ? LIMIT 1",
       [txnRef]
@@ -109,10 +110,14 @@ export async function GET(request: NextRequest) {
     await conn.commit();
     return jsonRsp("00", "Confirm Success");
   } catch (error: unknown) {
-    await conn.rollback();
+    if (conn) {
+      await conn.rollback().catch(() => undefined);
+    }
     console.error("VNPAY IPN error:", error instanceof Error ? error.message : String(error));
     return jsonRsp("99", "Unknown error");
   } finally {
-    await conn.end();
+    if (conn) {
+      await conn.end();
+    }
   }
 }

@@ -132,10 +132,11 @@ async function resolveAuthenticatedEmail(request: NextRequest): Promise<string |
 }
 
 export async function POST(request: NextRequest) {
-  const conn = await getConnection();
+  let conn: Awaited<ReturnType<typeof getConnection>> | null = null;
   let reservedItems: Array<{ productID: string; quantity: number }> = [];
 
   try {
+    conn = await getConnection();
     const body = (await request.json()) as CreateOrderRequest;
     const orderSource = String(body.orderSource || "checkout-ui").trim().toLowerCase();
     const normalizedOrderSource = orderSource === "buy-now" ? "buy-now" : "checkout-ui";
@@ -323,7 +324,9 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error: unknown) {
-    await conn.rollback();
+    if (conn) {
+      await conn.rollback().catch(() => undefined);
+    }
     if (reservedItems.length > 0) {
       await releaseStock(request, reservedItems);
     }
@@ -335,6 +338,8 @@ export async function POST(request: NextRequest) {
       { status }
     );
   } finally {
-    await conn.end();
+    if (conn) {
+      await conn.end();
+    }
   }
 }
