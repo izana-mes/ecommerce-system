@@ -20,3 +20,5 @@ frontend/frontend/tsconfig.tsbuildinfo
 *.log
 node_modules
 node_modules
+.vercel
+.env*.local

@@ -282,7 +282,7 @@ public class OrderServiceImpl implements OrderService {
                                 updated_at
                             ) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending', ?, ?)
                             """,
-                    Statement.RETURN_GENERATED_KEYS
+                    new String[]{"id"}
             );
             ps.setString(1, orderNumber);
             ps.setString(2, effectiveEmail);

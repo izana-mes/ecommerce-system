@@ -71,3 +71,41 @@ services:
         value: Admin
       - key: ADMIN_BOOTSTRAP_LAST_NAME
         value: User
+
+  - type: web
+    name: ecommerce-frontend
+    runtime: docker
+    rootDir: frontend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NODE_ENV
+        value: production
+      - key: DB_CLIENT
+        value: postgres
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ecommerce-postgres
+          property: connectionString
+      # Public URL of the backend service. Update in Render dashboard after deployment.
+      - key: NEXT_PUBLIC_BACKEND_URL
+        sync: false
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      # Internal token — must match backend INTERNAL_NOTIFY_TOKEN
+      - key: INTERNAL_NOTIFY_TOKEN
+        sync: false
+      # VNPay (must match backend)
+      - key: VNPAY_TMN_CODE
+        sync: false
+      - key: VNPAY_HASH_SECRET
+        sync: false
+      - key: VNPAY_URL
+        value: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+      - key: VNPAY_RETURN_URL
+        sync: false
+
