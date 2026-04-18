@@ -399,4 +399,56 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
             String paymentMetadata
     ) {
     }
+
+    @Override
+    public OrderPaidEmailRequest buildOrderPaidEmailRequest(Map<String, String> params) {
+        if (params == null) return null;
+        String txnRef = safe(params.get("vnp_TxnRef"));
+        if (!StringUtils.hasText(txnRef)) return null;
+
+        OrderSnapshot order = findOrderByOrderNumber(txnRef);
+        if (order == null) return null;
+
+        List<OrderPaidEmailRequest.Item> items = jdbcTemplate.query(
+                """
+                        SELECT product_id, product_name, unit_price, quantity, line_total
+                        FROM order_items
+                        WHERE order_id = ?
+                        ORDER BY id ASC
+                        """,
+                (rs, idx) -> {
+                    OrderPaidEmailRequest.Item item = new OrderPaidEmailRequest.Item();
+                    item.setProductID(rs.getString("product_id"));
+                    item.setProductName(rs.getString("product_name"));
+                    item.setUnitPrice(rs.getDouble("unit_price"));
+                    item.setQuantity(rs.getInt("quantity"));
+                    item.setLineTotal(rs.getDouble("line_total"));
+                    return item;
+                },
+                order.id()
+        );
+
+        OrderPaidEmailRequest mail = new OrderPaidEmailRequest();
+        mail.setTo(order.customerEmail());
+        mail.setOrderNumber(order.orderNumber());
+        mail.setCurrency(order.currency());
+        mail.setSubtotal(toDouble(order.subtotal()));
+        mail.setShippingFee(toDouble(order.shippingFee()));
+        mail.setVat(toDouble(order.vat()));
+        mail.setTotalAmount(toDouble(order.totalAmount()));
+        mail.setPaymentMethod(order.paymentMethod());
+        mail.setCustomerEmail(order.customerEmail());
+        mail.setCustomerFirstName(order.customerFirstName());
+        mail.setCustomerLastName(order.customerLastName());
+        mail.setCustomerPhone(order.customerPhone());
+        mail.setShippingAddressLine1(order.shippingAddressLine1());
+        mail.setShippingAddressLine2(order.shippingAddressLine2());
+        mail.setShippingCity(order.shippingCity());
+        mail.setShippingState(order.shippingState());
+        mail.setShippingPostalCode(order.shippingPostalCode());
+        mail.setShippingCountry(order.shippingCountry());
+        mail.setNotes(order.notes());
+        mail.setItems(items);
+        return mail;
+    }
 }
