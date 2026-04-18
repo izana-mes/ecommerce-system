@@ -351,14 +351,18 @@ export default function ShoppingCart() {
       const orderNumber = data?.data?.orderNumber as string | undefined;
       if (orderNumber) setLastOrderNumber(orderNumber);
 
-      if (isVnpay && orderId) {
+      if (isVnpay && orderId && orderNumber) {
         const paymentResponse = await fetch("/api/vnpay/create-payment", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ orderId }),
+          body: JSON.stringify({
+            orderId,
+            orderNumber,
+            amount: checkoutGrandTotal,
+          }),
         });
         const paymentData = await paymentResponse.json();
         if (!paymentResponse.ok) {
