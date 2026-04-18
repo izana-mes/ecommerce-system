@@ -41,6 +41,10 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
     @Value("${application.payment.vnpay.hash-secret:}")
     private String hashSecret;
 
+    /** Multiplier from order currency (USD) to VND. Must match VNPAY_USD_TO_VND_RATE set in frontend. */
+    @Value("${application.payment.vnpay.usd-to-vnd-rate:26000}")
+    private long usdToVndRate;
+
     @Override
     public VnpayIpnResponse enqueueIpn(Map<String, String> params) {
         if (params == null || params.isEmpty()) {
@@ -94,7 +98,26 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
             return new VnpayIpnResponse("01", "Order not found");
         }
 
-        if (order.totalAmount().multiply(BigDecimal.valueOf(100)).longValue() != amount) {
+        // vnp_Amount from VNPAY is always in VND × 100.
+        // DB stores totalAmount in the order's currency (typically USD).
+        // Convert to VND cents for comparison.
+        String orderCurrency = order.currency() == null ? "USD" : order.currency().toUpperCase();
+        long expectedVndCents;
+        if ("VND".equals(orderCurrency)) {
+            expectedVndCents = order.totalAmount().multiply(BigDecimal.valueOf(100)).longValue();
+        } else if ("USD".equals(orderCurrency)) {
+            expectedVndCents = order.totalAmount()
+                    .multiply(BigDecimal.valueOf(usdToVndRate))
+                    .multiply(BigDecimal.valueOf(100))
+                    .longValue();
+        } else {
+            log.warn("processIpn: unsupported currency {} for order {}, skipping amount check", orderCurrency, txnRef);
+            expectedVndCents = amount; // skip check
+        }
+
+        if (expectedVndCents != amount) {
+            log.warn("processIpn: amount mismatch for order {} – expected {} VND-cents, got {} from VNPAY",
+                    txnRef, expectedVndCents, amount);
             return new VnpayIpnResponse("04", "Invalid amount");
         }
 
