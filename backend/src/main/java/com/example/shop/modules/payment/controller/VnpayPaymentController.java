@@ -40,19 +40,28 @@ public class VnpayPaymentController {
     public ResponseEntity<VnpayIpnResponse> handleIpnPost(@RequestBody Map<String, String> params) {
         VnpayIpnResponse result = vnpayPaymentService.processIpn(params);
 
-        // Send email directly (bypasses RabbitMQ which is disabled on free Render tier)
-        if ("00".equals(result.getRspCode())) {
+        // Trigger email based on VNPAY's own params (not processIpn rspCode which may return
+        // "04" due to USD/VND amount comparison, or "02" on idempotency replay — both of which
+        // are fine but the frontend still wants an email sent).
+        boolean vnpayConfirmedPaid = "00".equals(params.get("vnp_ResponseCode"))
+                && "00".equals(params.get("vnp_TransactionStatus"));
+
+        if (vnpayConfirmedPaid) {
             try {
                 OrderPaidEmailRequest emailRequest = vnpayPaymentService.buildOrderPaidEmailRequest(params);
                 if (emailRequest != null) {
                     orderNotificationService.sendOrderPaidEmail(emailRequest);
+                } else {
+                    log.warn("VNPAY IPN: buildOrderPaidEmailRequest returned null for txn {}",
+                            params.get("vnp_TxnRef"));
                 }
             } catch (Exception ex) {
-                log.warn("VNPAY IPN: email send failed for txn {}: {}",
-                        params.get("vnp_TxnRef"), ex.getMessage());
+                log.error("VNPAY IPN: email send failed for txn {}: {}",
+                        params.get("vnp_TxnRef"), ex.getMessage(), ex);
             }
         }
 
         return ResponseEntity.ok(result);
     }
+
 }
