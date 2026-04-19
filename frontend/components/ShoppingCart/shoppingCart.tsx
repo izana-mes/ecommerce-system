@@ -302,6 +302,7 @@ export default function ShoppingCart() {
 
       const user = getUser();
       const isVnpay = selectedPayment === "VNPAY";
+      const isMomo = selectedPayment === "MOMO";
       const normalizedCompany = checkoutForm.companyName.trim();
       const normalizedNotes = checkoutForm.notes.trim();
       const combinedNotes = [normalizedCompany ? `Company: ${normalizedCompany}` : "", normalizedNotes]
@@ -372,6 +373,33 @@ export default function ShoppingCart() {
         const paymentUrl = paymentData?.data?.paymentUrl as string | undefined;
         if (!paymentUrl) {
           throw new Error("Invalid VNPAY payment URL");
+        }
+
+        window.location.href = paymentUrl;
+        return;
+      }
+
+      if (isMomo && orderId && orderNumber) {
+        const paymentResponse = await fetch("/api/momo/create-payment", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            orderId,
+            orderNumber,
+            amount: checkoutGrandTotal,
+          }),
+        });
+        const paymentData = await paymentResponse.json();
+        if (!paymentResponse.ok) {
+          throw new Error(paymentData?.error || "Cannot create MOMO payment URL");
+        }
+
+        const paymentUrl = paymentData?.data?.paymentUrl as string | undefined;
+        if (!paymentUrl) {
+          throw new Error("Invalid MOMO payment URL");
         }
 
         window.location.href = paymentUrl;
@@ -1077,6 +1105,20 @@ export default function ShoppingCart() {
                     <div className="checkoutPaymentMethod">
                       <span>VNPAY (Sandbox)</span>
                       <p>Thanh toan qua cong VNPAY test. Ban se duoc chuyen huong sang VNPAY.</p>
+                    </div>
+                  </label>
+
+                  <label>
+                    <input
+                      type="radio"
+                      name="payment"
+                      value="MOMO"
+                      checked={selectedPayment === "MOMO"}
+                      onChange={handlePaymentChange}
+                    />
+                    <div className="checkoutPaymentMethod">
+                      <span>MOMO (Sandbox)</span>
+                      <p>Thanh toan qua cong MoMo test. Ban se duoc chuyen huong sang MoMo.</p>
                     </div>
                   </label>
 

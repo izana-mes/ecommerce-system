@@ -24,6 +24,8 @@ After the service is created, open the backend service and set these vars:
 - `SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET`
 - `SPRING_PROFILES_INCLUDE=oauth` (after Google client ID/secret are set)
 - `VNPAY_HASH_SECRET`
+- `MOMO_ACCESS_KEY` — MoMo Sandbox access key from the MoMo Business Portal
+- `MOMO_SECRET_KEY` — MoMo Sandbox secret key (used to verify IPN signatures)
 
 If you use Redis and RabbitMQ in production, also set:
 
@@ -41,6 +43,17 @@ In your Vercel project, set:
 - `NEXT_PUBLIC_API_URL` = `https://<your-render-domain>/api`
 - `BACKEND_URL` = `https://<your-render-domain>`
 - `INTERNAL_NOTIFY_TOKEN` = same value as backend `INTERNAL_NOTIFY_TOKEN`
+
+For **MoMo Sandbox** payments set (in Vercel Environment Variables, not exposed to the browser):
+- `MOMO_PARTNER_CODE` — your MoMo partner code
+- `MOMO_ACCESS_KEY` — your MoMo access key
+- `MOMO_SECRET_KEY` — your MoMo secret key
+- `MOMO_REDIRECT_URL` = `https://<your-vercel-domain>/payment/momo-return`
+- `MOMO_IPN_URL` = `https://<your-render-domain>/api/payments/momo/ipn`
+
+> [!IMPORTANT]
+> `MOMO_IPN_URL` must point to your **public Render backend** URL. MoMo's servers
+> need to reach it from the internet. A local `localhost` URL will not work.
 
 Then redeploy Vercel.
 

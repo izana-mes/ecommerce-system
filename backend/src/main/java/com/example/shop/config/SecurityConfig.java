@@ -96,6 +96,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/payments/vnpay/ipn").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/payments/vnpay/ipn").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/payments/momo/ipn").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/deals/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
