@@ -18,8 +18,9 @@ function isMissingTableError(message: string): boolean {
 }
 
 export async function GET(request: Request) {
-  const conn = await getConnection();
+  let conn: Awaited<ReturnType<typeof getConnection>> | undefined;
   try {
+    conn = await getConnection();
     const { searchParams } = new URL(request.url);
     const page = Math.max(0, toPositiveNumber(searchParams.get("page"), 1) - 1);
     const size = Math.min(50, toPositiveNumber(searchParams.get("size"), 20));
@@ -57,23 +58,18 @@ export async function GET(request: Request) {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("Error fetching admin notes:", message);
-    if (isMissingTableError(message)) {
-      return NextResponse.json({
-        content: [],
-        totalElements: 0,
-        totalPages: 1,
-        number: 0,
-        size: 20,
-        unavailable: true,
-        details: "admin_notes table is missing",
-      });
-    }
-    return NextResponse.json(
-      { error: "Failed to fetch notes", details: message },
-      { status: 500 }
-    );
+    // Return graceful empty list for any DB error (missing table, no env vars, etc.)
+    return NextResponse.json({
+      content: [],
+      totalElements: 0,
+      totalPages: 1,
+      number: 0,
+      size: 20,
+      unavailable: true,
+      details: message,
+    });
   } finally {
-    await conn.end();
+    await conn?.end();
   }
 }
 

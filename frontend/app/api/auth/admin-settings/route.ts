@@ -12,8 +12,9 @@ function isMissingTableError(message: string): boolean {
 }
 
 export async function GET() {
-  const conn = await getConnection();
+  let conn: Awaited<ReturnType<typeof getConnection>> | undefined;
   try {
+    conn = await getConnection();
     const [rows] = await conn.execute<
       Array<{
         id: number;
@@ -28,19 +29,14 @@ export async function GET() {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("Error fetching admin settings:", message);
-    if (isMissingTableError(message)) {
-      return NextResponse.json({
-        settings: [],
-        unavailable: true,
-        details: "admin_settings table is missing",
-      });
-    }
-    return NextResponse.json(
-      { error: "Failed to fetch settings", details: message },
-      { status: 500 }
-    );
+    // Return graceful empty list for any DB error (missing table, no env vars, etc.)
+    return NextResponse.json({
+      settings: [],
+      unavailable: true,
+      details: message,
+    });
   } finally {
-    await conn.end();
+    await conn?.end();
   }
 }
 

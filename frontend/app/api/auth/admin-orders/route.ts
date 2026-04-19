@@ -150,12 +150,59 @@ export async function GET(request: Request) {
   }
 }
 
-export async function PATCH() {
-  return NextResponse.json(
-    {
-      error: "Order update is not available on frontend proxy. Use backend admin API endpoint.",
-    },
-    { status: 501 }
-  );
+export async function PATCH(request: Request) {
+  const authHeader = getAuthHeader(request);
+  try {
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    }
+
+    const { orderId, orderStatus, paymentStatus } = body as Record<string, unknown>;
+
+    if (!orderId || typeof orderId !== "number") {
+      return NextResponse.json({ error: "Missing or invalid orderId" }, { status: 400 });
+    }
+
+    const patchBody: Record<string, string> = {};
+    if (orderStatus && typeof orderStatus === "string") patchBody.orderStatus = orderStatus;
+    if (paymentStatus && typeof paymentStatus === "string") patchBody.paymentStatus = paymentStatus;
+
+    if (Object.keys(patchBody).length === 0) {
+      return NextResponse.json(
+        { error: "At least one of orderStatus or paymentStatus must be provided" },
+        { status: 400 }
+      );
+    }
+
+    const response = await fetch(`${API_URL}/v1/admin/orders/${orderId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(authHeader ? { Authorization: authHeader } : {}),
+      },
+      body: JSON.stringify(patchBody),
+    });
+
+    const raw = await response.text();
+    const payload = raw ? JSON.parse(raw) : null;
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: payload?.error || payload?.message || "Failed to update order" },
+        { status: response.status }
+      );
+    }
+
+    return NextResponse.json(payload);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Error updating order:", message);
+    return NextResponse.json(
+      { error: "Failed to update order", details: message },
+      { status: 500 }
+    );
+  }
 }
+
 
