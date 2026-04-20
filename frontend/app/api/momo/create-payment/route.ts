@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const amountVnd = Math.round(amountNumber * usdToVnd);
     
     // MoMo API request parameters
-    const requestType = "captureWallet";
+    const requestType = "payWithMethod";
     const orderInfo = `Thanh toan don hang ${orderNumber}`;
     const requestId = String(Date.now()) + "id";
     const extraData = "";

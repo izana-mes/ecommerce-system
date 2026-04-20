@@ -61,6 +61,13 @@ services:
         value: "6379"
       - key: VNPAY_HASH_SECRET
         sync: false
+      # MoMo sandbox credentials (backend uses these for IPN signature verification)
+      - key: MOMO_ACCESS_KEY
+        sync: false
+      - key: MOMO_SECRET_KEY
+        sync: false
+      - key: MOMO_USD_TO_VND_RATE
+        value: "26000"
       - key: ADMIN_BOOTSTRAP_ENABLED
         value: "true"
       - key: ADMIN_BOOTSTRAP_EMAIL
@@ -108,4 +115,17 @@ services:
         value: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
       - key: VNPAY_RETURN_URL
         sync: false
+      # MoMo sandbox (frontend uses these to build the payment request)
+      - key: MOMO_PARTNER_CODE
+        sync: false
+      - key: MOMO_ACCESS_KEY
+        sync: false
+      - key: MOMO_SECRET_KEY
+        sync: false
+      - key: MOMO_REDIRECT_URL
+        sync: false
+      - key: MOMO_IPN_URL
+        sync: false
+      - key: MOMO_USD_TO_VND_RATE
+        value: "26000"
 
