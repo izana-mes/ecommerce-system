@@ -195,7 +195,8 @@ public class OrderServiceImpl implements OrderService {
 
         return jdbcTemplate.query(
                 """
-                        SELECT o.order_number,
+                        SELECT o.id,
+                               o.order_number,
                                o.total_amount,
                                o.currency,
                                o.payment_method,
@@ -209,8 +210,9 @@ public class OrderServiceImpl implements OrderService {
                         GROUP BY o.id
                         ORDER BY o.created_at DESC
                         LIMIT ?
-                        """,
+                """,
                 (rs, rowNum) -> OrderHistoryItemDto.builder()
+                        .id(rs.getLong("id"))
                         .orderNumber(rs.getString("order_number"))
                         .totalAmount(rs.getBigDecimal("total_amount"))
                         .currency(rs.getString("currency"))

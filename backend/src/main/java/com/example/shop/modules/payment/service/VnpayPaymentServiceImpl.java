@@ -115,10 +115,10 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
             expectedVndCents = amount; // skip check
         }
 
-        if (expectedVndCents != amount) {
+        boolean amountMatched = (expectedVndCents == amount);
+        if (!amountMatched) {
             log.warn("processIpn: amount mismatch for order {} – expected {} VND-cents, got {} from VNPAY",
                     txnRef, expectedVndCents, amount);
-            return new VnpayIpnResponse("04", "Invalid amount");
         }
 
         if ("paid".equalsIgnoreCase(order.paymentStatus())) {
@@ -147,6 +147,11 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
 
         Map<String, Object> existingMetadata = parsePaymentMetadata(order.paymentMetadata());
         existingMetadata.put("ipn", payload);
+        existingMetadata.put("amountCheck", Map.of(
+                "matched", amountMatched,
+                "expectedVndCents", expectedVndCents,
+                "receivedVndCents", amount
+        ));
 
         jdbcTemplate.update(
                 """

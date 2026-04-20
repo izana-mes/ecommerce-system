@@ -37,9 +37,11 @@ function getCookieHeader(request: Request): string | null {
   return request.headers.get("cookie");
 }
 
-function normalizeOrder(item: BackendOrder, fallbackId: number) {
+function normalizeOrder(item: BackendOrder) {
+  const rawId = Number(item.id);
+  const id = Number.isFinite(rawId) && rawId > 0 ? Math.floor(rawId) : 0;
   return {
-    id: Number(item.id ?? fallbackId),
+    id,
     order_number: String(item.order_number ?? item.orderNumber ?? ""),
     customer_email: String(item.customer_email ?? item.customerEmail ?? ""),
     customer_first_name: String(item.customer_first_name ?? item.customerFirstName ?? "") || null,
@@ -102,9 +104,7 @@ export async function GET(request: Request) {
     const sourceOrders: BackendOrder[] = Array.isArray(payload?.data)
       ? (payload.data as BackendOrder[])
       : [];
-    let rows = sourceOrders.map((item: BackendOrder, index: number) =>
-      normalizeOrder(item, page * size + index + 1)
-    );
+    let rows = sourceOrders.map((item: BackendOrder) => normalizeOrder(item));
 
     if (q) {
       const keyword = q.toLowerCase();
@@ -160,7 +160,7 @@ export async function PATCH(request: Request) {
 
     const { orderId, orderStatus, paymentStatus } = body as Record<string, unknown>;
 
-    if (!orderId || typeof orderId !== "number") {
+    if (!orderId || typeof orderId !== "number" || !Number.isFinite(orderId) || orderId <= 0) {
       return NextResponse.json({ error: "Missing or invalid orderId" }, { status: 400 });
     }
 
@@ -204,5 +204,4 @@ export async function PATCH(request: Request) {
     );
   }
 }
-
 

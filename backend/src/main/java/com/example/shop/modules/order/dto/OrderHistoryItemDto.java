@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 public class OrderHistoryItemDto {
+    private Long id;
     private String orderNumber;
     private BigDecimal totalAmount;
     private String currency;
