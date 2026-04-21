@@ -222,6 +222,14 @@ type QueueData = {
     totalConsumers: number;
     totalDlqMessages: number;
   };
+  databaseContext?: {
+    source: string;
+    totalOrders: number;
+    pendingOrders: number;
+    lowStockProducts: number;
+    totalAuditEvents: number;
+    latestAuditEventAt: string | null;
+  } | null;
 };
 
 type SystemHealth = {
@@ -1004,7 +1012,17 @@ export default function AdminPage() {
         const response = await fetch(`/api/auth/admin-audit?${q.toString()}`, { method: "GET", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, cache: "no-store" });
         const data = await response.json() as PagedAudit & { error?: string };
         if (!response.ok) throw new Error(data?.error || "Failed to load audit events");
-        setAuditEvents(data?.content ?? []);
+        const parsedAuditEvents = (data?.content ?? []).map((event) => {
+          if (typeof event.details === "string") {
+            try {
+              return { ...event, details: JSON.parse(event.details) as Record<string, unknown> };
+            } catch {
+              return { ...event, details: { raw: event.details } as Record<string, unknown> };
+            }
+          }
+          return event;
+        });
+        setAuditEvents(parsedAuditEvents);
         setAuditPage(data?.number ?? targetPage);
         setAuditTotalPages(Math.max(1, data?.totalPages ?? 1));
         setLastUpdatedAt(new Date().toISOString());
@@ -2876,6 +2894,18 @@ export default function AdminPage() {
           </>
         ) : activeTab === "inventory" ? (
           <>
+            <section className="overviewSection">
+              <h3>Why Inventory Monitoring Matters</h3>
+              <p>
+                Inventory is the operational truth of what we can actually sell. This section helps prevent overselling,
+                highlights stock at risk of stockout, and shows where revenue may be blocked by low availability.
+              </p>
+              <p>
+                Data source: product stock and active status from the `products` table, reserved quantities from `cart_items`,
+                and top-selling products from order history (`orders` + `order_items`) in PostgreSQL.
+              </p>
+            </section>
+
             {loadingInventory ? <p className="adminStatus">Loading inventory health...</p> : null}
             {inventoryError ? <p className="adminStatus adminStatusError">{inventoryError}</p> : null}
 
@@ -3467,6 +3497,17 @@ export default function AdminPage() {
           </>
         ) : activeTab === "audit" ? (
           <>
+            <section className="overviewSection">
+              <h3>Why Audit Logs Matter</h3>
+              <p>
+                Audit logs provide accountability for sensitive actions and system events. They are essential for incident
+                investigation, compliance checks, and understanding who changed what and when.
+              </p>
+              <p>
+                Data source: persisted records from the `audit_events` table in PostgreSQL (including metadata in JSONB `details`).
+              </p>
+            </section>
+
             <form className="auditFilterRow" onSubmit={handleAuditFilterSubmit}>
               <input
                 type="text"
@@ -3535,11 +3576,44 @@ export default function AdminPage() {
           </>
         ) : activeTab === "queues" ? (
           <>
+            <section className="overviewSection">
+              <h3>Why Queue Monitoring Matters</h3>
+              <p>
+                Queues protect user-facing performance by processing heavy work asynchronously. Monitoring backlog, consumers,
+                retry queues, and DLQs helps us catch delivery bottlenecks before they delay emails, status updates, and alerts.
+              </p>
+              <p>
+                Data source: live queue depth/consumer state from RabbitMQ management API, plus operational business context from PostgreSQL
+                (`orders` and `audit_events`) to connect broker health with real store impact.
+              </p>
+            </section>
+
             {loadingQueues ? <p className="adminStatus">Loading queue data...</p> : null}
             {queueError ? <p className="adminStatus adminStatusError">{queueError}</p> : null}
 
             {!loadingQueues && !queueError && queueData ? (
               <>
+                {queueData.databaseContext ? (
+                  <div className="queueSummaryCards">
+                    <div className="queueCard">
+                      <p>Pending Orders (DB)</p>
+                      <h3>{queueData.databaseContext.pendingOrders}</h3>
+                    </div>
+                    <div className="queueCard">
+                      <p>Total Orders (DB)</p>
+                      <h3>{queueData.databaseContext.totalOrders}</h3>
+                    </div>
+                    <div className="queueCard">
+                      <p>Low Stock Products (DB)</p>
+                      <h3>{queueData.databaseContext.lowStockProducts}</h3>
+                    </div>
+                    <div className="queueCard">
+                      <p>Audit Events (DB)</p>
+                      <h3>{queueData.databaseContext.totalAuditEvents}</h3>
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="queueSummaryCards">
                   <div className="queueCard">
                     <p>Total Queues</p>

@@ -32,6 +32,19 @@ type BackendInventoryHealth = {
   outOfStockItems?: InventoryHealthItem[];
 };
 
+type BackendDashboardSoldProduct = {
+  productID?: string;
+  productName?: string;
+  soldQty?: number;
+};
+
+type BackendDashboardPayload = {
+  data?: {
+    topSoldProducts?: BackendDashboardSoldProduct[];
+  };
+  topSoldProducts?: BackendDashboardSoldProduct[];
+};
+
 function getAuthHeader(request: Request) {
   return request.headers.get("authorization") || request.headers.get("Authorization");
 }
@@ -47,7 +60,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const lowStockThreshold = Math.max(1, Number(searchParams.get("lowStockThreshold") ?? 5) || 5);
 
-    const [productResponse, inventoryHealthResponse] = await Promise.all([
+    const [productResponse, inventoryHealthResponse, dashboardResponse] = await Promise.all([
       fetch(`${API_URL}/products`, {
         method: "GET",
         headers: {
@@ -64,16 +77,37 @@ export async function GET(request: Request) {
         },
         cache: "no-store",
       }),
+      fetch(`${API_URL}/v1/admin/dashboard?days=30&recentLimit=10&lowStockThreshold=${lowStockThreshold}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authHeader ? { Authorization: authHeader } : {}),
+        },
+        cache: "no-store",
+      }),
     ]);
 
     const products = (await productResponse.json()) as Product[];
     const backendHealth = (await inventoryHealthResponse.json()) as BackendInventoryHealth;
+    const dashboardPayload = (await dashboardResponse.json()) as BackendDashboardPayload;
     if (!productResponse.ok || !Array.isArray(products)) {
       return NextResponse.json({ error: "Failed to fetch products" }, { status: 502 });
     }
     if (!inventoryHealthResponse.ok || !backendHealth || typeof backendHealth !== "object") {
       return NextResponse.json({ error: "Failed to fetch inventory health" }, { status: 502 });
     }
+
+    const soldItemsRaw =
+      (dashboardPayload?.data && Array.isArray(dashboardPayload.data.topSoldProducts)
+        ? dashboardPayload.data.topSoldProducts
+        : Array.isArray(dashboardPayload?.topSoldProducts)
+          ? dashboardPayload.topSoldProducts
+          : []) ?? [];
+    const soldByProductId = new Map(
+      soldItemsRaw
+        .filter((item) => Boolean(item?.productID))
+        .map((item) => [String(item.productID), Math.max(0, asNumber(item.soldQty, 0))])
+    );
 
     const productById = new Map(
       products.map((product) => [
@@ -115,7 +149,7 @@ export async function GET(request: Request) {
         stockQuantity,
         reservedInCarts,
         availableToSell,
-        soldQty: 0,
+        soldQty: soldByProductId.get(p.productID) ?? 0,
         active: p.active !== false,
       };
     });
