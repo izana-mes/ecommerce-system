@@ -280,6 +280,51 @@ type RatingAnalyticsSummary = {
 
 const ORDER_STATUS_OPTIONS = ["pending", "processing", "paid", "shipped", "completed", "cancelled"];
 const PAYMENT_STATUS_OPTIONS = ["pending", "authorized", "paid", "failed", "refunded"];
+const HOME_BANNER_SETTINGS = [
+  {
+    key: "banner_left_url",
+    label: "Main Banner Left",
+    defaultValue: "/Banner/banner_1.jpg",
+    description: "URL for the left hero banner panel on the home page.",
+  },
+  {
+    key: "banner_right_url",
+    label: "Main Banner Right",
+    defaultValue: "/Banner/banner_2.jpg",
+    description: "URL for the right hero banner panel on the home page.",
+  },
+  {
+    key: "collection_left_url",
+    label: "Collection Left",
+    defaultValue: "/Collection/collection1.jpg",
+    description: "URL for the left image in the collection section.",
+  },
+  {
+    key: "collection_top_url",
+    label: "Collection Top Right",
+    defaultValue: "/Collection/collection2.jpg",
+    description: "URL for the top-right image in the collection section.",
+  },
+  {
+    key: "collection_bottom_left_url",
+    label: "Collection Bottom Left",
+    defaultValue: "/Collection/collection3.jpg",
+    description: "URL for the bottom-left image in the collection section.",
+  },
+  {
+    key: "deal_background_url",
+    label: "Deal Background",
+    defaultValue: "/Deal/dealbg.jpg",
+    description: "URL for the Deal of the Week section background image.",
+  },
+  {
+    key: "hero_background_url",
+    label: "3D Hero Background",
+    defaultValue: "/slideshow-pattern.png",
+    description: "URL for the 3D hero section background image.",
+  },
+] as const;
+const HOME_BANNER_SETTING_KEY_SET = new Set<string>(HOME_BANNER_SETTINGS.map((item) => item.key));
 
 const INITIAL_PRODUCT_FORM: Product = {
   productID: "",
@@ -528,6 +573,20 @@ export default function AdminPage() {
   });
 
   const token = useMemo(() => getToken(), []);
+  const settingsByKey = useMemo(() => {
+    return settings.reduce<Record<string, AdminSetting>>((acc, setting) => {
+      acc[setting.setting_key] = setting;
+      return acc;
+    }, {});
+  }, [settings]);
+  const genericSettings = useMemo(
+    () => settings.filter((setting) => !HOME_BANNER_SETTING_KEY_SET.has(setting.setting_key)),
+    [settings]
+  );
+  const getSettingValue = useCallback(
+    (key: string, fallbackValue = "") => settingsEditValues[key] ?? settingsByKey[key]?.setting_value ?? fallbackValue,
+    [settingsByKey, settingsEditValues]
+  );
 
   const fetchDashboard = useCallback(async () => {
     if (!token) {
@@ -2018,14 +2077,20 @@ export default function AdminPage() {
   };
 
   // ── Settings Handler ──
-  const handleSaveSetting = async (key: string) => {
+  const handleSaveSetting = async (key: string, fallbackValue = "") => {
     if (!token) return;
     setSavingSettingKey(key);
     try {
+      const valueToSave = getSettingValue(key, fallbackValue);
+      const settingDefinition = HOME_BANNER_SETTINGS.find((item) => item.key === key);
       const response = await fetch("/api/auth/admin-settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ setting_key: key, setting_value: settingsEditValues[key] ?? "" }),
+        body: JSON.stringify({
+          setting_key: key,
+          setting_value: valueToSave,
+          description: settingDefinition?.description,
+        }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data?.error || "Failed to update setting");
@@ -3885,11 +3950,43 @@ export default function AdminPage() {
 
             {!loadingSettings && !settingsError ? (
               <div className="settingsContainer">
+                <div className="settingsSection">
+                  <h3 className="settingsSectionTitle">Home Page Banners</h3>
+                  <p className="settingsSectionHint">Update all image URLs used in homepage promotional sections.</p>
+                  <div className="settingsList">
+                    {HOME_BANNER_SETTINGS.map((setting) => {
+                      const currentValue = getSettingValue(setting.key, setting.defaultValue);
+                      const baselineValue = settingsByKey[setting.key]?.setting_value ?? setting.defaultValue;
+                      const unchanged = currentValue === baselineValue;
+                      return (
+                        <div key={setting.key} className="settingsRow">
+                          <div>
+                            <div className="settingsKey">{setting.label}</div>
+                            <div className="settingsDesc">{setting.description}</div>
+                            <div className="settingsDefault">Default: {setting.defaultValue}</div>
+                          </div>
+                          <input
+                            className="settingsInput"
+                            value={currentValue}
+                            onChange={(e) => setSettingsEditValues((prev) => ({ ...prev, [setting.key]: e.target.value }))}
+                          />
+                          <button
+                            className="settingsSaveBtn"
+                            disabled={savingSettingKey === setting.key || unchanged}
+                            onClick={() => void handleSaveSetting(setting.key, setting.defaultValue)}
+                          >
+                            {savingSettingKey === setting.key ? "Saving..." : "Save"}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
                 <div className="settingsList">
-                  {settings.length === 0 ? (
-                    <p className="adminStatus">No settings found. Run the migration script to seed default settings.</p>
+                  {genericSettings.length === 0 ? (
+                    <p className="adminStatus">No additional settings found.</p>
                   ) : (
-                    settings.map((setting) => (
+                    genericSettings.map((setting) => (
                       <div key={setting.setting_key} className="settingsRow">
                         <div>
                           <div className="settingsKey">{setting.setting_key}</div>
@@ -3897,12 +3994,12 @@ export default function AdminPage() {
                         </div>
                         <input
                           className="settingsInput"
-                          value={settingsEditValues[setting.setting_key] ?? setting.setting_value}
+                          value={getSettingValue(setting.setting_key)}
                           onChange={(e) => setSettingsEditValues((prev) => ({ ...prev, [setting.setting_key]: e.target.value }))}
                         />
                         <button
                           className="settingsSaveBtn"
-                          disabled={savingSettingKey === setting.setting_key || settingsEditValues[setting.setting_key] === setting.setting_value}
+                          disabled={savingSettingKey === setting.setting_key || getSettingValue(setting.setting_key) === setting.setting_value}
                           onClick={() => void handleSaveSetting(setting.setting_key)}
                         >
                           {savingSettingKey === setting.setting_key ? "Saving..." : "Save"}

@@ -1185,6 +1185,25 @@
   border: 1px solid #e4e8f0;
   border-radius: 14px;
   padding: 22px;
+  display: grid;
+  gap: 20px;
+}
+
+.settingsSection {
+  display: grid;
+  gap: 12px;
+}
+
+.settingsSectionTitle {
+  margin: 0;
+  font-size: 18px;
+  color: #1f2b43;
+}
+
+.settingsSectionHint {
+  margin: 0;
+  font-size: 13px;
+  color: #5b667a;
 }
 
 .settingsList {
@@ -1213,6 +1232,12 @@
   font-size: 12px;
   color: #6c7587;
   margin-top: 2px;
+}
+
+.settingsDefault {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #78839a;
 }
 
 .settingsInput {

@@ -31,6 +31,7 @@ type TimeLeft = {
 
 export default function DealTimer() {
   const [deals, setDeals] = useState<Deal[]>([]);
+  const [dealBackgroundUrl, setDealBackgroundUrl] = useState("/Deal/dealbg.jpg");
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({
     days: "00",
     hours: "00",
@@ -42,6 +43,16 @@ export default function DealTimer() {
   const [error, setError] = useState<string | null>(null);
 
   const timeRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        const settings = data?.settings ?? {};
+        if (settings.deal_background_url) setDealBackgroundUrl(settings.deal_background_url);
+      })
+      .catch((err) => console.error("Error fetching home settings:", err));
+  }, []);
 
   const calculateTimeLeft = (end_time: string) => {
     const now = new Date();
@@ -146,7 +157,7 @@ export default function DealTimer() {
   if (isLoad) {
     return (
       <div className="maiDeal">
-        <div className="dealTimer">
+        <div className="dealTimer" style={{ backgroundImage: `url("${dealBackgroundUrl}")` }}>
           <div className="dealTimerMainContent">
             <p>Loading...</p>
           </div>
@@ -158,7 +169,7 @@ export default function DealTimer() {
   if (error) {
     return (
       <div className="maiDeal">
-        <div className="dealTimer">
+        <div className="dealTimer" style={{ backgroundImage: `url("${dealBackgroundUrl}")` }}>
           <div className="dealTimerMainContent">
             <p>Error : {error}</p>
           </div>
@@ -169,7 +180,7 @@ export default function DealTimer() {
 
   return (
     <div className="mainDeal">
-      <div className="dealTimer">
+      <div className="dealTimer" style={{ backgroundImage: `url("${dealBackgroundUrl}")` }}>
         <div className="dealTimerMainContent">
           <div className="dealTimerContent">
             <p>DEAL OF THE WEEK</p>

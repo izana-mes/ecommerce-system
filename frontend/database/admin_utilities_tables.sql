@@ -29,5 +29,12 @@ INSERT INTO admin_settings (setting_key, setting_value, description) VALUES
   ('maintenance_mode', 'false', 'Set to true to enable maintenance mode on storefront'),
   ('items_per_page', '10', 'Default pagination size for admin tables'),
   ('order_notification_email', 'admin@example.com', 'Email address to receive new order notifications'),
-  ('max_upload_size_mb', '5', 'Maximum file upload size in megabytes')
+  ('max_upload_size_mb', '5', 'Maximum file upload size in megabytes'),
+  ('banner_left_url', '/Banner/banner_1.jpg', 'URL for the left banner image on the home page'),
+  ('banner_right_url', '/Banner/banner_2.jpg', 'URL for the right banner image on the home page'),
+  ('collection_left_url', '/Collection/collection1.jpg', 'URL for the left collection banner image on the home page'),
+  ('collection_top_url', '/Collection/collection2.jpg', 'URL for the top-right collection banner image on the home page'),
+  ('collection_bottom_left_url', '/Collection/collection3.jpg', 'URL for the bottom-left collection banner image on the home page'),
+  ('deal_background_url', '/Deal/dealbg.jpg', 'URL for the Deal of the Week background image on the home page'),
+  ('hero_background_url', '/slideshow-pattern.png', 'URL for the hero section background image on the home page')
 ON CONFLICT (setting_key) DO NOTHING;

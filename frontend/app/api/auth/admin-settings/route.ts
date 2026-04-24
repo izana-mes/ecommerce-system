@@ -46,6 +46,7 @@ export async function PUT(request: Request) {
     const body = await request.json();
     const key = (body.setting_key || "").trim();
     const value = String(body.setting_value ?? "").trim();
+    const description = String(body.description ?? "").trim();
 
     if (!key) {
       return NextResponse.json(
@@ -54,10 +55,22 @@ export async function PUT(request: Request) {
       );
     }
 
-    await conn.execute(
+    const [, updateMeta] = await conn.execute(
       "UPDATE admin_settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?",
       [value, key]
     );
+    const updatedRows = Number(
+      (updateMeta as { affectedRows?: number; rowCount?: number } | undefined)?.affectedRows ??
+      (updateMeta as { affectedRows?: number; rowCount?: number } | undefined)?.rowCount ??
+      0
+    );
+
+    if (updatedRows === 0) {
+      await conn.execute(
+        "INSERT INTO admin_settings (setting_key, setting_value, description, updated_at) VALUES (?, ?, ?, NOW())",
+        [key, value, description || `Setting for ${key}`]
+      );
+    }
 
     return NextResponse.json({ message: "Setting updated" });
   } catch (error: unknown) {

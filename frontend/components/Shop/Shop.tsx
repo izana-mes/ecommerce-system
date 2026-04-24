@@ -28,6 +28,7 @@ import "./Shop.css";
 const FALLBACK_PRODUCT_IMAGE = "/Products/product_1.jpg";
 const ITEMS_PER_PAGE = 6;
 const PRODUCT_DESCRIPTION_STORAGE_KEY = "shop-product-descriptions";
+const REVIEW_INTERACTIONS_STORAGE_KEY = "shop-review-interactions";
 
 type ProductReview = {
   id: string;
@@ -36,6 +37,19 @@ type ProductReview = {
   author: string;
   createdAt: string;
   ownedByCurrentUser?: boolean;
+};
+
+type ReviewReply = {
+  id: string;
+  author: string;
+  content: string;
+  createdAt: string;
+};
+
+type ReviewInteractionState = {
+  likedByCurrentUser: boolean;
+  likeCount: number;
+  replies: ReviewReply[];
 };
 
 type ProductReviewSummary = {
@@ -84,6 +98,10 @@ function extractReviewNumber(value: string | undefined): number {
   return numberMatch ? Number(numberMatch[0]) : 0;
 }
 
+function buildReviewInteractionKey(productID: string, reviewID: string): string {
+  return `${productID}:${reviewID}`;
+}
+
 export default function Shop() {
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -124,6 +142,22 @@ export default function Shop() {
   const [showAuthRequiredModal, setShowAuthRequiredModal] = useState(false);
   const [buyNowProductId, setBuyNowProductId] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [reviewInteractionsByKey, setReviewInteractionsByKey] = useState<
+    Record<string, ReviewInteractionState>
+  >(() => {
+    if (typeof window === "undefined") {
+      return {};
+    }
+    try {
+      const raw = window.localStorage.getItem(REVIEW_INTERACTIONS_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  });
+  const [replyDraftByReviewKey, setReplyDraftByReviewKey] = useState<Record<string, string>>({});
+  const [activeReplyReviewKey, setActiveReplyReviewKey] = useState<string | null>(null);
 
   const cartItems = useAppSelector((state: RootState) => state.cart.itemsById);
   const wishListItems = useAppSelector((state) => state.wishList.itemsById);
@@ -193,6 +227,16 @@ export default function Shop() {
       JSON.stringify(productDescriptions)
     );
   }, [productDescriptions]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    window.localStorage.setItem(
+      REVIEW_INTERACTIONS_STORAGE_KEY,
+      JSON.stringify(reviewInteractionsByKey)
+    );
+  }, [reviewInteractionsByKey]);
 
   useEffect(() => {
     if (!selectedProduct) {
@@ -570,6 +614,122 @@ export default function Shop() {
       return "Just now";
     }
     return date.toLocaleString();
+  };
+
+  const getReviewInteraction = (productID: string, reviewID: string): ReviewInteractionState => {
+    const key = buildReviewInteractionKey(productID, reviewID);
+    const value = reviewInteractionsByKey[key];
+    if (!value) {
+      return {
+        likedByCurrentUser: false,
+        likeCount: 0,
+        replies: [],
+      };
+    }
+    return {
+      likedByCurrentUser: Boolean(value.likedByCurrentUser),
+      likeCount: Math.max(0, Number(value.likeCount ?? 0)),
+      replies: Array.isArray(value.replies) ? value.replies : [],
+    };
+  };
+
+  const toggleLikeReview = (reviewID: string) => {
+    if (!selectedProduct) {
+      return;
+    }
+    if (!isAuthenticated()) {
+      setShowAuthRequiredModal(true);
+      return;
+    }
+
+    const key = buildReviewInteractionKey(selectedProduct.productID, reviewID);
+    setReviewInteractionsByKey((prev) => {
+      const current = prev[key] ?? {
+        likedByCurrentUser: false,
+        likeCount: 0,
+        replies: [],
+      };
+      const nextLiked = !current.likedByCurrentUser;
+      const nextLikeCount = nextLiked
+        ? current.likeCount + 1
+        : Math.max(0, current.likeCount - 1);
+      return {
+        ...prev,
+        [key]: {
+          ...current,
+          likedByCurrentUser: nextLiked,
+          likeCount: nextLikeCount,
+        },
+      };
+    });
+  };
+
+  const toggleReplyDraft = (reviewID: string) => {
+    if (!selectedProduct) {
+      return;
+    }
+    if (!isAuthenticated()) {
+      setShowAuthRequiredModal(true);
+      return;
+    }
+    const key = buildReviewInteractionKey(selectedProduct.productID, reviewID);
+    setActiveReplyReviewKey((prev) => (prev === key ? null : key));
+  };
+
+  const handleReplyDraftChange = (reviewID: string, value: string) => {
+    if (!selectedProduct) {
+      return;
+    }
+    const key = buildReviewInteractionKey(selectedProduct.productID, reviewID);
+    setReplyDraftByReviewKey((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const submitReply = (reviewID: string) => {
+    if (!selectedProduct) {
+      return;
+    }
+    if (!isAuthenticated()) {
+      setShowAuthRequiredModal(true);
+      return;
+    }
+
+    const key = buildReviewInteractionKey(selectedProduct.productID, reviewID);
+    const replyText = (replyDraftByReviewKey[key] ?? "").trim();
+    if (replyText.length < 2) {
+      toast.error("Please enter a reply");
+      return;
+    }
+
+    const newReply: ReviewReply = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      author: "You",
+      content: replyText,
+      createdAt: new Date().toISOString(),
+    };
+
+    setReviewInteractionsByKey((prev) => {
+      const current = prev[key] ?? {
+        likedByCurrentUser: false,
+        likeCount: 0,
+        replies: [],
+      };
+      return {
+        ...prev,
+        [key]: {
+          ...current,
+          replies: [...current.replies, newReply],
+        },
+      };
+    });
+    setReplyDraftByReviewKey((prev) => ({
+      ...prev,
+      [key]: "",
+    }));
+    setActiveReplyReviewKey(null);
+    toast.success("Reply added");
   };
 
   const sortedProducts = useMemo(() => {
@@ -1032,6 +1192,19 @@ export default function Shop() {
                     ) : (
                       getProductReviews(selectedProduct.productID).map((review) => (
                         <article key={review.id} className="sdReviewCard">
+                          {(() => {
+                            const reviewInteraction = getReviewInteraction(
+                              selectedProduct.productID,
+                              review.id
+                            );
+                            const reviewKey = buildReviewInteractionKey(
+                              selectedProduct.productID,
+                              review.id
+                            );
+                            const replyDraft = replyDraftByReviewKey[reviewKey] ?? "";
+                            const isReplyOpen = activeReplyReviewKey === reviewKey;
+                            return (
+                              <>
                           <div className="sdReviewCardHeader">
                             <strong>{review.author}</strong>
                             <span>{formatReviewDateTime(review.createdAt)}</span>
@@ -1046,6 +1219,56 @@ export default function Shop() {
                             )}
                           </div>
                           <p>{review.comment}</p>
+                          <div className="sdReviewMetaActions">
+                            <button
+                              type="button"
+                              className="sdReviewMetaButton"
+                              onClick={() => toggleLikeReview(review.id)}
+                            >
+                              {reviewInteraction.likedByCurrentUser ? "Unlike" : "Like"} (
+                              {reviewInteraction.likeCount})
+                            </button>
+                            <button
+                              type="button"
+                              className="sdReviewMetaButton"
+                              onClick={() => toggleReplyDraft(review.id)}
+                            >
+                              Reply ({reviewInteraction.replies.length})
+                            </button>
+                          </div>
+                          {isReplyOpen && (
+                            <div className="sdReviewReplyComposer">
+                              <textarea
+                                value={replyDraft}
+                                onChange={(event) =>
+                                  handleReplyDraftChange(review.id, event.target.value)
+                                }
+                                placeholder="Write your reply..."
+                                rows={2}
+                              />
+                              <div className="sdReviewReplyComposerActions">
+                                <button type="button" onClick={() => submitReply(review.id)}>
+                                  Post Reply
+                                </button>
+                                <button type="button" onClick={() => setActiveReplyReviewKey(null)}>
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          {reviewInteraction.replies.length > 0 && (
+                            <div className="sdReviewReplyList">
+                              {reviewInteraction.replies.map((reply) => (
+                                <article key={reply.id} className="sdReviewReplyCard">
+                                  <div className="sdReviewReplyHeader">
+                                    <strong>{reply.author}</strong>
+                                    <span>{formatReviewDateTime(reply.createdAt)}</span>
+                                  </div>
+                                  <p>{reply.content}</p>
+                                </article>
+                              ))}
+                            </div>
+                          )}
                           {review.ownedByCurrentUser && (
                             <div className="sdReviewCardActions">
                               <button type="button" onClick={() => beginEditReview(review)}>
@@ -1094,6 +1317,9 @@ export default function Shop() {
                               </div>
                             </div>
                           )}
+                              </>
+                            );
+                          })()}
                         </article>
                       ))
                     )}

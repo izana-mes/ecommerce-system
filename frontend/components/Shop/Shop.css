@@ -751,6 +751,100 @@
   gap: 8px;
 }
 
+.sdReviewMetaActions {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sdReviewMetaButton {
+  border: 0;
+  background: transparent;
+  color: #1d4ed8;
+  font-size: 12px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.sdReviewMetaButton:hover {
+  text-decoration: underline;
+}
+
+.sdReviewReplyComposer {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sdReviewReplyComposer textarea {
+  border: 1px solid rgba(144, 165, 201, 0.45);
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: #12254b;
+  font-family: inherit;
+  font-size: 13px;
+  resize: vertical;
+  min-height: 60px;
+}
+
+.sdReviewReplyComposerActions {
+  display: flex;
+  gap: 8px;
+}
+
+.sdReviewReplyComposerActions button {
+  border: 1px solid rgba(154, 175, 210, 0.5);
+  background: rgba(255, 255, 255, 0.85);
+  color: #112246;
+  border-radius: 999px;
+  font-size: 12px;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.sdReviewReplyList {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-left: 2px solid rgba(154, 175, 210, 0.4);
+  padding-left: 10px;
+}
+
+.sdReviewReplyCard {
+  border: 1px solid rgba(157, 177, 211, 0.3);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.sdReviewReplyHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.sdReviewReplyHeader strong {
+  font-size: 12px;
+  color: #1f2937;
+}
+
+.sdReviewReplyHeader span {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.sdReviewReplyCard p {
+  margin: 0;
+  color: #374151;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .sdReviewCardActions button,
 .sdReviewEditActions button {
   border: 1px solid rgba(154, 175, 210, 0.5);

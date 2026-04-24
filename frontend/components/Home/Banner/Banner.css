@@ -8,7 +8,6 @@
 }
 
 .bannerLeft {
-  background-image: url("/Banner/banner_1.jpg");
   background-position: center;
   background-size: cover;
   display: flex;
@@ -21,7 +20,6 @@
 }
 
 .bannerRight {
-  background-image: url("/Banner/banner_2.jpg");
   background-position: center;
   background-size: cover;
   display: flex;

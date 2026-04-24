@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Canvas } from "@react-three/fiber";
 import { Model } from "../Model/Model";
@@ -9,6 +9,17 @@ import "./HeroSection.css";
 
 export default function HeroSection() {
   const [tshirtColor, setTshirtColor] = useState("red");
+  const [heroBackgroundUrl, setHeroBackgroundUrl] = useState("/slideshow-pattern.png");
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        const settings = data?.settings ?? {};
+        if (settings.hero_background_url) setHeroBackgroundUrl(settings.hero_background_url);
+      })
+      .catch((err) => console.error("Error fetching home settings:", err));
+  }, []);
 
   const changeColor = (color: any) => {
     setTshirtColor(color);
@@ -21,9 +32,9 @@ export default function HeroSection() {
     });
   };
 
-  return (
+    return (
     <>
-      <div className="heroSection">
+      <div className="heroSection" style={{ backgroundImage: `url("${heroBackgroundUrl}")` }}>
         <div className="sectionLeft">
           <p>New Trend</p>
           <h1>Summer Sale Stylish</h1>
