@@ -25,6 +25,7 @@ import Badge from "@mui/material/Badge";
 const BASE_LINKS = [
   { href: "/", key: "nav_home" as TranslationKey },
   { href: "/shop", key: "nav_shop" as TranslationKey },
+  { href: "/support-chat", key: "nav_chatbot" as TranslationKey },
   { href: "/about", key: "nav_about" as TranslationKey },
   { href: "/blog", key: "nav_blog" as TranslationKey },
   { href: "/contact", key: "nav_contact" as TranslationKey },
@@ -39,6 +40,7 @@ export default function Navbar() {
   const [menuMobileOpen, setMenuMobileOpen] = useState(false);
   const [hasUser, setHasUser] = useState(false);
   const [isAdminUser, setIsAdminUser] = useState(false);
+  const [isStaffUser, setIsStaffUser] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
@@ -89,15 +91,18 @@ export default function Navbar() {
       const user = getUser();
       setHasUser(!!user);
       setIsAdminUser(user?.role === "admin");
+      setIsStaffUser(user?.role === "employee");
       void fetchSearchHistory();
       void refreshCurrentUserFromServer().then((refreshed) => {
         if (!refreshed) {
           setHasUser(false);
           setIsAdminUser(false);
+          setIsStaffUser(false);
           return;
         }
         setHasUser(true);
         setIsAdminUser(refreshed.role === "admin");
+        setIsStaffUser(refreshed.role === "employee");
         void fetchSearchHistory();
       });
     };
@@ -220,11 +225,15 @@ export default function Navbar() {
   }, [menuMobileOpen]);
 
   const navLinks = useMemo(() => {
-    if (isAdminUser) {
-      return [...BASE_LINKS, { href: "/admin", key: "nav_admin" as TranslationKey }];
+    if (isAdminUser || isStaffUser) {
+      return [
+        ...BASE_LINKS,
+        { href: "/staff/support-chat", key: "nav_assistant" as TranslationKey },
+        ...(isAdminUser ? [{ href: "/admin", key: "nav_admin" as TranslationKey }] : []),
+      ];
     }
     return BASE_LINKS;
-  }, [isAdminUser]);
+  }, [isAdminUser, isStaffUser]);
 
   const isCurrentLink = useCallback(
     (href: string) => {

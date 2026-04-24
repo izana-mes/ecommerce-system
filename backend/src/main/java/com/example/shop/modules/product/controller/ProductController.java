@@ -5,6 +5,9 @@ import com.example.shop.common.exception.UnauthorizedException;
 import com.example.shop.modules.product.dto.ProductDto;
 import com.example.shop.modules.product.dto.StockAdjustmentRequestDto;
 import com.example.shop.modules.product.service.ProductService;
+import com.example.shop.modules.productapproval.dto.ProductChangeRequestResponseDto;
+import com.example.shop.modules.productapproval.dto.request.ReviewProductChangeRequestDto;
+import com.example.shop.modules.productapproval.service.ProductChangeRequestService;
 import com.example.shop.modules.searchhistory.service.SearchHistoryService;
 import com.example.shop.modules.user.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +20,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/products")
@@ -26,6 +30,7 @@ public class ProductController {
     private final ProductService productService;
     private final SearchHistoryService searchHistoryService;
     private final AdminAuditLogger adminAuditLogger;
+    private final ProductChangeRequestService productChangeRequestService;
     @Value("${application.internal.notify-token:}")
     private String internalNotifyToken;
 
@@ -64,11 +69,18 @@ public class ProductController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<ProductDto>> addProducts(
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    public ResponseEntity<?> addProducts(
             @RequestBody List<ProductDto> products,
             @AuthenticationPrincipal User actor
     ) {
+        if (hasRole(actor, "ROLE_EMPLOYEE")) {
+            ProductChangeRequestResponseDto request = productChangeRequestService.requestBulkUpsert(products, actor);
+            return ResponseEntity.accepted().body(Map.of(
+                    "message", "Bulk product change request submitted for admin approval",
+                    "request", request
+            ));
+        }
         List<ProductDto> saved = productService.saveAllProducts(products);
         adminAuditLogger.log(
                 "PRODUCT_BULK_UPSERT",
@@ -107,11 +119,18 @@ public class ProductController {
     }
 
     @PostMapping("/single")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ProductDto> addProduct(
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    public ResponseEntity<?> addProduct(
             @RequestBody ProductDto product,
             @AuthenticationPrincipal User actor
     ) {
+        if (hasRole(actor, "ROLE_EMPLOYEE")) {
+            ProductChangeRequestResponseDto request = productChangeRequestService.requestCreate(product, actor);
+            return ResponseEntity.accepted().body(Map.of(
+                    "message", "Product create request submitted for admin approval",
+                    "request", request
+            ));
+        }
         ProductDto created = productService.createProduct(product);
         adminAuditLogger.log(
                 "PRODUCT_CREATE",
@@ -122,12 +141,19 @@ public class ProductController {
     }
 
     @PutMapping("/{productID}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ProductDto> updateProduct(
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    public ResponseEntity<?> updateProduct(
             @PathVariable("productID") String productID,
             @RequestBody ProductDto product,
             @AuthenticationPrincipal User actor
     ) {
+        if (hasRole(actor, "ROLE_EMPLOYEE")) {
+            ProductChangeRequestResponseDto request = productChangeRequestService.requestUpdate(productID, product, actor);
+            return ResponseEntity.accepted().body(Map.of(
+                    "message", "Product update request submitted for admin approval",
+                    "request", request
+            ));
+        }
         ProductDto updated = productService.updateProduct(productID, product);
         adminAuditLogger.log(
                 "PRODUCT_UPDATE",
@@ -138,11 +164,18 @@ public class ProductController {
     }
 
     @DeleteMapping("/{productID}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteProduct(
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    public ResponseEntity<?> deleteProduct(
             @PathVariable("productID") String productID,
             @AuthenticationPrincipal User actor
     ) {
+        if (hasRole(actor, "ROLE_EMPLOYEE")) {
+            ProductChangeRequestResponseDto request = productChangeRequestService.requestDelete(productID, actor);
+            return ResponseEntity.accepted().body(Map.of(
+                    "message", "Product delete request submitted for admin approval",
+                    "request", request
+            ));
+        }
         productService.deleteProduct(productID);
         adminAuditLogger.log(
                 "PRODUCT_DELETE",
@@ -150,6 +183,36 @@ public class ProductController {
                 Map.of("productID", productID)
         );
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/change-requests")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<ProductChangeRequestResponseDto>> listChangeRequests(
+            @RequestParam(value = "status", required = false) String status
+    ) {
+        return ResponseEntity.ok(productChangeRequestService.listRequests(status));
+    }
+
+    @PostMapping("/change-requests/{requestId}/approve")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProductChangeRequestResponseDto> approveChangeRequest(
+            @PathVariable("requestId") UUID requestId,
+            @RequestBody(required = false) ReviewProductChangeRequestDto request,
+            @AuthenticationPrincipal User actor
+    ) {
+        String note = request == null ? null : request.getNote();
+        return ResponseEntity.ok(productChangeRequestService.approve(requestId, actor, note));
+    }
+
+    @PostMapping("/change-requests/{requestId}/reject")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProductChangeRequestResponseDto> rejectChangeRequest(
+            @PathVariable("requestId") UUID requestId,
+            @RequestBody(required = false) ReviewProductChangeRequestDto request,
+            @AuthenticationPrincipal User actor
+    ) {
+        String note = request == null ? null : request.getNote();
+        return ResponseEntity.ok(productChangeRequestService.reject(requestId, actor, note));
     }
 
     private void requireInternalToken(String token) {
@@ -165,5 +228,12 @@ public class ProductController {
 
     private String actorEmail(User actor) {
         return actor == null ? "unknown" : String.valueOf(actor.getEmail());
+    }
+
+    private boolean hasRole(User actor, String roleName) {
+        if (actor == null || actor.getRoles() == null) {
+            return false;
+        }
+        return actor.getRoles().stream().anyMatch(role -> roleName.equalsIgnoreCase(role.getName()));
     }
 }

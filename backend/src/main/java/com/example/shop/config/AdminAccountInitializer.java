@@ -50,6 +50,8 @@ public class AdminAccountInitializer implements CommandLineRunner {
                 .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_USER").build()));
         Role adminRole = roleRepository.findByName("ROLE_ADMIN")
                 .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_ADMIN").build()));
+        roleRepository.findByName("ROLE_EMPLOYEE")
+                .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_EMPLOYEE").build()));
 
         User adminUser = userRepository.findByEmail(adminEmail).orElse(null);
 

@@ -4,7 +4,7 @@ export interface User {
   id?: number | string;
   username?: string;
   email: string;
-  role: "user" | "admin";
+  role: "user" | "admin" | "employee";
   firstName?: string;
   lastName?: string;
 }
@@ -47,7 +47,7 @@ function setStoredUser(user: User): void {
   storage.setItem("user", JSON.stringify(user));
 }
 
-async function resolveRoleFromServer(token: string): Promise<"user" | "admin"> {
+async function resolveRoleFromServer(token: string): Promise<"user" | "admin" | "employee"> {
   try {
     const meResponse = await fetch("/api/auth/me", {
       method: "GET",
@@ -60,7 +60,9 @@ async function resolveRoleFromServer(token: string): Promise<"user" | "admin"> {
     const profile = meData?.data;
 
     if (profile?.role === "admin") return "admin";
+    if (profile?.role === "employee") return "employee";
     if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_ADMIN")) return "admin";
+    if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_EMPLOYEE")) return "employee";
   } catch {
     // If profile lookup fails, keep default user role.
     return "user";

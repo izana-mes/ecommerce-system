@@ -189,7 +189,7 @@ public class UserService {
 
         if (actorEmail != null
                 && actorEmail.equalsIgnoreCase(user.getEmail())
-                && "ROLE_USER".equals(normalizedRole)) {
+                && !"ROLE_ADMIN".equals(normalizedRole)) {
             throw new BusinessException("You cannot remove admin role from your own account", HttpStatus.BAD_REQUEST);
         }
 
@@ -200,6 +200,9 @@ public class UserService {
         if ("ROLE_ADMIN".equals(normalizedRole)) {
             Role adminRole = findOrCreateSystemRole("ROLE_ADMIN");
             nextRoles.add(adminRole);
+        } else if ("ROLE_EMPLOYEE".equals(normalizedRole)) {
+            Role employeeRole = findOrCreateSystemRole("ROLE_EMPLOYEE");
+            nextRoles.add(employeeRole);
         }
 
         user.setRoles(nextRoles);
@@ -219,12 +222,16 @@ public class UserService {
 
         if ("ADMIN".equals(normalized)) {
             normalized = "ROLE_ADMIN";
+        } else if ("EMPLOYEE".equals(normalized)) {
+            normalized = "ROLE_EMPLOYEE";
         } else if ("USER".equals(normalized)) {
             normalized = "ROLE_USER";
         }
 
-        if (!"ROLE_USER".equals(normalized) && !"ROLE_ADMIN".equals(normalized)) {
-            throw new BusinessException("Unsupported role. Allowed values: user, admin", HttpStatus.BAD_REQUEST);
+        if (!"ROLE_USER".equals(normalized)
+                && !"ROLE_ADMIN".equals(normalized)
+                && !"ROLE_EMPLOYEE".equals(normalized)) {
+            throw new BusinessException("Unsupported role. Allowed values: user, employee, admin", HttpStatus.BAD_REQUEST);
         }
         return normalized;
     }

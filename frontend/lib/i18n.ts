@@ -7,7 +7,9 @@ export type TranslationKey =
   | "nav_about"
   | "nav_blog"
   | "nav_contact"
+  | "nav_chatbot"
   | "nav_admin"
+  | "nav_assistant"
   | "search_placeholder"
   | "search_aria"
   | "account_aria"
@@ -27,7 +29,9 @@ export const translations: Record<Locale, Dictionary> = {
     nav_about: "ABOUT",
     nav_blog: "BLOG",
     nav_contact: "CONTACT",
+    nav_chatbot: "CHATBOT",
     nav_admin: "ADMIN",
+    nav_assistant: "ASSISTANT",
     search_placeholder: "Search products",
     search_aria: "Search products",
     account_aria: "Account",
@@ -44,7 +48,9 @@ export const translations: Record<Locale, Dictionary> = {
     nav_about: "会社情報",
     nav_blog: "ブログ",
     nav_contact: "お問い合わせ",
+    nav_chatbot: "チャットボット",
     nav_admin: "管理",
+    nav_assistant: "アシスタント",
     search_placeholder: "商品を検索",
     search_aria: "商品を検索",
     account_aria: "アカウント",

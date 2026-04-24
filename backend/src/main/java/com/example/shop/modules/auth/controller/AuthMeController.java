@@ -30,7 +30,9 @@ public class AuthMeController {
                 : user.getRoles().stream()
                 .map(Role::getName)
                 .toList();
-        String normalizedRole = roles.stream().anyMatch("ROLE_ADMIN"::equalsIgnoreCase) ? "admin" : "user";
+        String normalizedRole = roles.stream().anyMatch("ROLE_ADMIN"::equalsIgnoreCase)
+                ? "admin"
+                : roles.stream().anyMatch("ROLE_EMPLOYEE"::equalsIgnoreCase) ? "employee" : "user";
         Map<String, Object> data = new HashMap<>();
         data.put("id", user.getId());
         data.put("email", user.getEmail());

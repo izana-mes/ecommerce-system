@@ -1,0 +1,142 @@
+.customerChatbotPage {
+  min-height: 70vh;
+  padding: 34px 14px;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(100, 168, 255, 0.22), transparent 40%),
+    radial-gradient(circle at 90% 0%, rgba(255, 191, 120, 0.16), transparent 35%),
+    linear-gradient(180deg, #f8fbff 0%, #edf3ff 100%);
+}
+
+.customerChatbotContainer {
+  max-width: 980px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid #d7e0f3;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 18px 42px rgba(18, 40, 75, 0.12);
+}
+
+.customerChatbotHeader h1 {
+  margin: 0;
+  font-size: 34px;
+  color: #17294b;
+}
+
+.customerChatbotHeader p {
+  margin: 10px 0 0;
+  color: #3e577f;
+}
+
+.customerPromptRow {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.customerPromptRow button {
+  border: 1px solid #c9d8f4;
+  background: #f5f9ff;
+  color: #1f3e6f;
+  border-radius: 999px;
+  font-size: 13px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.customerPromptRow button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.customerChatbotMessages {
+  margin-top: 18px;
+  border: 1px solid #d4dff3;
+  border-radius: 14px;
+  background: #f8faff;
+  padding: 12px;
+  min-height: 280px;
+  max-height: 520px;
+  overflow-y: auto;
+  display: grid;
+  gap: 10px;
+}
+
+.customerMessageBubble {
+  max-width: 90%;
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 6px 14px rgba(20, 38, 73, 0.08);
+}
+
+.customerMessageBubble p {
+  margin: 0;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.customerMessageBubble.assistant {
+  justify-self: start;
+  background: #fff;
+  color: #1f3257;
+}
+
+.customerMessageBubble.user {
+  justify-self: end;
+  background: #1f5eff;
+  color: #fff;
+}
+
+.customerLoadingText {
+  margin: 4px 2px;
+  color: #3c5888;
+  font-size: 14px;
+}
+
+.customerComposer {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.customerComposer textarea {
+  width: 100%;
+  border: 1px solid #bfd0f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #1a2d50;
+  padding: 12px;
+  resize: vertical;
+  min-height: 90px;
+}
+
+.customerComposer button {
+  justify-self: end;
+  border: 0;
+  border-radius: 10px;
+  background: #1f5eff;
+  color: #fff;
+  font-weight: 700;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+.customerComposer button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+@media (max-width: 768px) {
+  .customerChatbotContainer {
+    padding: 18px;
+  }
+
+  .customerChatbotHeader h1 {
+    font-size: 28px;
+  }
+
+  .customerMessageBubble {
+    max-width: 100%;
+  }
+}

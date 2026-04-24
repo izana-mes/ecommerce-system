@@ -34,7 +34,9 @@ public class UserSummaryResponse {
                 .map(role -> role.getName())
                 .collect(Collectors.toList());
 
-        String normalizedRole = roles.stream().anyMatch("ROLE_ADMIN"::equalsIgnoreCase) ? "admin" : "user";
+        String normalizedRole = roles.stream().anyMatch("ROLE_ADMIN"::equalsIgnoreCase)
+                ? "admin"
+                : roles.stream().anyMatch("ROLE_EMPLOYEE"::equalsIgnoreCase) ? "employee" : "user";
 
         return UserSummaryResponse.builder()
                 .id(user.getId())

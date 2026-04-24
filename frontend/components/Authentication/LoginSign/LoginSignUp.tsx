@@ -35,9 +35,11 @@ const LoginSignUp = () => {
     error instanceof Error ? error.message : fallback;
   const resolveRole = (
     profile: { role?: string; roles?: string[] } | null | undefined
-  ): "user" | "admin" => {
+  ): "user" | "admin" | "employee" => {
     if (profile?.role === "admin") return "admin";
+    if (profile?.role === "employee") return "employee";
     if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_ADMIN")) return "admin";
+    if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_EMPLOYEE")) return "employee";
 
     return "user";
   };
@@ -106,7 +108,7 @@ const LoginSignUp = () => {
 
       let resolvedUser = {
         email: loginEmail,
-        role: "user" as "user" | "admin",
+        role: "user" as "user" | "admin" | "employee",
         firstName: undefined as string | undefined,
         lastName: undefined as string | undefined,
         id: undefined as string | number | undefined,
