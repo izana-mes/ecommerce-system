@@ -395,9 +395,11 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-function resolveAdminUserRole(user: { role?: string; roles?: string[] }): "user" | "admin" {
+function resolveAdminUserRole(user: { role?: string; roles?: string[] }): "user" | "employee" | "admin" {
   if ((user.role || "").toLowerCase() === "admin") return "admin";
+  if ((user.role || "").toLowerCase() === "employee") return "employee";
   if (Array.isArray(user.roles) && user.roles.some((role) => role.toUpperCase() === "ROLE_ADMIN")) return "admin";
+  if (Array.isArray(user.roles) && user.roles.some((role) => role.toUpperCase() === "ROLE_EMPLOYEE")) return "employee";
   return "user";
 }
 
@@ -1312,7 +1314,7 @@ export default function AdminPage() {
     }
   };
 
-  const handleUpdateUserRole = async (user: AdminUser, nextRole: "user" | "admin") => {
+  const handleUpdateUserRole = async (user: AdminUser, nextRole: "user" | "employee" | "admin") => {
     if (!token) {
       router.replace("/login");
       return;
@@ -1345,7 +1347,12 @@ export default function AdminPage() {
             ? {
                 ...item,
                 role: nextRole,
-                roles: nextRole === "admin" ? ["ROLE_USER", "ROLE_ADMIN"] : ["ROLE_USER"],
+                roles:
+                  nextRole === "admin"
+                    ? ["ROLE_USER", "ROLE_ADMIN"]
+                    : nextRole === "employee"
+                      ? ["ROLE_USER", "ROLE_EMPLOYEE"]
+                      : ["ROLE_USER"],
               }
             : item
         )
@@ -2686,10 +2693,14 @@ export default function AdminPage() {
                                   value={role}
                                   disabled={isProcessing}
                                   onChange={(event) =>
-                                    void handleUpdateUserRole(user, event.target.value as "user" | "admin")
+                                    void handleUpdateUserRole(
+                                      user,
+                                      event.target.value as "user" | "employee" | "admin"
+                                    )
                                   }
                                 >
                                   <option value="user">User</option>
+                                  <option value="employee">Employee</option>
                                   <option value="admin">Admin</option>
                                 </select>
                               </td>

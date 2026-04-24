@@ -16,7 +16,7 @@ import {
   removeFromWishlistAsync,
   wishListProduct,
 } from "@/store/wishListSlice";
-import { getToken, isAuthenticated } from "@/lib/auth";
+import { getToken, getUser, isAuthenticated } from "@/lib/auth";
 import { DataStore } from "@/data/StoreData";
 import { useProducts } from "@/hooks/useProducts";
 import { createPortal } from "react-dom";
@@ -98,8 +98,25 @@ function extractReviewNumber(value: string | undefined): number {
   return numberMatch ? Number(numberMatch[0]) : 0;
 }
 
-function buildReviewInteractionKey(productID: string, reviewID: string): string {
-  return `${productID}:${reviewID}`;
+function resolveReviewInteractionActorKey(): string {
+  const user = getUser();
+  if (!user) {
+    return "guest";
+  }
+
+  const rawIdentity = String(user.id ?? user.email ?? user.username ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (!rawIdentity) {
+    return "user:unknown";
+  }
+
+  return `user:${rawIdentity}`;
+}
+
+function buildReviewInteractionKey(productID: string, reviewID: string, actorKey: string): string {
+  return `${actorKey}:${productID}:${reviewID}`;
 }
 
 export default function Shop() {
@@ -617,7 +634,7 @@ export default function Shop() {
   };
 
   const getReviewInteraction = (productID: string, reviewID: string): ReviewInteractionState => {
-    const key = buildReviewInteractionKey(productID, reviewID);
+    const key = buildReviewInteractionKey(productID, reviewID, resolveReviewInteractionActorKey());
     const value = reviewInteractionsByKey[key];
     if (!value) {
       return {
@@ -642,7 +659,11 @@ export default function Shop() {
       return;
     }
 
-    const key = buildReviewInteractionKey(selectedProduct.productID, reviewID);
+    const key = buildReviewInteractionKey(
+      selectedProduct.productID,
+      reviewID,
+      resolveReviewInteractionActorKey()
+    );
     setReviewInteractionsByKey((prev) => {
       const current = prev[key] ?? {
         likedByCurrentUser: false,
@@ -672,7 +693,11 @@ export default function Shop() {
       setShowAuthRequiredModal(true);
       return;
     }
-    const key = buildReviewInteractionKey(selectedProduct.productID, reviewID);
+    const key = buildReviewInteractionKey(
+      selectedProduct.productID,
+      reviewID,
+      resolveReviewInteractionActorKey()
+    );
     setActiveReplyReviewKey((prev) => (prev === key ? null : key));
   };
 
@@ -680,7 +705,11 @@ export default function Shop() {
     if (!selectedProduct) {
       return;
     }
-    const key = buildReviewInteractionKey(selectedProduct.productID, reviewID);
+    const key = buildReviewInteractionKey(
+      selectedProduct.productID,
+      reviewID,
+      resolveReviewInteractionActorKey()
+    );
     setReplyDraftByReviewKey((prev) => ({
       ...prev,
       [key]: value,
@@ -696,7 +725,11 @@ export default function Shop() {
       return;
     }
 
-    const key = buildReviewInteractionKey(selectedProduct.productID, reviewID);
+    const key = buildReviewInteractionKey(
+      selectedProduct.productID,
+      reviewID,
+      resolveReviewInteractionActorKey()
+    );
     const replyText = (replyDraftByReviewKey[key] ?? "").trim();
     if (replyText.length < 2) {
       toast.error("Please enter a reply");
@@ -1193,13 +1226,15 @@ export default function Shop() {
                       getProductReviews(selectedProduct.productID).map((review) => (
                         <article key={review.id} className="sdReviewCard">
                           {(() => {
+                            const actorKey = resolveReviewInteractionActorKey();
                             const reviewInteraction = getReviewInteraction(
                               selectedProduct.productID,
                               review.id
                             );
                             const reviewKey = buildReviewInteractionKey(
                               selectedProduct.productID,
-                              review.id
+                              review.id,
+                              actorKey
                             );
                             const replyDraft = replyDraftByReviewKey[reviewKey] ?? "";
                             const isReplyOpen = activeReplyReviewKey === reviewKey;
