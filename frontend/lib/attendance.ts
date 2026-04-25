@@ -437,7 +437,6 @@ export async function getAttendanceSnapshot(employee: EmployeeIdentity): Promise
   try {
     conn = await getConnection();
     await ensureAttendanceTables(conn);
-    const db = conn;
     return await buildSnapshot(conn, employee, now);
   } finally {
     await conn?.end();
@@ -622,6 +621,7 @@ export async function getAdminAttendanceSnapshot(
   try {
     conn = await getConnection();
     await ensureAttendanceTables(conn);
+    const db = conn;
 
     const [summaryRows] = await db.execute<
       Array<{ employees_tracked: number; active_employees: number; employees_on_break: number }>
@@ -764,10 +764,14 @@ export async function getAdminAttendanceSnapshot(
         weekWorkedMinutes,
       },
       activeShifts: await Promise.all(
-        (activeRows || []).map((row) => toComputedAdminRecord(db, row, now, Boolean(row.has_open_break)))
+        (activeRows || []).map((row: AdminAttendanceShiftRow) =>
+          toComputedAdminRecord(db, row, now, Boolean(row.has_open_break))
+        )
       ),
       records: await Promise.all(
-        (recordRows || []).map((row) => toComputedAdminRecord(db, row, now, Boolean(row.has_open_break)))
+        (recordRows || []).map((row: AdminAttendanceShiftRow) =>
+          toComputedAdminRecord(db, row, now, Boolean(row.has_open_break))
+        )
       ),
     };
   } finally {

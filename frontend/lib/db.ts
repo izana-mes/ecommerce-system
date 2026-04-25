@@ -203,7 +203,14 @@ function createMysqlAdapter(conn: mysql.Connection): DbConnection {
   };
 }
 
-const pgPool = new Pool(resolvePgConfig());
+let pgPool: Pool | null = null;
+
+function getPgPool(): Pool {
+  if (!pgPool) {
+    pgPool = new Pool(resolvePgConfig());
+  }
+  return pgPool;
+}
 
 export async function getConnection(): Promise<DbConnection> {
   const client = getDbClient();
@@ -214,7 +221,7 @@ export async function getConnection(): Promise<DbConnection> {
     }
 
     if (client === "postgres") {
-      const pgClient = await pgPool.connect();
+      const pgClient = await getPgPool().connect();
       return createPostgresAdapter(pgClient);
     }
 
