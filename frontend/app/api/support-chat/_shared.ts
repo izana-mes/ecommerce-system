@@ -102,7 +102,7 @@ function isDbUnavailableError(error: unknown): boolean {
 
 function shouldUseMemory(error?: unknown): boolean {
   if (storageMode === "memory") return true;
-  if (!error) return storageMode === "memory";
+  if (!error) return false;
   if (isDbUnavailableError(error)) {
     storageMode = "memory";
     return true;
