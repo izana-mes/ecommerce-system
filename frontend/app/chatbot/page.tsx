@@ -132,8 +132,8 @@ export default function CustomerChatbotPage() {
     <section className="customerChatbotPage">
       <div className="customerChatbotContainer">
         <header className="customerChatbotHeader">
-          <h1>Customer Assistant</h1>
-          <p>Ask product and order questions. Answers are based on live catalog and order data.</p>
+          <h1>AI Customer Assistant</h1>
+          <p>Ask product and order questions here. This page talks to the AI assistant, not to staff.</p>
         </header>
 
         <div className="customerPromptRow">
@@ -160,7 +160,7 @@ export default function CustomerChatbotPage() {
           <textarea
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
-            placeholder="Ask about product price, stock, shipping, returns, or your order status..."
+            placeholder="Ask the AI about product price, stock, shipping, returns, or your order status..."
             rows={3}
           />
           <button type="submit" disabled={!canSend}>

@@ -1,32 +1,25 @@
 import { NextResponse } from "next/server";
-import { getAdminAttendanceSnapshot, resolveAdminFromRequest } from "@/lib/attendance";
-
-function getStatusCode(message: string): number {
-  const normalized = message.toLowerCase();
-  if (normalized.includes("forbidden")) return 403;
-  if (normalized.includes("missing authentication") || normalized.includes("unable to resolve authenticated")) {
-    return 401;
-  }
-  return 400;
-}
+import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 export async function GET(request: Request) {
   try {
-    await resolveAdminFromRequest(request);
-
     const { searchParams } = new URL(request.url);
-    const snapshot = await getAdminAttendanceSnapshot({
-      query: searchParams.get("query") || "",
-      status: (searchParams.get("status") || "all") as "all" | "active" | "on_break" | "closed",
-      dateFrom: searchParams.get("dateFrom") || "",
-      dateTo: searchParams.get("dateTo") || "",
-      limit: Number(searchParams.get("limit") || 50),
+    const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
+    const cookieHeader = request.headers.get("cookie");
+    const response = await fetch(`${backendApiBaseUrl()}/admin/attendance?${searchParams.toString()}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        ...(authHeader ? { Authorization: authHeader } : {}),
+        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      },
+      cache: "no-store",
     });
-
-    return NextResponse.json(snapshot, { status: 200 });
+    const payload = await response.json().catch(() => ({}));
+    return NextResponse.json(payload, { status: response.status });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to fetch attendance dashboard.";
     console.error("GET /api/auth/admin-attendance error:", message);
-    return NextResponse.json({ error: message }, { status: getStatusCode(message) });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

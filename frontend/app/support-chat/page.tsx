@@ -156,8 +156,8 @@ export default function SupportChatPage() {
     <section className="supportChatPage">
       <div className="supportChatContainer">
         <header className="supportChatHeader">
-          <h1>Live Support Chat</h1>
-          <p>Chat directly with staff and administrators in real time.</p>
+          <h1>Message Staff</h1>
+          <p>This page sends messages directly to staff and administrators. It is separate from the AI assistant.</p>
           <p className="supportChatIdentity">
             You are signed in as: {customer?.email || "Guest"}
           </p>
@@ -187,7 +187,7 @@ export default function SupportChatPage() {
           <textarea
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-            placeholder="Type your message for support..."
+            placeholder="Type your message to staff..."
             rows={3}
           />
           <button type="submit" disabled={!canSend}>

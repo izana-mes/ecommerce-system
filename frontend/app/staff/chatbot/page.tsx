@@ -171,10 +171,10 @@ export default function StaffChatbotPage() {
     <section className="staffChatbotPage">
       <div className="staffChatbotContainer">
         <header className="staffChatbotHeader">
-          <h1>Staff Assistant</h1>
+          <h1>AI Staff Assistant</h1>
           <p>
-            Answers are generated from your live database records so staff and admins can respond quickly with
-            accurate operational data.
+            Ask the AI assistant about orders, customers, revenue, and stock. Customer messages to staff appear in the
+            inbox, not here.
           </p>
         </header>
 

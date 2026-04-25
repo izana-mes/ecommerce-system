@@ -1,64 +1,50 @@
 import { NextResponse } from "next/server";
-import {
-  applyAttendanceAction,
-  AttendanceAction,
-  getAttendanceSnapshot,
-  resolveEmployeeFromRequest,
-} from "@/lib/attendance";
+import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 type AttendancePostRequest = {
-  action?: AttendanceAction;
+  action?: "clock_in" | "clock_out" | "start_break" | "end_break";
   note?: string;
 };
 
-function getStatusCode(message: string): number {
-  const normalized = message.toLowerCase();
-  if (normalized.includes("forbidden")) return 403;
-  if (normalized.includes("missing authentication") || normalized.includes("unable to resolve authenticated")) {
-    return 401;
-  }
-  if (
-    normalized.includes("already") ||
-    normalized.includes("no active") ||
-    normalized.includes("no active break")
-  ) {
-    return 409;
-  }
-  return 400;
+async function proxyAttendance(request: Request, init?: RequestInit) {
+  const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
+  const cookieHeader = request.headers.get("cookie");
+
+  const response = await fetch(`${backendApiBaseUrl()}/attendance`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(authHeader ? { Authorization: authHeader } : {}),
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      ...(init?.headers || {}),
+    },
+    cache: "no-store",
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  return NextResponse.json(payload, { status: response.status });
 }
 
 export async function GET(request: Request) {
   try {
-    const employee = await resolveEmployeeFromRequest(request);
-    const snapshot = await getAttendanceSnapshot(employee);
-    return NextResponse.json(snapshot, { status: 200 });
+    return await proxyAttendance(request, { method: "GET" });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to fetch attendance snapshot.";
     console.error("GET /api/attendance error:", message);
-    return NextResponse.json({ error: message }, { status: getStatusCode(message) });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const employee = await resolveEmployeeFromRequest(request);
     const body = (await request.json().catch(() => ({}))) as AttendancePostRequest;
-    const action = body.action;
-
-    if (!action || !["clock_in", "clock_out", "start_break", "end_break"].includes(action)) {
-      return NextResponse.json(
-        {
-          error: "Invalid action. Use one of: clock_in, clock_out, start_break, end_break.",
-        },
-        { status: 400 }
-      );
-    }
-
-    const snapshot = await applyAttendanceAction(employee, action, body.note);
-    return NextResponse.json(snapshot, { status: 200 });
+    return await proxyAttendance(request, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Attendance action failed.";
     console.error("POST /api/attendance error:", message);
-    return NextResponse.json({ error: message }, { status: getStatusCode(message) });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -25,7 +25,8 @@ import Badge from "@mui/material/Badge";
 const BASE_LINKS = [
   { href: "/", key: "nav_home" as TranslationKey },
   { href: "/shop", key: "nav_shop" as TranslationKey },
-  { href: "/support-chat", key: "nav_chatbot" as TranslationKey },
+  { href: "/chatbot", key: "nav_chatbot" as TranslationKey },
+  { href: "/support-chat", key: "nav_support" as TranslationKey },
   { href: "/about", key: "nav_about" as TranslationKey },
   { href: "/blog", key: "nav_blog" as TranslationKey },
   { href: "/contact", key: "nav_contact" as TranslationKey },
@@ -229,7 +230,8 @@ export default function Navbar() {
       return [
         ...BASE_LINKS,
         { href: "/staff/attendance", key: "nav_attendance" as TranslationKey },
-        { href: "/staff/support-chat", key: "nav_assistant" as TranslationKey },
+        { href: "/staff/chatbot", key: "nav_assistant" as TranslationKey },
+        { href: "/staff/support-chat", key: "nav_inbox" as TranslationKey },
         ...(isAdminUser ? [{ href: "/admin", key: "nav_admin" as TranslationKey }] : []),
       ];
     }
