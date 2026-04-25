@@ -151,7 +151,11 @@ public class SupportChatServiceImpl implements SupportChatService {
 
     private String getSenderRole(User user) {
         if (user == null) return "customer";
-        String r = user.getRoles().toString().toLowerCase();
+        // Use getAuthorities() instead of getRoles().toString() to avoid triggering
+        // Lombok @Data toString() on Role which accesses the lazy Role.users collection.
+        String r = user.getAuthorities().stream()
+                .map(a -> a.getAuthority().toLowerCase())
+                .collect(Collectors.joining(","));
         if (r.contains("admin")) return "admin";
         if (r.contains("staff") || r.contains("employee")) return "employee";
         return "customer";
