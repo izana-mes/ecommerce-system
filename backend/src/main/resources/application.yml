@@ -158,4 +158,13 @@ application:
       audit-event: ${MESSAGING_ROUTING_KEY_AUDIT_EVENT:audit.event}
   inventory:
     low-stock-threshold: ${LOW_STOCK_THRESHOLD:5}
-
+  chatbot:
+    ai:
+      enabled: ${CHATBOT_AI_ENABLED:false}
+      base-url: ${CHATBOT_AI_BASE_URL:https://openrouter.ai/api/v1}
+      api-key: ${CHATBOT_AI_API_KEY:}
+      model: ${CHATBOT_AI_MODEL:google/gemma-3-4b-it:free}
+      referer: ${CHATBOT_AI_REFERER:${FRONTEND_URL:http://localhost:3000}}
+      app-name: ${CHATBOT_AI_APP_NAME:shop-chatbot}
+      temperature: ${CHATBOT_AI_TEMPERATURE:0.2}
+      max-tokens: ${CHATBOT_AI_MAX_TOKENS:300}

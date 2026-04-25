@@ -1,0 +1,421 @@
+"use client";
+
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { getToken, getUser } from "@/lib/auth";
+import "./attendance.css";
+
+type AttendanceAction = "clock_in" | "clock_out" | "start_break" | "end_break";
+
+type AttendanceSnapshot = {
+  employee: {
+    email: string;
+    name: string;
+    role: string;
+    userId: string;
+  };
+  timezone: string;
+  generatedAt: number;
+  status: "CLOCKED_OUT" | "CLOCKED_IN";
+  onBreak: boolean;
+  openShift: {
+    shiftId: string;
+    clockInAt: number;
+    shiftDate: string;
+  } | null;
+  liveWorkedMinutes: number;
+  liveBreakMinutes: number;
+  todayTotalMinutes: number;
+  weekTotalMinutes: number;
+  recentShifts: Array<{
+    shiftId: string;
+    shiftDate: string;
+    clockInAt: number;
+    clockOutAt: number | null;
+    totalWorkMinutes: number;
+    totalBreakMinutes: number;
+    status: "open" | "closed";
+    note: string | null;
+  }>;
+};
+
+function formatDuration(totalMinutes: number): string {
+  const safe = Math.max(0, Math.floor(totalMinutes));
+  const hours = Math.floor(safe / 60);
+  const minutes = safe % 60;
+  return `${hours}h ${minutes}m`;
+}
+
+function formatDateTime(value: number | null): string {
+  if (!value) return "-";
+  return new Date(value).toLocaleString();
+}
+
+export default function StaffAttendancePage() {
+  const router = useRouter();
+  const [loadingAccess, setLoadingAccess] = useState(true);
+  const [allowed, setAllowed] = useState(false);
+  const [snapshot, setSnapshot] = useState<AttendanceSnapshot | null>(null);
+  const [loadingSnapshot, setLoadingSnapshot] = useState(false);
+  const [runningAction, setRunningAction] = useState<AttendanceAction | "" >("");
+  const [error, setError] = useState("");
+  const [note, setNote] = useState("");
+  const [tick, setTick] = useState(Date.now());
+
+  const token = getToken();
+
+  const fetchSnapshot = useCallback(async () => {
+    setLoadingSnapshot(true);
+    try {
+      const response = await fetch("/api/attendance", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        cache: "no-store",
+      });
+
+      const payload = (await response.json().catch(() => ({}))) as AttendanceSnapshot & { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error || `Failed to load attendance (${response.status}).`);
+      }
+
+      setSnapshot(payload);
+      setError("");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load attendance.");
+    } finally {
+      setLoadingSnapshot(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    const checkAccess = async () => {
+      const user = getUser();
+      if (!user || !token) {
+        router.replace("/login");
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/auth/me", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          cache: "no-store",
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setAllowed(false);
+          return;
+        }
+
+        const profile = data?.data;
+        const role = String(profile?.role || "").toLowerCase();
+        const roles = Array.isArray(profile?.roles)
+          ? profile.roles.map((value: string) => String(value).toUpperCase())
+          : [];
+
+        const isAllowed =
+          role === "employee" ||
+          role === "admin" ||
+          roles.includes("ROLE_EMPLOYEE") ||
+          roles.includes("ROLE_ADMIN") ||
+          roles.includes("ROLE_STAFF");
+
+        setAllowed(isAllowed);
+      } catch {
+        setAllowed(false);
+      } finally {
+        setLoadingAccess(false);
+      }
+    };
+
+    void checkAccess();
+  }, [router, token]);
+
+  useEffect(() => {
+    if (!allowed) return;
+    void fetchSnapshot();
+
+    const interval = window.setInterval(() => {
+      void fetchSnapshot();
+    }, 20_000);
+
+    return () => window.clearInterval(interval);
+  }, [allowed, fetchSnapshot]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setTick(Date.now());
+    }, 1_000);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const dynamicWorkedMinutes = useMemo(() => {
+    if (!snapshot) return 0;
+
+    if (snapshot.status === "CLOCKED_IN" && !snapshot.onBreak) {
+      const elapsed = Math.floor((tick - snapshot.generatedAt) / 60_000);
+      return Math.max(snapshot.liveWorkedMinutes, snapshot.liveWorkedMinutes + elapsed);
+    }
+
+    return snapshot.liveWorkedMinutes;
+  }, [snapshot, tick]);
+
+  const elapsedSinceSnapshotMinutes = useMemo(() => {
+    if (!snapshot || snapshot.status !== "CLOCKED_IN") return 0;
+    return Math.max(0, Math.floor((tick - snapshot.generatedAt) / 60_000));
+  }, [snapshot, tick]);
+
+  const dynamicBreakMinutes = useMemo(() => {
+    if (!snapshot) return 0;
+    if (!snapshot.onBreak) return snapshot.liveBreakMinutes;
+    return Math.max(snapshot.liveBreakMinutes, snapshot.liveBreakMinutes + elapsedSinceSnapshotMinutes);
+  }, [elapsedSinceSnapshotMinutes, snapshot]);
+
+  const dynamicTodayTotalMinutes = useMemo(() => {
+    if (!snapshot || snapshot.status !== "CLOCKED_IN" || snapshot.onBreak) {
+      return snapshot?.todayTotalMinutes ?? 0;
+    }
+
+    return Math.max(
+      snapshot.todayTotalMinutes,
+      snapshot.todayTotalMinutes + elapsedSinceSnapshotMinutes
+    );
+  }, [elapsedSinceSnapshotMinutes, snapshot]);
+
+  const dynamicWeekTotalMinutes = useMemo(() => {
+    if (!snapshot || snapshot.status !== "CLOCKED_IN" || snapshot.onBreak) {
+      return snapshot?.weekTotalMinutes ?? 0;
+    }
+
+    return Math.max(snapshot.weekTotalMinutes, snapshot.weekTotalMinutes + elapsedSinceSnapshotMinutes);
+  }, [elapsedSinceSnapshotMinutes, snapshot]);
+
+  const runAction = async (action: AttendanceAction) => {
+    setRunningAction(action);
+    try {
+      const response = await fetch("/api/attendance", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ action, note }),
+      });
+
+      const payload = (await response.json().catch(() => ({}))) as AttendanceSnapshot & { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error || `Action failed (${response.status}).`);
+      }
+
+      setSnapshot(payload);
+      setError("");
+      if (action === "clock_in" || action === "clock_out") {
+        setNote("");
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Attendance action failed.");
+    } finally {
+      setRunningAction("");
+    }
+  };
+
+  const handleSubmitNote = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+  };
+
+  if (loadingAccess) {
+    return (
+      <section className="attendancePage">
+        <div className="attendanceCard">
+          <h1>Employee Attendance</h1>
+          <p>Checking access...</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (!allowed) {
+    return (
+      <section className="attendancePage">
+        <div className="attendanceCard">
+          <h1>Employee Attendance</h1>
+          <p>You need employee or admin permissions to access this page.</p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="attendancePage">
+      <div className="attendanceCard">
+        <header className="attendanceHeader">
+          <h1>Employee Attendance</h1>
+          <p>Track working time with clock-in/out and break controls.</p>
+        </header>
+
+        <div className="attendanceMetaGrid">
+          <article>
+            <h2>Employee</h2>
+            <p>{snapshot?.employee.name || getUser()?.email || "-"}</p>
+          </article>
+          <article>
+            <h2>Role</h2>
+            <p>{snapshot?.employee.role || getUser()?.role || "-"}</p>
+          </article>
+          <article>
+            <h2>Timezone</h2>
+            <p>{snapshot?.timezone || "UTC"}</p>
+          </article>
+          <article>
+            <h2>Last Sync</h2>
+            <p>{formatDateTime(snapshot?.generatedAt ?? null)}</p>
+          </article>
+        </div>
+
+        {error ? <p className="attendanceError">{error}</p> : null}
+
+        <div className="attendanceStatusGrid">
+          <article>
+            <h2>Status</h2>
+            <p className={`attendanceBadge ${snapshot?.status === "CLOCKED_IN" ? "in" : "out"}`}>
+              {snapshot?.status === "CLOCKED_IN" ? (snapshot?.onBreak ? "On Break" : "Clocked In") : "Clocked Out"}
+            </p>
+          </article>
+
+          <article>
+            <h2>Live Worked Time</h2>
+            <p>{formatDuration(dynamicWorkedMinutes)}</p>
+          </article>
+
+          <article>
+            <h2>Break Time</h2>
+            <p>{formatDuration(dynamicBreakMinutes)}</p>
+          </article>
+
+          <article>
+            <h2>Today Total</h2>
+            <p>{formatDuration(dynamicTodayTotalMinutes)}</p>
+          </article>
+
+          <article>
+            <h2>Last 7 Days</h2>
+            <p>{formatDuration(dynamicWeekTotalMinutes)}</p>
+          </article>
+
+          <article>
+            <h2>Open Shift Since</h2>
+            <p>{formatDateTime(snapshot?.openShift?.clockInAt ?? null)}</p>
+          </article>
+        </div>
+
+        <form className="attendanceNoteForm" onSubmit={handleSubmitNote}>
+          <label htmlFor="attendance-note">Optional note for clock in/out</label>
+          <textarea
+            id="attendance-note"
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+            placeholder="Example: Supporting checkout hotline in shift A"
+            rows={2}
+            maxLength={400}
+          />
+        </form>
+
+        <div className="attendanceActionRow">
+          <button
+            type="button"
+            className="primary"
+            onClick={() => void runAction("clock_in")}
+            disabled={runningAction !== "" || snapshot?.status === "CLOCKED_IN"}
+          >
+            {runningAction === "clock_in" ? "Clocking In..." : "Clock In"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => void runAction("start_break")}
+            disabled={
+              runningAction !== "" ||
+              snapshot?.status !== "CLOCKED_IN" ||
+              Boolean(snapshot?.onBreak)
+            }
+          >
+            {runningAction === "start_break" ? "Starting..." : "Start Break"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => void runAction("end_break")}
+            disabled={runningAction !== "" || !snapshot?.onBreak}
+          >
+            {runningAction === "end_break" ? "Ending..." : "End Break"}
+          </button>
+
+          <button
+            type="button"
+            className="danger"
+            onClick={() => void runAction("clock_out")}
+            disabled={runningAction !== "" || snapshot?.status !== "CLOCKED_IN"}
+          >
+            {runningAction === "clock_out" ? "Clocking Out..." : "Clock Out"}
+          </button>
+        </div>
+
+        <section className="attendanceHistory">
+          <div className="attendanceHistoryHead">
+            <h2>Recent Shifts</h2>
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => void fetchSnapshot()}
+              disabled={loadingSnapshot}
+            >
+              {loadingSnapshot ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
+
+          <div className="attendanceTableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Clock In</th>
+                  <th>Clock Out</th>
+                  <th>Work</th>
+                  <th>Break</th>
+                  <th>State</th>
+                  <th>Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(snapshot?.recentShifts || []).map((shift) => (
+                  <tr key={shift.shiftId}>
+                    <td>{shift.shiftDate}</td>
+                    <td>{formatDateTime(shift.clockInAt)}</td>
+                    <td>{formatDateTime(shift.clockOutAt)}</td>
+                    <td>{formatDuration(shift.totalWorkMinutes)}</td>
+                    <td>{formatDuration(shift.totalBreakMinutes)}</td>
+                    <td>{shift.status === "open" ? "Open" : "Closed"}</td>
+                    <td>{shift.note || "-"}</td>
+                  </tr>
+                ))}
+                {snapshot?.recentShifts?.length ? null : (
+                  <tr>
+                    <td colSpan={7}>No shifts yet. Start by clocking in.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </section>
+  );
+}

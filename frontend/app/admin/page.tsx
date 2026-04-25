@@ -258,7 +258,53 @@ type AdminSetting = {
   updated_at: string;
 };
 
-type AdminTab = "overview" | "users" | "orders" | "inventory" | "products" | "comments" | "audit" | "queues" | "export" | "health" | "notes" | "settings";
+type AdminAttendanceRecord = {
+  shiftId: string;
+  shiftDate: string;
+  employee: {
+    email: string;
+    name: string;
+    role: string;
+    userId: string;
+  };
+  clockInAt: number;
+  clockOutAt: number | null;
+  totalWorkMinutes: number;
+  totalBreakMinutes: number;
+  status: "CLOCKED_OUT" | "CLOCKED_IN" | "ON_BREAK";
+  note: string | null;
+};
+
+type AdminAttendanceSnapshot = {
+  timezone: string;
+  generatedAt: number;
+  summary: {
+    employeesTracked: number;
+    activeEmployees: number;
+    employeesOnBreak: number;
+    todayWorkedMinutes: number;
+    weekWorkedMinutes: number;
+  };
+  activeShifts: AdminAttendanceRecord[];
+  records: AdminAttendanceRecord[];
+};
+
+type AdminAttendanceStatusFilter = "all" | "active" | "on_break" | "closed";
+
+type AdminTab =
+  | "overview"
+  | "users"
+  | "orders"
+  | "inventory"
+  | "products"
+  | "comments"
+  | "attendance"
+  | "audit"
+  | "queues"
+  | "export"
+  | "health"
+  | "notes"
+  | "settings";
 
 type RatingBucket = 1 | 2 | 3 | 4 | 5;
 
@@ -366,6 +412,20 @@ const INITIAL_DASHBOARD: DashboardSummary = {
   recentOrders: [],
 };
 
+const INITIAL_ATTENDANCE: AdminAttendanceSnapshot = {
+  timezone: "UTC",
+  generatedAt: 0,
+  summary: {
+    employeesTracked: 0,
+    activeEmployees: 0,
+    employeesOnBreak: 0,
+    todayWorkedMinutes: 0,
+    weekWorkedMinutes: 0,
+  },
+  activeShifts: [],
+  records: [],
+};
+
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -380,6 +440,18 @@ function formatDateTime(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString();
+}
+
+function formatMinutes(totalMinutes: number): string {
+  const safe = Math.max(0, Math.floor(Number(totalMinutes) || 0));
+  const hours = Math.floor(safe / 60);
+  const minutes = safe % 60;
+  return `${hours}h ${minutes}m`;
+}
+
+function formatTimestamp(value: number | null): string {
+  if (!value) return "-";
+  return new Date(value).toLocaleString();
 }
 
 function formatCurrency(value: number, currency = "USD"): string {
@@ -516,6 +588,15 @@ export default function AdminPage() {
   const [inventoryHealth, setInventoryHealth] = useState<InventoryHealth | null>(null);
   const [loadingInventory, setLoadingInventory] = useState(true);
   const [inventoryError, setInventoryError] = useState<string | null>(null);
+
+  const [attendanceSnapshot, setAttendanceSnapshot] = useState<AdminAttendanceSnapshot>(INITIAL_ATTENDANCE);
+  const [loadingAttendance, setLoadingAttendance] = useState(true);
+  const [attendanceError, setAttendanceError] = useState<string | null>(null);
+  const [attendanceQueryInput, setAttendanceQueryInput] = useState("");
+  const [attendanceQuery, setAttendanceQuery] = useState("");
+  const [attendanceStatusFilter, setAttendanceStatusFilter] = useState<AdminAttendanceStatusFilter>("all");
+  const [attendanceDateFrom, setAttendanceDateFrom] = useState("");
+  const [attendanceDateTo, setAttendanceDateTo] = useState("");
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string>("");
   // ── Audit Logs ──
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
@@ -564,6 +645,7 @@ export default function AdminPage() {
     users: false,
     orders: false,
     inventory: false,
+    attendance: false,
     products: false,
     comments: false,
     audit: false,
@@ -1052,6 +1134,61 @@ export default function AdminPage() {
     }
   }, [dashboardLowStockThreshold, router, token]);
 
+  const fetchAttendance = useCallback(async () => {
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    setLoadingAttendance(true);
+    setAttendanceError(null);
+
+    try {
+      const params = new URLSearchParams({
+        query: attendanceQuery,
+        status: attendanceStatusFilter,
+        dateFrom: attendanceDateFrom,
+        dateTo: attendanceDateTo,
+        limit: "50",
+      });
+
+      const response = await fetch(`/api/auth/admin-attendance?${params.toString()}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      });
+
+      const data = (await response.json()) as AdminAttendanceSnapshot & { error?: string };
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to load attendance management");
+      }
+
+      setAttendanceSnapshot({
+        timezone: data?.timezone ?? "UTC",
+        generatedAt: Number(data?.generatedAt ?? Date.now()),
+        summary: {
+          employeesTracked: Number(data?.summary?.employeesTracked ?? 0),
+          activeEmployees: Number(data?.summary?.activeEmployees ?? 0),
+          employeesOnBreak: Number(data?.summary?.employeesOnBreak ?? 0),
+          todayWorkedMinutes: Number(data?.summary?.todayWorkedMinutes ?? 0),
+          weekWorkedMinutes: Number(data?.summary?.weekWorkedMinutes ?? 0),
+        },
+        activeShifts: Array.isArray(data?.activeShifts) ? data.activeShifts : [],
+        records: Array.isArray(data?.records) ? data.records : [],
+      });
+      setLastUpdatedAt(new Date().toISOString());
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load attendance management";
+      setAttendanceError(message);
+      toast.error(message, { style: { backgroundColor: "#fb0404", color: "#fff" } });
+    } finally {
+      setLoadingAttendance(false);
+    }
+  }, [attendanceDateFrom, attendanceDateTo, attendanceQuery, attendanceStatusFilter, router, token]);
+
   const fetchAuditEvents = useCallback(
     async (
       targetPage: number,
@@ -1194,6 +1331,8 @@ export default function AdminPage() {
       void fetchOrders(0);
     } else if (activeTab === "inventory") {
       void fetchInventoryHealth();
+    } else if (activeTab === "attendance") {
+      void fetchAttendance();
     } else if (activeTab === "products") {
       void fetchProducts("");
     } else if (activeTab === "comments") {
@@ -1212,6 +1351,7 @@ export default function AdminPage() {
   }, [
     activeTab,
     fetchAuditEvents,
+    fetchAttendance,
     fetchDashboard,
     fetchInventoryHealth,
     fetchNotes,
@@ -1227,24 +1367,32 @@ export default function AdminPage() {
   ]);
 
   useEffect(() => {
-    if (activeTab !== "overview" && activeTab !== "orders" && activeTab !== "queues" && activeTab !== "health") return;
+    if (
+      activeTab !== "overview" &&
+      activeTab !== "orders" &&
+      activeTab !== "attendance" &&
+      activeTab !== "queues" &&
+      activeTab !== "health"
+    ) return;
 
     const interval = activeTab === "queues" || activeTab === "health" ? 30000 : 60000;
     const timer = window.setInterval(() => {
       if (activeTab === "overview") void fetchDashboard();
       else if (activeTab === "orders") void fetchOrders(orderPage);
+      else if (activeTab === "attendance") void fetchAttendance();
       else if (activeTab === "queues") void fetchQueues();
       else if (activeTab === "health") void fetchSystemHealth();
     }, interval);
 
     return () => window.clearInterval(timer);
-  }, [activeTab, fetchDashboard, fetchOrders, fetchQueues, fetchSystemHealth, orderPage]);
+  }, [activeTab, fetchAttendance, fetchDashboard, fetchOrders, fetchQueues, fetchSystemHealth, orderPage]);
 
   const handleRefreshActiveTab = useCallback(async () => {
     if (activeTab === "overview") { await fetchDashboard(); return; }
     if (activeTab === "users") { await fetchUsers(userPage); return; }
     if (activeTab === "orders") { await fetchOrders(orderPage); return; }
     if (activeTab === "inventory") { await fetchInventoryHealth(); return; }
+    if (activeTab === "attendance") { await fetchAttendance(); return; }
     if (activeTab === "products") { await fetchProducts(productSearchTerm); return; }
     if (activeTab === "comments") { await Promise.all([fetchReviews(reviewPage), fetchRatingAnalytics()]); return; }
     if (activeTab === "audit") { await fetchAuditEvents(auditPage); return; }
@@ -1256,6 +1404,7 @@ export default function AdminPage() {
     activeTab,
     auditPage,
     fetchAuditEvents,
+    fetchAttendance,
     fetchDashboard,
     fetchInventoryHealth,
     fetchNotes,
@@ -2108,6 +2257,11 @@ export default function AdminPage() {
     } finally { setSavingSettingKey(null); }
   };
 
+  useEffect(() => {
+    if (activeTab !== "attendance" || !loadedTabs.attendance) return;
+    void fetchAttendance();
+  }, [activeTab, attendanceDateFrom, attendanceDateTo, attendanceQuery, attendanceStatusFilter, fetchAttendance, loadedTabs]);
+
   const ratingDistributionRows = useMemo(() => {
     const total = ratingAnalytics?.totalReviews ?? 0;
     return [5, 4, 3, 2, 1].map((rating) => {
@@ -2190,6 +2344,12 @@ export default function AdminPage() {
             onClick={() => setActiveTab("comments")}
           >
             Comments
+          </button>
+          <button
+            className={`tabButton ${activeTab === "attendance" ? "tabButtonActive" : ""}`}
+            onClick={() => setActiveTab("attendance")}
+          >
+            Attendance
           </button>
           <button
             className={`tabButton ${activeTab === "audit" ? "tabButtonActive" : ""}`}
@@ -3569,6 +3729,213 @@ export default function AdminPage() {
                   </tbody>
                 </table>
               </div>
+            ) : null}
+          </>
+        ) : activeTab === "attendance" ? (
+          <>
+            <section className="overviewSection">
+              <h3>Employee Attendance Management</h3>
+              <p>
+                Track active shifts, employees currently on break, and recent attendance history from the shared
+                attendance tables used by the staff portal.
+              </p>
+            </section>
+
+            <form
+              className="attendanceFilterRow"
+              onSubmit={(event) => {
+                event.preventDefault();
+                setAttendanceQuery(attendanceQueryInput.trim());
+              }}
+            >
+              <input
+                type="text"
+                className="productInput"
+                placeholder="Search employee name or email"
+                value={attendanceQueryInput}
+                onChange={(event) => setAttendanceQueryInput(event.target.value)}
+              />
+              <select
+                className="productInput"
+                value={attendanceStatusFilter}
+                onChange={(event) => setAttendanceStatusFilter(event.target.value as AdminAttendanceStatusFilter)}
+              >
+                <option value="all">All statuses</option>
+                <option value="active">Active shifts</option>
+                <option value="on_break">On break</option>
+                <option value="closed">Closed shifts</option>
+              </select>
+              <input
+                type="date"
+                className="productInput"
+                value={attendanceDateFrom}
+                onChange={(event) => setAttendanceDateFrom(event.target.value)}
+              />
+              <input
+                type="date"
+                className="productInput"
+                value={attendanceDateTo}
+                onChange={(event) => setAttendanceDateTo(event.target.value)}
+              />
+              <button type="submit" className="pageButton">
+                Apply
+              </button>
+              <button
+                type="button"
+                className="pageButton"
+                onClick={() => {
+                  setAttendanceQueryInput("");
+                  setAttendanceQuery("");
+                  setAttendanceStatusFilter("all");
+                  setAttendanceDateFrom("");
+                  setAttendanceDateTo("");
+                }}
+              >
+                Reset
+              </button>
+            </form>
+
+            <div className="overviewCards attendanceSummaryCards">
+              <div className="overviewCard">
+                <p>Employees Tracked</p>
+                <h3>{attendanceSnapshot.summary.employeesTracked}</h3>
+                <span>Distinct employees with attendance records</span>
+              </div>
+              <div className="overviewCard overviewCardRevenue">
+                <p>Active Shifts</p>
+                <h3>{attendanceSnapshot.summary.activeEmployees}</h3>
+                <span>Employees currently clocked in</span>
+              </div>
+              <div className="overviewCard overviewCardWarning">
+                <p>On Break</p>
+                <h3>{attendanceSnapshot.summary.employeesOnBreak}</h3>
+                <span>Active breaks needing visibility</span>
+              </div>
+              <div className="overviewCard">
+                <p>Worked Today</p>
+                <h3>{formatMinutes(attendanceSnapshot.summary.todayWorkedMinutes)}</h3>
+                <span>Across all tracked attendance entries</span>
+              </div>
+              <div className="overviewCard">
+                <p>Worked This Week</p>
+                <h3>{formatMinutes(attendanceSnapshot.summary.weekWorkedMinutes)}</h3>
+                <span>Rolling 7-day workload</span>
+              </div>
+            </div>
+
+            {loadingAttendance ? <p className="adminStatus">Loading attendance management...</p> : null}
+            {attendanceError ? <p className="adminStatus adminStatusError">{attendanceError}</p> : null}
+
+            {!loadingAttendance && !attendanceError ? (
+              <>
+                <section className="overviewSection">
+                  <div className="attendanceSectionHeader">
+                    <h3>Currently Active</h3>
+                    <span className="statusPill">Timezone: {attendanceSnapshot.timezone}</span>
+                  </div>
+                  <div className="adminTableWrapper">
+                    <table className="adminTable compactTable">
+                      <thead>
+                        <tr>
+                          <th>Employee</th>
+                          <th>Status</th>
+                          <th>Clock In</th>
+                          <th>Worked</th>
+                          <th>Break</th>
+                          <th>Note</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {attendanceSnapshot.activeShifts.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="adminEmpty">
+                              No active shifts right now.
+                            </td>
+                          </tr>
+                        ) : (
+                          attendanceSnapshot.activeShifts.map((shift) => (
+                            <tr key={shift.shiftId}>
+                              <td>
+                                <strong>{shift.employee.name}</strong>
+                                <div className="mutedCell">{shift.employee.email}</div>
+                              </td>
+                              <td>
+                                <span className={`attendanceStatusBadge attendanceStatus-${shift.status.toLowerCase()}`}>
+                                  {shift.status === "ON_BREAK" ? "On Break" : "Clocked In"}
+                                </span>
+                              </td>
+                              <td>{formatTimestamp(shift.clockInAt)}</td>
+                              <td>{formatMinutes(shift.totalWorkMinutes)}</td>
+                              <td>{formatMinutes(shift.totalBreakMinutes)}</td>
+                              <td className="commentCell">{shift.note || "-"}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section className="overviewSection">
+                  <div className="attendanceSectionHeader">
+                    <h3>Recent Attendance Records</h3>
+                    <span className="mutedCell">
+                      Updated {formatTimestamp(attendanceSnapshot.generatedAt)}
+                    </span>
+                  </div>
+                  <div className="adminTableWrapper">
+                    <table className="adminTable">
+                      <thead>
+                        <tr>
+                          <th>Employee</th>
+                          <th>Date</th>
+                          <th>Status</th>
+                          <th>Clock In</th>
+                          <th>Clock Out</th>
+                          <th>Worked</th>
+                          <th>Break</th>
+                          <th>Note</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {attendanceSnapshot.records.length === 0 ? (
+                          <tr>
+                            <td colSpan={8} className="adminEmpty">
+                              No attendance records matched the current filters.
+                            </td>
+                          </tr>
+                        ) : (
+                          attendanceSnapshot.records.map((shift) => (
+                            <tr key={shift.shiftId}>
+                              <td>
+                                <strong>{shift.employee.name}</strong>
+                                <div className="mutedCell">
+                                  {shift.employee.email} · {shift.employee.role}
+                                </div>
+                              </td>
+                              <td>{shift.shiftDate}</td>
+                              <td>
+                                <span className={`attendanceStatusBadge attendanceStatus-${shift.status.toLowerCase()}`}>
+                                  {shift.status === "CLOCKED_OUT"
+                                    ? "Closed"
+                                    : shift.status === "ON_BREAK"
+                                      ? "On Break"
+                                      : "Active"}
+                                </span>
+                              </td>
+                              <td>{formatTimestamp(shift.clockInAt)}</td>
+                              <td>{formatTimestamp(shift.clockOutAt)}</td>
+                              <td>{formatMinutes(shift.totalWorkMinutes)}</td>
+                              <td>{formatMinutes(shift.totalBreakMinutes)}</td>
+                              <td className="commentCell">{shift.note || "-"}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              </>
             ) : null}
           </>
         ) : activeTab === "audit" ? (

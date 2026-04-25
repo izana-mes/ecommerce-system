@@ -22,6 +22,7 @@ export async function POST(request: Request) {
   // Forward the auth header so logged-in users get order-lookup enrichment.
   const authHeader =
     request.headers.get("authorization") || request.headers.get("Authorization");
+  const guestId = request.headers.get("x-guest-id");
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10_000);
@@ -33,8 +34,12 @@ export async function POST(request: Request) {
       headers: {
         "Content-Type": "application/json",
         ...(authHeader ? { Authorization: authHeader } : {}),
+        ...(guestId ? { "x-guest-id": guestId } : {}),
       },
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({
+        question,
+        conversationId: typeof body.conversationId === "string" ? body.conversationId : undefined,
+      }),
       signal: controller.signal,
     });
 

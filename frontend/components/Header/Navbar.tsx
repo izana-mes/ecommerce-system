@@ -228,6 +228,7 @@ export default function Navbar() {
     if (isAdminUser || isStaffUser) {
       return [
         ...BASE_LINKS,
+        { href: "/staff/attendance", key: "nav_attendance" as TranslationKey },
         { href: "/staff/support-chat", key: "nav_assistant" as TranslationKey },
         ...(isAdminUser ? [{ href: "/admin", key: "nav_admin" as TranslationKey }] : []),
       ];

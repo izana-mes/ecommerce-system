@@ -24,9 +24,11 @@ public class ChatbotController {
     @PostMapping("/customer/ask")
     public ResponseEntity<?> customerAsk(
             @RequestBody Map<String, String> body,
+            @RequestHeader(value = "x-guest-id", required = false) String guestId,
             @AuthenticationPrincipal User currentUser
     ) {
         String question = body == null ? null : body.get("question");
+        String conversationId = body == null ? null : body.get("conversationId");
         if (!StringUtils.hasText(question)) {
             return ResponseEntity.badRequest().body(Map.of("error", "question is required"));
         }
@@ -34,11 +36,18 @@ public class ChatbotController {
         String userEmail = currentUser != null ? currentUser.getEmail() : null;
 
         try {
-            ChatbotService.ChatResult result = chatbotService.buildAnswer(question.trim(), userEmail);
+            ChatbotService.ChatResult result = chatbotService.buildAnswer(
+                    question.trim(),
+                    userEmail,
+                    guestId,
+                    conversationId
+            );
             return ResponseEntity.ok(Map.of(
                     "question", question.trim(),
                     "intent", result.intent(),
                     "answer", result.answer(),
+                    "conversationId", result.conversationId(),
+                    "usedAi", result.usedAi(),
                     "authenticated", userEmail != null
             ));
         } catch (Exception e) {

@@ -817,6 +817,52 @@
   border: 1px solid #e4e8f0;
 }
 
+/* ── Attendance Tab ── */
+.attendanceFilterRow {
+  display: grid;
+  grid-template-columns: 2fr repeat(3, minmax(0, 1fr)) auto auto;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.attendanceSummaryCards {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.attendanceSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.attendanceStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 92px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.attendanceStatus-clocked_in {
+  background: #e8f8ef;
+  color: #007d3d;
+}
+
+.attendanceStatus-on_break {
+  background: #fff4e5;
+  color: #9a5f00;
+}
+
+.attendanceStatus-clocked_out {
+  background: #edf0ff;
+  color: #3349b7;
+}
+
 /* ── Audit Log Tab ── */
 .auditFilterRow {
   display: grid;
@@ -1302,11 +1348,19 @@
     grid-template-columns: 1fr;
   }
 
+  .attendanceFilterRow {
+    grid-template-columns: 1fr;
+  }
+
   .inventoryCards {
     grid-template-columns: 1fr;
   }
 
   .overviewCards {
+    grid-template-columns: 1fr;
+  }
+
+  .attendanceSummaryCards {
     grid-template-columns: 1fr;
   }
 
@@ -1390,5 +1444,10 @@
   .noteFormRow {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .attendanceSectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

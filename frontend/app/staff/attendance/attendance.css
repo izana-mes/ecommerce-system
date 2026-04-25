@@ -1,0 +1,218 @@
+.attendancePage {
+  min-height: calc(100vh - 120px);
+  padding: 28px 20px 50px;
+  background: radial-gradient(circle at top left, rgba(27, 113, 255, 0.09), transparent 38%),
+    radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.12), transparent 44%),
+    var(--surface-2);
+}
+
+.attendanceCard {
+  max-width: 1120px;
+  margin: 0 auto;
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
+  border-radius: 20px;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  padding: 26px;
+}
+
+.attendanceHeader h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 2.8vw, 2rem);
+}
+
+.attendanceHeader p {
+  margin: 8px 0 0;
+  color: var(--muted-text);
+}
+
+.attendanceMetaGrid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.attendanceMetaGrid article {
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 14px;
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.05), transparent);
+}
+
+.attendanceMetaGrid h2 {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+}
+
+.attendanceMetaGrid p {
+  margin: 8px 0 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.attendanceError {
+  margin-top: 14px;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  background: rgba(254, 226, 226, 0.4);
+  color: #b91c1c;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.attendanceStatusGrid {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.attendanceStatusGrid article {
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 14px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.02), transparent);
+}
+
+.attendanceStatusGrid h2 {
+  margin: 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+}
+
+.attendanceStatusGrid p {
+  margin: 8px 0 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.attendanceBadge {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.92rem;
+}
+
+.attendanceBadge.in {
+  color: #047857;
+  background: rgba(16, 185, 129, 0.18);
+}
+
+.attendanceBadge.out {
+  color: #9a3412;
+  background: rgba(251, 146, 60, 0.2);
+}
+
+.attendanceNoteForm {
+  margin-top: 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.attendanceNoteForm label {
+  font-weight: 600;
+}
+
+.attendanceNoteForm textarea {
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 10px 12px;
+  resize: vertical;
+  background: var(--surface-1);
+  color: var(--foreground);
+}
+
+.attendanceActionRow {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.attendanceActionRow button,
+.attendanceHistoryHead .ghost {
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--surface-1);
+  color: var(--foreground);
+}
+
+.attendanceActionRow button:disabled,
+.attendanceHistoryHead .ghost:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.attendanceActionRow .primary {
+  border-color: rgba(30, 64, 175, 0.35);
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.attendanceActionRow .danger {
+  border-color: rgba(220, 38, 38, 0.35);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.attendanceHistory {
+  margin-top: 24px;
+}
+
+.attendanceHistoryHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.attendanceHistoryHead h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.attendanceTableWrap {
+  margin-top: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  overflow: auto;
+}
+
+.attendanceTableWrap table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.attendanceTableWrap th,
+.attendanceTableWrap td {
+  border-bottom: 1px solid var(--border-soft);
+  text-align: left;
+  padding: 10px;
+  font-size: 0.93rem;
+  vertical-align: top;
+}
+
+.attendanceTableWrap th {
+  background: var(--surface-2);
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 768px) {
+  .attendanceCard {
+    padding: 18px;
+    border-radius: 16px;
+  }
+
+  .attendanceStatusGrid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}

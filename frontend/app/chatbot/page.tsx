@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { getToken } from "@/lib/auth";
 import "./chatbot.css";
 
@@ -13,7 +13,30 @@ type Message = {
 type CustomerChatResponse = {
   answer?: string;
   error?: string;
+  conversationId?: string;
+  usedAi?: boolean;
 };
+
+const CHATBOT_GUEST_KEY = "customer-chatbot-guest-id";
+const CHATBOT_CONVERSATION_KEY = "customer-chatbot-conversation-id";
+
+function createGuestId(): string {
+  const randomPart =
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return `guest_${randomPart.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40)}`;
+}
+
+function getOrCreateStorageValue(key: string, createValue: () => string): string {
+  if (typeof window === "undefined") return "";
+  const existing = localStorage.getItem(key);
+  if (existing) return existing;
+
+  const nextValue = createValue();
+  localStorage.setItem(key, nextValue);
+  return nextValue;
+}
 
 function createMessage(role: "user" | "assistant", text: string): Message {
   return {
@@ -34,6 +57,8 @@ const QUICK_PROMPTS = [
 export default function CustomerChatbotPage() {
   const [question, setQuestion] = useState("");
   const [sending, setSending] = useState(false);
+  const [guestId, setGuestId] = useState("");
+  const [conversationId, setConversationId] = useState("");
   const [messages, setMessages] = useState<Message[]>([
     createMessage(
       "assistant",
@@ -42,6 +67,13 @@ export default function CustomerChatbotPage() {
   ]);
 
   const canSend = useMemo(() => question.trim().length > 0 && !sending, [question, sending]);
+
+  useEffect(() => {
+    setGuestId(getOrCreateStorageValue(CHATBOT_GUEST_KEY, createGuestId));
+    if (typeof window !== "undefined") {
+      setConversationId(localStorage.getItem(CHATBOT_CONVERSATION_KEY) || "");
+    }
+  }, []);
 
   const sendQuestion = async (value: string) => {
     const trimmed = value.trim();
@@ -58,8 +90,12 @@ export default function CustomerChatbotPage() {
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(guestId ? { "x-guest-id": guestId } : {}),
         },
-        body: JSON.stringify({ question: trimmed }),
+        body: JSON.stringify({
+          question: trimmed,
+          conversationId: conversationId || undefined,
+        }),
       });
 
       const data = (await response.json().catch(() => ({}))) as CustomerChatResponse;
@@ -70,6 +106,13 @@ export default function CustomerChatbotPage() {
           createMessage("assistant", data.error || `Request failed (${response.status})`),
         ]);
         return;
+      }
+
+      if (data.conversationId) {
+        setConversationId(data.conversationId);
+        if (typeof window !== "undefined") {
+          localStorage.setItem(CHATBOT_CONVERSATION_KEY, data.conversationId);
+        }
       }
 
       setMessages((prev) => [...prev, createMessage("assistant", (data.answer || "No answer returned.").trim())]);
@@ -110,7 +153,7 @@ export default function CustomerChatbotPage() {
               <p>{message.text}</p>
             </article>
           ))}
-          {sending ? <p className="customerLoadingText">Checking database...</p> : null}
+          {sending ? <p className="customerLoadingText">Checking database and generating answer...</p> : null}
         </div>
 
         <form className="customerComposer" onSubmit={handleSubmit}>

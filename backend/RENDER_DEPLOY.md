@@ -26,6 +26,11 @@ After the service is created, open the backend service and set these vars:
 - `VNPAY_HASH_SECRET`
 - `MOMO_ACCESS_KEY` — MoMo Sandbox access key from the MoMo Business Portal
 - `MOMO_SECRET_KEY` — MoMo Sandbox secret key (used to verify IPN signatures)
+- `CHATBOT_AI_ENABLED=true`
+- `CHATBOT_AI_API_KEY` — API key for your OpenAI-compatible provider
+- `CHATBOT_AI_BASE_URL` — default is `https://openrouter.ai/api/v1`
+- `CHATBOT_AI_MODEL` — free model id to use, for example `google/gemma-3-4b-it:free`
+- `CHATBOT_AI_REFERER` — your frontend URL, useful for providers like OpenRouter
 
 If you use Redis and RabbitMQ in production, also set:
 
