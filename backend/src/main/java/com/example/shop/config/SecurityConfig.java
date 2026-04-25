@@ -99,6 +99,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/payments/momo/ipn").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/deals/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/chatbot/customer/ask").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/support-chat/messages").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/support-chat/messages").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

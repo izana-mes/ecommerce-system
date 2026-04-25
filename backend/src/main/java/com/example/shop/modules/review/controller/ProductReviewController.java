@@ -3,6 +3,7 @@ package com.example.shop.modules.review.controller;
 import com.example.shop.modules.review.dto.ProductReviewRequest;
 import com.example.shop.modules.review.dto.ProductReviewSummaryDto;
 import com.example.shop.modules.review.service.ProductReviewService;
+import com.example.shop.modules.review.dto.ProductReviewReplyDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -51,5 +52,33 @@ public class ProductReviewController {
             @AuthenticationPrincipal Object principal
     ) {
         return ResponseEntity.ok(productReviewService.deleteReview(productID, reviewID, principal));
+    }
+
+    @PostMapping("/{reviewID}/dislike")
+    public ResponseEntity<ProductReviewSummaryDto> addDislike(
+            @PathVariable("productID") String productID,
+            @PathVariable("reviewID") String reviewID,
+            @AuthenticationPrincipal Object principal
+    ) {
+        return ResponseEntity.ok(productReviewService.addDislike(productID, reviewID, principal));
+    }
+
+    @PostMapping("/{reviewID}/like")
+    public ResponseEntity<ProductReviewSummaryDto> toggleLike(
+            @PathVariable("productID") String productID,
+            @PathVariable("reviewID") String reviewID,
+            @AuthenticationPrincipal Object principal
+    ) {
+        return ResponseEntity.ok(productReviewService.toggleLike(productID, reviewID, principal));
+    }
+
+    @PostMapping("/{reviewID}/replies")
+    public ResponseEntity<ProductReviewSummaryDto> addReply(
+            @PathVariable("productID") String productID,
+            @PathVariable("reviewID") String reviewID,
+            @Valid @RequestBody ProductReviewReplyDto replyDto,
+            @AuthenticationPrincipal Object principal
+    ) {
+        return ResponseEntity.ok(productReviewService.addReply(productID, reviewID, replyDto, principal));
     }
 }

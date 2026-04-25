@@ -21,17 +21,24 @@ async function parseJsonOrText(response: Response) {
   }
 }
 
-export async function GET(request: Request) {
+export async function POST(
+  request: Request,
+  context: { params: Promise<{ productID: string; reviewID: string }> }
+) {
   try {
-    const url = new URL(request.url);
-    const query = url.search;
-    
-    const response = await fetch(`${API_BASE_URL}/support-chat/conversations${query}`, {
+    const { productID, reviewID } = await context.params;
+    const authHeader = getAuthHeader(request);
+    const cookieHeader = getCookieHeader(request);
+    const body = await request.text();
+
+    const response = await fetch(`${API_BASE_URL}/products/${encodeURIComponent(productID)}/reviews/${encodeURIComponent(reviewID)}/replies`, {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(getAuthHeader(request) ? { Authorization: getAuthHeader(request)! } : {}),
-        ...(getCookieHeader(request) ? { Cookie: getCookieHeader(request)! } : {}),
+        ...(authHeader ? { Authorization: authHeader } : {}),
+        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
       },
+      body,
       cache: "no-store",
     });
 
@@ -39,9 +46,16 @@ export async function GET(request: Request) {
     if (!response.ok) {
       return NextResponse.json(data, { status: response.status });
     }
-    // Expected to return an array, but app/api/support-chat/conversations/route.ts wrapped it in { conversations }
-    return NextResponse.json({ conversations: data });
+
+    return NextResponse.json(data);
   } catch (error: unknown) {
-    return NextResponse.json({ error: "Failed connecting to backend", details: String(error) }, { status: 500 });
+    const details = error instanceof Error ? error.message : String(error);
+    return NextResponse.json(
+      {
+        error: "Failed to add review reply",
+        details,
+      },
+      { status: 500 }
+    );
   }
 }

@@ -36,6 +36,10 @@ type ProductReview = {
   comment: string;
   author: string;
   createdAt: string;
+  dislikes?: number;
+  likes?: number;
+  likedByCurrentUser?: boolean;
+  replies?: ReviewReply[];
   ownedByCurrentUser?: boolean;
 };
 
@@ -44,12 +48,6 @@ type ReviewReply = {
   author: string;
   content: string;
   createdAt: string;
-};
-
-type ReviewInteractionState = {
-  likedByCurrentUser: boolean;
-  likeCount: number;
-  replies: ReviewReply[];
 };
 
 type ProductReviewSummary = {
@@ -159,22 +157,8 @@ export default function Shop() {
   const [showAuthRequiredModal, setShowAuthRequiredModal] = useState(false);
   const [buyNowProductId, setBuyNowProductId] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
-  const [reviewInteractionsByKey, setReviewInteractionsByKey] = useState<
-    Record<string, ReviewInteractionState>
-  >(() => {
-    if (typeof window === "undefined") {
-      return {};
-    }
-    try {
-      const raw = window.localStorage.getItem(REVIEW_INTERACTIONS_STORAGE_KEY);
-      const parsed = raw ? JSON.parse(raw) : {};
-      return parsed && typeof parsed === "object" ? parsed : {};
-    } catch {
-      return {};
-    }
-  });
-  const [replyDraftByReviewKey, setReplyDraftByReviewKey] = useState<Record<string, string>>({});
-  const [activeReplyReviewKey, setActiveReplyReviewKey] = useState<string | null>(null);
+  const [replyDraftByReviewId, setReplyDraftByReviewId] = useState<Record<string, string>>({});
+  const [activeReplyReviewId, setActiveReplyReviewId] = useState<string | null>(null);
 
   const cartItems = useAppSelector((state: RootState) => state.cart.itemsById);
   const wishListItems = useAppSelector((state) => state.wishList.itemsById);
@@ -245,15 +229,7 @@ export default function Shop() {
     );
   }, [productDescriptions]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    window.localStorage.setItem(
-      REVIEW_INTERACTIONS_STORAGE_KEY,
-      JSON.stringify(reviewInteractionsByKey)
-    );
-  }, [reviewInteractionsByKey]);
+
 
   useEffect(() => {
     if (!selectedProduct) {
@@ -625,32 +601,7 @@ export default function Shop() {
     }
   };
 
-  const formatReviewDateTime = (iso: string): string => {
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) {
-      return "Just now";
-    }
-    return date.toLocaleString();
-  };
-
-  const getReviewInteraction = (productID: string, reviewID: string): ReviewInteractionState => {
-    const key = buildReviewInteractionKey(productID, reviewID, resolveReviewInteractionActorKey());
-    const value = reviewInteractionsByKey[key];
-    if (!value) {
-      return {
-        likedByCurrentUser: false,
-        likeCount: 0,
-        replies: [],
-      };
-    }
-    return {
-      likedByCurrentUser: Boolean(value.likedByCurrentUser),
-      likeCount: Math.max(0, Number(value.likeCount ?? 0)),
-      replies: Array.isArray(value.replies) ? value.replies : [],
-    };
-  };
-
-  const toggleLikeReview = (reviewID: string) => {
+  const handleDislikeReview = async (reviewID: string) => {
     if (!selectedProduct) {
       return;
     }
@@ -659,30 +610,74 @@ export default function Shop() {
       return;
     }
 
-    const key = buildReviewInteractionKey(
-      selectedProduct.productID,
-      reviewID,
-      resolveReviewInteractionActorKey()
-    );
-    setReviewInteractionsByKey((prev) => {
-      const current = prev[key] ?? {
-        likedByCurrentUser: false,
-        likeCount: 0,
-        replies: [],
-      };
-      const nextLiked = !current.likedByCurrentUser;
-      const nextLikeCount = nextLiked
-        ? current.likeCount + 1
-        : Math.max(0, current.likeCount - 1);
-      return {
-        ...prev,
-        [key]: {
-          ...current,
-          likedByCurrentUser: nextLiked,
-          likeCount: nextLikeCount,
-        },
-      };
-    });
+    const productID = selectedProduct.productID;
+    try {
+      const authorizationHeader = normalizeAuthorizationHeader(getToken());
+      const response = await fetch(
+        `/api/products/${encodeURIComponent(productID)}/reviews/${encodeURIComponent(reviewID)}/dislike`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            ...(authorizationHeader ? { Authorization: authorizationHeader } : {}),
+          },
+        }
+      );
+
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data) {
+        throw new Error(data?.message || data?.error || "Failed to dislike review");
+      }
+
+      applyReviewSummary(data as ProductReviewSummary);
+      toast.success("Review disliked");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to dislike review";
+      toast.error(message);
+    }
+  };
+
+  const formatReviewDateTime = (iso: string): string => {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) {
+      return "Just now";
+    }
+    return date.toLocaleString();
+  };
+
+  const toggleLikeReview = async (reviewID: string) => {
+    if (!selectedProduct) {
+      return;
+    }
+    if (!isAuthenticated()) {
+      setShowAuthRequiredModal(true);
+      return;
+    }
+
+    const productID = selectedProduct.productID;
+    try {
+      const authorizationHeader = normalizeAuthorizationHeader(getToken());
+      const response = await fetch(
+        `/api/products/${encodeURIComponent(productID)}/reviews/${encodeURIComponent(reviewID)}/like`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            ...(authorizationHeader ? { Authorization: authorizationHeader } : {}),
+          },
+        }
+      );
+
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data) {
+        throw new Error(data?.message || data?.error || "Failed to like review");
+      }
+
+      applyReviewSummary(data as ProductReviewSummary);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to like review";
+      toast.error(message);
+    }
   };
 
   const toggleReplyDraft = (reviewID: string) => {
@@ -693,30 +688,20 @@ export default function Shop() {
       setShowAuthRequiredModal(true);
       return;
     }
-    const key = buildReviewInteractionKey(
-      selectedProduct.productID,
-      reviewID,
-      resolveReviewInteractionActorKey()
-    );
-    setActiveReplyReviewKey((prev) => (prev === key ? null : key));
+    setActiveReplyReviewId((prev) => (prev === reviewID ? null : reviewID));
   };
 
   const handleReplyDraftChange = (reviewID: string, value: string) => {
     if (!selectedProduct) {
       return;
     }
-    const key = buildReviewInteractionKey(
-      selectedProduct.productID,
-      reviewID,
-      resolveReviewInteractionActorKey()
-    );
-    setReplyDraftByReviewKey((prev) => ({
+    setReplyDraftByReviewId((prev) => ({
       ...prev,
-      [key]: value,
+      [reviewID]: value,
     }));
   };
 
-  const submitReply = (reviewID: string) => {
+  const submitReply = async (reviewID: string) => {
     if (!selectedProduct) {
       return;
     }
@@ -725,44 +710,44 @@ export default function Shop() {
       return;
     }
 
-    const key = buildReviewInteractionKey(
-      selectedProduct.productID,
-      reviewID,
-      resolveReviewInteractionActorKey()
-    );
-    const replyText = (replyDraftByReviewKey[key] ?? "").trim();
+    const replyText = (replyDraftByReviewId[reviewID] ?? "").trim();
     if (replyText.length < 2) {
       toast.error("Please enter a reply");
       return;
     }
 
-    const newReply: ReviewReply = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      author: "You",
-      content: replyText,
-      createdAt: new Date().toISOString(),
-    };
+    const productID = selectedProduct.productID;
+    try {
+      const authorizationHeader = normalizeAuthorizationHeader(getToken());
+      const response = await fetch(
+        `/api/products/${encodeURIComponent(productID)}/reviews/${encodeURIComponent(reviewID)}/replies`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            ...(authorizationHeader ? { Authorization: authorizationHeader } : {}),
+          },
+          body: JSON.stringify({ content: replyText }),
+        }
+      );
 
-    setReviewInteractionsByKey((prev) => {
-      const current = prev[key] ?? {
-        likedByCurrentUser: false,
-        likeCount: 0,
-        replies: [],
-      };
-      return {
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data) {
+        throw new Error(data?.message || data?.error || "Failed to add reply");
+      }
+
+      applyReviewSummary(data as ProductReviewSummary);
+      setReplyDraftByReviewId((prev) => ({
         ...prev,
-        [key]: {
-          ...current,
-          replies: [...current.replies, newReply],
-        },
-      };
-    });
-    setReplyDraftByReviewKey((prev) => ({
-      ...prev,
-      [key]: "",
-    }));
-    setActiveReplyReviewKey(null);
-    toast.success("Reply added");
+        [reviewID]: "",
+      }));
+      setActiveReplyReviewId(null);
+      toast.success("Reply added");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to add reply";
+      toast.error(message);
+    }
   };
 
   const sortedProducts = useMemo(() => {
@@ -1226,18 +1211,9 @@ export default function Shop() {
                       getProductReviews(selectedProduct.productID).map((review) => (
                         <article key={review.id} className="sdReviewCard">
                           {(() => {
-                            const actorKey = resolveReviewInteractionActorKey();
-                            const reviewInteraction = getReviewInteraction(
-                              selectedProduct.productID,
-                              review.id
-                            );
-                            const reviewKey = buildReviewInteractionKey(
-                              selectedProduct.productID,
-                              review.id,
-                              actorKey
-                            );
-                            const replyDraft = replyDraftByReviewKey[reviewKey] ?? "";
-                            const isReplyOpen = activeReplyReviewKey === reviewKey;
+                            const replyDraft = replyDraftByReviewId[review.id] ?? "";
+                            const isReplyOpen = activeReplyReviewId === review.id;
+                            const replies = review.replies || [];
                             return (
                               <>
                           <div className="sdReviewCardHeader">
@@ -1260,15 +1236,22 @@ export default function Shop() {
                               className="sdReviewMetaButton"
                               onClick={() => toggleLikeReview(review.id)}
                             >
-                              {reviewInteraction.likedByCurrentUser ? "Unlike" : "Like"} (
-                              {reviewInteraction.likeCount})
+                              {review.likedByCurrentUser ? "Unlike" : "Like"} (
+                              {review.likes ?? 0})
+                            </button>
+                            <button
+                              type="button"
+                              className="sdReviewMetaButton"
+                              onClick={() => handleDislikeReview(review.id)}
+                            >
+                              Dislike ({review.dislikes ?? 0})
                             </button>
                             <button
                               type="button"
                               className="sdReviewMetaButton"
                               onClick={() => toggleReplyDraft(review.id)}
                             >
-                              Reply ({reviewInteraction.replies.length})
+                              Reply ({replies.length})
                             </button>
                           </div>
                           {isReplyOpen && (
@@ -1282,18 +1265,18 @@ export default function Shop() {
                                 rows={2}
                               />
                               <div className="sdReviewReplyComposerActions">
-                                <button type="button" onClick={() => submitReply(review.id)}>
+                                <button type="button" onClick={() => void submitReply(review.id)}>
                                   Post Reply
                                 </button>
-                                <button type="button" onClick={() => setActiveReplyReviewKey(null)}>
+                                <button type="button" onClick={() => setActiveReplyReviewId(null)}>
                                   Cancel
                                 </button>
                               </div>
                             </div>
                           )}
-                          {reviewInteraction.replies.length > 0 && (
+                          {replies.length > 0 && (
                             <div className="sdReviewReplyList">
-                              {reviewInteraction.replies.map((reply) => (
+                              {replies.map((reply) => (
                                 <article key={reply.id} className="sdReviewReplyCard">
                                   <div className="sdReviewReplyHeader">
                                     <strong>{reply.author}</strong>

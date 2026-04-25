@@ -15,6 +15,12 @@ public interface ProductReviewService {
 
     ProductReviewSummaryDto deleteReview(String productID, String reviewID, Object principal);
 
+    ProductReviewSummaryDto addDislike(String productID, String reviewID, Object principal);
+
+    ProductReviewSummaryDto toggleLike(String productID, String reviewID, Object principal);
+
+    ProductReviewSummaryDto addReply(String productID, String reviewID, com.example.shop.modules.review.dto.ProductReviewReplyDto replyDto, Object principal);
+
     AdminProductReviewPageDto getReviewsForAdmin(String query, int page, int size);
 
     ProductReviewDto updateReviewAsAdmin(String productID, String reviewID, ProductReviewRequest request);

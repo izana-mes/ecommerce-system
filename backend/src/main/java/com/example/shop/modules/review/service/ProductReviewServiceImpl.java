@@ -167,6 +167,87 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     }
 
     @Override
+    public ProductReviewSummaryDto addDislike(String productID, String reviewID, Object principal) {
+        String normalizedProductID = validateProductAndGetId(productID);
+        String normalizedReviewID = normalizeReviewID(reviewID);
+
+        List<ProductReviewDto> allReviews = readAllReviews(normalizedProductID);
+        ProductReviewDto target = allReviews.stream()
+                .filter(review -> Objects.equals(review.getId(), normalizedReviewID))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("Review not found", HttpStatus.NOT_FOUND));
+
+        int currentDislikes = target.getDislikes() == null ? 0 : target.getDislikes();
+        target.setDislikes(currentDislikes + 1);
+
+        persistAllReviews(normalizedProductID, allReviews);
+        return getReviews(normalizedProductID, 10, principal);
+    }
+
+    @Override
+    public ProductReviewSummaryDto toggleLike(String productID, String reviewID, Object principal) {
+        String normalizedProductID = validateProductAndGetId(productID);
+        String normalizedReviewID = normalizeReviewID(reviewID);
+        String principalIdentity = requireAuthenticatedIdentity(principal);
+
+        List<ProductReviewDto> allReviews = readAllReviews(normalizedProductID);
+        ProductReviewDto target = allReviews.stream()
+                .filter(review -> java.util.Objects.equals(review.getId(), normalizedReviewID))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("Review not found", HttpStatus.NOT_FOUND));
+
+        java.util.Set<String> likedBy = target.getLikedByUsers();
+        if (likedBy == null) {
+            likedBy = new java.util.HashSet<>();
+        }
+
+        if (likedBy.contains(principalIdentity)) {
+            likedBy.remove(principalIdentity);
+        } else {
+            likedBy.add(principalIdentity);
+        }
+
+        target.setLikedByUsers(likedBy);
+        target.setLikes(likedBy.size());
+
+        persistAllReviews(normalizedProductID, allReviews);
+        return getReviews(normalizedProductID, 10, principal);
+    }
+
+    @Override
+    public ProductReviewSummaryDto addReply(String productID, String reviewID, com.example.shop.modules.review.dto.ProductReviewReplyDto replyDto, Object principal) {
+        String normalizedProductID = validateProductAndGetId(productID);
+        String normalizedReviewID = normalizeReviewID(reviewID);
+        String principalAuthor = resolveAuthor(principal);
+        requireAuthenticatedIdentity(principal);
+
+        if (replyDto == null || !org.springframework.util.StringUtils.hasText(replyDto.getContent())) {
+            throw new BusinessException("reply content is required", HttpStatus.BAD_REQUEST);
+        }
+
+        List<ProductReviewDto> allReviews = readAllReviews(normalizedProductID);
+        ProductReviewDto target = allReviews.stream()
+                .filter(review -> java.util.Objects.equals(review.getId(), normalizedReviewID))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("Review not found", HttpStatus.NOT_FOUND));
+
+        List<com.example.shop.modules.review.dto.ProductReviewReplyDto> replies = target.getReplies();
+        if (replies == null) {
+            replies = new java.util.ArrayList<>();
+        }
+
+        replyDto.setId(java.util.UUID.randomUUID().toString());
+        replyDto.setAuthor(principalAuthor);
+        replyDto.setCreatedAt(java.time.Instant.now().toString());
+
+        replies.add(replyDto);
+        target.setReplies(replies);
+
+        persistAllReviews(normalizedProductID, allReviews);
+        return getReviews(normalizedProductID, 10, principal);
+    }
+
+    @Override
     public AdminProductReviewPageDto getReviewsForAdmin(String query, int page, int size) {
         int safePage = Math.max(0, page);
         int safeSize = Math.max(1, Math.min(size, MAX_ADMIN_PAGE_SIZE));
@@ -372,11 +453,21 @@ public class ProductReviewServiceImpl implements ProductReviewService {
             return null;
         }
 
+        boolean currentLiked = false;
+        if (review.getLikedByUsers() != null && org.springframework.util.StringUtils.hasText(principalIdentity)) {
+            currentLiked = review.getLikedByUsers().contains(principalIdentity);
+        }
+
         return ProductReviewDto.builder()
                 .id(review.getId())
                 .rating(review.getRating())
                 .comment(review.getComment())
                 .author(review.getAuthor())
+                .authorId(review.getAuthorId())
+                .dislikes(review.getDislikes() == null ? 0 : review.getDislikes())
+                .likes(review.getLikedByUsers() == null ? 0 : review.getLikedByUsers().size())
+                .likedByCurrentUser(currentLiked)
+                .replies(review.getReplies() == null ? new ArrayList<>() : review.getReplies())
                 .createdAt(review.getCreatedAt())
                 .ownedByCurrentUser(isOwnedByPrincipal(review, principalIdentity, principalAuthor))
                 .build();
