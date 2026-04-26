@@ -1,0 +1,182 @@
+.floatingDock {
+  position: fixed;
+  right: 20px;
+  bottom: 24px;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.floatingAction {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px 12px 14px;
+  border-radius: 999px;
+  text-decoration: none;
+  color: #ffffff;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+  overflow: hidden;
+  isolation: isolate;
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    filter 220ms ease;
+  animation: dockSlideIn 680ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.floatingAction::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0));
+  opacity: 0.7;
+  z-index: -1;
+}
+
+.floatingAction::after {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  background: linear-gradient(120deg, transparent 20%, rgba(255, 255, 255, 0.28) 50%, transparent 80%);
+  transform: translateX(-135%) rotate(12deg);
+  animation: dockShimmer 4.8s linear infinite;
+  z-index: -2;
+}
+
+.floatingAction:hover {
+  transform: translate3d(0, -4px, 0) scale(1.02);
+  box-shadow: 0 26px 48px rgba(15, 23, 42, 0.24);
+  filter: saturate(1.08);
+}
+
+.floatingAction:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 3px;
+  transform: translate3d(0, -4px, 0) scale(1.02);
+}
+
+.floatingAction:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.chatbot {
+  background: linear-gradient(135deg, #0f766e, #14b8a6);
+}
+
+.staff {
+  background: linear-gradient(135deg, #0f172a, #334155);
+}
+
+.iconWrap {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.16);
+  flex-shrink: 0;
+}
+
+.iconWrap::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  animation: dockPulse 2.4s ease-out infinite;
+}
+
+.labelGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.74;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+@keyframes dockSlideIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(24px, 18px, 0) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes dockPulse {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.94);
+  }
+  70% {
+    opacity: 0;
+    transform: scale(1.38);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.38);
+  }
+}
+
+@keyframes dockShimmer {
+  0% {
+    transform: translateX(-135%) rotate(12deg);
+  }
+  100% {
+    transform: translateX(135%) rotate(12deg);
+  }
+}
+
+@media (max-width: 720px) {
+  .floatingDock {
+    right: 14px;
+    bottom: 16px;
+    left: 14px;
+    align-items: stretch;
+  }
+
+  .floatingAction {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floatingAction,
+  .floatingAction::after,
+  .iconWrap::after {
+    animation: none !important;
+  }
+
+  .floatingAction {
+    transition: none;
+  }
+
+  .floatingAction:hover,
+  .floatingAction:focus-visible {
+    transform: none;
+  }
+}

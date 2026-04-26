@@ -6,11 +6,13 @@ import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEven
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import com.example.shop.config.DatabaseUrlSupport;
 
 @SpringBootApplication
 @EnableCaching
+@EnableScheduling
 public class ShopApplication {
 
     public static void main(String[] args) {

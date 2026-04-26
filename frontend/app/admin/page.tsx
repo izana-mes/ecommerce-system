@@ -273,11 +273,41 @@ type AdminAttendanceRecord = {
   totalBreakMinutes: number;
   status: "CLOCKED_OUT" | "CLOCKED_IN" | "ON_BREAK";
   note: string | null;
+  warningCount: number;
+  reprimandCount: number;
+  openIssueCount: number;
+};
+
+type AdminAttendancePolicy = {
+  monitorEnabled: boolean;
+  longBreakMinutes: number;
+  breakReminderIntervalMinutes: number;
+  minDailyWorkMinutes: number;
+  lowHoursReminderAfterLocalHour: number;
+};
+
+type AdminPerformanceReview = {
+  reviewId: string;
+  employeeUserId: string;
+  employeeEmail: string;
+  employeeName: string;
+  reviewType: "WARNING" | "REPRIMAND" | "NEGATIVE_REVIEW";
+  category: string;
+  title: string;
+  summary: string;
+  status: "OPEN" | "ACKNOWLEDGED" | "RESOLVED";
+  relatedShiftId: string | null;
+  lastNotifiedAt: number | null;
+  notificationCount: number;
+  createdBy: string;
+  createdAt: number;
+  updatedAt: number;
 };
 
 type AdminAttendanceSnapshot = {
   timezone: string;
   generatedAt: number;
+  policy: AdminAttendancePolicy;
   summary: {
     employeesTracked: number;
     activeEmployees: number;
@@ -285,11 +315,19 @@ type AdminAttendanceSnapshot = {
     todayWorkedMinutes: number;
     weekWorkedMinutes: number;
   };
+  performanceSummary: {
+    totalReviews: number;
+    openReviews: number;
+    warningCount: number;
+    reprimandCount: number;
+  };
   activeShifts: AdminAttendanceRecord[];
   records: AdminAttendanceRecord[];
+  performanceReviews: AdminPerformanceReview[];
 };
 
 type AdminAttendanceStatusFilter = "all" | "active" | "on_break" | "closed";
+type AdminPerformanceReviewStatusFilter = "all" | "OPEN" | "ACKNOWLEDGED" | "RESOLVED";
 
 type AdminTab =
   | "overview"
@@ -415,6 +453,13 @@ const INITIAL_DASHBOARD: DashboardSummary = {
 const INITIAL_ATTENDANCE: AdminAttendanceSnapshot = {
   timezone: "UTC",
   generatedAt: 0,
+  policy: {
+    monitorEnabled: false,
+    longBreakMinutes: 30,
+    breakReminderIntervalMinutes: 30,
+    minDailyWorkMinutes: 480,
+    lowHoursReminderAfterLocalHour: 16,
+  },
   summary: {
     employeesTracked: 0,
     activeEmployees: 0,
@@ -422,8 +467,15 @@ const INITIAL_ATTENDANCE: AdminAttendanceSnapshot = {
     todayWorkedMinutes: 0,
     weekWorkedMinutes: 0,
   },
+  performanceSummary: {
+    totalReviews: 0,
+    openReviews: 0,
+    warningCount: 0,
+    reprimandCount: 0,
+  },
   activeShifts: [],
   records: [],
+  performanceReviews: [],
 };
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -595,8 +647,22 @@ export default function AdminPage() {
   const [attendanceQueryInput, setAttendanceQueryInput] = useState("");
   const [attendanceQuery, setAttendanceQuery] = useState("");
   const [attendanceStatusFilter, setAttendanceStatusFilter] = useState<AdminAttendanceStatusFilter>("all");
+  const [attendanceReviewStatusFilter, setAttendanceReviewStatusFilter] =
+    useState<AdminPerformanceReviewStatusFilter>("all");
   const [attendanceDateFrom, setAttendanceDateFrom] = useState("");
   const [attendanceDateTo, setAttendanceDateTo] = useState("");
+  const [attendanceReviewType, setAttendanceReviewType] =
+    useState<AdminPerformanceReview["reviewType"]>("WARNING");
+  const [attendanceReviewTitle, setAttendanceReviewTitle] = useState("");
+  const [attendanceReviewSummary, setAttendanceReviewSummary] = useState("");
+  const [attendanceReviewSendEmail, setAttendanceReviewSendEmail] = useState(true);
+  const [selectedAttendanceEmployee, setSelectedAttendanceEmployee] = useState<{
+    userId: string;
+    email: string;
+    name: string;
+    shiftId: string | null;
+  } | null>(null);
+  const [attendanceReviewProcessingKey, setAttendanceReviewProcessingKey] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string>("");
   // ── Audit Logs ──
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
@@ -1147,6 +1213,7 @@ export default function AdminPage() {
       const params = new URLSearchParams({
         query: attendanceQuery,
         status: attendanceStatusFilter,
+        reviewStatus: attendanceReviewStatusFilter,
         dateFrom: attendanceDateFrom,
         dateTo: attendanceDateTo,
         limit: "50",
@@ -1169,6 +1236,13 @@ export default function AdminPage() {
       setAttendanceSnapshot({
         timezone: data?.timezone ?? "UTC",
         generatedAt: Number(data?.generatedAt ?? Date.now()),
+        policy: {
+          monitorEnabled: Boolean(data?.policy?.monitorEnabled),
+          longBreakMinutes: Number(data?.policy?.longBreakMinutes ?? 30),
+          breakReminderIntervalMinutes: Number(data?.policy?.breakReminderIntervalMinutes ?? 30),
+          minDailyWorkMinutes: Number(data?.policy?.minDailyWorkMinutes ?? 480),
+          lowHoursReminderAfterLocalHour: Number(data?.policy?.lowHoursReminderAfterLocalHour ?? 16),
+        },
         summary: {
           employeesTracked: Number(data?.summary?.employeesTracked ?? 0),
           activeEmployees: Number(data?.summary?.activeEmployees ?? 0),
@@ -1176,8 +1250,37 @@ export default function AdminPage() {
           todayWorkedMinutes: Number(data?.summary?.todayWorkedMinutes ?? 0),
           weekWorkedMinutes: Number(data?.summary?.weekWorkedMinutes ?? 0),
         },
-        activeShifts: Array.isArray(data?.activeShifts) ? data.activeShifts : [],
-        records: Array.isArray(data?.records) ? data.records : [],
+        performanceSummary: {
+          totalReviews: Number(data?.performanceSummary?.totalReviews ?? 0),
+          openReviews: Number(data?.performanceSummary?.openReviews ?? 0),
+          warningCount: Number(data?.performanceSummary?.warningCount ?? 0),
+          reprimandCount: Number(data?.performanceSummary?.reprimandCount ?? 0),
+        },
+        activeShifts: Array.isArray(data?.activeShifts)
+          ? data.activeShifts.map((item) => ({
+              ...item,
+              warningCount: Number(item?.warningCount ?? 0),
+              reprimandCount: Number(item?.reprimandCount ?? 0),
+              openIssueCount: Number(item?.openIssueCount ?? 0),
+            }))
+          : [],
+        records: Array.isArray(data?.records)
+          ? data.records.map((item) => ({
+              ...item,
+              warningCount: Number(item?.warningCount ?? 0),
+              reprimandCount: Number(item?.reprimandCount ?? 0),
+              openIssueCount: Number(item?.openIssueCount ?? 0),
+            }))
+          : [],
+        performanceReviews: Array.isArray(data?.performanceReviews)
+          ? data.performanceReviews.map((item) => ({
+              ...item,
+              lastNotifiedAt: item?.lastNotifiedAt == null ? null : Number(item.lastNotifiedAt),
+              notificationCount: Number(item?.notificationCount ?? 0),
+              createdAt: Number(item?.createdAt ?? 0),
+              updatedAt: Number(item?.updatedAt ?? 0),
+            }))
+          : [],
       });
       setLastUpdatedAt(new Date().toISOString());
     } catch (err) {
@@ -1187,7 +1290,160 @@ export default function AdminPage() {
     } finally {
       setLoadingAttendance(false);
     }
-  }, [attendanceDateFrom, attendanceDateTo, attendanceQuery, attendanceStatusFilter, router, token]);
+  }, [
+    attendanceDateFrom,
+    attendanceDateTo,
+    attendanceQuery,
+    attendanceReviewStatusFilter,
+    attendanceStatusFilter,
+    router,
+    token,
+  ]);
+
+  const startAttendanceReview = (record: AdminAttendanceRecord) => {
+    setSelectedAttendanceEmployee({
+      userId: record.employee.userId,
+      email: record.employee.email,
+      name: record.employee.name,
+      shiftId: record.shiftId ?? null,
+    });
+    setAttendanceReviewType("WARNING");
+    setAttendanceReviewTitle(
+      record.status === "ON_BREAK" ? "Break duration requires review" : "Attendance performance review"
+    );
+    setAttendanceReviewSummary(record.note?.trim() || "");
+    setAttendanceReviewSendEmail(true);
+  };
+
+  const resetAttendanceReviewForm = () => {
+    setSelectedAttendanceEmployee(null);
+    setAttendanceReviewType("WARNING");
+    setAttendanceReviewTitle("");
+    setAttendanceReviewSummary("");
+    setAttendanceReviewSendEmail(true);
+  };
+
+  const handleCreateAttendanceReview = async () => {
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+    if (!selectedAttendanceEmployee) {
+      toast.error("Choose an employee from the attendance table first.", {
+        style: { backgroundColor: "#fb0404", color: "#fff" },
+      });
+      return;
+    }
+
+    const trimmedTitle = attendanceReviewTitle.trim();
+    const trimmedSummary = attendanceReviewSummary.trim();
+    if (!trimmedTitle || !trimmedSummary) {
+      toast.error("Title and summary are required.", {
+        style: { backgroundColor: "#fb0404", color: "#fff" },
+      });
+      return;
+    }
+
+    setAttendanceReviewProcessingKey("create");
+    try {
+      const response = await fetch("/api/auth/admin-attendance", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          employeeUserId: selectedAttendanceEmployee.userId,
+          employeeEmail: selectedAttendanceEmployee.email,
+          employeeName: selectedAttendanceEmployee.name,
+          reviewType: attendanceReviewType,
+          category: "MANUAL",
+          title: trimmedTitle,
+          summary: trimmedSummary,
+          relatedShiftId: selectedAttendanceEmployee.shiftId,
+          sendEmail: attendanceReviewSendEmail,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to create performance review");
+      }
+
+      toast.success("Performance review saved", {
+        duration: 1800,
+        style: { backgroundColor: "#07bc0c", color: "#fff" },
+      });
+      resetAttendanceReviewForm();
+      await fetchAttendance();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to create performance review", {
+        duration: 2500,
+        style: { backgroundColor: "#fb0404", color: "#fff" },
+      });
+    } finally {
+      setAttendanceReviewProcessingKey(null);
+    }
+  };
+
+  const handleUpdatePerformanceReviewStatus = async (
+    review: AdminPerformanceReview,
+    status: AdminPerformanceReview["status"],
+    resendEmail = false
+  ) => {
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    setAttendanceReviewProcessingKey(review.reviewId);
+    try {
+      const response = await fetch("/api/auth/admin-attendance", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          reviewId: review.reviewId,
+          status,
+          resendEmail,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to update performance review");
+      }
+
+      setAttendanceSnapshot((prev) => ({
+        ...prev,
+        performanceReviews: prev.performanceReviews.map((item) =>
+          item.reviewId === review.reviewId
+            ? {
+                ...item,
+                status,
+                notificationCount: resendEmail ? item.notificationCount + 1 : item.notificationCount,
+                lastNotifiedAt: resendEmail ? Date.now() : item.lastNotifiedAt,
+              }
+            : item
+        ),
+      }));
+
+      toast.success(resendEmail ? "Review updated and email resent" : "Review updated", {
+        duration: 1800,
+        style: { backgroundColor: "#07bc0c", color: "#fff" },
+      });
+      await fetchAttendance();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update performance review", {
+        duration: 2500,
+        style: { backgroundColor: "#fb0404", color: "#fff" },
+      });
+    } finally {
+      setAttendanceReviewProcessingKey(null);
+    }
+  };
 
   const fetchAuditEvents = useCallback(
     async (
@@ -3739,6 +3995,12 @@ export default function AdminPage() {
                 Track active shifts, employees currently on break, and recent attendance history from the shared
                 attendance tables used by the staff portal.
               </p>
+              <p>
+                Gmail notifications are sent through the configured SMTP account when breaks exceed{" "}
+                {attendanceSnapshot.policy.longBreakMinutes} minutes or when daily time drops below{" "}
+                {formatMinutes(attendanceSnapshot.policy.minDailyWorkMinutes)} after{" "}
+                {attendanceSnapshot.policy.lowHoursReminderAfterLocalHour}:00 local time.
+              </p>
             </section>
 
             <form
@@ -3765,6 +4027,18 @@ export default function AdminPage() {
                 <option value="on_break">On break</option>
                 <option value="closed">Closed shifts</option>
               </select>
+              <select
+                className="productInput"
+                value={attendanceReviewStatusFilter}
+                onChange={(event) =>
+                  setAttendanceReviewStatusFilter(event.target.value as AdminPerformanceReviewStatusFilter)
+                }
+              >
+                <option value="all">All review statuses</option>
+                <option value="OPEN">Open reviews</option>
+                <option value="ACKNOWLEDGED">Acknowledged</option>
+                <option value="RESOLVED">Resolved</option>
+              </select>
               <input
                 type="date"
                 className="productInput"
@@ -3787,6 +4061,7 @@ export default function AdminPage() {
                   setAttendanceQueryInput("");
                   setAttendanceQuery("");
                   setAttendanceStatusFilter("all");
+                  setAttendanceReviewStatusFilter("all");
                   setAttendanceDateFrom("");
                   setAttendanceDateTo("");
                 }}
@@ -3821,6 +4096,21 @@ export default function AdminPage() {
                 <h3>{formatMinutes(attendanceSnapshot.summary.weekWorkedMinutes)}</h3>
                 <span>Rolling 7-day workload</span>
               </div>
+              <div className="overviewCard overviewCardWarning">
+                <p>Warnings</p>
+                <h3>{attendanceSnapshot.performanceSummary.warningCount}</h3>
+                <span>Recorded attendance warnings</span>
+              </div>
+              <div className="overviewCard">
+                <p>Reprimands</p>
+                <h3>{attendanceSnapshot.performanceSummary.reprimandCount}</h3>
+                <span>Escalated employee actions</span>
+              </div>
+              <div className="overviewCard">
+                <p>Open Reviews</p>
+                <h3>{attendanceSnapshot.performanceSummary.openReviews}</h3>
+                <span>Negative reviews needing follow-up</span>
+              </div>
             </div>
 
             {loadingAttendance ? <p className="adminStatus">Loading attendance management...</p> : null}
@@ -3828,6 +4118,33 @@ export default function AdminPage() {
 
             {!loadingAttendance && !attendanceError ? (
               <>
+                <section className="overviewSection">
+                  <div className="attendanceSectionHeader">
+                    <h3>Policy Snapshot</h3>
+                    <span className="statusPill">
+                      Monitor: {attendanceSnapshot.policy.monitorEnabled ? "Enabled" : "Disabled"}
+                    </span>
+                  </div>
+                  <div className="insightGrid">
+                    <div className="insightCard">
+                      <p>Long Break Threshold</p>
+                      <h4>{formatMinutes(attendanceSnapshot.policy.longBreakMinutes)}</h4>
+                    </div>
+                    <div className="insightCard">
+                      <p>Reminder Interval</p>
+                      <h4>{formatMinutes(attendanceSnapshot.policy.breakReminderIntervalMinutes)}</h4>
+                    </div>
+                    <div className="insightCard">
+                      <p>Daily Minimum</p>
+                      <h4>{formatMinutes(attendanceSnapshot.policy.minDailyWorkMinutes)}</h4>
+                    </div>
+                    <div className="insightCard">
+                      <p>Low-Hours Reminder</p>
+                      <h4>{attendanceSnapshot.policy.lowHoursReminderAfterLocalHour}:00</h4>
+                    </div>
+                  </div>
+                </section>
+
                 <section className="overviewSection">
                   <div className="attendanceSectionHeader">
                     <h3>Currently Active</h3>
@@ -3842,13 +4159,17 @@ export default function AdminPage() {
                           <th>Clock In</th>
                           <th>Worked</th>
                           <th>Break</th>
+                          <th>Warnings</th>
+                          <th>Reprimands</th>
+                          <th>Open Issues</th>
                           <th>Note</th>
+                          <th>Action</th>
                         </tr>
                       </thead>
                       <tbody>
                         {attendanceSnapshot.activeShifts.length === 0 ? (
                           <tr>
-                            <td colSpan={6} className="adminEmpty">
+                            <td colSpan={10} className="adminEmpty">
                               No active shifts right now.
                             </td>
                           </tr>
@@ -3867,9 +4188,167 @@ export default function AdminPage() {
                               <td>{formatTimestamp(shift.clockInAt)}</td>
                               <td>{formatMinutes(shift.totalWorkMinutes)}</td>
                               <td>{formatMinutes(shift.totalBreakMinutes)}</td>
+                              <td>{shift.warningCount}</td>
+                              <td>{shift.reprimandCount}</td>
+                              <td>{shift.openIssueCount}</td>
                               <td className="commentCell">{shift.note || "-"}</td>
+                              <td>
+                                <button className="pageButton" onClick={() => startAttendanceReview(shift)}>
+                                  Log Review
+                                </button>
+                              </td>
                             </tr>
                           ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section className="overviewSection">
+                  <div className="attendanceSectionHeader">
+                    <h3>Performance Reviews</h3>
+                    <span className="mutedCell">
+                      Negative reviews, warnings, and reprimands are managed here.
+                    </span>
+                  </div>
+
+                  {selectedAttendanceEmployee ? (
+                    <div className="productForm attendanceReviewForm">
+                      <h3>
+                        New Review for {selectedAttendanceEmployee.name} ({selectedAttendanceEmployee.email})
+                      </h3>
+                      <div className="productGrid">
+                        <input className="productInput" value={selectedAttendanceEmployee.name} disabled />
+                        <input className="productInput" value={selectedAttendanceEmployee.email} disabled />
+                        <select
+                          className="productInput"
+                          value={attendanceReviewType}
+                          onChange={(event) =>
+                            setAttendanceReviewType(event.target.value as AdminPerformanceReview["reviewType"])
+                          }
+                        >
+                          <option value="WARNING">Warning</option>
+                          <option value="REPRIMAND">Reprimand</option>
+                          <option value="NEGATIVE_REVIEW">Negative Review</option>
+                        </select>
+                        <input
+                          className="productInput"
+                          value={attendanceReviewTitle}
+                          onChange={(event) => setAttendanceReviewTitle(event.target.value)}
+                          placeholder="Review title"
+                        />
+                      </div>
+                      <textarea
+                        className="productInput reviewEditTextarea"
+                        rows={4}
+                        value={attendanceReviewSummary}
+                        onChange={(event) => setAttendanceReviewSummary(event.target.value)}
+                        placeholder="Describe the attendance/performance issue"
+                      />
+                      <label className="productToggle">
+                        <input
+                          type="checkbox"
+                          checked={attendanceReviewSendEmail}
+                          onChange={(event) => setAttendanceReviewSendEmail(event.target.checked)}
+                        />
+                        <span>Send Gmail notification immediately</span>
+                      </label>
+                      <div className="productFormActions">
+                        <button
+                          type="button"
+                          className="adminActionButton"
+                          disabled={attendanceReviewProcessingKey === "create"}
+                          onClick={() => void handleCreateAttendanceReview()}
+                        >
+                          {attendanceReviewProcessingKey === "create" ? "Saving..." : "Save Review"}
+                        </button>
+                        <button type="button" className="pageButton" onClick={resetAttendanceReviewForm}>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="adminStatus">Choose an employee from the attendance tables to log a review.</p>
+                  )}
+
+                  <div className="adminTableWrapper">
+                    <table className="adminTable">
+                      <thead>
+                        <tr>
+                          <th>Employee</th>
+                          <th>Type</th>
+                          <th>Status</th>
+                          <th>Summary</th>
+                          <th>Notifications</th>
+                          <th>Updated</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {attendanceSnapshot.performanceReviews.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className="adminEmpty">
+                              No performance reviews matched the current filters.
+                            </td>
+                          </tr>
+                        ) : (
+                          attendanceSnapshot.performanceReviews.map((review) => {
+                            const isProcessing = attendanceReviewProcessingKey === review.reviewId;
+                            return (
+                              <tr key={review.reviewId}>
+                                <td>
+                                  <strong>{review.employeeName}</strong>
+                                  <div className="mutedCell">{review.employeeEmail}</div>
+                                </td>
+                                <td>
+                                  <div>{review.reviewType.replaceAll("_", " ")}</div>
+                                  <div className="mutedCell">{review.category.replaceAll("_", " ")}</div>
+                                </td>
+                                <td>
+                                  <select
+                                    className="productInput"
+                                    value={review.status}
+                                    disabled={isProcessing}
+                                    onChange={(event) =>
+                                      void handleUpdatePerformanceReviewStatus(
+                                        review,
+                                        event.target.value as AdminPerformanceReview["status"]
+                                      )
+                                    }
+                                  >
+                                    <option value="OPEN">Open</option>
+                                    <option value="ACKNOWLEDGED">Acknowledged</option>
+                                    <option value="RESOLVED">Resolved</option>
+                                  </select>
+                                </td>
+                                <td className="commentCell">
+                                  <strong>{review.title}</strong>
+                                  <div className="mutedCell">{review.summary}</div>
+                                </td>
+                                <td>
+                                  <div>{review.notificationCount}</div>
+                                  <div className="mutedCell">
+                                    {review.lastNotifiedAt ? formatTimestamp(review.lastNotifiedAt) : "Not sent"}
+                                  </div>
+                                </td>
+                                <td>{formatTimestamp(review.updatedAt)}</td>
+                                <td>
+                                  <div className="rowActions">
+                                    <button
+                                      className="pageButton"
+                                      disabled={isProcessing}
+                                      onClick={() =>
+                                        void handleUpdatePerformanceReviewStatus(review, review.status, true)
+                                      }
+                                    >
+                                      Resend Gmail
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
                         )}
                       </tbody>
                     </table>
@@ -3894,13 +4373,17 @@ export default function AdminPage() {
                           <th>Clock Out</th>
                           <th>Worked</th>
                           <th>Break</th>
+                          <th>Warnings</th>
+                          <th>Reprimands</th>
+                          <th>Open Issues</th>
                           <th>Note</th>
+                          <th>Action</th>
                         </tr>
                       </thead>
                       <tbody>
                         {attendanceSnapshot.records.length === 0 ? (
                           <tr>
-                            <td colSpan={8} className="adminEmpty">
+                            <td colSpan={12} className="adminEmpty">
                               No attendance records matched the current filters.
                             </td>
                           </tr>
@@ -3927,7 +4410,15 @@ export default function AdminPage() {
                               <td>{formatTimestamp(shift.clockOutAt)}</td>
                               <td>{formatMinutes(shift.totalWorkMinutes)}</td>
                               <td>{formatMinutes(shift.totalBreakMinutes)}</td>
+                              <td>{shift.warningCount}</td>
+                              <td>{shift.reprimandCount}</td>
+                              <td>{shift.openIssueCount}</td>
                               <td className="commentCell">{shift.note || "-"}</td>
+                              <td>
+                                <button className="pageButton" onClick={() => startAttendanceReview(shift)}>
+                                  Log Review
+                                </button>
+                              </td>
                             </tr>
                           ))
                         )}

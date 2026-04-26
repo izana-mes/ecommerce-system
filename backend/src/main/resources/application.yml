@@ -158,6 +158,15 @@ application:
       audit-event: ${MESSAGING_ROUTING_KEY_AUDIT_EVENT:audit.event}
   inventory:
     low-stock-threshold: ${LOW_STOCK_THRESHOLD:5}
+  attendance:
+    monitor:
+      enabled: ${ATTENDANCE_MONITOR_ENABLED:true}
+      fixed-delay-ms: ${ATTENDANCE_MONITOR_FIXED_DELAY_MS:900000}
+    policy:
+      long-break-minutes: ${ATTENDANCE_LONG_BREAK_MINUTES:30}
+      break-reminder-interval-minutes: ${ATTENDANCE_BREAK_REMINDER_INTERVAL_MINUTES:30}
+      min-daily-work-minutes: ${ATTENDANCE_MIN_DAILY_WORK_MINUTES:480}
+      low-hours-reminder-after-local-hour: ${ATTENDANCE_LOW_HOURS_REMINDER_AFTER_LOCAL_HOUR:16}
   chatbot:
     ai:
       enabled: ${CHATBOT_AI_ENABLED:false}

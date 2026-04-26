@@ -69,4 +69,32 @@ public class EmailTemplateService {
                 otp
         );
     }
+
+    public String generateAttendancePolicyAlertEmail(
+            String name,
+            String title,
+            String summary,
+            String category,
+            String reviewType
+    ) {
+        return String.format(
+                """
+                        <html>
+                            <body>
+                                <h2>Hello %s,</h2>
+                                <p><strong>%s</strong></p>
+                                <p>%s</p>
+                                <p>Category: <strong>%s</strong></p>
+                                <p>Review type: <strong>%s</strong></p>
+                                <p>Please return to your shift, complete your hours, or contact your manager if this notice is unexpected.</p>
+                            </body>
+                        </html>
+                        """,
+                name == null ? "" : name,
+                title == null ? "Attendance notice" : title,
+                summary == null ? "" : summary,
+                category == null ? "ATTENDANCE" : category,
+                reviewType == null ? "WARNING" : reviewType
+        );
+    }
 }
