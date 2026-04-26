@@ -187,6 +187,89 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
+    public Optional<OrderHistoryItemDto> findOrderByNumberForAdmin(String orderNumber) {
+        if (!StringUtils.hasText(orderNumber)) {
+            return Optional.empty();
+        }
+        List<OrderHistoryItemDto> rows = jdbcTemplate.query(
+                """
+                SELECT o.id,
+                       o.order_number,
+                       o.customer_email,
+                       o.total_amount,
+                       o.currency,
+                       o.payment_method,
+                       o.payment_status,
+                       o.order_status,
+                       o.created_at,
+                       COALESCE(SUM(oi.quantity), 0) AS item_count
+                FROM orders o
+                LEFT JOIN order_items oi ON oi.order_id = o.id
+                WHERE UPPER(o.order_number) = UPPER(?)
+                GROUP BY o.id
+                ORDER BY o.created_at DESC
+                LIMIT 1
+                """,
+                (rs, rowNum) -> OrderHistoryItemDto.builder()
+                        .id(rs.getLong("id"))
+                        .orderNumber(rs.getString("order_number"))
+                        .totalAmount(rs.getBigDecimal("total_amount"))
+                        .currency(rs.getString("currency"))
+                        .paymentMethod(rs.getString("payment_method"))
+                        .paymentStatus(rs.getString("payment_status"))
+                        .orderStatus(rs.getString("order_status"))
+                        .itemCount(rs.getInt("item_count"))
+                        .createdAt(toLocalDateTime(rs.getTimestamp("created_at")))
+                        .build(),
+                orderNumber.toUpperCase()
+        );
+        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderHistoryItemDto> findOrdersByEmailForAdmin(String email, int limit) {
+        if (!StringUtils.hasText(email)) {
+            return List.of();
+        }
+        int safeLimit = Math.min(Math.max(limit, 1), 100);
+        return jdbcTemplate.query(
+                """
+                SELECT o.id,
+                       o.order_number,
+                       o.customer_email,
+                       o.total_amount,
+                       o.currency,
+                       o.payment_method,
+                       o.payment_status,
+                       o.order_status,
+                       o.created_at,
+                       COALESCE(SUM(oi.quantity), 0) AS item_count
+                FROM orders o
+                LEFT JOIN order_items oi ON oi.order_id = o.id
+                WHERE LOWER(o.customer_email) = LOWER(?)
+                GROUP BY o.id
+                ORDER BY o.created_at DESC
+                LIMIT ?
+                """,
+                (rs, rowNum) -> OrderHistoryItemDto.builder()
+                        .id(rs.getLong("id"))
+                        .orderNumber(rs.getString("order_number"))
+                        .totalAmount(rs.getBigDecimal("total_amount"))
+                        .currency(rs.getString("currency"))
+                        .paymentMethod(rs.getString("payment_method"))
+                        .paymentStatus(rs.getString("payment_status"))
+                        .orderStatus(rs.getString("order_status"))
+                        .itemCount(rs.getInt("item_count"))
+                        .createdAt(toLocalDateTime(rs.getTimestamp("created_at")))
+                        .build(),
+                email,
+                safeLimit
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<OrderHistoryItemDto> getMyOrders(User user, int limit) {
         if (user == null || !StringUtils.hasText(user.getEmail())) {
             throw new BusinessException("Unauthorized", HttpStatus.UNAUTHORIZED);

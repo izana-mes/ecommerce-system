@@ -6,9 +6,16 @@ import com.example.shop.modules.order.dto.OrderHistoryItemDto;
 import com.example.shop.modules.user.entity.User;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface OrderService {
     OrderCreateResponse createOrder(OrderCreateRequest request, User user);
 
     List<OrderHistoryItemDto> getMyOrders(User user, int limit);
+
+    /** Admin/staff-scoped: look up a single order by order number (no email restriction). */
+    Optional<OrderHistoryItemDto> findOrderByNumberForAdmin(String orderNumber);
+
+    /** Admin/staff-scoped: look up recent orders for a customer email (no ownership restriction). */
+    List<OrderHistoryItemDto> findOrdersByEmailForAdmin(String email, int limit);
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { getToken, getUser, subscribeToAuthChanges } from "@/lib/auth";
 import toast from "react-hot-toast";
@@ -83,6 +84,8 @@ type InventoryItem = {
   productName: string;
   stockQuantity: number;
   soldQty?: number;
+  reservedInCarts?: number;
+  availableToSell?: number;
   active: boolean;
 };
 
@@ -230,6 +233,8 @@ type QueueData = {
     totalAuditEvents: number;
     latestAuditEventAt: string | null;
   } | null;
+  unavailable?: boolean;
+  details?: string;
 };
 
 type SystemHealth = {
@@ -494,6 +499,28 @@ function formatDateTime(value: string): string {
   return date.toLocaleString();
 }
 
+function formatRelativeTime(value: string | number | null | undefined): string {
+  if (value == null || value === "") return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  const diffMs = date.getTime() - Date.now();
+  const formatter = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  const units: Array<[Intl.RelativeTimeFormatUnit, number]> = [
+    ["day", 86_400_000],
+    ["hour", 3_600_000],
+    ["minute", 60_000],
+  ];
+
+  for (const [unit, size] of units) {
+    if (Math.abs(diffMs) >= size || unit === "minute") {
+      return formatter.format(Math.round(diffMs / size), unit);
+    }
+  }
+
+  return "just now";
+}
+
 function formatMinutes(totalMinutes: number): string {
   const safe = Math.max(0, Math.floor(Number(totalMinutes) || 0));
   const hours = Math.floor(safe / 60);
@@ -517,6 +544,47 @@ function formatCurrency(value: number, currency = "USD"): string {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function formatLabel(value: string): string {
+  return value
+    .replaceAll("_", " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function summarizeAuditDetails(details: Record<string, unknown> | null | undefined): string {
+  if (!details || typeof details !== "object") return "No additional metadata";
+
+  const preferredKeys = [
+    "message",
+    "reason",
+    "summary",
+    "status",
+    "orderStatus",
+    "paymentStatus",
+    "productID",
+    "quantity",
+    "email",
+  ];
+
+  const pairs = preferredKeys
+    .map((key) => [key, details[key]] as const)
+    .filter(([, value]) => value !== undefined && value !== null && value !== "");
+
+  if (pairs.length > 0) {
+    return pairs
+      .slice(0, 3)
+      .map(([key, value]) => `${formatLabel(key)}: ${String(value)}`)
+      .join(" • ");
+  }
+
+  const fallback = Object.entries(details)
+    .filter(([, value]) => value !== undefined && value !== null && value !== "")
+    .slice(0, 3)
+    .map(([key, value]) => `${formatLabel(key)}: ${String(value)}`);
+
+  return fallback.length > 0 ? fallback.join(" • ") : "Structured metadata available";
 }
 
 function resolveAdminUserRole(user: { role?: string; roles?: string[] }): "user" | "employee" | "admin" {
@@ -705,6 +773,7 @@ export default function AdminPage() {
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [settingsEditValues, setSettingsEditValues] = useState<Record<string, string>>({});
   const [savingSettingKey, setSavingSettingKey] = useState<string | null>(null);
+  const [uploadingSettingKey, setUploadingSettingKey] = useState<string | null>(null);
 
   const [loadedTabs, setLoadedTabs] = useState<Record<AdminTab, boolean>>({
     overview: false,
@@ -737,6 +806,113 @@ export default function AdminPage() {
     (key: string, fallbackValue = "") => settingsEditValues[key] ?? settingsByKey[key]?.setting_value ?? fallbackValue,
     [settingsByKey, settingsEditValues]
   );
+  const inventoryInsights = useMemo(() => {
+    if (!inventoryHealth) return null;
+
+    const unsoldInStockItems = inventoryHealth.noSalesItems.filter((item) => (item.availableToSell ?? item.stockQuantity) > 0);
+    const stockExposure = inventoryHealth.totalStock > 0
+      ? Math.round((inventoryHealth.totalReservedInCarts / inventoryHealth.totalStock) * 100)
+      : 0;
+
+    const actions: string[] = [];
+    if (inventoryHealth.outOfStockCount > 0) {
+      actions.push(`${inventoryHealth.outOfStockCount} products are already unavailable for sale.`);
+    }
+    if (inventoryHealth.lowStockCount > 0) {
+      actions.push(
+        `${inventoryHealth.lowStockCount} products are at or below the low-stock threshold of ${inventoryHealth.lowStockThreshold}.`
+      );
+    }
+    if (inventoryHealth.totalReservedInCarts > 0) {
+      actions.push(
+        `${inventoryHealth.totalReservedInCarts} units are tied up in carts, which can hide true sellable stock.`
+      );
+    }
+    if (unsoldInStockItems.length > 0) {
+      actions.push(
+        `${unsoldInStockItems.length} active products have stock on hand but no recent sales signal.`
+      );
+    }
+    if (actions.length === 0) {
+      actions.push("No immediate stock risk detected. Use this panel to spot demand gaps before they become markdowns.");
+    }
+
+    return {
+      stockExposure,
+      actions,
+      unsoldInStockItems: unsoldInStockItems.slice(0, 8),
+      outOfStockItems: inventoryHealth.outOfStockItems.slice(0, 8),
+    };
+  }, [inventoryHealth]);
+  const auditInsights = useMemo(() => {
+    if (auditEvents.length === 0) {
+      return {
+        uniqueActors: 0,
+        uniqueEntities: 0,
+        mostCommonEvent: null as string | null,
+        actorlessCount: 0,
+      };
+    }
+
+    const actorSet = new Set(auditEvents.map((event) => (event.actor || "").trim()).filter(Boolean));
+    const entitySet = new Set(auditEvents.map((event) => (event.entity_type || "").trim()).filter(Boolean));
+    const eventCounts = auditEvents.reduce<Record<string, number>>((acc, event) => {
+      const key = event.event_type || "UNKNOWN";
+      acc[key] = (acc[key] ?? 0) + 1;
+      return acc;
+    }, {});
+    const mostCommonEvent =
+      Object.entries(eventCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+
+    return {
+      uniqueActors: actorSet.size,
+      uniqueEntities: entitySet.size,
+      mostCommonEvent,
+      actorlessCount: auditEvents.filter((event) => !(event.actor || "").trim()).length,
+    };
+  }, [auditEvents]);
+  const queueInsights = useMemo(() => {
+    if (!queueData) return null;
+
+    const mainQueuesByBacklog = [...queueData.queues].sort(
+      (a, b) => b.messages - a.messages || a.consumers - b.consumers
+    );
+    const stalledQueues = queueData.queues.filter((queue) => queue.messages > 0 && queue.consumers === 0);
+    const busyQueues = mainQueuesByBacklog.filter((queue) => queue.messages > 0);
+    const status =
+      queueData.unavailable
+        ? "unavailable"
+        : queueData.summary.totalDlqMessages > 0 || stalledQueues.length > 0
+          ? "critical"
+          : queueData.summary.totalMessages > 0
+            ? "attention"
+            : "healthy";
+
+    const actions: string[] = [];
+    if (queueData.unavailable) {
+      actions.push("RabbitMQ management API is unavailable, so broker health cannot be confirmed from this screen.");
+    }
+    if (queueData.summary.totalDlqMessages > 0) {
+      actions.push(`${queueData.summary.totalDlqMessages} messages are stuck in dead-letter queues and need inspection or replay.`);
+    }
+    if (stalledQueues.length > 0) {
+      actions.push(`${stalledQueues.length} queues have backlog but no active consumers.`);
+    }
+    if (!queueData.unavailable && queueData.summary.totalQueues === 0) {
+      actions.push("No queues are visible. Either async processing is not configured yet or the broker is empty.");
+    }
+    if (actions.length === 0) {
+      actions.push("No queue pressure detected. Keep watching for backlog growth, consumer drops, and DLQ drift.");
+    }
+
+    return {
+      status,
+      actions,
+      stalledQueues,
+      busyQueues: busyQueues.slice(0, 6),
+      topQueues: mainQueuesByBacklog.slice(0, 8),
+    };
+  }, [queueData]);
 
   const fetchDashboard = useCallback(async () => {
     if (!token) {
@@ -2513,6 +2689,39 @@ export default function AdminPage() {
     } finally { setSavingSettingKey(null); }
   };
 
+  const handleSettingImageUpload = async (
+    key: string,
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file", {
+        style: { backgroundColor: "#fb0404", color: "#fff" },
+      });
+      event.target.value = "";
+      return;
+    }
+
+    try {
+      setUploadingSettingKey(key);
+      const imageDataUrl = await fileToDataUrl(file);
+      setSettingsEditValues((prev) => ({ ...prev, [key]: imageDataUrl }));
+      toast.success("Banner image selected", {
+        duration: 1800,
+        style: { backgroundColor: "#07bc0c", color: "#fff" },
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Image upload failed", {
+        style: { backgroundColor: "#fb0404", color: "#fff" },
+      });
+    } finally {
+      setUploadingSettingKey(null);
+      event.target.value = "";
+    }
+  };
+
   useEffect(() => {
     if (activeTab !== "attendance" || !loadedTabs.attendance) return;
     void fetchAttendance();
@@ -3434,6 +3643,22 @@ export default function AdminPage() {
                   </div>
                 </div>
 
+                {inventoryInsights ? (
+                  <div className="adminInsightPanel">
+                    <div className="adminInsightHeader">
+                      <h3>What Needs Attention</h3>
+                      <span className="mutedCell">
+                        Cart hold exposure: {inventoryInsights.stockExposure}% of current stock
+                      </span>
+                    </div>
+                    <div className="adminInsightList">
+                      {inventoryInsights.actions.map((item) => (
+                        <p key={item}>{item}</p>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="inventorySections">
                   <div className="inventorySection">
                     <h3>Low Stock Products</h3>
@@ -3466,6 +3691,38 @@ export default function AdminPage() {
                   </div>
 
                   <div className="inventorySection">
+                    <h3>Out Of Stock Products</h3>
+                    <div className="adminTableWrapper">
+                      <table className="adminTable">
+                        <thead>
+                          <tr>
+                            <th>Product ID</th>
+                            <th>Name</th>
+                            <th>Reserved</th>
+                            <th>Available</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {inventoryHealth.outOfStockItems.length === 0 ? (
+                            <tr>
+                              <td colSpan={4} className="adminEmpty">No products are fully out of stock.</td>
+                            </tr>
+                          ) : (
+                            inventoryHealth.outOfStockItems.map((item) => (
+                              <tr key={`out-${item.productID}`}>
+                                <td>{item.productID}</td>
+                                <td>{item.productName}</td>
+                                <td>{item.reservedInCarts ?? 0}</td>
+                                <td>{item.availableToSell ?? 0}</td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="inventorySection">
                     <h3>Top Selling Products</h3>
                     <div className="adminTableWrapper">
                       <table className="adminTable">
@@ -3489,6 +3746,38 @@ export default function AdminPage() {
                                 <td>{item.productName}</td>
                                 <td>{item.soldQty ?? 0}</td>
                                 <td>{item.stockQuantity}</td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="inventorySection">
+                    <h3>Stock With No Recent Sales</h3>
+                    <div className="adminTableWrapper">
+                      <table className="adminTable">
+                        <thead>
+                          <tr>
+                            <th>Product ID</th>
+                            <th>Name</th>
+                            <th>Available</th>
+                            <th>Reserved</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {inventoryHealth.noSalesItems.length === 0 ? (
+                            <tr>
+                              <td colSpan={4} className="adminEmpty">No unsold stocked products found.</td>
+                            </tr>
+                          ) : (
+                            inventoryHealth.noSalesItems.map((item) => (
+                              <tr key={`nosales-${item.productID}`}>
+                                <td>{item.productID}</td>
+                                <td>{item.productName}</td>
+                                <td>{item.availableToSell ?? item.stockQuantity}</td>
+                                <td>{item.reservedInCarts ?? 0}</td>
                               </tr>
                             ))
                           )}
@@ -4468,6 +4757,44 @@ export default function AdminPage() {
 
             {!loadingAudit && !auditError ? (
               <>
+                <div className="inventoryCards">
+                  <div className="inventoryCard">
+                    <p>Events On Page</p>
+                    <h3>{auditEvents.length}</h3>
+                  </div>
+                  <div className="inventoryCard">
+                    <p>Unique Actors</p>
+                    <h3>{auditInsights.uniqueActors}</h3>
+                  </div>
+                  <div className="inventoryCard">
+                    <p>Entity Types</p>
+                    <h3>{auditInsights.uniqueEntities}</h3>
+                  </div>
+                  <div className={`inventoryCard ${auditInsights.actorlessCount > 0 ? "inventoryCardWarning" : ""}`}>
+                    <p>Missing Actor Info</p>
+                    <h3>{auditInsights.actorlessCount}</h3>
+                  </div>
+                </div>
+
+                <div className="adminInsightPanel">
+                  <div className="adminInsightHeader">
+                    <h3>Audit Readout</h3>
+                    <span className="mutedCell">
+                      {auditInsights.mostCommonEvent
+                        ? `Most common event: ${formatLabel(auditInsights.mostCommonEvent)}`
+                        : "No event pattern yet"}
+                    </span>
+                  </div>
+                  <div className="adminInsightList">
+                    <p>Use this page to answer what changed, who changed it, and whether the change is isolated or repeating.</p>
+                    <p>
+                      {auditEvents.length === 0
+                        ? "No audit events matched the current filters. Widen the date range or confirm backend event publishing is enabled."
+                        : "Start with repeated event types, blank actors, and events nearest the time a store issue was reported."}
+                    </p>
+                  </div>
+                </div>
+
                 <div className="adminTableWrapper">
                   <table className="adminTable">
                     <thead>
@@ -4492,8 +4819,14 @@ export default function AdminPage() {
                             <td>{event.entity_type}</td>
                             <td>{event.entity_id}</td>
                             <td>{event.actor || "-"}</td>
-                            <td className="auditDetailCell">{JSON.stringify(event.details, null, 2)}</td>
-                            <td>{formatDateTime(event.created_at)}</td>
+                            <td className="auditDetailCell">
+                              <strong>{summarizeAuditDetails(event.details)}</strong>
+                              <div className="mutedCell">{JSON.stringify(event.details, null, 2)}</div>
+                            </td>
+                            <td>
+                              <div>{formatDateTime(event.created_at)}</div>
+                              <div className="mutedCell">{formatRelativeTime(event.created_at)}</div>
+                            </td>
                           </tr>
                         ))
                       )}
@@ -4527,6 +4860,33 @@ export default function AdminPage() {
 
             {!loadingQueues && !queueError && queueData ? (
               <>
+                {queueInsights ? (
+                  <div className={`adminInsightPanel adminInsightPanel-${queueInsights.status}`}>
+                    <div className="adminInsightHeader">
+                      <h3>
+                        {queueInsights.status === "critical"
+                          ? "Queue Risk Detected"
+                          : queueInsights.status === "attention"
+                            ? "Queue Backlog Building"
+                            : queueInsights.status === "unavailable"
+                              ? "Queue Visibility Unavailable"
+                              : "Queue Flow Looks Healthy"}
+                      </h3>
+                      <span className="mutedCell">
+                        {queueData.databaseContext?.latestAuditEventAt
+                          ? `Latest audit event ${formatRelativeTime(queueData.databaseContext.latestAuditEventAt)}`
+                          : "No linked audit timing available"}
+                      </span>
+                    </div>
+                    <div className="adminInsightList">
+                      {queueInsights.actions.map((item) => (
+                        <p key={item}>{item}</p>
+                      ))}
+                      {queueData.details ? <p>{queueData.details}</p> : null}
+                    </div>
+                  </div>
+                ) : null}
+
                 {queueData.databaseContext ? (
                   <div className="queueSummaryCards">
                     <div className="queueCard">
@@ -4569,15 +4929,46 @@ export default function AdminPage() {
 
                 <div className="queueSectionsRow">
                   <div className="overviewSection">
+                    <h3>Queues Needing Attention</h3>
+                    <div className="adminTableWrapper">
+                      <table className="adminTable compactTable">
+                        <thead><tr><th>Queue Name</th><th>Messages</th><th>Consumers</th><th>Issue</th></tr></thead>
+                        <tbody>
+                          {queueInsights && (queueInsights.stalledQueues.length > 0 || queueInsights.busyQueues.length > 0) ? (
+                            [...queueInsights.stalledQueues, ...queueInsights.busyQueues.filter((queue) => queue.consumers > 0)]
+                              .slice(0, 8)
+                              .map((queue) => (
+                                <tr key={`attention-${queue.name}`}>
+                                  <td>{queue.name}</td>
+                                  <td>{queue.messages}</td>
+                                  <td>{queue.consumers}</td>
+                                  <td>
+                                    {queue.messages > 0 && queue.consumers === 0
+                                      ? "Backlog with no consumer"
+                                      : queue.messagesUnacked > 0
+                                        ? "Messages in flight"
+                                        : "Backlog present"}
+                                  </td>
+                                </tr>
+                              ))
+                          ) : (
+                            <tr><td colSpan={4} className="adminEmpty">No queue issues detected right now.</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="overviewSection">
                     <h3>Main Queues</h3>
                     <div className="adminTableWrapper">
                       <table className="adminTable compactTable">
                         <thead><tr><th>Queue Name</th><th>Messages</th><th>Ready</th><th>Unacked</th><th>Consumers</th><th>State</th></tr></thead>
                         <tbody>
-                          {queueData.queues.length === 0 ? (
+                          {queueInsights && queueInsights.topQueues.length === 0 ? (
                             <tr><td colSpan={6} className="adminEmpty">No queues found.</td></tr>
                           ) : (
-                            queueData.queues.map((q) => (
+                            (queueInsights?.topQueues ?? []).map((q) => (
                               <tr key={q.name}>
                                 <td>{q.name}</td>
                                 <td>{q.messages}</td>
@@ -4827,24 +5218,54 @@ export default function AdminPage() {
                       const currentValue = getSettingValue(setting.key, setting.defaultValue);
                       const baselineValue = settingsByKey[setting.key]?.setting_value ?? setting.defaultValue;
                       const unchanged = currentValue === baselineValue;
+                      const isSaving = savingSettingKey === setting.key;
+                      const isUploading = uploadingSettingKey === setting.key;
                       return (
                         <div key={setting.key} className="settingsRow">
-                          <div>
+                          <div className="settingsInfo">
                             <div className="settingsKey">{setting.label}</div>
                             <div className="settingsDesc">{setting.description}</div>
                             <div className="settingsDefault">Default: {setting.defaultValue}</div>
                           </div>
-                          <input
-                            className="settingsInput"
-                            value={currentValue}
-                            onChange={(e) => setSettingsEditValues((prev) => ({ ...prev, [setting.key]: e.target.value }))}
-                          />
+                          <div className="settingsValueGroup">
+                            <input
+                              className="settingsInput"
+                              value={currentValue}
+                              onChange={(e) => setSettingsEditValues((prev) => ({ ...prev, [setting.key]: e.target.value }))}
+                            />
+                            <div className="settingsUploadRow">
+                              <label className={`settingsUploadBtn${isUploading ? " settingsUploadBtnDisabled" : ""}`}>
+                                {isUploading ? "Uploading..." : "Choose File"}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  disabled={isUploading || isSaving}
+                                  onChange={(event) => void handleSettingImageUpload(setting.key, event)}
+                                />
+                              </label>
+                              <span className="settingsUploadHint">
+                                Select image from computer, then save setting.
+                              </span>
+                            </div>
+                            {currentValue ? (
+                              <div className="settingsPreviewCard">
+                                <Image
+                                  src={currentValue}
+                                  alt={`${setting.label} preview`}
+                                  className="settingsPreviewImage"
+                                  width={320}
+                                  height={160}
+                                  unoptimized
+                                />
+                              </div>
+                            ) : null}
+                          </div>
                           <button
                             className="settingsSaveBtn"
-                            disabled={savingSettingKey === setting.key || unchanged}
+                            disabled={isSaving || isUploading || unchanged}
                             onClick={() => void handleSaveSetting(setting.key, setting.defaultValue)}
                           >
-                            {savingSettingKey === setting.key ? "Saving..." : "Save"}
+                            {isSaving ? "Saving..." : "Save"}
                           </button>
                         </div>
                       );

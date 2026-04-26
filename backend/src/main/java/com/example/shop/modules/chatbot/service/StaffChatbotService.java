@@ -1,33 +1,42 @@
 package com.example.shop.modules.chatbot.service;
 
+import com.example.shop.modules.admin.dto.AdminDashboardResponse;
+import com.example.shop.modules.admin.service.AdminDashboardService;
+import com.example.shop.modules.order.dto.OrderHistoryItemDto;
+import com.example.shop.modules.order.service.OrderService;
+import com.example.shop.modules.product.dto.ProductDto;
+import com.example.shop.modules.product.service.ProductService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.text.NumberFormat;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Staff/admin chatbot service — answers operational questions using live DB data.
- * Handles low-stock alerts, top-selling products, revenue summaries, order lookup, and catalog search.
- * Uses JdbcTemplate so it runs on the backend (no serverless DB connection issues).
+ * Staff/admin chatbot service — answers operational questions using the application service layer.
+ * All database access is delegated to ProductService, OrderService, and AdminDashboardService.
+ * This avoids direct JdbcTemplate usage and benefits from existing caching and authorization logic.
  */
 @Service
 @RequiredArgsConstructor
 public class StaffChatbotService {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final ProductService productService;
+    private final OrderService orderService;
+    private final AdminDashboardService adminDashboardService;
 
     private static final Pattern ORDER_NUMBER_PATTERN =
             Pattern.compile("\\b([A-Z]{2,}[A-Z0-9_\\-]{2,})\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern EMAIL_PATTERN =
             Pattern.compile("\\b[A-Z0-9._%+\\-]+@[A-Z0-9.\\-]+\\.[A-Z]{2,}\\b", Pattern.CASE_INSENSITIVE);
+
+    private static final int DASHBOARD_DAYS = 30;
+    private static final int DASHBOARD_RECENT_LIMIT = 5;
+    private static final int LOW_STOCK_THRESHOLD = 5;
 
     public record ChatResult(String intent, String answer) {}
 
@@ -83,152 +92,102 @@ public class StaffChatbotService {
     }
 
     // -------------------------------------------------------------------------
-    // Low stock
+    // Low stock — via ProductService.getInventoryHealth()
     // -------------------------------------------------------------------------
 
     private ChatResult resolveLowStock() {
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                """
-                SELECT product_id, product_name, stock_quantity
-                FROM products
-                WHERE active = TRUE
-                ORDER BY stock_quantity ASC, product_id ASC
-                LIMIT 10
-                """
-        );
+        @SuppressWarnings("unchecked")
+        Map<String, Object> health = productService.getInventoryHealth(LOW_STOCK_THRESHOLD);
 
-        if (rows.isEmpty()) {
-            return new ChatResult("low_stock", "No active products found in the catalog.");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> criticalItems = (List<Map<String, Object>>) health.getOrDefault("lowStockItems", List.of());
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> outOfStockItems = (List<Map<String, Object>>) health.getOrDefault("outOfStockItems", List.of());
+
+        if (criticalItems.isEmpty() && outOfStockItems.isEmpty()) {
+            int activeProducts = toInt(health.getOrDefault("activeProducts", 0));
+            return new ChatResult("low_stock",
+                    "No low-stock or out-of-stock products. All " + activeProducts + " active products are adequately stocked.");
         }
 
-        List<Map<String, Object>> critical = new ArrayList<>();
-        for (Map<String, Object> row : rows) {
-            Number qty = (Number) row.get("stock_quantity");
-            if (qty != null && qty.intValue() <= 5) critical.add(row);
-        }
-
-        List<Map<String, Object>> toShow = critical.isEmpty() ? rows.subList(0, Math.min(5, rows.size())) : critical;
         StringJoiner joiner = new StringJoiner(" | ");
-        for (Map<String, Object> row : toShow) {
-            joiner.add(String.format("%s (%s) → stock %s",
-                    row.get("product_name"), row.get("product_id"), row.get("stock_quantity")));
+        for (Map<String, Object> item : outOfStockItems) {
+            joiner.add(String.format("%s (%s) → OUT OF STOCK",
+                    item.get("productName"), item.get("productID")));
+        }
+        for (Map<String, Object> item : criticalItems) {
+            joiner.add(String.format("%s (%s) → stock %s, available %s",
+                    item.get("productName"), item.get("productID"),
+                    item.get("stockQuantity"), item.get("availableToSell")));
         }
 
-        String prefix = critical.isEmpty()
-                ? "No critical low-stock items. Lowest stock products: "
-                : String.format("%d critical low-stock product(s): ", critical.size());
+        String prefix = String.format("%d out-of-stock, %d low-stock product(s): ",
+                outOfStockItems.size(), criticalItems.size());
         return new ChatResult("low_stock", prefix + joiner);
     }
 
     // -------------------------------------------------------------------------
-    // Top selling
+    // Top selling — via AdminDashboardService
     // -------------------------------------------------------------------------
 
     private ChatResult resolveTopSelling() {
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                """
-                SELECT product_id, product_name, SUM(quantity) AS sold_qty, SUM(line_total) AS revenue
-                FROM order_items
-                GROUP BY product_id, product_name
-                ORDER BY sold_qty DESC
-                LIMIT 5
-                """
-        );
+        AdminDashboardResponse dashboard = adminDashboardService.getDashboard(
+                DASHBOARD_DAYS, DASHBOARD_RECENT_LIMIT, LOW_STOCK_THRESHOLD);
 
-        if (rows.isEmpty()) {
+        List<AdminDashboardResponse.SoldProductPoint> topSold = dashboard.topSoldProducts();
+        if (topSold == null || topSold.isEmpty()) {
             return new ChatResult("top_selling", "No order item data is available yet.");
         }
 
         StringJoiner joiner = new StringJoiner(" | ");
-        for (Map<String, Object> row : rows) {
-            joiner.add(String.format("%s (%s) sold %s",
-                    row.get("product_name"), row.get("product_id"), row.get("sold_qty")));
+        for (AdminDashboardResponse.SoldProductPoint p : topSold) {
+            joiner.add(String.format("%s (%s) sold %d",
+                    p.productName(), p.productID(), p.soldQty()));
         }
         return new ChatResult("top_selling", "Top selling products: " + joiner);
     }
 
     // -------------------------------------------------------------------------
-    // Revenue
+    // Revenue — via AdminDashboardService
     // -------------------------------------------------------------------------
 
     private ChatResult resolveRevenue() {
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                """
-                SELECT
-                  COUNT(*) AS total_orders,
-                  COALESCE(SUM(total_amount), 0) AS total_revenue,
-                  SUM(CASE WHEN LOWER(payment_status) = 'paid' THEN 1 ELSE 0 END) AS paid_orders
-                FROM orders
-                WHERE created_at >= NOW() - INTERVAL '30 days'
-                """
-        );
+        AdminDashboardResponse dashboard = adminDashboardService.getDashboard(
+                DASHBOARD_DAYS, DASHBOARD_RECENT_LIMIT, LOW_STOCK_THRESHOLD);
 
-        if (rows.isEmpty()) {
-            return new ChatResult("revenue", "No order data available.");
-        }
-
-        Map<String, Object> row = rows.get(0);
-        Number totalOrders = (Number) row.getOrDefault("total_orders", 0);
-        Number paidOrders  = (Number) row.getOrDefault("paid_orders", 0);
-        Number revenue     = (Number) row.getOrDefault("total_revenue", 0);
+        long totalOrders = dashboard.totalOrders();
+        BigDecimal totalRevenue = dashboard.totalRevenue() == null ? BigDecimal.ZERO : dashboard.totalRevenue();
+        long pendingOrders = dashboard.pendingOrders();
 
         return new ChatResult("revenue", String.format(
-                "Last 30 days: %s total orders, %s paid, total revenue %s.",
-                totalOrders, paidOrders, formatMoney(revenue, "USD")
+                "Overall: %d total orders, %d pending, total revenue %s (all time paid orders).",
+                totalOrders, pendingOrders, formatMoney(totalRevenue, "USD")
         ));
     }
 
     // -------------------------------------------------------------------------
-    // Order lookup
+    // Order lookup — via OrderService (service layer, no raw SQL in chatbot)
     // -------------------------------------------------------------------------
 
     private ChatResult resolveOrderLookup(String orderNumber, String email) {
         if (orderNumber != null) {
-            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                    """
-                    SELECT order_number, customer_email, order_status, payment_status,
-                           total_amount, currency, created_at
-                    FROM orders
-                    WHERE UPPER(order_number) = UPPER(?)
-                    ORDER BY created_at DESC
-                    LIMIT 1
-                    """,
-                    orderNumber
-            );
-
-            if (!rows.isEmpty()) {
-                Map<String, Object> order = rows.get(0);
-                return new ChatResult("order_lookup", String.format(
-                        "Order %s is %s with payment %s. Total: %s, created at %s for %s.",
-                        order.get("order_number"), order.get("order_status"), order.get("payment_status"),
-                        formatMoney(order.get("total_amount"), String.valueOf(order.getOrDefault("currency", "USD"))),
-                        formatDate(order.get("created_at")), order.get("customer_email")
-                ));
+            Optional<OrderHistoryItemDto> order = orderService.findOrderByNumberForAdmin(orderNumber);
+            if (order.isPresent()) {
+                return new ChatResult("order_lookup", formatOrderSummaryForStaff(order.get()));
             }
         }
 
         if (email != null) {
-            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                    """
-                    SELECT order_number, order_status, payment_status, total_amount, currency, created_at
-                    FROM orders
-                    WHERE LOWER(customer_email) = LOWER(?)
-                    ORDER BY created_at DESC
-                    LIMIT 5
-                    """,
-                    email
-            );
-
-            if (rows.isEmpty()) {
+            List<OrderHistoryItemDto> orders = orderService.findOrdersByEmailForAdmin(email, 5);
+            if (orders.isEmpty()) {
                 return new ChatResult("customer_orders", "No orders found for " + email + ".");
             }
-
             StringJoiner joiner = new StringJoiner(" | ");
-            for (Map<String, Object> row : rows) {
+            for (OrderHistoryItemDto o : orders) {
                 joiner.add(String.format("%s: %s/%s, %s, %s",
-                        row.get("order_number"), row.get("order_status"), row.get("payment_status"),
-                        formatMoney(row.get("total_amount"), String.valueOf(row.getOrDefault("currency", "USD"))),
-                        formatDate(row.get("created_at"))));
+                        o.getOrderNumber(), o.getOrderStatus(), o.getPaymentStatus(),
+                        formatMoney(o.getTotalAmount(), o.getCurrency()),
+                        o.getCreatedAt() != null ? o.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE) : "-"));
             }
             return new ChatResult("customer_orders", "Orders for " + email + ": " + joiner);
         }
@@ -237,7 +196,7 @@ public class StaffChatbotService {
     }
 
     // -------------------------------------------------------------------------
-    // Catalog search
+    // Catalog search — via ProductService
     // -------------------------------------------------------------------------
 
     private ChatResult resolveCatalog(String question) {
@@ -247,46 +206,39 @@ public class StaffChatbotService {
                 .replaceAll("\\s+", " ")
                 .trim();
 
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                """
-                SELECT product_id, product_name, product_price, stock_quantity
-                FROM products
-                WHERE active = TRUE
-                  AND LOWER(product_name) LIKE LOWER(?)
-                ORDER BY stock_quantity DESC
-                LIMIT 5
-                """,
-                "%" + (keyword.isBlank() ? question : keyword) + "%"
-        );
+        List<ProductDto> results = productService.searchProducts(keyword.isBlank() ? question : keyword);
 
-        if (rows.isEmpty()) {
+        if (results.isEmpty()) {
             return new ChatResult("catalog_not_found", "No matching products found. Try a shorter keyword.");
         }
 
+        List<ProductDto> limited = results.stream().limit(5).toList();
         StringJoiner joiner = new StringJoiner(" | ");
-        for (Map<String, Object> row : rows) {
-            joiner.add(String.format("%s (%s) — %s, stock %s",
-                    row.get("product_name"), row.get("product_id"),
-                    formatMoney(row.get("product_price"), "USD"), row.get("stock_quantity")));
+        for (ProductDto p : limited) {
+            joiner.add(String.format("%s (%s) — %s, stock %d",
+                    p.getProductName(), p.getProductID(),
+                    formatMoney(p.getProductPrice(), "USD"),
+                    p.getStockQuantity() == null ? 0 : p.getStockQuantity()));
         }
         return new ChatResult("catalog_lookup", "Matching products: " + joiner);
     }
 
     // -------------------------------------------------------------------------
-    // Default / summary
+    // Default / summary — via ProductService
     // -------------------------------------------------------------------------
 
     private ChatResult resolveDefault() {
-        Integer totalProducts = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM products WHERE active = TRUE", Integer.class);
-        Integer pendingOrders = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM orders WHERE LOWER(order_status) = 'pending'", Integer.class);
+        List<ProductDto> all = productService.getAllProducts();
+        long activeProducts = all.stream().filter(p -> Boolean.TRUE.equals(p.getActive())).count();
+
+        AdminDashboardResponse dashboard = adminDashboardService.getDashboard(
+                DASHBOARD_DAYS, DASHBOARD_RECENT_LIMIT, LOW_STOCK_THRESHOLD);
+        long pendingOrders = dashboard.pendingOrders();
 
         return new ChatResult("summary", String.format(
                 "Live summary: %d active products, %d pending orders. " +
                 "Ask about low stock, top selling, revenue, a specific order number, customer email, or product prices.",
-                totalProducts == null ? 0 : totalProducts,
-                pendingOrders == null ? 0 : pendingOrders
+                activeProducts, pendingOrders
         ));
     }
 
@@ -317,20 +269,21 @@ public class StaffChatbotService {
         }
     }
 
-    private String formatDate(Object value) {
-        if (value == null) return "-";
-        try {
-            if (value instanceof LocalDateTime ldt) {
-                return ldt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-            }
-            if (value instanceof java.sql.Timestamp ts) {
-                return ts.toLocalDateTime().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-            }
-            return Instant.parse(value.toString())
-                    .atOffset(ZoneOffset.UTC)
-                    .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-        } catch (Exception e) {
-            return String.valueOf(value);
-        }
+    private String formatOrderSummaryForStaff(OrderHistoryItemDto o) {
+        String date = o.getCreatedAt() != null
+                ? o.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE)
+                : "-";
+        return String.format("Order %s is %s, payment %s, total %s (placed %s).",
+                o.getOrderNumber(),
+                o.getOrderStatus(),
+                o.getPaymentStatus(),
+                formatMoney(o.getTotalAmount(), o.getCurrency()),
+                date);
+    }
+
+    private int toInt(Object value) {
+        if (value instanceof Number n) return n.intValue();
+        try { return Integer.parseInt(String.valueOf(value)); }
+        catch (Exception e) { return 0; }
     }
 }

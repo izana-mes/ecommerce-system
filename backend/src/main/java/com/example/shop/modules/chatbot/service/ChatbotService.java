@@ -4,33 +4,40 @@ import com.example.shop.modules.chatbot.entity.ChatbotConversation;
 import com.example.shop.modules.chatbot.entity.ChatbotMessage;
 import com.example.shop.modules.chatbot.repository.ChatbotConversationRepository;
 import com.example.shop.modules.chatbot.repository.ChatbotMessageRepository;
+import com.example.shop.modules.order.dto.OrderHistoryItemDto;
+import com.example.shop.modules.order.service.OrderService;
+import com.example.shop.modules.product.dto.ProductDto;
+import com.example.shop.modules.product.service.ProductService;
+import com.example.shop.modules.user.entity.User;
 import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.NumberFormat;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Customer chatbot service.
+ * All database access goes through the service layer (ProductService, OrderService).
+ * Order lookup is strictly scoped to the authenticated customer's own email — a guest
+ * user who is not logged in will be asked to log in before any order data is returned.
+ */
 @Service
 @RequiredArgsConstructor
 public class ChatbotService {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final ProductService productService;
+    private final OrderService orderService;
     private final ChatbotConversationRepository conversationRepository;
     private final ChatbotMessageRepository messageRepository;
     private final ChatbotAiClient chatbotAiClient;
 
     private static final Pattern ORDER_NUMBER_PATTERN =
             Pattern.compile("\\b([A-Z]{2,}[A-Z0-9_\\-]{2,})\\b", Pattern.CASE_INSENSITIVE);
-    private static final Pattern EMAIL_PATTERN =
-            Pattern.compile("\\b[A-Z0-9._%+\\-]+@[A-Z0-9.\\-]+\\.[A-Z]{2,}\\b", Pattern.CASE_INSENSITIVE);
 
     // -------------------------------------------------------------------------
     // Public API
@@ -101,7 +108,7 @@ public class ChatbotService {
     }
 
     // -------------------------------------------------------------------------
-    // Policy (no DB)
+    // Policy (no DB access needed)
     // -------------------------------------------------------------------------
 
     private ChatResult resolvePolicyAnswer(String question) {
@@ -131,58 +138,59 @@ public class ChatbotService {
     }
 
     // -------------------------------------------------------------------------
-    // Order lookup
+    // Order lookup — scoped to authenticated customer only
     // -------------------------------------------------------------------------
 
     private ChatResult resolveOrderAnswer(String question, String currentUserEmail) {
+        // Customer must be authenticated — we only look up their own orders.
+        if (currentUserEmail == null || currentUserEmail.isBlank()) {
+            return new ChatResult("order_auth_required",
+                    "To check your order status, please log in first. " +
+                    "Once logged in, ask again and I'll look up your orders right away.",
+                    null, false);
+        }
+
         String orderNumber = extractOrderNumber(question);
-        String providedEmail = extractEmail(question);
 
-        if (orderNumber == null) {
-            return new ChatResult("order_help",
-                    "To check order status, provide your order number (e.g. ORD-12345). " +
-                    "If you are not logged in, also include the order email.",
-                    null, false);
-        }
+        // Fetch up to 5 of the customer's own recent orders
+        // Use a synthetic User object to call service.getMyOrders(user, limit)
+        User syntheticUser = buildSyntheticUser(currentUserEmail);
+        List<OrderHistoryItemDto> myOrders = orderService.getMyOrders(syntheticUser, 5);
 
-        String lookupEmail = (currentUserEmail != null && !currentUserEmail.isBlank())
-                ? currentUserEmail : providedEmail;
-
-        if (lookupEmail == null) {
-            return new ChatResult("order_help",
-                    "For privacy, please log in first or include the order email with your order number " +
-                    "(example: ORD-1001 and name@email.com).",
-                    null, false);
-        }
-
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                """
-                SELECT order_number, order_status, payment_status, total_amount, currency, created_at
-                FROM orders
-                WHERE UPPER(order_number) = UPPER(?)
-                  AND LOWER(customer_email) = LOWER(?)
-                ORDER BY created_at DESC
-                LIMIT 1
-                """,
-                orderNumber, lookupEmail
-        );
-
-        if (rows.isEmpty()) {
+        if (myOrders.isEmpty()) {
             return new ChatResult("order_not_found",
-                    "I couldn't find an order with that order number and email combination.",
+                    "I couldn't find any orders linked to your account. " +
+                    "If you placed an order as a guest with a different email, please contact support.",
                     null, false);
         }
 
-        Map<String, Object> order = rows.get(0);
-        String answer = String.format(
-                "Order %s is %s and payment is %s. Total: %s. Created at %s.",
-                order.get("order_number"),
-                order.get("order_status"),
-                order.get("payment_status"),
-                formatMoney(order.get("total_amount"), String.valueOf(order.getOrDefault("currency", "USD"))),
-                formatDate(order.get("created_at"))
-        );
-        return new ChatResult("order_status", answer, null, false);
+        // If a specific order number was mentioned, try to find it in the customer's orders
+        if (orderNumber != null) {
+            final String orderNumUpper = orderNumber.toUpperCase();
+            Optional<OrderHistoryItemDto> matched = myOrders.stream()
+                    .filter(o -> o.getOrderNumber() != null && o.getOrderNumber().toUpperCase().equals(orderNumUpper))
+                    .findFirst();
+            if (matched.isPresent()) {
+                return new ChatResult("order_status", formatOrderSummary(matched.get()), null, false);
+            }
+            // If the mentioned order number isn't in their last 5, it's either very old or not theirs
+            return new ChatResult("order_not_found",
+                    "I couldn't find order " + orderNumber + " in your recent orders. " +
+                    "It may be older than your 5 most recent, or belong to a different account. " +
+                    "Please contact support for more details.",
+                    null, false);
+        }
+
+        // No specific order number — return recent order list
+        StringJoiner joiner = new StringJoiner(" | ");
+        for (OrderHistoryItemDto o : myOrders) {
+            joiner.add(String.format("%s: %s/%s, %s",
+                    o.getOrderNumber(),
+                    o.getOrderStatus(),
+                    o.getPaymentStatus(),
+                    formatMoney(o.getTotalAmount(), o.getCurrency())));
+        }
+        return new ChatResult("order_list", "Your recent orders: " + joiner, null, false);
     }
 
     // -------------------------------------------------------------------------
@@ -191,32 +199,32 @@ public class ChatbotService {
 
     private ChatResult resolveCatalogAnswer(String question) {
         String keyword = extractCatalogKeyword(question);
+        List<ProductDto> results = productService.searchProducts(keyword.isBlank() ? question : keyword);
 
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                """
-                SELECT product_id, product_name, product_price, stock_quantity
-                FROM products
-                WHERE active = TRUE
-                  AND LOWER(product_name) LIKE LOWER(?)
-                ORDER BY stock_quantity DESC
-                LIMIT 5
-                """,
-                "%" + (keyword.isBlank() ? question : keyword) + "%"
-        );
-
-        if (rows.isEmpty()) {
+        if (results.isEmpty()) {
             return new ChatResult("catalog_not_found",
                     "I couldn't find matching products. Try a shorter product name keyword.",
                     null, false);
         }
 
+        List<ProductDto> visible = results.stream()
+                .filter(p -> Boolean.TRUE.equals(p.getActive()))
+                .limit(5)
+                .toList();
+
+        if (visible.isEmpty()) {
+            return new ChatResult("catalog_not_found",
+                    "No active products matched your search. Try a different keyword.",
+                    null, false);
+        }
+
         StringJoiner joiner = new StringJoiner(" | ");
-        for (Map<String, Object> row : rows) {
-            joiner.add(String.format("%s (%s) - %s, stock %s",
-                    row.get("product_name"),
-                    row.get("product_id"),
-                    formatMoney(row.get("product_price"), "USD"),
-                    row.get("stock_quantity")));
+        for (ProductDto p : visible) {
+            joiner.add(String.format("%s (%s) - %s, stock %d",
+                    p.getProductName(),
+                    p.getProductID(),
+                    formatMoney(p.getProductPrice(), "USD"),
+                    p.getStockQuantity() == null ? 0 : p.getStockQuantity()));
         }
         return new ChatResult("catalog_lookup", "Here are matching products: " + joiner, null, false);
     }
@@ -226,14 +234,18 @@ public class ChatbotService {
     // -------------------------------------------------------------------------
 
     private ChatResult resolveFallback() {
-        Integer total = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM products WHERE active = TRUE", Integer.class);
-        int count = total == null ? 0 : total;
+        long count = productService.getAllProducts().stream()
+                .filter(p -> Boolean.TRUE.equals(p.getActive()))
+                .count();
         return new ChatResult("fallback",
                 "I can help with product questions, stock and prices, shipping/returns, and order status. " +
                 "Current catalog has " + count + " active products.",
                 null, false);
     }
+
+    // -------------------------------------------------------------------------
+    // Context builder for AI layer
+    // -------------------------------------------------------------------------
 
     private String buildContext(String question, String currentUserEmail, String deterministicAnswer) {
         StringBuilder context = new StringBuilder();
@@ -245,79 +257,70 @@ public class ChatbotService {
         context.append("Deterministic backend answer:\n");
         context.append(deterministicAnswer).append("\n\n");
 
+        // Catalog snapshot — use service layer (cached)
         context.append("Catalog snapshot:\n");
-        Integer total = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM products WHERE active = TRUE",
-                Integer.class
-        );
-        context.append("- Active products: ").append(total == null ? 0 : total).append('\n');
+        List<ProductDto> allProducts = productService.getAllProducts();
+        long activeCount = allProducts.stream().filter(p -> Boolean.TRUE.equals(p.getActive())).count();
+        context.append("- Active products: ").append(activeCount).append('\n');
 
-        List<Map<String, Object>> productRows = jdbcTemplate.queryForList(
-                """
-                SELECT product_id, product_name, product_price, stock_quantity
-                FROM products
-                WHERE active = TRUE
-                  AND LOWER(product_name) LIKE LOWER(?)
-                ORDER BY stock_quantity DESC, product_name ASC
-                LIMIT 5
-                """,
-                "%" + (extractCatalogKeyword(question).isBlank() ? question : extractCatalogKeyword(question)) + "%"
-        );
+        String keyword = extractCatalogKeyword(question);
+        List<ProductDto> matching = productService.searchProducts(keyword.isBlank() ? question : keyword)
+                .stream()
+                .filter(p -> Boolean.TRUE.equals(p.getActive()))
+                .limit(5)
+                .toList();
 
-        if (productRows.isEmpty()) {
+        if (matching.isEmpty()) {
             context.append("- Matching products: none\n");
         } else {
-            for (Map<String, Object> row : productRows) {
+            for (ProductDto p : matching) {
                 context.append("- ")
-                        .append(row.get("product_name"))
+                        .append(p.getProductName())
                         .append(" [")
-                        .append(row.get("product_id"))
+                        .append(p.getProductID())
                         .append("], price ")
-                        .append(formatMoney(row.get("product_price"), "USD"))
+                        .append(formatMoney(p.getProductPrice(), "USD"))
                         .append(", stock ")
-                        .append(row.get("stock_quantity"))
+                        .append(p.getStockQuantity() == null ? 0 : p.getStockQuantity())
                         .append('\n');
             }
         }
 
-        String orderNumber = extractOrderNumber(question);
-        String providedEmail = extractEmail(question);
-        String lookupEmail = (currentUserEmail != null && !currentUserEmail.isBlank()) ? currentUserEmail : providedEmail;
+        // Order context — only if authenticated
         context.append("\nOrder lookup:\n");
-        if (orderNumber == null || lookupEmail == null) {
-            context.append("- No verified order lookup available for this question.\n");
+        if (currentUserEmail == null || currentUserEmail.isBlank()) {
+            context.append("- Customer is not authenticated — order lookup not available.\n");
         } else {
-            List<Map<String, Object>> orders = jdbcTemplate.queryForList(
-                    """
-                    SELECT order_number, order_status, payment_status, total_amount, currency, created_at
-                    FROM orders
-                    WHERE UPPER(order_number) = UPPER(?)
-                      AND LOWER(customer_email) = LOWER(?)
-                    ORDER BY created_at DESC
-                    LIMIT 1
-                    """,
-                    orderNumber, lookupEmail
-            );
-            if (orders.isEmpty()) {
-                context.append("- No order found for the provided order number/email combination.\n");
+            String orderNumber = extractOrderNumber(question);
+            User syntheticUser = buildSyntheticUser(currentUserEmail);
+            List<OrderHistoryItemDto> myOrders = orderService.getMyOrders(syntheticUser, 5);
+            if (myOrders.isEmpty()) {
+                context.append("- No orders found for this customer.\n");
+            } else if (orderNumber != null) {
+                final String upper = orderNumber.toUpperCase();
+                myOrders.stream()
+                        .filter(o -> o.getOrderNumber() != null && o.getOrderNumber().toUpperCase().equals(upper))
+                        .findFirst()
+                        .ifPresentOrElse(
+                                o -> context.append("- ").append(formatOrderSummary(o)).append('\n'),
+                                () -> context.append("- Order ").append(orderNumber).append(" not found in customer's recent orders.\n")
+                        );
             } else {
-                Map<String, Object> order = orders.get(0);
-                context.append("- Order ")
-                        .append(order.get("order_number"))
-                        .append(": status ")
-                        .append(order.get("order_status"))
-                        .append(", payment ")
-                        .append(order.get("payment_status"))
-                        .append(", total ")
-                        .append(formatMoney(order.get("total_amount"), String.valueOf(order.getOrDefault("currency", "USD"))))
-                        .append(", created ")
-                        .append(formatDate(order.get("created_at")))
+                context.append("- Recent orders: ")
+                        .append(myOrders.stream()
+                                .map(o -> o.getOrderNumber() + " (" + o.getOrderStatus() + "/" + o.getPaymentStatus() + ")")
+                                .reduce((a, b) -> a + ", " + b)
+                                .orElse("none"))
                         .append('\n');
             }
         }
 
         return context.toString();
     }
+
+    // -------------------------------------------------------------------------
+    // Conversation helpers
+    // -------------------------------------------------------------------------
 
     private List<String> buildRecentConversation(String conversationId) {
         List<ChatbotMessage> recent = new ArrayList<>(messageRepository.findTop8ByConversationIdOrderByCreatedAtDesc(conversationId));
@@ -396,11 +399,6 @@ public class ChatbotService {
         return m.find() ? m.group(1).toUpperCase() : null;
     }
 
-    private String extractEmail(String question) {
-        Matcher m = EMAIL_PATTERN.matcher(question);
-        return m.find() ? m.group(0).toLowerCase() : null;
-    }
-
     private String extractCatalogKeyword(String question) {
         return question.toLowerCase()
                 .replaceAll("[^a-z0-9\\s]", " ")
@@ -423,20 +421,25 @@ public class ChatbotService {
         }
     }
 
-    private String formatDate(Object value) {
-        if (value == null) return "-";
-        try {
-            if (value instanceof LocalDateTime ldt) {
-                return ldt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-            }
-            if (value instanceof java.sql.Timestamp ts) {
-                return ts.toLocalDateTime().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-            }
-            return Instant.parse(value.toString())
-                    .atOffset(ZoneOffset.UTC)
-                    .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-        } catch (Exception e) {
-            return String.valueOf(value);
-        }
+    private String formatOrderSummary(OrderHistoryItemDto o) {
+        String date = o.getCreatedAt() != null
+                ? o.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE)
+                : "-";
+        return String.format("Order %s is %s, payment %s, total %s (placed %s)",
+                o.getOrderNumber(),
+                o.getOrderStatus(),
+                o.getPaymentStatus(),
+                formatMoney(o.getTotalAmount(), o.getCurrency()),
+                date);
+    }
+
+    /**
+     * Builds a minimal synthetic User containing only the email,
+     * which is all that OrderService.getMyOrders() requires.
+     */
+    private User buildSyntheticUser(String email) {
+        User user = new User();
+        user.setEmail(email);
+        return user;
     }
 }

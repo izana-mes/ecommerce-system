@@ -1205,14 +1205,19 @@ public class AttendanceService {
                 WHERE employee_user_id IN (%s) OR employee_email IN (%s)
                 GROUP BY employee_user_id, employee_email
                 """.formatted(placeholders, placeholders),
-                rs -> counts.put(
-                        normalizeLookupKey(rs.getString("employee_user_id"), rs.getString("employee_email")),
-                        new EmployeeReviewCounts(
-                                rs.getInt("warning_count"),
-                                rs.getInt("reprimand_count"),
-                                rs.getInt("open_issue_count")
-                        )
-                ),
+                (org.springframework.jdbc.core.ResultSetExtractor<Void>) rs -> {
+                    while (rs.next()) {
+                        counts.put(
+                                normalizeLookupKey(rs.getString("employee_user_id"), rs.getString("employee_email")),
+                                new EmployeeReviewCounts(
+                                        rs.getInt("warning_count"),
+                                        rs.getInt("reprimand_count"),
+                                        rs.getInt("open_issue_count")
+                                )
+                        );
+                    }
+                    return null;
+                },
                 mergeArgs(args, args).toArray()
         );
         return counts;
