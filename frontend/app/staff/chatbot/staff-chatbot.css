@@ -1,23 +1,33 @@
 .staffChatbotPage {
-  min-height: 70vh;
-  padding: 32px 14px;
+  min-height: calc(100vh - 100px);
+  padding: 40px 14px;
   background: linear-gradient(180deg, #f8fafc 0%, #eef4ff 100%);
 }
 
 .staffChatbotContainer {
   max-width: 980px;
   margin: 0 auto;
-  background: #ffffff;
-  border: 1px solid #d8e2f2;
-  border-radius: 18px;
-  padding: 24px;
-  box-shadow: 0 18px 44px rgba(14, 39, 79, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(216, 226, 242, 0.8);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 20px 48px rgba(14, 39, 79, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1);
+  animation: modalEnter 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+@keyframes modalEnter {
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .staffChatbotHeader h1 {
   margin: 0;
   color: #172847;
   font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .staffChatbotHeader p {
@@ -28,109 +38,146 @@
 }
 
 .staffChatbotQuickPrompts {
-  margin-top: 18px;
+  margin-top: 20px;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
 }
 
 .staffPromptButton {
-  border: 1px solid #c6d6f0;
-  background: #f4f8ff;
+  border: 1px solid rgba(198, 214, 240, 0.6);
+  background: rgba(244, 248, 255, 0.7);
+  backdrop-filter: blur(4px);
   color: #1e3b66;
   border-radius: 999px;
   font-size: 13px;
-  padding: 8px 14px;
+  font-weight: 500;
+  padding: 8px 16px;
   cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.staffPromptButton:hover:not(:disabled) {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(30, 59, 102, 0.1);
 }
 
 .staffPromptButton:disabled {
   cursor: not-allowed;
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 .staffChatbotMessages {
-  margin-top: 20px;
-  border: 1px solid #d5deee;
-  border-radius: 14px;
-  background: #f7faff;
-  padding: 12px;
+  margin-top: 24px;
+  border: 1px solid rgba(213, 222, 238, 0.5);
+  border-radius: 16px;
+  background: rgba(247, 250, 255, 0.6);
+  backdrop-filter: blur(4px);
+  padding: 16px;
   min-height: 280px;
   max-height: 520px;
   overflow-y: auto;
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .staffMessageBubble {
-  max-width: 90%;
-  border-radius: 12px;
-  padding: 12px 14px;
-  box-shadow: 0 6px 14px rgba(20, 38, 73, 0.08);
+  max-width: 85%;
+  border-radius: 18px;
+  padding: 14px 18px;
+  box-shadow: 0 8px 24px rgba(20, 38, 73, 0.04);
+  animation: bubblePop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .staffMessageBubble p {
   margin: 0;
-  line-height: 1.45;
+  line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .staffMessageBubble.assistant {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(213, 222, 238, 0.5);
   color: #1c2d4b;
   justify-self: start;
+  border-bottom-left-radius: 4px;
 }
 
 .staffMessageBubble.user {
-  background: #1f5eff;
+  background: linear-gradient(135deg, #1f5eff, #0044ff);
   color: #ffffff;
   justify-self: end;
+  border-bottom-right-radius: 4px;
 }
 
 .staffChatbotLoading {
-  margin: 4px 2px;
+  margin: 6px 4px;
   color: #3d5786;
   font-size: 14px;
+  font-weight: 500;
+  animation: pulseOpacity 1.5s infinite ease-in-out;
 }
 
 .staffChatbotComposer {
-  margin-top: 14px;
+  margin-top: 18px;
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 .staffChatbotComposer textarea {
   width: 100%;
-  border: 1px solid #bed0ee;
-  border-radius: 10px;
-  padding: 12px;
+  border: 1px solid rgba(190, 208, 238, 0.6);
+  border-radius: 14px;
+  padding: 14px;
   font-size: 15px;
   color: #1d2f4f;
   resize: vertical;
-  min-height: 90px;
-  background: #ffffff;
+  min-height: 80px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.staffChatbotComposer textarea:focus {
+  outline: none;
+  background: #fff;
+  border-color: #1f5eff;
+  box-shadow: 0 0 0 4px rgba(31, 94, 255, 0.12);
 }
 
 .staffChatbotComposer button {
   justify-self: end;
   border: 0;
-  background: #1f5eff;
+  background: linear-gradient(135deg, #1f5eff, #0044ff);
   color: #fff;
-  font-weight: 700;
-  border-radius: 10px;
-  padding: 10px 16px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 10px 24px;
   cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 6px 16px rgba(31, 94, 255, 0.25);
+}
+
+.staffChatbotComposer button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(31, 94, 255, 0.35);
+  filter: saturate(1.1);
 }
 
 .staffChatbotComposer button:disabled {
   cursor: not-allowed;
   opacity: 0.65;
+  background: #94a8d6;
+  box-shadow: none;
 }
 
 @media (max-width: 768px) {
   .staffChatbotContainer {
-    padding: 18px;
+    padding: 20px;
+    border-radius: 16px;
   }
 
   .staffChatbotHeader h1 {
@@ -138,6 +185,6 @@
   }
 
   .staffMessageBubble {
-    max-width: 100%;
+    max-width: 95%;
   }
 }

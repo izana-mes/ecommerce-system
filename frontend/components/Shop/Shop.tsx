@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
-import { FiHeart } from "react-icons/fi";
+import { FiHeart, FiThumbsUp, FiThumbsDown, FiMessageCircle, FiEdit2, FiTrash2 } from "react-icons/fi";
 import { FaStar, FaRegStar, FaCartPlus } from "react-icons/fa";
 import { IoFilterSharp, IoClose } from "react-icons/io5";
 import { FaAngleRight, FaAngleLeft } from "react-icons/fa6";
@@ -1233,25 +1233,27 @@ export default function Shop() {
                           <div className="sdReviewMetaActions">
                             <button
                               type="button"
-                              className="sdReviewMetaButton"
+                              className={`sdReviewMetaButton ${review.likedByCurrentUser ? 'active' : ''}`}
                               onClick={() => toggleLikeReview(review.id)}
+                              title={review.likedByCurrentUser ? "Unlike" : "Like"}
                             >
-                              {review.likedByCurrentUser ? "Unlike" : "Like"} (
-                              {review.likes ?? 0})
+                              <FiThumbsUp /> <span>{review.likes ?? 0}</span>
                             </button>
                             <button
                               type="button"
                               className="sdReviewMetaButton"
                               onClick={() => handleDislikeReview(review.id)}
+                              title="Dislike"
                             >
-                              Dislike ({review.dislikes ?? 0})
+                              <FiThumbsDown /> <span>{review.dislikes ?? 0}</span>
                             </button>
                             <button
                               type="button"
                               className="sdReviewMetaButton"
                               onClick={() => toggleReplyDraft(review.id)}
+                              title="Reply"
                             >
-                              Reply ({replies.length})
+                              <FiMessageCircle /> <span>{replies.length}</span>
                             </button>
                           </div>
                           {isReplyOpen && (
@@ -1289,11 +1291,11 @@ export default function Shop() {
                           )}
                           {review.ownedByCurrentUser && (
                             <div className="sdReviewCardActions">
-                              <button type="button" onClick={() => beginEditReview(review)}>
-                                Edit
+                              <button type="button" onClick={() => beginEditReview(review)} title="Edit">
+                                <FiEdit2 size={15} />
                               </button>
-                              <button type="button" onClick={() => handleDeleteReview(review.id)}>
-                                Delete
+                              <button type="button" onClick={() => handleDeleteReview(review.id)} title="Delete">
+                                <FiTrash2 size={15} />
                               </button>
                             </div>
                           )}

@@ -138,11 +138,16 @@
 
 .sdProductContainer {
   position: relative;
-  width: min(100%, 260px);
+  width: min(100%, 280px);
   margin: 0 auto;
   opacity: 0;
   transform: translateY(12px);
-  animation: shopCardIn 0.45s ease forwards;
+  animation: shopCardIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sdProductContainer:hover {
+  z-index: 10;
 }
 
 .sdProductContainer:nth-child(1) { animation-delay: 0.08s; }
@@ -174,11 +179,11 @@
 .sdProductImages {
   position: relative;
   width: 100%;
-  height: 320px;
+  height: 340px;
   background-color: #f4f4f6;
   overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  -webkit-transition: all 0.2s cubic-bezier(0.99, 0.99, 0, 0.61);
+  border-radius: 14px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .sdStockBadge {
@@ -196,8 +201,8 @@
 }
 
 .sdProductContainer:hover .sdProductImages {
-  transform: translateY(-8px);
-  box-shadow: 4px 10px 20px rgba(0, 0, 0, 0.25);
+  transform: translateY(-10px);
+  box-shadow: 0 16px 32px rgba(17, 24, 39, 0.15);
 }
 
 .sdProductImages img {
@@ -282,9 +287,14 @@
 }
 
 .sdProductNameInfo h5 {
-  font-weight: 400;
+  font-weight: 500;
   font-size: 16px;
   text-align: left;
+  transition: color 0.2s ease;
+}
+
+.sdProductNameInfo a:hover h5 {
+  color: #2563eb;
 }
 
 .sdProductNameInfo p {
@@ -292,23 +302,46 @@
 }
 
 .sdBuyNowButton {
-  margin-top: 2px;
+  margin-top: 6px;
   border: 0;
   border-radius: 999px;
-  padding: 7px 14px;
+  padding: 8px 20px;
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   cursor: pointer;
   color: #fff;
-  background: linear-gradient(135deg, #111827, #374151);
-  transition: transform 160ms ease, opacity 160ms ease, box-shadow 160ms ease;
-  box-shadow: 0 8px 18px rgba(17, 24, 39, 0.22);
+  background: linear-gradient(135deg, #1f2937, #4b5563);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 6px 14px rgba(31, 41, 55, 0.25);
+  position: relative;
+  overflow: hidden;
 }
 
-.sdBuyNowButton:hover {
-  transform: translateY(-1px);
+.sdBuyNowButton::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.sdBuyNowButton:hover::before {
+  left: 100%;
+}
+
+.sdBuyNowButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(31, 41, 55, 0.35);
+  background: linear-gradient(135deg, #111827, #374151);
+}
+
+.sdBuyNowButton:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .sdBuyNowButton:disabled {
@@ -316,6 +349,7 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+  background: #9ca3af;
 }
 
 .sdProductRatingReviews {
@@ -752,23 +786,49 @@
 }
 
 .sdReviewMetaActions {
-  margin-top: 8px;
+  margin-top: 12px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .sdReviewMetaButton {
-  border: 0;
+  border: none;
   background: transparent;
-  color: #1d4ed8;
-  font-size: 12px;
-  padding: 0;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
   cursor: pointer;
+  border-radius: 20px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sdReviewMetaButton:hover {
-  text-decoration: underline;
+  background: rgba(107, 114, 128, 0.08);
+  color: #374151;
+  text-decoration: none;
+}
+
+.sdReviewMetaButton.active, .sdReviewMetaButton.active:hover {
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+}
+
+.sdReviewMetaButton svg {
+  font-size: 16px;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.sdReviewMetaButton:active svg {
+  transform: scale(0.85);
+}
+
+.sdReviewMetaButton:hover svg {
+  transform: scale(1.15) translateY(-1px);
 }
 
 .sdReviewReplyComposer {
@@ -845,7 +905,6 @@
   line-height: 1.4;
 }
 
-.sdReviewCardActions button,
 .sdReviewEditActions button {
   border: 1px solid rgba(154, 175, 210, 0.5);
   background: rgba(255, 255, 255, 0.85);
@@ -853,8 +912,48 @@
   border-radius: 999px;
   font-size: 12px;
   text-transform: uppercase;
-  padding: 6px 10px;
+  padding: 6px 14px;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sdReviewEditActions button:hover {
+  background: #f1f5f9;
+  transform: translateY(-1px);
+}
+
+.sdReviewCardActions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.sdReviewCardActions button {
+  border: 1px solid rgba(154, 175, 210, 0.3);
+  background: transparent;
+  color: #6b7280;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sdReviewCardActions button:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  border-color: rgba(154, 175, 210, 0.6);
+}
+
+.sdReviewCardActions button:active {
+  transform: translateY(0) scale(0.95);
 }
 
 .sdReviewEditForm {
