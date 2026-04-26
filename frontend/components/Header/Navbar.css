@@ -1,27 +1,29 @@
 .announcementBar {
-  background: var(--announcement-bg);
-  color: var(--announcement-text);
+  background: linear-gradient(90deg, #11254a 0%, #0f3dad 100%);
+  color: white;
   text-align: center;
-  font-size: 12px;
-  letter-spacing: 0.04em;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 10px 16px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 12px rgba(15, 61, 173, 0.2);
 }
 
 .navBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--surface-1);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
   position: relative;
-  padding: 35px 160px;
+  padding: 24px 160px;
   top: 0;
   position: sticky;
-  z-index: 10;
-  box-shadow: 0 10px 33px rgba(0, 0, 0, 0.1);
-  border-bottom: 1px solid var(--border-soft);
+  z-index: 100;
+  box-shadow: 0 10px 40px rgba(18, 40, 75, 0.06), inset 0 -1px 0 rgba(216, 229, 255, 0.5);
   transform: translateY(0);
-  transition: transform 0.28s ease;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), padding 0.3s ease;
   will-change: transform;
 }
 
@@ -36,66 +38,51 @@
 }
 
 .logoContainer img {
-  width: 116px;
+  width: 124px;
   height: auto;
   background: none !important;
-  transition: transform 0.5s ease;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .logoContainer img:hover {
-  transform: scale(1.2);
+  transform: scale(1.08);
 }
 
 .linkContainer ul {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 40px;
+  gap: 48px;
 }
 
 .linkContainer ul li {
   list-style-type: none;
   opacity: 0;
   transform: translateY(-8px);
-  animation: navItemReveal 0.45s ease forwards;
+  animation: navItemReveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.linkContainer ul li:nth-child(1) {
-  animation-delay: 0.08s;
-}
-
-.linkContainer ul li:nth-child(2) {
-  animation-delay: 0.14s;
-}
-
-.linkContainer ul li:nth-child(3) {
-  animation-delay: 0.2s;
-}
-
-.linkContainer ul li:nth-child(4) {
-  animation-delay: 0.26s;
-}
-
-.linkContainer ul li:nth-child(5) {
-  animation-delay: 0.32s;
-}
-
-.linkContainer ul li:nth-child(6) {
-  animation-delay: 0.38s;
-}
+.linkContainer ul li:nth-child(1) { animation-delay: 0.1s; }
+.linkContainer ul li:nth-child(2) { animation-delay: 0.15s; }
+.linkContainer ul li:nth-child(3) { animation-delay: 0.2s; }
+.linkContainer ul li:nth-child(4) { animation-delay: 0.25s; }
+.linkContainer ul li:nth-child(5) { animation-delay: 0.3s; }
+.linkContainer ul li:nth-child(6) { animation-delay: 0.35s; }
 
 .linkContainer ul li a {
   display: inline-block;
   text-decoration: none;
-  color: var(--foreground);
+  color: #11254a;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   position: relative;
-  transition: transform 0.2s ease;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), color 0.3s ease;
+  padding: 6px 0;
 }
 
 .linkContainer ul li a:hover {
-  transform: scale(1.1);
+  transform: translateY(-2px);
+  color: #0f3dad;
 }
 
 .linkContainer ul li a.activeLink {
@@ -111,42 +98,43 @@
   content: "";
   position: absolute;
   left: 0;
-  bottom: -2px;
+  bottom: 0;
   height: 2px;
   width: 0;
-  background-color: var(--foreground);
-  transition: width 0.3s ease-out;
+  background-color: #0f3dad;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .linkContainer ul li a:hover::after {
   width: 100%;
-  transition-delay: 0.2s;
 }
 
 .iconContainer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 35px;
+  gap: 30px;
 }
 
 .themeToggleButton {
-  border: 1px solid var(--border-soft);
-  background: var(--surface-1);
-  color: var(--foreground);
+  border: 1px solid rgba(216, 229, 255, 0.8);
+  background: rgba(255, 255, 255, 0.9);
+  color: #11254a;
   border-radius: 999px;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(15, 61, 173, 0.05);
 }
 
 .themeToggleButton:hover {
-  transform: scale(1.08);
-  background: var(--surface-2);
+  transform: scale(1.1) translateY(-2px);
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 61, 173, 0.12);
 }
 
 .localeSelectWrap {
@@ -154,49 +142,70 @@
 }
 
 .localeSelect {
-  border: 1px solid var(--border-soft);
-  background: var(--surface-1);
-  color: var(--foreground);
+  border: 1px solid rgba(216, 229, 255, 0.8);
+  background: rgba(255, 255, 255, 0.9);
+  color: #11254a;
   border-radius: 999px;
-  padding: 7px 30px 7px 10px;
-  font-size: 12px;
+  padding: 8px 30px 8px 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 4px 12px rgba(15, 61, 173, 0.05);
+  transition: all 0.3s ease;
+}
+
+.localeSelect:hover {
+  box-shadow: 0 8px 24px rgba(15, 61, 173, 0.12);
+  transform: translateY(-2px);
 }
 
 .navSearchForm {
   display: flex;
   align-items: center;
-  border: 1px solid var(--border-soft);
+  border: 1px solid rgba(216, 229, 255, 0.8);
   border-radius: 999px;
   overflow: hidden;
-  background: var(--surface-1);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 12px rgba(15, 61, 173, 0.04);
+  transition: all 0.3s ease;
+}
+
+.navSearchForm:focus-within {
+  border-color: #0f3dad;
+  box-shadow: 0 0 0 4px rgba(15, 61, 173, 0.12);
 }
 
 .navSearchForm input {
   border: none;
   outline: none;
-  padding: 8px 12px;
-  min-width: 170px;
-  font-size: 13px;
+  padding: 10px 16px;
+  min-width: 200px;
+  font-size: 14px;
   background: transparent;
-  color: var(--foreground);
+  color: #11254a;
+  font-family: inherit;
+}
+
+.navSearchForm input::placeholder {
+  color: #5f7099;
 }
 
 .navSearchForm button {
   border: none;
-  border-left: 1px solid var(--border-soft);
-  background: var(--surface-2);
-  color: var(--foreground);
-  padding: 8px 10px;
+  border-left: 1px solid rgba(216, 229, 255, 0.6);
+  background: rgba(248, 250, 255, 0.8);
+  color: #11254a;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 .navSearchForm button:hover {
-  background: var(--surface-1);
+  background: #0f3dad;
+  color: white;
 }
 
 .navSearchWrap {
@@ -205,18 +214,19 @@
 
 .searchHistoryDropdown {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 8px);
   left: 0;
   width: 100%;
-  min-width: 220px;
-  background: var(--surface-1);
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+  min-width: 240px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(216, 229, 255, 0.8);
+  border-radius: 16px;
+  box-shadow: 0 20px 48px rgba(15, 61, 173, 0.12);
   overflow: hidden;
   z-index: 20;
   transform-origin: top center;
-  animation: dropdownIn 0.18s ease-out both;
+  animation: dropdownIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .searchHistoryItem {
@@ -224,55 +234,54 @@
   border: none;
   background: transparent;
   text-align: left;
-  font-size: 13px;
-  color: var(--foreground);
-  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #2b3a5a;
+  padding: 12px 16px;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .searchHistoryItem:hover {
-  background: var(--surface-2);
+  background: rgba(240, 245, 255, 0.8);
+  color: #0f3dad;
+  padding-left: 20px;
 }
 
 .iconContainer span {
-  color: var(--foreground);
+  color: #11254a;
   border-radius: 50%;
-  padding: 8px;
+  padding: 10px;
   opacity: 0;
   transform: translateY(-8px);
-  animation: navItemReveal 0.45s ease forwards;
-  transition: transform 0.3s ease, background-color 0.3s ease;
+  animation: navItemReveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
-.iconContainer span:nth-of-type(1) {
-  animation-delay: 0.44s;
-}
-
-.iconContainer span:nth-of-type(2) {
-  animation-delay: 0.5s;
-}
-
-.iconContainer span:nth-of-type(3) {
-  animation-delay: 0.56s;
-}
-
-.navSearchForm input::placeholder {
-  color: var(--muted-text);
-}
+.iconContainer span:nth-of-type(1) { animation-delay: 0.4s; }
+.iconContainer span:nth-of-type(2) { animation-delay: 0.45s; }
+.iconContainer span:nth-of-type(3) { animation-delay: 0.5s; }
 
 .iconContainer span:hover {
-  transform: scale(1.1);
-  background-color: var(--surface-2);
+  transform: scale(1.15) translateY(-2px);
+  background-color: rgba(240, 245, 255, 0.8);
+  color: #0f3dad;
+  box-shadow: 0 4px 12px rgba(15, 61, 173, 0.08);
 }
 
 .mobileMenuButton {
   display: none;
-  border: 1px solid var(--border-soft);
-  background: var(--surface-1);
-  color: var(--foreground);
-  border-radius: 10px;
-  padding: 8px;
+  border: 1px solid rgba(216, 229, 255, 0.8);
+  background: rgba(255, 255, 255, 0.9);
+  color: #11254a;
+  border-radius: 12px;
+  padding: 10px;
   cursor: pointer;
+  box-shadow: 0 4px 12px rgba(15, 61, 173, 0.05);
 }
 
 .mobileBackdrop {
@@ -281,186 +290,112 @@
 
 .searchSuccessPopup {
   position: fixed;
-  right: 20px;
-  bottom: 24px;
-  z-index: 80;
+  right: 24px;
+  bottom: 30px;
+  z-index: 100;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  border: 1px solid rgba(16, 185, 129, 0.35);
-  border-radius: 12px;
-  padding: 10px 14px;
-  background: linear-gradient(180deg, rgba(16, 185, 129, 0.16) 0%, rgba(16, 185, 129, 0.1) 100%), var(--surface-1);
-  color: var(--foreground);
-  box-shadow: 0 10px 26px rgba(16, 24, 40, 0.2);
-  animation: searchPopupInOut 1.8s ease both;
-}
-
-@keyframes navSlideDown {
-  0% {
-    opacity: 0;
-    transform: translateY(-14px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  gap: 12px;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 16px;
+  padding: 14px 20px;
+  background: linear-gradient(180deg, rgba(236, 253, 245, 0.95) 0%, rgba(209, 250, 229, 0.9) 100%);
+  backdrop-filter: blur(8px);
+  color: #065f46;
+  font-weight: 600;
+  box-shadow: 0 16px 40px rgba(16, 185, 129, 0.2);
+  animation: searchPopupInOut 2.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes navItemReveal {
-  0% {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  0% { opacity: 0; transform: translateY(-12px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes dropdownIn {
-  0% {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.98);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  0% { opacity: 0; transform: translateY(-10px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes searchPopupInOut {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 12px, 0) scale(0.96);
-  }
-  18% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  82% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(0, 8px, 0) scale(0.98);
-  }
+  0% { opacity: 0; transform: translate3d(0, 20px, 0) scale(0.9); }
+  15% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  85% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  100% { opacity: 0; transform: translate3d(0, 16px, 0) scale(0.95); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .navBar,
-  .linkContainer ul li,
-  .iconContainer span,
-  .searchHistoryDropdown {
+  .navBar, .linkContainer ul li, .iconContainer span, .searchHistoryDropdown {
     animation: none !important;
     transform: none !important;
     opacity: 1 !important;
-  }
-
-  .searchSuccessPopup {
-    animation: none !important;
+    transition: none !important;
   }
 }
 
 @media (max-width: 1280px) {
-  .navBar {
-    padding: 24px 56px;
-  }
-
-  .iconContainer {
-    gap: 20px;
-  }
+  .navBar { padding: 20px 56px; }
+  .iconContainer { gap: 20px; }
+  .linkContainer ul { gap: 30px; }
 }
 
 @media (max-width: 980px) {
-  .announcementBar {
-    font-size: 11px;
-    padding: 8px 14px;
-  }
-
-  .navBar {
-    padding: 16px 14px;
-  }
-
-  .mobileMenuButton {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
+  .announcementBar { padding: 10px 14px; font-size: 11px; }
+  .navBar { padding: 16px 20px; }
+  .mobileMenuButton { display: inline-flex; }
+  
   .linkContainer {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: min(82vw, 340px);
+    top: 0; left: 0;
+    width: min(85vw, 360px);
     height: 100vh;
-    background: var(--surface-1);
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
     z-index: 40;
-    transform: translateX(-104%);
-    transition: transform 0.25s ease;
-    border-right: 1px solid var(--border-soft);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
-    padding: 88px 20px 28px;
+    transform: translateX(-105%);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    border-right: 1px solid rgba(216, 229, 255, 0.8);
+    box-shadow: 20px 0 60px rgba(15, 61, 173, 0.1);
+    padding: 100px 30px 40px;
   }
-
-  .linkContainerOpen {
-    transform: translateX(0);
-  }
-
+  
+  .linkContainerOpen { transform: translateX(0); }
+  
   .linkContainer ul {
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
+    gap: 24px;
   }
-
-  .linkContainer ul li {
-    opacity: 1;
-    transform: none;
-    animation: none;
-  }
-
-  .linkContainer ul li a {
-    font-size: 14px;
-    letter-spacing: 0.02em;
-  }
-
-  .iconContainer {
-    gap: 10px;
-  }
-
-  .iconContainer span {
-    animation: none;
-    opacity: 1;
-    transform: none;
-    padding: 6px;
-  }
-
-  .localeSelect {
-    padding: 7px 24px 7px 8px;
-    font-size: 11px;
-  }
-
-  .navSearchForm input {
-    min-width: 120px;
-  }
-
+  
+  .linkContainer ul li { opacity: 1; transform: none; animation: none; }
+  .linkContainer ul li a { font-size: 18px; }
+  
+  .iconContainer { gap: 14px; }
+  .iconContainer span { animation: none; opacity: 1; transform: none; padding: 8px; }
+  .iconContainer span:hover { transform: translateY(-2px); }
+  
+  .navSearchForm { flex: 1; margin: 0 16px; }
+  .navSearchForm input { min-width: 100%; }
+  
   .mobileBackdrop {
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(17, 24, 39, 0.45);
-    border: none;
+    background: rgba(17, 37, 74, 0.6);
+    backdrop-filter: blur(4px);
     z-index: 30;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s ease;
+  }
+  
+  .mobileBackdrop.open {
+    opacity: 1;
+    visibility: visible;
   }
 }
 
 @media (max-width: 640px) {
-  .navSearchWrap {
-    display: none;
-  }
-
-  .logoContainer img {
-    width: 98px;
-  }
+  .navSearchWrap { display: none; }
+  .logoContainer img { width: 104px; }
 }
