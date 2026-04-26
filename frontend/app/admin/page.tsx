@@ -30,6 +30,7 @@ type Product = {
   productName: string;
   productPrice: number;
   productReviews: string;
+  sizes: string[];
   stockQuantity: number;
   active: boolean;
 };
@@ -414,6 +415,7 @@ const HOME_BANNER_SETTINGS = [
   },
 ] as const;
 const HOME_BANNER_SETTING_KEY_SET = new Set<string>(HOME_BANNER_SETTINGS.map((item) => item.key));
+const CLOTHING_SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL"] as const;
 
 const INITIAL_PRODUCT_FORM: Product = {
   productID: "",
@@ -422,6 +424,7 @@ const INITIAL_PRODUCT_FORM: Product = {
   productName: "",
   productPrice: 0,
   productReviews: "",
+  sizes: ["S", "M", "L"],
   stockQuantity: 25,
   active: true,
 };
@@ -1129,6 +1132,11 @@ export default function AdminPage() {
           Array.isArray(data)
             ? data.map((item) => ({
                 ...item,
+                sizes: Array.isArray(item?.sizes)
+                  ? item.sizes
+                      .map((size: unknown) => String(size ?? "").trim())
+                      .filter(Boolean)
+                  : [],
                 stockQuantity: Math.max(0, Number(item?.stockQuantity ?? 25)),
                 active: item?.active !== false,
               }))
@@ -1965,6 +1973,16 @@ export default function AdminPage() {
     }));
   };
 
+  const toggleProductSize = (size: (typeof CLOTHING_SIZE_OPTIONS)[number]) => {
+    setProductForm((prev) => {
+      const hasSize = prev.sizes.includes(size);
+      return {
+        ...prev,
+        sizes: hasSize ? prev.sizes.filter((item) => item !== size) : [...prev.sizes, size],
+      };
+    });
+  };
+
   const handleImageUpload = async (
     field: "frontImg" | "backImg",
     event: React.ChangeEvent<HTMLInputElement>
@@ -2022,6 +2040,12 @@ export default function AdminPage() {
       });
       return;
     }
+    if (productForm.sizes.length === 0) {
+      toast.error("Select at least one clothing size", {
+        style: { backgroundColor: "#fb0404", color: "#fff" },
+      });
+      return;
+    }
     if (productForm.stockQuantity < 0) {
       toast.error("Stock quantity must be >= 0", {
         style: { backgroundColor: "#fb0404", color: "#fff" },
@@ -2069,6 +2093,7 @@ export default function AdminPage() {
     setEditingProductId(product.productID);
     setProductForm({
       ...product,
+      sizes: Array.isArray(product.sizes) ? product.sizes : [],
       stockQuantity: Math.max(0, Number(product.stockQuantity ?? 25)),
       active: product.active !== false,
     });
@@ -4164,6 +4189,24 @@ export default function AdminPage() {
                   value={productForm.productReviews}
                   onChange={(event) => onProductInputChange("productReviews", event.target.value)}
                 />
+                <div className="sizeSelectorCard">
+                  <span className="sizeSelectorLabel">Clothing Sizes</span>
+                  <div className="sizeOptionGrid">
+                    {CLOTHING_SIZE_OPTIONS.map((size) => {
+                      const selected = productForm.sizes.includes(size);
+                      return (
+                        <button
+                          key={size}
+                          type="button"
+                          className={`sizeOptionButton${selected ? " sizeOptionButtonActive" : ""}`}
+                          onClick={() => toggleProductSize(size)}
+                        >
+                          {size}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
                 <input
                   type="number"
                   min="0"
@@ -4223,6 +4266,7 @@ export default function AdminPage() {
                       <th>Name</th>
                       <th>Price</th>
                       <th>Reviews</th>
+                      <th>Sizes</th>
                       <th>Stock</th>
                       <th>Status</th>
                       <th>Actions</th>
@@ -4231,7 +4275,7 @@ export default function AdminPage() {
                   <tbody>
                     {products.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="adminEmpty">
+                        <td colSpan={8} className="adminEmpty">
                           No products found.
                         </td>
                       </tr>
@@ -4244,6 +4288,7 @@ export default function AdminPage() {
                             <td>{product.productName}</td>
                             <td>${product.productPrice}</td>
                             <td>{product.productReviews || "-"}</td>
+                            <td>{product.sizes.length > 0 ? product.sizes.join(", ") : "-"}</td>
                             <td>{product.stockQuantity}</td>
                             <td>
                               <span className={product.active ? "statusActive" : "statusInactive"}>

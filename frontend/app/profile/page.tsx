@@ -17,8 +17,10 @@ import { clearCart } from "@/store/cartSlice";
 import { clearWishList } from "@/store/wishListSlice";
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
+import { useLocale } from "@/components/providers/LocaleProvider";
 
 export default function ProfilePage() {
+  const { t } = useLocale();
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [user, setUser] = useState<User | null>(null);
@@ -50,7 +52,7 @@ export default function ProfilePage() {
     dispatch(clearWishList());
     void logoutServerSession();
 
-    toast.success("Logged out successfully", {
+    toast.success(t("profile_logout_success"), {
       duration: 2000,
       style: { backgroundColor: "#07bc0c", color: "#fff" },
     });
@@ -73,31 +75,31 @@ export default function ProfilePage() {
   return (
     <div className="profilePage">
       <div className="profileCard">
-        <h2>My Profile</h2>
+        <h2>{t("profile_title")}</h2>
         <div className="profileField">
-          <span className="profileLabel">Email:</span>
+          <span className="profileLabel">{t("profile_email")}</span>
           <span className="profileValue">{user.email}</span>
         </div>
         {user.firstName || user.lastName ? (
           <div className="profileField">
-            <span className="profileLabel">Name:</span>
+            <span className="profileLabel">{t("profile_name")}</span>
             <span className="profileValue">
               {[user.firstName, user.lastName].filter(Boolean).join(" ")}
             </span>
           </div>
         ) : null}
         <div className="profileField">
-          <span className="profileLabel">Role:</span>
+          <span className="profileLabel">{t("profile_role")}</span>
           <span className="profileValue">{user.role}</span>
         </div>
         <div className="profileField">
-          <span className="profileLabel">Orders:</span>
+          <span className="profileLabel">{t("profile_orders")}</span>
           <span className="profileValue">
-            <Link href="/orders">View Purchase History</Link>
+            <Link href="/orders">{t("profile_view_history")}</Link>
           </span>
         </div>
         <button className="profileLogoutButton" onClick={handleLogout}>
-          Log Out
+          {t("profile_logout")}
         </button>
       </div>
     </div>

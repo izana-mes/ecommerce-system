@@ -6,6 +6,11 @@ const normalizeProducts = (items: DataStore[]): DataStore[] =>
   items.map((product: DataStore) => ({
     ...product,
     backImg: product.backImg || product.frontImg,
+    sizes: Array.isArray(product?.sizes)
+      ? product.sizes
+          .map((size) => String(size ?? "").trim())
+          .filter(Boolean)
+      : [],
     stockQuantity: Math.max(0, Number(product?.stockQuantity ?? 25)),
     active: product?.active !== false,
   }));

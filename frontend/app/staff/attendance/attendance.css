@@ -1,8 +1,7 @@
 .attendancePage {
   min-height: calc(100vh - 100px);
   padding: 40px 20px 50px;
-  background:
-    radial-gradient(circle at top left, rgba(27, 113, 255, 0.06), transparent 40%),
+  background: radial-gradient(circle at top left, rgba(27, 113, 255, 0.06), transparent 40%),
     radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.08), transparent 46%),
     var(--surface-2);
 }
@@ -10,7 +9,7 @@
 .attendanceCard {
   max-width: 1120px;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--surface-1);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(215, 224, 243, 0.6);
   border-radius: 24px;
@@ -152,7 +151,7 @@
   border-radius: 16px;
   padding: 14px 16px;
   resize: vertical;
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--surface-1);
   backdrop-filter: blur(4px);
   color: var(--foreground);
   font-family: inherit;
@@ -162,7 +161,7 @@
 
 .attendanceNoteForm textarea:focus {
   outline: none;
-  background: #fff;
+  background: var(--surface-1);
   border-color: #3b82f6;
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
 }
@@ -182,7 +181,7 @@
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--surface-1);
   color: var(--foreground);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
@@ -204,7 +203,7 @@
 .attendanceActionRow .primary {
   border: 0;
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  color: #fff;
+  color: var(--background);
   box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
 }
 
@@ -216,7 +215,7 @@
 .attendanceActionRow .danger {
   border: 0;
   background: linear-gradient(135deg, #ef4444, #b91c1c);
-  color: #fff;
+  color: var(--background);
   box-shadow: 0 6px 16px rgba(239, 68, 68, 0.25);
 }
 
@@ -250,7 +249,7 @@
   border: 1px solid rgba(226, 232, 240, 0.8);
   border-radius: 16px;
   overflow: auto;
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--surface-1);
 }
 
 .attendanceTableWrap table {

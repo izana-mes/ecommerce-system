@@ -27,8 +27,8 @@
   top: calc(50% - 12px);
   cursor: pointer;
   z-index: 10;
-  background-color: #e4e4e4;
-  color: black;
+  background-color: var(--surface-2);
+  color: var(--foreground);
   border: 1px solid #767676;
   border-radius: 50%;
   padding: 10px;
@@ -86,7 +86,7 @@
   font-size: 14px;
   font-weight: 500;
   text-transform: uppercase;
-  background-color: rgb(253, 253, 253);
+  background-color: var(--surface-1);
   padding: 10px;
   margin: 0 10px;
   top: 320px;

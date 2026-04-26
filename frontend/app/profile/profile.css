@@ -10,7 +10,7 @@
 .profileCard {
   max-width: 480px;
   width: 100%;
-  background-color: #ffffff;
+  background-color: var(--surface-1);
   border-radius: 12px;
   box-shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
   padding: 32px 24px;
@@ -33,11 +33,11 @@
 
 .profileLabel {
   font-weight: 600;
-  color: #555;
+  color: var(--muted-text);
 }
 
 .profileValue {
-  color: #222;
+  color: var(--foreground);
   word-break: break-word;
 }
 
@@ -48,7 +48,7 @@
   border-radius: 999px;
   border: none;
   background-color: #c32929;
-  color: #fff;
+  color: var(--background);
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s ease, box-shadow 0.2s ease;

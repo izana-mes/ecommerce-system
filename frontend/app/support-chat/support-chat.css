@@ -7,7 +7,7 @@
 .supportChatContainer {
   max-width: 900px;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--surface-1);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(216, 229, 255, 0.6);
   border-radius: 20px;
@@ -28,7 +28,7 @@
 .supportChatHeader {
   padding: 24px 28px;
   border-bottom: 1px solid rgba(230, 237, 255, 0.8);
-  background: linear-gradient(180deg, rgba(247, 250, 255, 0.9) 0%, rgba(255, 255, 255, 0.95) 100%);
+  background: linear-gradient(180deg, rgba(247, 250, 255, 0.9) 0%, var(--surface-1) 100%);
 }
 
 .supportChatHeader h1 {
@@ -78,13 +78,13 @@
 .supportChatBubble.customer {
   align-self: flex-end;
   background: linear-gradient(135deg, #0f3dad, #285ee6);
-  color: #ffffff;
+  color: var(--background);
   border-bottom-right-radius: 4px;
 }
 
 .supportChatBubble.staff {
   align-self: flex-start;
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--surface-1);
   border: 1px solid rgba(215, 226, 255, 0.5);
   color: #1f2d4f;
   border-bottom-left-radius: 4px;
@@ -125,7 +125,7 @@
   padding: 18px 24px;
   display: flex;
   gap: 14px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--surface-1);
   backdrop-filter: blur(8px);
 }
 
@@ -139,12 +139,12 @@
   font-size: 15px;
   font-family: inherit;
   transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--surface-1);
 }
 
 .supportChatComposer textarea:focus {
   outline: none;
-  background: #fff;
+  background: var(--surface-1);
   border-color: #0f3dad;
   box-shadow: 0 0 0 4px rgba(15, 61, 173, 0.12);
 }
@@ -156,7 +156,7 @@
   min-width: 110px;
   padding: 10px 20px;
   background: linear-gradient(135deg, #0f3dad, #285ee6);
-  color: #ffffff;
+  color: var(--background);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);

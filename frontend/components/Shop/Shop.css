@@ -29,7 +29,7 @@
 
 .shopDetailsBreadcrumbLink a {
   text-decoration: none;
-  color: black;
+  color: var(--foreground);
   text-transform: uppercase;
   font-weight: 500;
   font-size: 14px;
@@ -43,7 +43,7 @@
   left: 0;
   bottom: -5px;
   width: 0;
-  border-bottom: 2px solid black;
+  border-bottom: 2px solid var(--foreground);
   transition: width 0.3s ease;
 }
 
@@ -76,7 +76,7 @@
   outline: none;
   font-weight: 500;
   font-size: 14px;
-  background-color: white;
+  background-color: var(--surface-1);
 }
 
 .filterRight {
@@ -89,7 +89,7 @@
 .filterSeprator {
   width: 2px;
   height: 22px;
-  background-color: #e4e4e4;
+  background-color: var(--surface-2);
 }
 
 .shopDetailsProductsContainer {
@@ -101,8 +101,8 @@
 .shopResultMeta {
   margin-bottom: 18px;
   padding: 10px 14px;
-  border: 1px solid #ececec;
-  background-color: #faf9f8;
+  border: 1px solid var(--border-soft);
+  background-color: var(--surface-1);
 }
 
 .shopResultMeta p {
@@ -110,22 +110,22 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-size: 12px;
-  color: #555;
+  color: var(--muted-text);
 }
 
 .shopStateText {
   grid-column: 1 / -1;
   margin: 12px 0;
   padding: 16px;
-  border: 1px dashed #c8c8c8;
+  border: 1px dashed var(--border-soft);
   text-align: center;
-  color: #3f3f3f;
+  color: var(--foreground);
 }
 
 .sdProductSkeleton {
   height: 420px;
   border-radius: 4px;
-  background: linear-gradient(110deg, #f2f2f2 8%, #ebebeb 18%, #f2f2f2 33%);
+  background: linear-gradient(110deg, var(--surface-2) 8%, var(--surface-2) 18%, var(--surface-2) 33%);
   background-size: 200% 100%;
   animation: shopSkeleton 1.15s linear infinite;
 }
@@ -180,7 +180,7 @@
   position: relative;
   width: 100%;
   height: 340px;
-  background-color: #f4f4f6;
+  background-color: var(--surface-2);
   overflow: hidden;
   border-radius: 14px;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -191,8 +191,8 @@
   top: 10px;
   left: 10px;
   z-index: 4;
-  background-color: #111;
-  color: #fff;
+  background-color: var(--foreground);
+  color: var(--background);
   border-radius: 999px;
   padding: 5px 10px;
   font-size: 11px;
@@ -238,7 +238,7 @@
   top: 320px;
   text-align: center;
   padding: 10px;
-  background-color: rgb(253, 253, 253);
+  background-color: var(--surface-1);
   transition: all 0.2s cubic-bezier(0.99, 0.99, 0, 0.61);
   margin: 0 10px;
   text-transform: uppercase;
@@ -253,7 +253,7 @@
 }
 
 .sdAddDisabled {
-  color: #8a8a8a;
+  color: var(--muted-text);
   cursor: not-allowed;
 }
 
@@ -271,7 +271,7 @@
 }
 
 .sdProductCategoryWishlist p {
-  color: #767676;
+  color: var(--muted-text);
   font-size: 14px;
 }
 
@@ -283,7 +283,7 @@
 
 .sdProductNameInfo a {
   text-decoration: none;
-  color: black;
+  color: var(--foreground);
 }
 
 .sdProductNameInfo h5 {
@@ -311,8 +311,8 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   cursor: pointer;
-  color: #fff;
-  background: linear-gradient(135deg, #1f2937, #4b5563);
+  color: var(--background);
+  background: linear-gradient(135deg, var(--foreground), var(--foreground));
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 6px 14px rgba(31, 41, 55, 0.25);
   position: relative;
@@ -326,7 +326,7 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, var(--surface-1), transparent);
   transition: left 0.5s ease;
 }
 
@@ -337,7 +337,7 @@
 .sdBuyNowButton:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 10px 20px rgba(31, 41, 55, 0.35);
-  background: linear-gradient(135deg, #111827, #374151);
+  background: linear-gradient(135deg, var(--foreground), var(--foreground));
 }
 
 .sdBuyNowButton:active:not(:disabled) {
@@ -358,7 +358,7 @@
 }
 
 .sdProductRatingReviews span {
-  color: #767676;
+  color: var(--muted-text);
   font-size: 14px;
 }
 
@@ -374,7 +374,7 @@
   right: -300px;
   width: 300px;
   height: 100%;
-  background-color: white;
+  background-color: var(--surface-1);
   transition: right 0.3s ease;
   z-index: 1000;
 }
@@ -394,7 +394,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: #faf9f8;
+  background-color: var(--surface-1);
   padding: 28px 20px;
 }
 
@@ -447,7 +447,7 @@
   left: 0;
   width: 0;
   height: 2px;
-  background-color: #000;
+  background-color: var(--foreground);
   transition: width 0.3s ease;
 }
 
@@ -473,7 +473,7 @@
   left: 0;
   width: 0;
   height: 2px;
-  background-color: #000;
+  background-color: var(--foreground);
   transition: width 0.3s ease;
 }
 
@@ -518,8 +518,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background:
-    radial-gradient(circle at 18% 12%, rgba(77, 160, 255, 0.2), transparent 42%),
+  background: radial-gradient(circle at 18% 12%, rgba(77, 160, 255, 0.2), transparent 42%),
     radial-gradient(circle at 82% 86%, rgba(254, 199, 138, 0.16), transparent 44%),
     rgba(8, 13, 24, 0.62);
   backdrop-filter: blur(8px);
@@ -534,16 +533,15 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.82)),
+  background: linear-gradient(145deg, var(--surface-1), var(--surface-1)),
     radial-gradient(circle at 78% 8%, rgba(130, 198, 255, 0.32), transparent 40%),
-    #f7f8fb;
-  border: 1px solid rgba(255, 255, 255, 0.78);
+    var(--surface-2);
+  border: 1px solid var(--border-soft);
   border-radius: 22px;
   box-shadow:
     0 24px 62px rgba(3, 8, 23, 0.42),
     0 0 55px rgba(89, 170, 255, 0.2);
-  color: #172036;
+  color: var(--foreground);
   animation: sdModalPopIn 340ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -568,7 +566,7 @@
 
 .sdProductModalClose:hover {
   transform: translateY(-1px) scale(1.03);
-  background: #fff;
+  background: var(--surface-1);
   box-shadow: 0 14px 28px rgba(11, 31, 72, 0.28);
 }
 
@@ -581,11 +579,11 @@
 
 .sdProductModalImageWrap {
   position: relative;
-  background: linear-gradient(145deg, #edf2ff, #f6f9ff);
+  background: linear-gradient(145deg, var(--surface-2), var(--surface-2));
   border-radius: 16px;
   overflow: hidden;
   min-height: 520px;
-  border: 1px solid rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--border-soft);
   box-shadow: 0 18px 36px rgba(10, 29, 66, 0.18);
 }
 
@@ -594,7 +592,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(168deg, rgba(255, 255, 255, 0.28), transparent 38%);
+  background: linear-gradient(168deg, var(--surface-1), transparent 38%);
 }
 
 .sdProductModalImageWrap img {
@@ -609,7 +607,7 @@
   display: flex;
   flex-direction: column;
   gap: 11px;
-  color: #1f2937;
+  color: var(--foreground);
   max-height: calc(94vh - 68px);
   overflow-y: auto;
   padding-right: 8px;
@@ -621,19 +619,67 @@
   line-height: 1.05;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  color: #0f1f42;
+  color: var(--foreground);
   text-shadow: 0 4px 20px rgba(77, 146, 255, 0.18);
 }
 
 .sdProductModalInfo p {
   margin: 0;
-  color: #2e3a52;
+  color: var(--foreground);
   font-size: 15px;
   line-height: 1.5;
 }
 
 .sdProductModalInfo strong {
-  color: #0b2249;
+  color: var(--foreground);
+}
+
+.sdSizeSection {
+  margin-top: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sdSizeOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sdSizeButton {
+  border: 1px solid rgba(17, 24, 39, 0.16);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--foreground);
+  border-radius: 999px;
+  min-width: 52px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.sdSizeButton:hover {
+  transform: translateY(-1px);
+  border-color: #2563eb;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.14);
+}
+
+.sdSizeButtonActive {
+  background: linear-gradient(135deg, #1a65da, #2e9bff);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 14px 28px rgba(28, 120, 255, 0.24);
+}
+
+.sdSizeHint {
+  color: var(--muted-text);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .sdProductModalInfo a {
@@ -646,11 +692,11 @@
 .sdProductModalInfo textarea {
   margin-top: 4px;
   min-height: 118px;
-  border: 1px solid rgba(144, 165, 201, 0.45);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 13px;
-  color: #13223d;
-  background: rgba(255, 255, 255, 0.78);
+  color: var(--foreground);
+  background: var(--surface-1);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
   font-family: inherit;
   font-size: 14px;
@@ -662,11 +708,11 @@
   outline: none;
   border-color: rgba(52, 130, 255, 0.75);
   box-shadow: 0 0 0 3px rgba(84, 162, 255, 0.22);
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--surface-1);
 }
 
 .sdProductModalInfo textarea::placeholder {
-  color: #6f7d96;
+  color: var(--muted-text);
 }
 
 .sdSaveDescriptionButton {
@@ -674,7 +720,7 @@
   border: 0;
   border-radius: 999px;
   background: linear-gradient(135deg, #1a65da, #2e9bff);
-  color: #fff;
+  color: var(--background);
   box-shadow: 0 12px 28px rgba(28, 120, 255, 0.32);
   padding: 11px 20px;
   font-size: 13px;
@@ -692,7 +738,7 @@
 
 .sdReviewSection {
   margin-top: 16px;
-  border-top: 1px solid rgba(144, 165, 201, 0.35);
+  border-top: 1px solid var(--border-soft);
   padding-top: 16px;
   display: flex;
   flex-direction: column;
@@ -703,7 +749,7 @@
   margin: 0;
   font-size: 16px;
   text-transform: uppercase;
-  color: #111827;
+  color: var(--foreground);
 }
 
 .sdReviewRatingInput {
@@ -735,12 +781,12 @@
 
 .sdReviewEmptyState {
   margin: 0;
-  color: #6b7280;
+  color: var(--muted-text);
   font-size: 13px;
 }
 
 .sdReviewCard {
-  border: 1px solid rgba(157, 177, 211, 0.4);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 11px 13px;
   background: rgba(249, 252, 255, 0.74);
@@ -757,12 +803,12 @@
 
 .sdReviewCardHeader strong {
   font-size: 13px;
-  color: #111827;
+  color: var(--foreground);
 }
 
 .sdReviewCardHeader span {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--muted-text);
 }
 
 .sdReviewCardStars {
@@ -774,7 +820,7 @@
 
 .sdReviewCard p {
   margin: 0;
-  color: #374151;
+  color: var(--foreground);
   font-size: 13px;
   line-height: 1.4;
 }
@@ -795,7 +841,7 @@
 .sdReviewMetaButton {
   border: none;
   background: transparent;
-  color: #6b7280;
+  color: var(--muted-text);
   font-size: 13px;
   font-weight: 500;
   display: inline-flex;
@@ -809,7 +855,7 @@
 
 .sdReviewMetaButton:hover {
   background: rgba(107, 114, 128, 0.08);
-  color: #374151;
+  color: var(--foreground);
   text-decoration: none;
 }
 
@@ -839,7 +885,7 @@
 }
 
 .sdReviewReplyComposer textarea {
-  border: 1px solid rgba(144, 165, 201, 0.45);
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
   padding: 8px 10px;
   color: #12254b;
@@ -856,7 +902,7 @@
 
 .sdReviewReplyComposerActions button {
   border: 1px solid rgba(154, 175, 210, 0.5);
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--surface-1);
   color: #112246;
   border-radius: 999px;
   font-size: 12px;
@@ -875,10 +921,10 @@
 }
 
 .sdReviewReplyCard {
-  border: 1px solid rgba(157, 177, 211, 0.3);
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
   padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--surface-1);
 }
 
 .sdReviewReplyHeader {
@@ -890,24 +936,24 @@
 
 .sdReviewReplyHeader strong {
   font-size: 12px;
-  color: #1f2937;
+  color: var(--foreground);
 }
 
 .sdReviewReplyHeader span {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--muted-text);
 }
 
 .sdReviewReplyCard p {
   margin: 0;
-  color: #374151;
+  color: var(--foreground);
   font-size: 12px;
   line-height: 1.4;
 }
 
 .sdReviewEditActions button {
   border: 1px solid rgba(154, 175, 210, 0.5);
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--surface-1);
   color: #112246;
   border-radius: 999px;
   font-size: 12px;
@@ -932,7 +978,7 @@
 .sdReviewCardActions button {
   border: 1px solid rgba(154, 175, 210, 0.3);
   background: transparent;
-  color: #6b7280;
+  color: var(--muted-text);
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -964,7 +1010,7 @@
 }
 
 .sdReviewEditForm textarea {
-  border: 1px solid rgba(144, 165, 201, 0.45);
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
   padding: 8px 10px;
   color: #12254b;

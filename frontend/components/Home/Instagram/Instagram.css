@@ -52,7 +52,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(130deg, rgba(255, 255, 255, 0) 15%, rgba(255, 255, 255, 0.25) 45%, rgba(255, 255, 255, 0) 75%);
+  background: linear-gradient(130deg, rgba(255, 255, 255, 0) 15%, var(--surface-1) 45%, rgba(255, 255, 255, 0) 75%);
   transform: translateX(-130%);
   transition: transform 0.65s ease;
   pointer-events: none;

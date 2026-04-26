@@ -1,8 +1,7 @@
 .customerChatbotPage {
   min-height: calc(100vh - 100px);
   padding: 40px 14px;
-  background:
-    radial-gradient(circle at 10% 10%, rgba(100, 168, 255, 0.22), transparent 40%),
+  background: radial-gradient(circle at 10% 10%, rgba(100, 168, 255, 0.22), transparent 40%),
     radial-gradient(circle at 90% 0%, rgba(255, 191, 120, 0.16), transparent 35%),
     linear-gradient(180deg, #f8fbff 0%, #edf3ff 100%);
 }
@@ -10,7 +9,7 @@
 .customerChatbotContainer {
   max-width: 980px;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--surface-1);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(215, 224, 243, 0.6);
   border-radius: 20px;
@@ -63,7 +62,7 @@
 }
 
 .customerPromptRow button:hover:not(:disabled) {
-  background: white;
+  background: var(--surface-1);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(31, 62, 111, 0.1);
 }
@@ -108,7 +107,7 @@
 
 .customerMessageBubble.assistant {
   justify-self: start;
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--surface-1);
   border: 1px solid rgba(212, 223, 243, 0.4);
   color: #1f3257;
   border-bottom-left-radius: 4px;
@@ -117,7 +116,7 @@
 .customerMessageBubble.user {
   justify-self: end;
   background: linear-gradient(135deg, #1f5eff, #0044ff);
-  color: #fff;
+  color: var(--background);
   border-bottom-right-radius: 4px;
 }
 
@@ -144,7 +143,7 @@
   width: 100%;
   border: 1px solid rgba(191, 208, 240, 0.6);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--surface-1);
   backdrop-filter: blur(4px);
   color: #1a2d50;
   padding: 14px;
@@ -156,7 +155,7 @@
 
 .customerComposer textarea:focus {
   outline: none;
-  background: #fff;
+  background: var(--surface-1);
   border-color: #1f5eff;
   box-shadow: 0 0 0 4px rgba(31, 94, 255, 0.15);
 }
@@ -166,7 +165,7 @@
   border: 0;
   border-radius: 999px;
   background: linear-gradient(135deg, #1f5eff, #0044ff);
-  color: #fff;
+  color: var(--background);
   font-weight: 600;
   padding: 10px 24px;
   cursor: pointer;

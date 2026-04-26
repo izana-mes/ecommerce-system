@@ -20,7 +20,7 @@
   padding-left: 140px;
   gap: 20px;
   height: 440px;
-  color: white;
+  color: var(--background);
 }
 
 .blogListHeader h2 {
@@ -82,7 +82,7 @@
   opacity: 0;
   transform: translateY(24px);
   animation: blogPostIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--surface-1);
   border: 1px solid rgba(216, 229, 255, 0.6);
   border-radius: 20px;
   overflow: hidden;
@@ -208,7 +208,7 @@
 
 .blogListShowMore:hover {
   background: #0f3dad;
-  color: white;
+  color: var(--background);
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(15, 61, 173, 0.3);
 }

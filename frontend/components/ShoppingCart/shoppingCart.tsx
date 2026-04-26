@@ -17,6 +17,7 @@ import {
 } from "@/store/cartSlice";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { getToken, getUser } from "@/lib/auth";
+import { useLocale } from "@/components/providers/LocaleProvider";
 
 import "./shoppingCart.css";
 
@@ -68,6 +69,7 @@ function isValidEmail(value: string): boolean {
 }
 
 export default function ShoppingCart() {
+  const { t } = useLocale();
   const dispatch = useAppDispatch();
   const searchParams = useSearchParams();
   const { products } = useProducts();
@@ -473,7 +475,7 @@ export default function ShoppingCart() {
 
   return (
     <div className="shoppingCartSection">
-      <h2>Cart</h2>
+      <h2>{t("cart_title")}</h2>
 
       <div className="shoppingCartTabsContainer">
         <div className={`shoppingCartTabs ${activeTab}`}>
@@ -487,8 +489,8 @@ export default function ShoppingCart() {
             <div className="shoppingCartTabsNumber">
               <h3>01</h3>
               <div className="shoppingCartTabsHeading">
-                <h3>Shopping Bag</h3>
-                <p>Manage Your Items List</p>
+                <h3>{t("cart_tab_1")}</h3>
+                <p>{t("cart_tab_1_desc")}</p>
               </div>
             </div>
           </button>
@@ -504,8 +506,8 @@ export default function ShoppingCart() {
             <div className="shoppingCartTabsNumber">
               <h3>02</h3>
               <div className="shoppingCartTabsHeading">
-                <h3>Shipping and Checkout</h3>
-                <p>Checkout Your Items List</p>
+                <h3>{t("cart_tab_2")}</h3>
+                <p>{t("cart_tab_2_desc")}</p>
               </div>
             </div>
           </button>
@@ -518,8 +520,8 @@ export default function ShoppingCart() {
             <div className="shoppingCartTabsNumber">
               <h3>03</h3>
               <div className="shoppingCartTabsHeading">
-                <h3>Confirmation</h3>
-                <p>Review And Submit Your Order</p>
+                <h3>{t("cart_tab_3")}</h3>
+                <p>{t("cart_tab_3_desc")}</p>
               </div>
             </div>
           </button>
@@ -532,11 +534,11 @@ export default function ShoppingCart() {
                 <table className="shoppingBagTable">
                   <thead>
                     <tr>
-                      <th>Product</th>
-                      <th>Action</th>
-                      <th>Price</th>
-                      <th>Quantity</th>
-                      <th>Subtotal</th>
+                      <th>{t("cart_table_product")}</th>
+                      <th>{t("cart_table_action")}</th>
+                      <th>{t("cart_table_price")}</th>
+                      <th>{t("cart_table_quantity")}</th>
+                      <th>{t("cart_table_subtotal")}</th>
                       <th></th>
                     </tr>
                   </thead>
@@ -613,7 +615,7 @@ export default function ShoppingCart() {
                                     scrollToTop();
                                   }}
                                 >
-                                  Buy Now
+                                  {t("cart_buy_now")}
                                 </button>
                                 <MdOutlineClose
                                   onClick={() => void handleRemoveFromCart(item.productID)}
@@ -627,9 +629,9 @@ export default function ShoppingCart() {
                       <tr>
                         <td colSpan={6}>
                           <div className="shoppingCartEmpty">
-                            <span>Your cart is empty!</span>
+                            <span>{t("cart_empty")}</span>
                             <Link href="/shop" onClick={scrollToTop}>
-                              <button>Shop Now</button>
+                              <button>{t("cart_shop_now")}</button>
                             </Link>
                           </div>
                         </td>
@@ -648,7 +650,7 @@ export default function ShoppingCart() {
                             <form>
                               <input
                                 type="text"
-                                placeholder="Coupon Code"
+                                placeholder={t("cart_coupon_placeholder")}
                                 value={couponCode}
                                 onChange={(event) => setCouponCode(event.target.value)}
                               />
@@ -658,7 +660,7 @@ export default function ShoppingCart() {
                                   void handleApplyCoupon();
                                 }}
                               >
-                                {couponApplying ? "Applying..." : "Apply Coupon"}
+                                {couponApplying ? t("cart_applying_coupon") : t("cart_apply_coupon")}
                               </button>
                             </form>
                             <button
@@ -667,7 +669,7 @@ export default function ShoppingCart() {
                               }}
                               className="shopCartFooterbutton"
                             >
-                              Update Cart
+                              {t("cart_update_cart")}
                             </button>
                           </div>
                         )}
@@ -738,7 +740,7 @@ export default function ShoppingCart() {
                                       scrollToTop();
                                     }}
                                   >
-                                    Buy Now
+                                    {t("cart_buy_now")}
                                   </button>
                                   <MdOutlineClose
                                     size={20}
@@ -757,7 +759,7 @@ export default function ShoppingCart() {
                           <form>
                             <input
                               type="text"
-                              placeholder="Coupon Code"
+                              placeholder={t("cart_coupon_placeholder")}
                               value={couponCode}
                               onChange={(event) => setCouponCode(event.target.value)}
                             />
@@ -767,7 +769,7 @@ export default function ShoppingCart() {
                                 void handleApplyCoupon();
                               }}
                             >
-                              {couponApplying ? "Applying..." : "Apply Coupon"}
+                              {couponApplying ? t("cart_applying_coupon") : t("cart_apply_coupon")}
                             </button>
                           </form>
                           <button
@@ -776,16 +778,16 @@ export default function ShoppingCart() {
                             }}
                             className="shopCartFooterbutton"
                           >
-                            Update Cart
+                            {t("cart_update_cart")}
                           </button>
                         </div>
                       </div>
                     </>
                   ) : (
                     <div className="shoppingCartEmpty">
-                      <span>Your cart is empty!</span>
+                      <span>{t("cart_empty")}</span>
                       <Link href="/shop" onClick={scrollToTop}>
-                        <button>Shop Now</button>
+                        <button>{t("cart_shop_now")}</button>
                       </Link>
                     </div>
                   )}
@@ -793,37 +795,37 @@ export default function ShoppingCart() {
               </div>
 
               <div className="shoppingBagTotal">
-                <h3>Cart Totals</h3>
+                <h3>{t("cart_totals")}</h3>
                 <table className="shoppingBagTotalTable">
                   <tbody>
                     <tr>
-                      <th>Subtotal</th>
+                      <th>{t("cart_table_subtotal")}</th>
                       <td>${totalPrice.toFixed(2)}</td>
                     </tr>
                     <tr>
-                      <th>Shipping</th>
+                      <th>{t("cart_shipping")}</th>
                       <td>
                         <div className="shoppingBagTotalTableCheck">
                           <p>${(totalPrice === 0 ? 0 : 5).toFixed(2)}</p>
                           <p>Shipping to Al..</p>
                           <p onClick={scrollToTop} style={{ cursor: "pointer" }}>
-                            CHANGE ADDRESS
+                            {t("cart_change_address")}
                           </p>
                         </div>
                       </td>
                     </tr>
                     <tr>
-                      <th>VAT</th>
+                      <th>{t("cart_vat")}</th>
                       <td>${(totalPrice === 0 ? 0 : 11).toFixed(2)}</td>
                     </tr>
                     <tr>
-                      <th>Discount</th>
+                      <th>{t("cart_discount")}</th>
                       <td style={{ color: discountAmount > 0 ? "#188038" : undefined }}>
                         -${discountAmount.toFixed(2)}
                       </td>
                     </tr>
                     <tr>
-                      <th>Total</th>
+                      <th>{t("cart_total")}</th>
                       <td>${Math.max(0, totalPrice + (totalPrice === 0 ? 0 : 16) - discountAmount).toFixed(2)}</td>
                     </tr>
                   </tbody>
@@ -836,7 +838,7 @@ export default function ShoppingCart() {
                   }}
                   disabled={mounted && cartItems.length === 0}
                 >
-                  Proceed to Checkout
+                  {t("cart_proceed_checkout")}
                 </button>
               </div>
             </div>
@@ -845,20 +847,20 @@ export default function ShoppingCart() {
           {activeTab === "cartTab2" && (
             <div className="checkoutSection">
               <div className="checkoutDetailsSection">
-                <h4>Billing Details</h4>
+                <h4>{t("checkout_billing_details")}</h4>
                 <div className="checkoutDetailsForm">
                   <form>
                     <div className="checkoutDetailsFormRow">
                       <input
                         type="text"
-                        placeholder="First Name"
+                        placeholder={t("checkout_first_name")}
                         value={checkoutForm.firstName}
                         onChange={(event) => handleCheckoutFieldChange("firstName", event.target.value)}
                         style={checkoutErrors.firstName ? { borderColor: "#d93025" } : undefined}
                       />
                       <input
                         type="text"
-                        placeholder="Last Name"
+                        placeholder={t("checkout_last_name")}
                         value={checkoutForm.lastName}
                         onChange={(event) => handleCheckoutFieldChange("lastName", event.target.value)}
                         style={checkoutErrors.lastName ? { borderColor: "#d93025" } : undefined}
@@ -866,7 +868,7 @@ export default function ShoppingCart() {
                     </div>
                     <input
                       type="text"
-                      placeholder="Company Name (optional)"
+                      placeholder={t("checkout_company")}
                       value={checkoutForm.companyName}
                       onChange={(event) => handleCheckoutFieldChange("companyName", event.target.value)}
                     />
@@ -878,51 +880,51 @@ export default function ShoppingCart() {
                       style={checkoutErrors.country ? { borderColor: "#d93025" } : undefined}
                     >
                       <option value="" disabled>
-                        Country / Region
+                        {t("checkout_country")}
                       </option>
-                      <option value="India">India</option>
-                      <option value="Canada">Canada</option>
-                      <option value="United Kingdom">United Kingdom</option>
-                      <option value="United States">United States</option>
-                      <option value="Turkey">Turkey</option>
+                      <option value="India">{t("checkout_country_india")}</option>
+                      <option value="Canada">{t("checkout_country_canada")}</option>
+                      <option value="United Kingdom">{t("checkout_country_uk")}</option>
+                      <option value="United States">{t("checkout_country_us")}</option>
+                      <option value="Turkey">{t("checkout_country_turkey")}</option>
                     </select>
                     <input
                       type="text"
-                      placeholder="Street Address*"
+                      placeholder={t("checkout_street1")}
                       value={checkoutForm.streetAddress1}
                       onChange={(event) => handleCheckoutFieldChange("streetAddress1", event.target.value)}
                       style={checkoutErrors.streetAddress1 ? { borderColor: "#d93025" } : undefined}
                     />
                     <input
                       type="text"
-                      placeholder="Apartment, suite, unit, etc. (optional)"
+                      placeholder={t("checkout_street2")}
                       value={checkoutForm.streetAddress2}
                       onChange={(event) => handleCheckoutFieldChange("streetAddress2", event.target.value)}
                     />
                     <input
                       type="text"
-                      placeholder="Town / City *"
+                      placeholder={t("checkout_city")}
                       value={checkoutForm.city}
                       onChange={(event) => handleCheckoutFieldChange("city", event.target.value)}
                       style={checkoutErrors.city ? { borderColor: "#d93025" } : undefined}
                     />
                     <input
                       type="text"
-                      placeholder="Postcode / ZIP *"
+                      placeholder={t("checkout_postal")}
                       value={checkoutForm.postalCode}
                       onChange={(event) => handleCheckoutFieldChange("postalCode", event.target.value)}
                       style={checkoutErrors.postalCode ? { borderColor: "#d93025" } : undefined}
                     />
                     <input
                       type="text"
-                      placeholder="Phone *"
+                      placeholder={t("checkout_phone")}
                       value={checkoutForm.phone}
                       onChange={(event) => handleCheckoutFieldChange("phone", event.target.value)}
                       style={checkoutErrors.phone ? { borderColor: "#d93025" } : undefined}
                     />
                     <input
                       type="email"
-                      placeholder="Your Mail *"
+                      placeholder={t("checkout_email")}
                       value={checkoutForm.email}
                       onChange={(event) => handleCheckoutFieldChange("email", event.target.value)}
                       style={checkoutErrors.email ? { borderColor: "#d93025" } : undefined}
@@ -936,7 +938,7 @@ export default function ShoppingCart() {
                             handleCheckoutFieldChange("createAccount", event.target.checked)
                           }
                         />
-                        <p>Create An Account?</p>
+                        <p>{t("checkout_create_account")}</p>
                       </label>
                       <label>
                         <input
@@ -946,19 +948,19 @@ export default function ShoppingCart() {
                             handleCheckoutFieldChange("shipToDifferentAddress", event.target.checked)
                           }
                         />
-                        <p>Ship to a different Address</p>
+                        <p>{t("checkout_ship_different")}</p>
                       </label>
                     </div>
                     <textarea
                       cols={30}
                       rows={8}
-                      placeholder="Order Notes (Optional)"
+                      placeholder={t("checkout_notes")}
                       value={checkoutForm.notes}
                       onChange={(event) => handleCheckoutFieldChange("notes", event.target.value)}
                     />
                     {Object.keys(checkoutErrors).length > 0 ? (
                       <p style={{ color: "#d93025", fontSize: "14px", marginTop: "-10px" }}>
-                        Please fill all required billing fields marked with *.
+                        {t("checkout_required_error")}
                       </p>
                     ) : null}
                   </form>
@@ -967,18 +969,18 @@ export default function ShoppingCart() {
 
               <div className="checkoutPaymentSection">
                 <div className="checkoutTotalContainer">
-                  <h3>Your Order</h3>
+                  <h3>{t("checkout_your_order")}</h3>
                   {buyNowProductId ? (
                     <p style={{ fontSize: "12px", color: "#767676", marginBottom: "10px" }}>
-                      Buy now mode: checking out selected item only.
+                      {t("checkout_buy_now_mode")}
                     </p>
                   ) : null}
                   <div className="checkoutItems">
                     <table>
                       <thead>
                         <tr>
-                          <th>PRODUCTS</th>
-                          <th>SUBTOTALS</th>
+                          <th>{t("checkout_products")}</th>
+                          <th>{t("checkout_subtotals")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1034,12 +1036,8 @@ export default function ShoppingCart() {
                       onChange={handlePaymentChange}
                     />
                     <div className="checkoutPaymentMethod">
-                      <span>Direct Bank Transfer</span>
-                      <p>
-                        Make your payment directly into our bank account. Please use your Order
-                        ID as the payment reference. Your order will not be shipped until the
-                        funds have cleared in our account.
-                      </p>
+                      <span>{t("checkout_direct_bank")}</span>
+                      <p>{t("checkout_direct_bank_desc")}</p>
                     </div>
                   </label>
 
@@ -1052,11 +1050,8 @@ export default function ShoppingCart() {
                       onChange={handlePaymentChange}
                     />
                     <div className="checkoutPaymentMethod">
-                      <span>Check Payments</span>
-                      <p>
-                        Phasellus sed volutpat orci. Fusce eget lore mauris vehicula elementum
-                        gravida nec dui. Aenean aliquam varius ipsum.
-                      </p>
+                      <span>{t("checkout_check_payments")}</span>
+                      <p>{t("checkout_check_payments_desc")}</p>
                     </div>
                   </label>
 
@@ -1069,11 +1064,8 @@ export default function ShoppingCart() {
                       onChange={handlePaymentChange}
                     />
                     <div className="checkoutPaymentMethod">
-                      <span>Cash on delivery</span>
-                      <p>
-                        Phasellus sed volutpat orci. Fusce eget lore mauris vehicula elementum
-                        gravida nec dui. Aenean aliquam varius ipsum.
-                      </p>
+                      <span>{t("checkout_cod")}</span>
+                      <p>{t("checkout_cod_desc")}</p>
                     </div>
                   </label>
 
@@ -1086,11 +1078,8 @@ export default function ShoppingCart() {
                       onChange={handlePaymentChange}
                     />
                     <div className="checkoutPaymentMethod">
-                      <span>Paypal</span>
-                      <p>
-                        Phasellus sed volutpat orci. Fusce eget lore mauris vehicula elementum
-                        gravida nec dui. Aenean aliquam varius ipsum.
-                      </p>
+                      <span>{t("checkout_paypal")}</span>
+                      <p>{t("checkout_paypal_desc")}</p>
                     </div>
                   </label>
 
@@ -1103,8 +1092,8 @@ export default function ShoppingCart() {
                       onChange={handlePaymentChange}
                     />
                     <div className="checkoutPaymentMethod">
-                      <span>VNPAY (Sandbox)</span>
-                      <p>Thanh toan qua cong VNPAY test. Ban se duoc chuyen huong sang VNPAY.</p>
+                      <span>{t("checkout_vnpay")}</span>
+                      <p>{t("checkout_vnpay_desc")}</p>
                     </div>
                   </label>
 
@@ -1117,23 +1106,22 @@ export default function ShoppingCart() {
                       onChange={handlePaymentChange}
                     />
                     <div className="checkoutPaymentMethod">
-                      <span>MOMO (Sandbox)</span>
-                      <p>Thanh toan qua cong MoMo test. Ban se duoc chuyen huong sang MoMo.</p>
+                      <span>{t("checkout_momo")}</span>
+                      <p>{t("checkout_momo_desc")}</p>
                     </div>
                   </label>
 
                   <div className="policyText">
-                    Your personal data will be used to process your order, support your
-                    experience throughout this website, and for other purposes described in our{" "}
+                    {t("checkout_privacy_1")}
                     <Link href="/terms" onClick={scrollToTop}>
-                      Privacy Policy
+                      {t("checkout_privacy_2")}
                     </Link>
-                    .
+                    {t("checkout_privacy_3")}
                   </div>
                 </div>
 
                 <button onClick={handlePlaceOrder} disabled={isPlacingOrder}>
-                  {isPlacingOrder ? "Placing Order..." : "Place Order"}
+                  {isPlacingOrder ? t("checkout_placing_order") : t("checkout_place_order")}
                 </button>
               </div>
             </div>
@@ -1146,37 +1134,37 @@ export default function ShoppingCart() {
                   <div className="orderCompleteMessageImg">
                     <img src={success} alt="Success" />
                   </div>
-                  <h3>Your order is completed!</h3>
-                  <p>Thank you. Your order has been received.</p>
+                  <h3>{t("order_completed")}</h3>
+                  <p>{t("order_thank_you")}</p>
                 </div>
 
                 <div className="orderInfo">
                   <div className="orderInfoItem">
-                    <p>Order Number</p>
+                    <p>{t("order_number")}</p>
                     <h4>{lastOrderNumber || orderNumber}</h4>
                   </div>
                   <div className="orderInfoItem">
-                    <p>Date</p>
+                    <p>{t("order_date")}</p>
                     <h4>{formatDate(currentDate)}</h4>
                   </div>
                   <div className="orderInfoItem">
-                    <p>Total</p>
+                    <p>{t("cart_total")}</p>
                     <h4>${totalPrice.toFixed(2)}</h4>
                   </div>
                   <div className="orderInfoItem">
-                    <p>Payment Method</p>
+                    <p>{t("order_payment_method")}</p>
                     <h4>{selectedPayment}</h4>
                   </div>
                 </div>
 
                 <div className="orderTotalContainer">
-                  <h3>Order Details</h3>
+                  <h3>{t("order_details")}</h3>
                   <div className="orderItems">
                     <table>
                       <thead>
                         <tr>
-                          <th>PRODUCTS</th>
-                          <th>SUBTOTALS</th>
+                          <th>{t("checkout_products")}</th>
+                          <th>{t("checkout_subtotals")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1196,19 +1184,19 @@ export default function ShoppingCart() {
                     <table>
                       <tbody>
                         <tr>
-                          <th>Subtotal</th>
+                          <th>{t("cart_table_subtotal")}</th>
                           <td>${totalPrice.toFixed(2)}</td>
                         </tr>
                         <tr>
-                          <th>Shipping</th>
+                          <th>{t("cart_shipping")}</th>
                           <td>$5</td>
                         </tr>
                         <tr>
-                          <th>VAT</th>
+                          <th>{t("cart_vat")}</th>
                           <td>$11</td>
                         </tr>
                         <tr>
-                          <th>Total</th>
+                          <th>{t("cart_total")}</th>
                           <td>${(totalPrice === 0 ? 0 : totalPrice + 16).toFixed(2)}</td>
                         </tr>
                       </tbody>

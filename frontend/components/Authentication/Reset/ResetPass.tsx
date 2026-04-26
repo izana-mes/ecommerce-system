@@ -5,8 +5,10 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import "./ResetPass.css";
+import { useLocale } from "@/components/providers/LocaleProvider";
 
 const ResetPass: React.FC = () => {
+  const { t } = useLocale();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
@@ -104,33 +106,33 @@ const ResetPass: React.FC = () => {
 
   return (
     <div className="resetPasswordSection">
-      <h2>Forgot Your Password?</h2>
+      <h2>{t("auth_forgot_password")}</h2>
 
       <div className="resetPasswordContainer">
-        <p>Enter your account email and we will send you a reset token.</p>
+        <p>{t("auth_reset_instruction")}</p>
 
         <form onSubmit={handleRequestReset} className="resetPasswordForm">
           <input
             type="email"
-            placeholder="Email address *"
+            placeholder={t("auth_email_placeholder")}
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={requestLoading}
           />
           <button type="submit" disabled={requestLoading}>
-            {requestLoading ? "Sending..." : "Send Reset Token"}
+            {requestLoading ? t("auth_sending") : t("auth_send_reset_token")}
           </button>
         </form>
       </div>
 
       <div className="resetPasswordContainer">
-        <p>After receiving the token, reset your password below.</p>
+        <p>{t("auth_reset_instruction_2")}</p>
 
         <form onSubmit={handleResetPassword} className="resetPasswordForm">
           <input
             type="text"
-            placeholder="Reset token *"
+            placeholder={t("auth_reset_token_placeholder")}
             required
             value={token}
             onChange={(e) => setToken(e.target.value)}
@@ -138,7 +140,7 @@ const ResetPass: React.FC = () => {
           />
           <input
             type="password"
-            placeholder="New password *"
+            placeholder={t("auth_new_password_placeholder")}
             required
             minLength={6}
             value={newPassword}
@@ -147,7 +149,7 @@ const ResetPass: React.FC = () => {
           />
           <input
             type="password"
-            placeholder="Confirm new password *"
+            placeholder={t("auth_confirm_password_placeholder")}
             required
             minLength={6}
             value={confirmPassword}
@@ -155,15 +157,15 @@ const ResetPass: React.FC = () => {
             disabled={resetLoading}
           />
           <button type="submit" disabled={resetLoading}>
-            {resetLoading ? "Updating..." : "Reset Password"}
+            {resetLoading ? t("auth_updating") : t("auth_reset_password")}
           </button>
         </form>
       </div>
 
       <p>
-        Back to{" "}
+        {t("auth_back_to")}
         <Link href="/login">
-          <span>Login</span>
+          <span>{t("auth_login")}</span>
         </Link>
       </p>
     </div>

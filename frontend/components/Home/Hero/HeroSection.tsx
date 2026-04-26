@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import { Canvas } from "@react-three/fiber";
 import { Model } from "../Model/Model";
 import { OrbitControls } from "@react-three/drei";
 import "./HeroSection.css";
 
 export default function HeroSection() {
+  const { t } = useLocale();
   const [tshirtColor, setTshirtColor] = useState("red");
   const [heroBackgroundUrl, setHeroBackgroundUrl] = useState("/slideshow-pattern.png");
 
@@ -36,12 +38,12 @@ export default function HeroSection() {
     <>
       <div className="heroSection" style={{ backgroundImage: `url("${heroBackgroundUrl}")` }}>
         <div className="sectionLeft">
-          <p>New Trend</p>
-          <h1>Summer Sale Stylish</h1>
-          <span>Limited Time Offer - Up to 60% off & Free Shipping</span>
+          <p>{t("home_new_trend")}</p>
+          <h1>{t("home_summer_sale")}</h1>
+          <span>{t("home_limited_offer")}</span>
           <div className="heroLink">
             <Link href="/shop" onClick={scrollToTop}>
-              <h5>Discover More</h5>
+              <h5>{t("home_discover_more")}</h5>
             </Link>
           </div>
         </div>

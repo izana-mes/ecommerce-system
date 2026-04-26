@@ -1,9 +1,11 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import "./Banner.css";
 
 export default function Banner() {
+  const { t } = useLocale();
   const [leftUrl, setLeftUrl] = useState("/Banner/banner_1.jpg");
   const [rightUrl, setRightUrl] = useState("/Banner/banner_2.jpg");
 
@@ -28,20 +30,20 @@ export default function Banner() {
     <>
       <div className="banner">
         <div className="bannerLeft bannerPanel bannerPanelDark" style={{ backgroundImage: `url("${leftUrl}")` }}>
-          <h6 className="bannerh6">Starting At $19</h6>
-          <h3 className="bannerh3">Women's T-shirts</h3>
+          <h6 className="bannerh6">{t("home_starting_at_19")}</h6>
+          <h3 className="bannerh3">{t("home_womens_tshirts")}</h3>
           <h5 className="bannerh5">
             <Link href="/shop" onClick={scrollToTop}>
-              Shop Now
+              {t("home_shop_now")}
             </Link>
           </h5>
         </div>
         <div className="bannerRight bannerPanel bannerPanelLight" style={{ backgroundImage: `url("${rightUrl}")` }}>
-          <h6 className="bannerh6">Starting At $39</h6>
-          <h3 className="bannerh3">Men's Sportswear</h3>
+          <h6 className="bannerh6">{t("home_starting_at_39")}</h6>
+          <h3 className="bannerh3">{t("home_mens_sportswear")}</h3>
           <h5 className="bannerh5">
             <Link href="/shop" onClick={scrollToTop}>
-              Shop Now
+              {t("home_shop_now")}
             </Link>
           </h5>
         </div>

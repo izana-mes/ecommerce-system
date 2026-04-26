@@ -3,6 +3,7 @@ package com.example.shop.modules.product.dto;
 import lombok.Data;
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.List;
 
 @Data
 public class ProductDto implements Serializable {
@@ -16,6 +17,7 @@ public class ProductDto implements Serializable {
     private String productName;
     private Double productPrice;
     private String productReviews;
+    private List<String> sizes;
     private Integer stockQuantity;
     private Boolean active;
 }

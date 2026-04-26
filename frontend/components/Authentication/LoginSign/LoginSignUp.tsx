@@ -10,8 +10,10 @@ import { clearCart, fetchCartAsync } from "@/store/cartSlice";
 import { clearWishList, fetchWishlistAsync } from "@/store/wishListSlice";
 import { logout as clearAuth, setAuth } from "@/lib/auth";
 import confetti from "canvas-confetti";
+import { useLocale } from "@/components/providers/LocaleProvider";
 
 const LoginSignUp = () => {
+  const { t } = useLocale();
   const dispatch = useAppDispatch();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("tabButton1");
@@ -333,19 +335,19 @@ const LoginSignUp = () => {
               onClick={() => handleTab("tabButton1")}
               className={activeTab === "tabButton1" ? "active" : ""}
             >
-              Login
+              {t("auth_login")}
             </p>
             <p
               onClick={() => handleTab("tabButton2")}
               className={activeTab === "tabButton2" ? "active" : ""}
             >
-              Register
+              {t("auth_register")}
             </p>
             <p
               onClick={() => handleTab("tabButton3")}
               className={activeTab === "tabButton3" ? "active" : ""}
             >
-              Verify Email
+              {t("auth_verify_email")}
             </p>
           </div>
           <div className="loginSignUpTabsContent">
@@ -359,12 +361,12 @@ const LoginSignUp = () => {
                   disabled={loading}
                   className="googleLoginButton"
                 >
-                  Continue with Google
+                  {t("auth_google_login")}
                 </button>
                 <form onSubmit={handleLogin}>
                   <input
                     type="email"
-                    placeholder="Email address *"
+                    placeholder={t("auth_email_placeholder")}
                     required
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
@@ -372,7 +374,7 @@ const LoginSignUp = () => {
                   />
                   <input
                     type="password"
-                    placeholder="Password *"
+                    placeholder={t("auth_password_placeholder")}
                     required
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
@@ -387,24 +389,24 @@ const LoginSignUp = () => {
                         onChange={(e) => setRememberMe(e.target.checked)}
                         disabled={loading}
                       />
-                      <p>Remember me</p>
+                      <p>{t("auth_remember_me")}</p>
                     </label>
                     <p>
-                      <Link href="/resetPassword">Lost password?</Link>
+                      <Link href="/resetPassword">{t("auth_lost_password")}</Link>
                     </p>
                   </div>
                   <button type="submit" disabled={loading}>
-                    {loading ? "Logging in..." : "Log In"}
+                    {loading ? t("auth_logging_in") : t("auth_log_in_btn")}
                   </button>
                 </form>
                 <div className="loginSignUpTabsContentLoginText">
                   <p>
-                    No account yet?{" "}
+                    {t("auth_no_account")}{" "}
                     <span
                       onClick={() => handleTab("tabButton2")}
                       style={{ cursor: "pointer", color: "#c32929" }}
                     >
-                      Create Account
+                      {t("auth_create_account")}
                     </span>
                   </p>
                 </div>
@@ -418,7 +420,7 @@ const LoginSignUp = () => {
                 <form onSubmit={handleRegister}>
                   <input
                     type="text"
-                    placeholder="Username *"
+                    placeholder={t("auth_username_placeholder")}
                     required
                     value={registerUsername}
                     onChange={(e) => setRegisterUsername(e.target.value)}
@@ -426,7 +428,7 @@ const LoginSignUp = () => {
                   />
                   <input
                     type="email"
-                    placeholder="Email address *"
+                    placeholder={t("auth_email_placeholder")}
                     required
                     value={registerEmail}
                     onChange={(e) => setRegisterEmail(e.target.value)}
@@ -434,7 +436,7 @@ const LoginSignUp = () => {
                   />
                   <input
                     type="password"
-                    placeholder="Password * (min 6 characters)"
+                    placeholder={t("auth_password_min_length")}
                     required
                     minLength={6}
                     value={registerPassword}
@@ -443,33 +445,31 @@ const LoginSignUp = () => {
                   />
                   <input
                     type="text"
-                    placeholder="First Name (optional)"
+                    placeholder={t("auth_first_name_optional")}
                     value={registerFirstName}
                     onChange={(e) => setRegisterFirstName(e.target.value)}
                     disabled={loading}
                   />
                   <input
                     type="text"
-                    placeholder="Last Name (optional)"
+                    placeholder={t("auth_last_name_optional")}
                     value={registerLastName}
                     onChange={(e) => setRegisterLastName(e.target.value)}
                     disabled={loading}
                   />
                   <p>
-                    Your personal data will be used to support your experience
-                    throughout this website, to manage access to your account,
-                    and for other purposes described in our
+                    {t("auth_privacy_1")}
                     <Link
                       href="/terms"
                       style={{ textDecoration: "none", color: "#c32929" }}
                     >
                       {" "}
-                      privacy policy
+                      {t("auth_privacy_2")}
                     </Link>
-                    .
+                    {t("auth_privacy_3")}
                   </p>
                   <button type="submit" disabled={loading}>
-                    {loading ? "Registering..." : "Register"}
+                    {loading ? t("auth_registering") : t("auth_register")}
                   </button>
                 </form>
               </div>
@@ -481,7 +481,7 @@ const LoginSignUp = () => {
                 <form onSubmit={handleVerifyOtp}>
                   <input
                     type="email"
-                    placeholder="Email address *"
+                    placeholder={t("auth_email_placeholder")}
                     required
                     value={verifyEmail}
                     onChange={(e) => setVerifyEmail(e.target.value)}
@@ -489,7 +489,7 @@ const LoginSignUp = () => {
                   />
                   <input
                     type="text"
-                    placeholder="6-digit verification code *"
+                    placeholder={t("auth_verification_code_placeholder")}
                     required
                     pattern="[0-9]{6}"
                     maxLength={6}
@@ -497,9 +497,9 @@ const LoginSignUp = () => {
                     onChange={(e) => setVerifyOtp(e.target.value.replace(/\D/g, ""))}
                     disabled={loading}
                   />
-                  <p>Enter the 6-digit OTP sent to your Gmail address.</p>
+                  <p>{t("auth_otp_instruction")}</p>
                   <button type="submit" disabled={loading}>
-                    {loading ? "Verifying..." : "Verify Code"}
+                    {loading ? t("auth_verifying") : t("auth_verify_code")}
                   </button>
                   <button
                     type="button"
@@ -507,7 +507,7 @@ const LoginSignUp = () => {
                     onClick={handleResendOtp}
                     disabled={loading}
                   >
-                    Resend Code
+                    {t("auth_resend_code")}
                   </button>
                 </form>
               </div>

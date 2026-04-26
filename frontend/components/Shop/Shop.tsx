@@ -23,12 +23,14 @@ import { createPortal } from "react-dom";
 
 import Filter from "./Filters/Filter";
 import AuthRequiredModal from "@/components/Common/AuthRequiredModal";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import "./Shop.css";
 
 const FALLBACK_PRODUCT_IMAGE = "/Products/product_1.jpg";
 const ITEMS_PER_PAGE = 6;
 const PRODUCT_DESCRIPTION_STORAGE_KEY = "shop-product-descriptions";
 const REVIEW_INTERACTIONS_STORAGE_KEY = "shop-review-interactions";
+const DEFAULT_CLOTHING_SIZES = ["XS", "S", "M", "L", "XL"];
 
 type ProductReview = {
   id: string;
@@ -118,6 +120,7 @@ function buildReviewInteractionKey(productID: string, reviewID: string, actorKey
 }
 
 export default function Shop() {
+  const { t } = useLocale();
   const dispatch = useAppDispatch();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -159,6 +162,7 @@ export default function Shop() {
   const [isClient, setIsClient] = useState(false);
   const [replyDraftByReviewId, setReplyDraftByReviewId] = useState<Record<string, string>>({});
   const [activeReplyReviewId, setActiveReplyReviewId] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string>("");
 
   const cartItems = useAppSelector((state: RootState) => state.cart.itemsById);
   const wishListItems = useAppSelector((state) => state.wishList.itemsById);
@@ -184,6 +188,7 @@ export default function Shop() {
 
   const openProductModal = (product: DataStore) => {
     setSelectedProduct(product);
+    setSelectedSize(product.sizes?.[0] ?? "");
     setDescriptionDraft(productDescriptions[product.productID] ?? "");
     setReviewRatingDraft(5);
     setReviewCommentDraft("");
@@ -192,9 +197,17 @@ export default function Shop() {
 
   const closeProductModal = () => {
     setSelectedProduct(null);
+    setSelectedSize("");
     setEditingReviewId(null);
     setReviewEditCommentDraft("");
     setReviewEditRatingDraft(5);
+  };
+
+  const resolveProductSizes = (product: DataStore) => {
+    const sizes = Array.isArray(product.sizes)
+      ? product.sizes.map((size) => String(size ?? "").trim()).filter(Boolean)
+      : [];
+    return sizes.length > 0 ? sizes : DEFAULT_CLOTHING_SIZES;
   };
 
   const handleSaveDescription = () => {
@@ -847,15 +860,15 @@ export default function Shop() {
             <div className="shopDetailsSorting">
               <div className="shopDetailsBreadcrumbLink">
                 <Link href="/" onClick={scrollToTop}>
-                  Home
+                  {t("shop_home")}
                 </Link>
                 &nbsp;/&nbsp;
-                <Link href="/shop">The Shop</Link>
+                <Link href="/shop">{t("shop_the_shop")}</Link>
               </div>
 
               <div className="filterLeft" onClick={toggleDrawer}>
                 <IoFilterSharp />
-                <p>Filter</p>
+                <p>{t("shop_filter")}</p>
               </div>
 
               <div className="shopDetailsSort">
@@ -866,21 +879,21 @@ export default function Shop() {
                   value={sortBy}
                   onChange={(event) => setSortBy(event.target.value as SortOption)}
                 >
-                  <option value="default">Default Sorting</option>
-                  <option value="featured">Featured</option>
-                  <option value="bestSelling">Best Selling</option>
-                  <option value="a-z">Alphabetically, A-Z</option>
-                  <option value="z-a">Alphabetically, Z-A</option>
-                  <option value="lowToHigh">Price, Low to high</option>
-                  <option value="highToLow">Price, high to low</option>
-                  <option value="oldToNew">Date, old to new</option>
-                  <option value="newToOld">Date, new to old</option>
+                  <option value="default">{t("shop_default_sorting")}</option>
+                  <option value="featured">{t("shop_featured")}</option>
+                  <option value="bestSelling">{t("shop_best_selling")}</option>
+                  <option value="a-z">{t("shop_alpha_az")}</option>
+                  <option value="z-a">{t("shop_alpha_za")}</option>
+                  <option value="lowToHigh">{t("shop_price_low_high")}</option>
+                  <option value="highToLow">{t("shop_price_high_low")}</option>
+                  <option value="oldToNew">{t("shop_date_old_new")}</option>
+                  <option value="newToOld">{t("shop_date_new_old")}</option>
                 </select>
 
                 <div className="filterRight" onClick={toggleDrawer}>
                   <div className="filterSeprator" />
                   <IoFilterSharp />
-                  <p>Filter</p>
+                  <p>{t("shop_filter")}</p>
                 </div>
               </div>
             </div>
@@ -932,7 +945,7 @@ export default function Shop() {
                     return (
                     <div className="sdProductContainer" key={product.productID} id={`product-${product.productID}`}>
                       <div className="sdProductImages">
-                        {isOutOfStock && <span className="sdStockBadge">Out of stock</span>}
+                        {isOutOfStock && <span className="sdStockBadge">{t("shop_out_of_stock")}</span>}
                         <button
                           type="button"
                           className="sdProductPreviewButton"
@@ -959,10 +972,10 @@ export default function Shop() {
                           }}
                         >
                           {isOutOfStock
-                            ? "Unavailable"
+                            ? t("shop_unavailable")
                             : isCartLimitReached
-                              ? "Limit reached"
-                              : "Add to Cart"}
+                              ? t("shop_limit_reached")
+                              : t("shop_add_to_cart")}
                         </h4>
                       </div>
 
@@ -975,7 +988,7 @@ export default function Shop() {
 
                       <div className="sdProductInfo">
                         <div className="sdProductCategoryWishlist">
-                          <p>Dresses</p>
+                          <p>{t("shop_category_dresses")}</p>
                           <FiHeart
                             onClick={() =>
                               handleWishlistClick({
@@ -1006,7 +1019,7 @@ export default function Shop() {
                             disabled={isOutOfStock || isBuyNowBusy}
                             onClick={() => void handleBuyNow(product)}
                           >
-                            {isBuyNowBusy ? "Processing..." : "Buy Now"}
+                            {isBuyNowBusy ? t("shop_processing") : t("shop_buy_now")}
                           </button>
 
                           <div className="sdProductRatingReviews">
@@ -1021,7 +1034,7 @@ export default function Shop() {
                             </div>
                             <span>
                               {reviewCount > 0
-                                ? `${reviewCount} user review${reviewCount > 1 ? "s" : ""}`
+                                ? `${reviewCount} ${reviewCount > 1 ? t("shop_user_reviews") : t("shop_user_review")}`
                                 : product.productReviews}
                             </span>
                           </div>
@@ -1045,7 +1058,7 @@ export default function Shop() {
                   disabled={currentPage === 1}
                 >
                   <FaAngleLeft />
-                  Prev
+                  {t("shop_prev")}
                 </button>
               </div>
 
@@ -1076,7 +1089,7 @@ export default function Shop() {
                   }}
                   disabled={currentPage === totalPages}
                 >
-                  Next
+                  {t("shop_next")}
                   <FaAngleRight />
                 </button>
               </div>
@@ -1089,7 +1102,7 @@ export default function Shop() {
       {isDrawerOpen && <div className="filterDrawerBackdrop" onClick={closeDrawer} />}
       <div className={`filterDrawer ${isDrawerOpen ? "open" : ""}`}>
         <div className="drawerHeader">
-          <p>Filter By</p>
+          <p>{t("shop_filter_by")}</p>
           <IoClose onClick={closeDrawer} className="closeButton" size={26} />
         </div>
         <div className="drawerContent">
@@ -1126,36 +1139,54 @@ export default function Shop() {
               <div className="sdProductModalInfo">
                 <h3>{selectedProduct.productName}</h3>
                 <p>
-                  <strong>ID:</strong> {selectedProduct.productID}
+                  <strong>{t("shop_product_id")}</strong> {selectedProduct.productID}
                 </p>
                 <p>
-                  <strong>Price:</strong> ${selectedProduct.productPrice}
+                  <strong>{t("shop_product_price")}</strong> ${selectedProduct.productPrice}
                 </p>
                 <p>
-                  <strong>Reviews:</strong> {selectedProduct.productReviews}
+                  <strong>{t("shop_product_reviews")}</strong> {selectedProduct.productReviews}
                 </p>
                 <p>
-                  <strong>User Rating:</strong> {getAverageRating(selectedProduct.productID)} / 5
+                  <strong>{t("shop_user_rating")}</strong> {getAverageRating(selectedProduct.productID)} / 5
                 </p>
                 <p>
                   <strong>User Reviews:</strong> {getReviewCount(selectedProduct.productID)}
                 </p>
                 <p>
-                  <strong>Remaining Stock:</strong> {resolveAvailableStock(selectedProduct)}
+                  <strong>{t("shop_remaining_stock")}</strong> {resolveAvailableStock(selectedProduct)}
                 </p>
                 <p>
-                  <strong>Status:</strong> {selectedProduct.active === false ? "Inactive" : "Active"}
+                  <strong>{t("shop_status")}</strong> {selectedProduct.active === false ? t("shop_inactive") : t("shop_active")}
                 </p>
+                <div className="sdSizeSection">
+                  <strong>Available Sizes</strong>
+                  <div className="sdSizeOptions" role="list" aria-label="Available clothing sizes">
+                    {resolveProductSizes(selectedProduct).map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        className={`sdSizeButton${selectedSize === size ? " sdSizeButtonActive" : ""}`}
+                        onClick={() => setSelectedSize(size)}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="sdSizeHint">
+                    {selectedSize ? `Selected size: ${selectedSize}` : "Choose a size to preview availability."}
+                  </span>
+                </div>
                 <button
                   type="button"
                   className="sdBuyNowButton"
                   disabled={resolveAvailableStock(selectedProduct) <= 0 || buyNowProductId === selectedProduct.productID}
                   onClick={() => void handleBuyNow(selectedProduct)}
                 >
-                  {buyNowProductId === selectedProduct.productID ? "Processing..." : "Buy Now"}
+                  {buyNowProductId === selectedProduct.productID ? t("shop_processing") : t("shop_buy_now")}
                 </button>
                 <p>
-                  <strong>Focus Link:</strong>{" "}
+                  <strong>{t("shop_focus_link")}</strong>{" "}
                   <Link
                     href={modalFocusHref}
                     onClick={() => {
@@ -1163,12 +1194,12 @@ export default function Shop() {
                       scrollToTop();
                     }}
                   >
-                    View in product list
+                    {t("shop_view_in_list")}
                   </Link>
                 </p>
 
                 <div className="sdReviewSection">
-                  <h4>Rate & Comment</h4>
+                  <h4>{t("shop_rate_comment")}</h4>
                   <div className="sdReviewRatingInput" role="group" aria-label="Product rating">
                     {Array.from({ length: 5 }, (_, index) => {
                       const ratingValue = index + 1;
@@ -1190,7 +1221,7 @@ export default function Shop() {
                   <textarea
                     value={reviewCommentDraft}
                     onChange={(event) => setReviewCommentDraft(event.target.value)}
-                    placeholder="Write your comment about this product..."
+                    placeholder={t("shop_write_comment")}
                     rows={4}
                   />
 
@@ -1199,14 +1230,14 @@ export default function Shop() {
                     className="sdSaveDescriptionButton"
                     onClick={handleSubmitReview}
                   >
-                    Submit Review
+                    {t("shop_submit_review")}
                   </button>
 
                   <div className="sdReviewList">
                     {isLoadingReviews ? (
-                      <p className="sdReviewEmptyState">Loading reviews...</p>
+                      <p className="sdReviewEmptyState">{t("shop_loading_reviews")}</p>
                     ) : getProductReviews(selectedProduct.productID).length === 0 ? (
-                      <p className="sdReviewEmptyState">No user reviews yet. Be the first to comment.</p>
+                      <p className="sdReviewEmptyState">{t("shop_no_reviews")}</p>
                     ) : (
                       getProductReviews(selectedProduct.productID).map((review) => (
                         <article key={review.id} className="sdReviewCard">
@@ -1235,7 +1266,7 @@ export default function Shop() {
                               type="button"
                               className={`sdReviewMetaButton ${review.likedByCurrentUser ? 'active' : ''}`}
                               onClick={() => toggleLikeReview(review.id)}
-                              title={review.likedByCurrentUser ? "Unlike" : "Like"}
+                              title={review.likedByCurrentUser ? t("shop_unlike") : t("shop_like")}
                             >
                               <FiThumbsUp /> <span>{review.likes ?? 0}</span>
                             </button>
@@ -1243,7 +1274,7 @@ export default function Shop() {
                               type="button"
                               className="sdReviewMetaButton"
                               onClick={() => handleDislikeReview(review.id)}
-                              title="Dislike"
+                              title={t("shop_dislike")}
                             >
                               <FiThumbsDown /> <span>{review.dislikes ?? 0}</span>
                             </button>
@@ -1251,7 +1282,7 @@ export default function Shop() {
                               type="button"
                               className="sdReviewMetaButton"
                               onClick={() => toggleReplyDraft(review.id)}
-                              title="Reply"
+                              title={t("shop_reply")}
                             >
                               <FiMessageCircle /> <span>{replies.length}</span>
                             </button>
@@ -1263,15 +1294,15 @@ export default function Shop() {
                                 onChange={(event) =>
                                   handleReplyDraftChange(review.id, event.target.value)
                                 }
-                                placeholder="Write your reply..."
+                                placeholder={t("shop_write_reply")}
                                 rows={2}
                               />
                               <div className="sdReviewReplyComposerActions">
                                 <button type="button" onClick={() => void submitReply(review.id)}>
-                                  Post Reply
+                                  {t("shop_post_reply")}
                                 </button>
                                 <button type="button" onClick={() => setActiveReplyReviewId(null)}>
-                                  Cancel
+                                  {t("shop_cancel")}
                                 </button>
                               </div>
                             </div>
@@ -1329,10 +1360,10 @@ export default function Shop() {
                               />
                               <div className="sdReviewEditActions">
                                 <button type="button" onClick={() => handleUpdateReview(review.id)}>
-                                  Save
+                                  {t("shop_save")}
                                 </button>
                                 <button type="button" onClick={cancelEditReview}>
-                                  Cancel
+                                  {t("shop_cancel")}
                                 </button>
                               </div>
                             </div>
@@ -1347,13 +1378,13 @@ export default function Shop() {
                 </div>
 
                 <label htmlFor="sd-product-description">
-                  <strong>Your Product Description</strong>
+                  <strong>{t("shop_your_description")}</strong>
                 </label>
                 <textarea
                   id="sd-product-description"
                   value={descriptionDraft}
                   onChange={(event) => setDescriptionDraft(event.target.value)}
-                  placeholder="Write any product description you want..."
+                  placeholder={t("shop_write_description")}
                   rows={4}
                 />
                 <button
@@ -1361,7 +1392,7 @@ export default function Shop() {
                   className="sdSaveDescriptionButton"
                   onClick={handleSaveDescription}
                 >
-                  Save Description
+                  {t("shop_save_description")}
                 </button>
               </div>
             </div>

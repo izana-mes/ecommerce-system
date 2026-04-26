@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import "./ContactPage.css";
 
 const ContactPage: React.FC = () => {
+  const { t } = useLocale();
   const [name, setName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [message, setMessage] = useState<string>("");
@@ -22,7 +24,7 @@ const ContactPage: React.FC = () => {
 
   return (
     <div className="contactSection">
-      <h2>Contact Us</h2>
+      <h2>{t("contact_us")}</h2>
 
       {/* MAP */}
       <div className="contactMap">
@@ -41,10 +43,10 @@ const ContactPage: React.FC = () => {
       <div className="contactInfo">
         <div className="contactAddress">
           <div className="address">
-            <h3>Store in London</h3>
+            <h3>{t("contact_store_london")}</h3>
             <p>
-              1418 River Drive, Suite 35 Cottonhall, CA 9622
-              <br /> United Kingdom
+              {t("contact_store_london_address_1")}
+              <br /> {t("contact_store_london_address_2")}
             </p>
             <p>
               admin@dummymail.com
@@ -54,10 +56,10 @@ const ContactPage: React.FC = () => {
           </div>
 
           <div className="address">
-            <h3>Store in India</h3>
+            <h3>{t("contact_store_india")}</h3>
             <p>
-              A-791, Bandra Reclamation Rd, Mumbai
-              <br /> Maharashtra
+              {t("contact_store_india_address_1")}
+              <br /> {t("contact_store_india_address_2")}
             </p>
             <p>
               contact@dummymail.com
@@ -69,13 +71,13 @@ const ContactPage: React.FC = () => {
 
         {/* FORM */}
         <div className="contactForm">
-          <h3>Get In Touch</h3>
+          <h3>{t("contact_get_in_touch")}</h3>
 
           <form onSubmit={handleSubmit}>
             <input
               type="text"
               value={name}
-              placeholder="Name *"
+              placeholder={t("contact_placeholder_name")}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setName(e.target.value)
               }
@@ -85,7 +87,7 @@ const ContactPage: React.FC = () => {
             <input
               type="email"
               value={email}
-              placeholder="Email address *"
+              placeholder={t("contact_placeholder_email")}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setEmail(e.target.value)
               }
@@ -94,14 +96,14 @@ const ContactPage: React.FC = () => {
 
             <textarea
               rows={10}
-              placeholder="Your Message"
+              placeholder={t("contact_placeholder_message")}
               value={message}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                 setMessage(e.target.value)
               }
             />
 
-            <button type="submit">Submit</button>
+            <button type="submit">{t("contact_submit")}</button>
           </form>
         </div>
       </div>

@@ -17,6 +17,7 @@ import { DataStore } from "@/data/StoreData";
 import { useProducts } from "@/hooks/useProducts";
 import { isAuthenticated } from "@/lib/auth";
 import AuthRequiredModal from "@/components/Common/AuthRequiredModal";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import "./Trendy.css";
 
 import Link from "next/link";
@@ -27,6 +28,7 @@ import { FaStar, FaCartPlus } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 
 export default function Trendy() {
+  const { t } = useLocale();
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { products, loading, error } = useProducts();
@@ -252,7 +254,7 @@ export default function Trendy() {
     <>
       <div className="trendyProduct">
         <h2>
-          OUR TRENDY <span>PRODUCTS</span>
+          {t("home_our_trendy")} <span>{t("home_products")}</span>
         </h2>
         <div className="trendyTabs">
           <div className="tabs">
@@ -260,31 +262,31 @@ export default function Trendy() {
               onClick={() => handleActiveTab("tab1")}
               className={activeTab === "tab1" ? "active" : ""}
             >
-              ALL
+              {t("home_all")}
             </p>
             <p
               onClick={() => handleActiveTab("tab2")}
               className={activeTab === "tab2" ? "active" : ""}
             >
-              NEW ARRIVALS
+              {t("home_new_arrivals")}
             </p>
             <p
               onClick={() => handleActiveTab("tab3")}
               className={activeTab === "tab3" ? "active" : ""}
             >
-              BEST SELLER
+              {t("home_best_seller")}
             </p>
             <p
               onClick={() => handleActiveTab("tab4")}
               className={activeTab === "tab4" ? "active" : ""}
             >
-              TOP RATED
+              {t("home_top_rated")}
             </p>
           </div>
           <div className="trendyTabContent">
             {loading && (
               <div style={{ textAlign: "center", padding: "40px" }}>
-                <p>Loading products...</p>
+                <p>{t("home_loading_products")}</p>
               </div>
             )}
             {error && (
@@ -324,7 +326,7 @@ export default function Trendy() {
                           handleCartClick({ ...product });
                         }}
                       >
-                        Add to cart
+                        {t("home_add_to_cart")}
                       </h4>
                     </div>
                     <div
@@ -359,7 +361,7 @@ export default function Trendy() {
                         disabled={(product.active === false ? 0 : Number(product.stockQuantity ?? 25)) <= 0 || buyNowProductId === product.productID}
                         onClick={() => void handleBuyNow(product)}
                       >
-                        {buyNowProductId === product.productID ? "Processing..." : "Buy Now"}
+                        {buyNowProductId === product.productID ? t("home_processing") : t("home_buy_now")}
                       </button>
 
                       <div className="trendyProductRatingReviews">
@@ -667,23 +669,23 @@ export default function Trendy() {
               <div className="trendyProductModalInfo">
                 <h3>{selectedProduct.productName}</h3>
                 <p>
-                  <strong>ID:</strong> {selectedProduct.productID}
+                  <strong>{t("home_id")}</strong> {selectedProduct.productID}
                 </p>
                 <p>
-                  <strong>Price:</strong> ${selectedProduct.productPrice}
+                  <strong>{t("home_price")}</strong> ${selectedProduct.productPrice}
                 </p>
                 <p>
-                  <strong>Reviews:</strong> {selectedProduct.productReviews}
+                  <strong>{t("home_reviews")}</strong> {selectedProduct.productReviews}
                 </p>
                 <p>
-                  <strong>Status:</strong> {selectedProduct.active === false ? "Inactive" : "Active"}
+                  <strong>{t("home_status")}</strong> {selectedProduct.active === false ? t("home_inactive") : t("home_active")}
                 </p>
                 <button
                   type="button"
                   className="trendyProductModalCartButton"
                   onClick={() => handleCartClick({ ...selectedProduct })}
                 >
-                  Add to cart
+                  {t("home_add_to_cart")}
                 </button>
                 <button
                   type="button"
@@ -691,7 +693,7 @@ export default function Trendy() {
                   disabled={(selectedProduct.active === false ? 0 : Number(selectedProduct.stockQuantity ?? 25)) <= 0 || buyNowProductId === selectedProduct.productID}
                   onClick={() => void handleBuyNow(selectedProduct)}
                 >
-                  {buyNowProductId === selectedProduct.productID ? "Processing..." : "Buy Now"}
+                  {buyNowProductId === selectedProduct.productID ? t("home_processing") : t("home_buy_now")}
                 </button>
                 <Link
                   href={`/shop?focus=${encodeURIComponent(selectedProduct.productID)}`}
@@ -700,7 +702,7 @@ export default function Trendy() {
                     scrollToTop();
                   }}
                 >
-                  View in shop
+                  {t("home_view_in_shop")}
                 </Link>
               </div>
             </div>

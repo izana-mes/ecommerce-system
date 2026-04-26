@@ -37,6 +37,9 @@ public class Product {
     @Column(name = "product_reviews", columnDefinition = "TEXT")
     private String productReviews;
 
+    @Column(name = "sizes", columnDefinition = "TEXT")
+    private String sizes;
+
     @Builder.Default
     @Column(name = "stock_quantity", nullable = false, columnDefinition = "integer default 25")
     private Integer stockQuantity = 25;

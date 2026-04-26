@@ -156,6 +156,7 @@ public class ProductServiceImpl implements ProductService {
                             existing.setProductName(dto.getProductName());
                             existing.setProductPrice(dto.getProductPrice());
                             existing.setProductReviews(dto.getProductReviews());
+                            existing.setSizes(productMapper.map(dto.getSizes()));
                             applyInventoryDefaults(existing, dto);
                             return existing;
                         })
@@ -189,6 +190,7 @@ public class ProductServiceImpl implements ProductService {
         existing.setProductName(dto.getProductName());
         existing.setProductPrice(dto.getProductPrice());
         existing.setProductReviews(dto.getProductReviews());
+        existing.setSizes(productMapper.map(dto.getSizes()));
         applyInventoryDefaults(existing, dto);
 
         Product saved = productRepository.save(existing);

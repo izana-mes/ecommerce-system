@@ -28,6 +28,7 @@ export interface DataStore {
   productName: string;
   productPrice: number;
   productReviews: string;
+  sizes?: string[];
   stockQuantity?: number;
   active?: boolean;
 }
@@ -40,6 +41,7 @@ const StoreData: DataStore[] = [
     productName: "Cropped Faux Leather Jacket",
     productPrice: 29,
     productReviews: "8k+ reviews",
+    sizes: ["XS", "S", "M", "L", "XL"],
   },
   {
     productID: "2",
@@ -48,6 +50,7 @@ const StoreData: DataStore[] = [
     productName: "Calvin Shorts",
     productPrice: 62,
     productReviews: "2k+ reviews",
+    sizes: ["S", "M", "L"],
   },
   {
     productID: "3",
@@ -56,6 +59,7 @@ const StoreData: DataStore[] = [
     productName: "Shirt In Botanical Cheetah Print",
     productPrice: 60,
     productReviews: "7k+ reviews",
+    sizes: ["S", "M", "L", "XL"],
   },
   {
     productID: "4",
@@ -64,6 +68,7 @@ const StoreData: DataStore[] = [
     productName: "Cotton Jersey T-Shirt",
     productPrice: 17,
     productReviews: "5k+ reviews",
+    sizes: ["XS", "S", "M", "L"],
   },
   {
     productID: "5",
@@ -72,6 +77,7 @@ const StoreData: DataStore[] = [
     productName: "Cableknit Shawl",
     productPrice: 100,
     productReviews: "9k+ reviews",
+    sizes: ["M", "L", "XL"],
   },
   {
     productID: "6",
@@ -80,6 +86,7 @@ const StoreData: DataStore[] = [
     productName: "Colorful Jacket",
     productPrice: 69,
     productReviews: "1k+ reviews",
+    sizes: ["S", "M", "L", "XL", "XXL"],
   },
   {
     productID: "7",
@@ -88,6 +95,7 @@ const StoreData: DataStore[] = [
     productName: "Zessi Dresses",
     productPrice: 99,
     productReviews: "3k+ reviews",
+    sizes: ["XS", "S", "M", "L"],
   },
   {
     productID: "8",
@@ -96,6 +104,7 @@ const StoreData: DataStore[] = [
     productName: "Kirby T-Shirt",
     productPrice: 37,
     productReviews: "4k+ reviews",
+    sizes: ["S", "M", "L", "XL"],
   },
   {
     productID: "9",
@@ -103,6 +112,7 @@ const StoreData: DataStore[] = [
     productName: "Hosking Blue Area Rug",
     productPrice: 29,
     productReviews: "8k+ reviews",
+    sizes: ["One Size"],
   },
   {
     productID: "10",
@@ -110,6 +120,7 @@ const StoreData: DataStore[] = [
     productName: "Hanneman Pouf",
     productPrice: 92,
     productReviews: "5k+ reviews",
+    sizes: ["One Size"],
   },
   {
     productID: "11",
@@ -117,6 +128,7 @@ const StoreData: DataStore[] = [
     productName: "Cushion Futon Slipcover",
     productPrice: 25,
     productReviews: "1k+ reviews",
+    sizes: ["One Size"],
   },
   {
     productID: "12",
@@ -124,6 +136,7 @@ const StoreData: DataStore[] = [
     productName: "Hub Accent Mirror",
     productPrice: 27,
     productReviews: "7k+ reviews",
+    sizes: ["One Size"],
   },
   {
     productID: "13",
@@ -131,6 +144,7 @@ const StoreData: DataStore[] = [
     productName: "Bold Male Black Analog",
     productPrice: 39,
     productReviews: "71+ reviews",
+    sizes: ["One Size"],
   },
 ];
 

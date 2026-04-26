@@ -47,8 +47,10 @@ function formatMoney(value: number, currency: string): string {
     return `${Number(value || 0).toFixed(2)} ${currency || "USD"}`;
   }
 }
+import { useLocale } from "@/components/providers/LocaleProvider";
 
 export default function OrdersPage() {
+  const { t } = useLocale();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -101,15 +103,15 @@ export default function OrdersPage() {
 
   return (
     <div style={{ maxWidth: 960, margin: "40px auto", padding: "0 16px" }}>
-      <h1 style={{ marginBottom: 16 }}>Purchase History</h1>
+      <h1 style={{ marginBottom: 16 }}>{t("orders_history")}</h1>
       <p style={{ marginBottom: 20 }}>
-        <Link href="/profile">Back to Profile</Link>
+        <Link href="/profile">{t("orders_back_profile")}</Link>
       </p>
 
-      {loading ? <p>Loading your orders...</p> : null}
+      {loading ? <p>{t("orders_loading")}</p> : null}
       {error ? <p style={{ color: "#c00" }}>{error}</p> : null}
 
-      {!loading && !error && orders.length === 0 ? <p>No orders yet.</p> : null}
+      {!loading && !error && orders.length === 0 ? <p>{t("orders_none")}</p> : null}
 
       {!loading && !error && orders.length > 0
         ? orders.map((order) => (
@@ -128,20 +130,20 @@ export default function OrdersPage() {
                 <span>{new Date(order.created_at).toLocaleString()}</span>
               </div>
               <p style={{ margin: "8px 0 6px" }}>
-                Status: {order.order_status} | Payment: {order.payment_status} ({order.payment_method})
+                {t("orders_status")}{order.order_status}{t("orders_payment")}{order.payment_status} ({order.payment_method})
               </p>
               <p style={{ margin: "0 0 10px" }}>
-                Subtotal: {formatMoney(order.subtotal, order.currency)} | Shipping:{" "}
-                {formatMoney(order.shipping_fee, order.currency)} | VAT:{" "}
+                {t("orders_subtotal")}{formatMoney(order.subtotal, order.currency)}{t("orders_shipping")}
+                {formatMoney(order.shipping_fee, order.currency)}{t("orders_vat")}
                 {formatMoney(order.vat, order.currency)}
               </p>
               <p style={{ margin: "0 0 10px" }}>
-                Total: <strong>{formatMoney(order.total_amount, order.currency)}</strong>
+                {t("orders_total")}<strong>{formatMoney(order.total_amount, order.currency)}</strong>
               </p>
               <div>
                 {order.items.map((item) => (
                   <p key={`${order.id}-${item.product_id}`} style={{ margin: "4px 0" }}>
-                    {item.product_name} x{item.quantity} ({formatMoney(item.unit_price, order.currency)} each) -{" "}
+                    {item.product_name} x{item.quantity} ({formatMoney(item.unit_price, order.currency)}{t("orders_each")}) -{" "}
                     {formatMoney(item.line_total, order.currency)}
                   </p>
                 ))}
@@ -153,13 +155,13 @@ export default function OrdersPage() {
       {!loading && !error && totalPages > 1 ? (
         <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
           <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page <= 0}>
-            Previous
+            {t("orders_prev")}
           </button>
           <span>
-            Page {page + 1} / {totalPages}
+            {t("orders_page")}{page + 1}{t("orders_page_of")}{totalPages}
           </span>
           <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>
-            Next
+            {t("orders_next")}
           </button>
         </div>
       ) : null}

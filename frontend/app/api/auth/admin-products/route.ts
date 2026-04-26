@@ -10,6 +10,7 @@ type ProductPayload = {
   productName?: string;
   productPrice?: number | string;
   productReviews?: string;
+  sizes?: string[];
   stockQuantity?: number | string;
   active?: boolean;
 };
@@ -77,6 +78,7 @@ export async function POST(request: Request) {
         productName: body.productName,
         productPrice: Number(body.productPrice),
         productReviews: body.productReviews,
+        sizes: Array.isArray(body.sizes) ? body.sizes : [],
         stockQuantity: toOptionalNumber(body.stockQuantity),
         active: body.active !== false,
       }),
@@ -118,6 +120,7 @@ export async function PUT(request: Request) {
         productName: body.productName,
         productPrice: Number(body.productPrice),
         productReviews: body.productReviews,
+        sizes: Array.isArray(body.sizes) ? body.sizes : [],
         stockQuantity: toOptionalNumber(body.stockQuantity),
         active: body.active !== false,
       }),

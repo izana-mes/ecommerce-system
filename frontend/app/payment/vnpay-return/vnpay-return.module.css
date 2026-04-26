@@ -22,14 +22,14 @@
 .tabs button {
   background: none;
   border: none;
-  border-bottom: 2px solid #e4e4e4;
+  border-bottom: 2px solid var(--border-soft);
   text-align: left;
   padding-bottom: 20px;
   flex-grow: 1;
 }
 
 .tabs button.active {
-  border-bottom: 2px solid #000;
+  border-bottom: 2px solid var(--foreground);
 }
 
 .tabNumber {
@@ -45,7 +45,7 @@
 
 .tabNumber p {
   font-size: 14px;
-  color: #767676;
+  color: var(--muted-text);
 }
 
 .tabs.tab3::after {
@@ -55,7 +55,7 @@
   height: 2px;
   width: 100%;
   left: 0;
-  background-color: #000;
+  background-color: var(--foreground);
 }
 
 .orderCompleteSection {
@@ -99,7 +99,7 @@
 
 .orderCompleteMessage p {
   font-size: 14px;
-  color: #767676;
+  color: var(--muted-text);
 }
 
 .orderInfo {
@@ -107,7 +107,7 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  border: 2px dashed #000;
+  border: 2px dashed var(--foreground);
 }
 
 .orderInfoItem {
@@ -119,7 +119,7 @@
 
 .orderInfoItem p {
   font-size: 14px;
-  color: #767676;
+  color: var(--muted-text);
 }
 
 .orderInfoItem h4 {
@@ -128,7 +128,7 @@
 }
 
 .orderTotalContainer {
-  border: 1px solid #000;
+  border: 1px solid var(--foreground);
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -155,7 +155,7 @@
   text-align: left;
   font-size: 14px;
   font-weight: 500;
-  border-bottom: 1px solid #e4e4e4;
+  border-bottom: 1px solid var(--border-soft);
   text-transform: uppercase;
   padding: 10px 0;
 }
@@ -167,7 +167,7 @@
 }
 
 .orderItems table tbody {
-  border-bottom: 1px solid #e4e4e4;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .orderTotal {
@@ -194,12 +194,12 @@
 }
 
 .orderTotal table tr {
-  border-bottom: 1px solid #e4e4e4;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .orderInfoFallback {
   width: 100%;
-  border: 2px dashed #000;
+  border: 2px dashed var(--foreground);
   padding: 24px;
   font-size: 16px;
 }
@@ -210,9 +210,9 @@
 }
 
 .actionRow a {
-  color: #000;
+  color: var(--foreground);
   text-decoration: none;
-  border-bottom: 1px solid #000;
+  border-bottom: 1px solid var(--foreground);
   padding-bottom: 2px;
   font-size: 14px;
   text-transform: uppercase;
@@ -251,12 +251,12 @@
 
   .tabs button {
     border-bottom: none;
-    border-left: 2px solid #e4e4e4;
+    border-left: 2px solid var(--border-soft);
     padding: 15px;
   }
 
   .tabs button.active {
-    border-left: 2px solid #000;
+    border-left: 2px solid var(--foreground);
   }
 
   .tabs.tab3::after {

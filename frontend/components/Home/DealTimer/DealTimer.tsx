@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import "./DealTimer.css";
 
 interface Deal {
@@ -30,6 +31,7 @@ type TimeLeft = {
 };
 
 export default function DealTimer() {
+  const { t } = useLocale();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [dealBackgroundUrl, setDealBackgroundUrl] = useState("/Deal/dealbg.jpg");
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({
@@ -183,13 +185,13 @@ export default function DealTimer() {
       <div className="dealTimer" style={{ backgroundImage: `url("${dealBackgroundUrl}")` }}>
         <div className="dealTimerMainContent">
           <div className="dealTimerContent">
-            <p>DEAL OF THE WEEK</p>
+            <p>{t("home_deal_of_the_week")}</p>
             <h3>
-              <span>Spring</span>COLLECTION
+              <span>{t("home_spring")}</span> {t("home_collection")}
             </h3>
             <div className="dealTimerLink">
               <Link href="/" onClick={scrollToTop}>
-                <h5>SHOP NOW</h5>
+                <h5>{t("home_shop_now")}</h5>
               </Link>
             </div>
           </div>
@@ -201,22 +203,22 @@ export default function DealTimer() {
           >
             <div className="dealTimeDigit">
               <h4>{timeLeft.days}</h4>
-              <p>days</p>
+              <p>{t("home_days")}</p>
             </div>
             <h4 aria-hidden="true">:</h4>
             <div className="dealTimeDigit">
               <h4>{timeLeft.hours}</h4>
-              <p>hours</p>
+              <p>{t("home_hours")}</p>
             </div>
             <h4 aria-hidden="true">:</h4>
             <div className="dealTimeDigit">
               <h4>{timeLeft.minutes}</h4>
-              <p>minutes</p>
+              <p>{t("home_minutes")}</p>
             </div>
             <h4 aria-hidden="true">:</h4>
             <div className="dealTimeDigit">
               <h4>{timeLeft.seconds}</h4>
-              <p>seconds</p>
+              <p>{t("home_seconds")}</p>
             </div>
           </div>
         </div>

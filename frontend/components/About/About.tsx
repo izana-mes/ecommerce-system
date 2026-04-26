@@ -2,6 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import "./About.css";
 
 import about1 from "@/public/About/about-1.jpg";
@@ -20,39 +21,37 @@ import brand6 from "@/public/Brands/brand6.png";
 import brand7 from "@/public/Brands/brand7.png";
 
 const AboutPage: React.FC = () => {
+  const { t } = useLocale();
   return (
     <>
       <div className="aboutSection">
-        <h2>About Uomo</h2>
+        <h2>{t("about_title")}</h2>
 
         <Image src={about1} alt="about" />
 
         <div className="aboutContent">
-          <h3>Our Story</h3>
+          <h3>{t("about_our_story")}</h3>
 
           <h4>
-            Duis aute irure dolor in reprehenderit in voluptate velit esse
-            cillum dolore eu fugiat nulla pariatur.
+            {t("about_story_desc_1")}
           </h4>
 
           <p>
-            Saw wherein fruitful good days image them, midst, waters upon, saw.
+            {t("about_story_desc_2")}
           </p>
 
           <div className="content1">
             <div className="contentBox">
-              <h5>Our Mission</h5>
+              <h5>{t("about_our_mission")}</h5>
               <p>
-                Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-                commodo consequat.
+                {t("about_mission_desc")}
               </p>
             </div>
 
             <div className="contentBox">
-              <h5>Our Vision</h5>
+              <h5>{t("about_our_vision")}</h5>
               <p>
-                Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-                commodo consequat.
+                {t("about_vision_desc")}
               </p>
             </div>
           </div>
@@ -63,9 +62,9 @@ const AboutPage: React.FC = () => {
             </div>
 
             <div className="textContent">
-              <h5>The Company</h5>
+              <h5>{t("about_the_company")}</h5>
               <p>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                {t("about_company_desc")}
               </p>
             </div>
           </div>
@@ -73,7 +72,7 @@ const AboutPage: React.FC = () => {
       </div>
 
       <div className="companyPartners">
-        <h5>Company Partners</h5>
+        <h5>{t("about_company_partners")}</h5>
 
         <Swiper
           slidesPerView={1}

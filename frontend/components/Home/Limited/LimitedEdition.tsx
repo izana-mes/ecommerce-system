@@ -16,6 +16,7 @@ import { useAppDispatch, useAppSelector } from "@/store/index";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import "./LimitedEdition.css";
 
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -36,6 +37,7 @@ import AuthRequiredModal from "@/components/Common/AuthRequiredModal";
 import { useState } from "react";
 
 export default function LimitedEdition() {
+  const { t } = useLocale();
   const dispatch = useAppDispatch();
   const router = useRouter();
   const {products,error,loading} = useProducts();
@@ -191,7 +193,7 @@ export default function LimitedEdition() {
     <>
       <div className="LimitedEditionSection">
         <h2>
-          LIMITED <span> EDITION</span>
+          {t("home_limited")} <span> {t("home_edition")}</span>
         </h2>
         <div className="limitedEditionSlider">
           <div className="swiper-button image-swiper-button-next">
@@ -248,7 +250,7 @@ export default function LimitedEdition() {
                       <h4
                         onClick={() => handleCartClick(product)}
                       >
-                        Add to cart
+                        {t("home_add_to_cart")}
                       </h4>
                     </div>
                     <div 

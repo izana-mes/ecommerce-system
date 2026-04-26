@@ -25,7 +25,7 @@
 .shoppingCartTabs button {
   background: none;
   border: none;
-  border-bottom: 2px solid #e4e4e4;
+  border-bottom: 2px solid var(--border-soft);
   text-align: left;
   padding-bottom: 20px;
   outline: none;
@@ -34,7 +34,7 @@
 }
 
 .shoppingCartTabs button.active {
-  border-bottom: 2px solid #000;
+  border-bottom: 2px solid var(--foreground);
 }
 
 .shoppingCartTabs button:disabled {
@@ -61,7 +61,7 @@
 
 .shoppingCartTabsNumber p {
   font-size: 14px;
-  color: #767676;
+  color: var(--muted-text);
 }
 
 /* Tab underline effect */
@@ -72,7 +72,7 @@
   position: absolute;
   bottom: 0;
   height: 2px;
-  background-color: #000;
+  background-color: var(--foreground);
 }
 
 .shoppingCartTabs.cartTab1::after {
@@ -109,7 +109,7 @@
 }
 
 .shoppingBagTable tr {
-  border-bottom: 1px solid #e4e4e4;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .shoppingBagTable th {
@@ -117,7 +117,7 @@
   font-size: 14px;
   font-weight: 500;
   padding: 10px 0;
-  border-bottom: 1px solid #e4e4e4;
+  border-bottom: 1px solid var(--border-soft);
   text-transform: uppercase;
   padding: 20px 10px;
 }
@@ -134,9 +134,9 @@
 }
 
 .shoppingCartBuyNowButton {
-  border: 1px solid #000;
-  background: #fff;
-  color: #000;
+  border: 1px solid var(--foreground);
+  background: var(--surface-1);
+  color: var(--foreground);
   padding: 8px 12px;
   font-size: 11px;
   font-weight: 600;
@@ -174,13 +174,13 @@
 }
 
 .shoppingBagTableProductDetail a {
-  color: #000;
+  color: var(--foreground);
   text-decoration: none;
 }
 
 .shoppingBagTableProductDetail p {
   font-size: 14px;
-  color: #767676;
+  color: var(--muted-text);
 }
 
 .ShoppingBagTableQuantity {
@@ -220,8 +220,8 @@
 }
 
 .shoppingCartEmpty button {
-  background-color: #000;
-  color: #fff;
+  background-color: var(--foreground);
+  color: var(--background);
   padding: 10px 20px;
   border: none;
   cursor: pointer;
@@ -230,7 +230,7 @@
 }
 
 .shoppingCartEmpty button a {
-  color: #fff;
+  color: var(--background);
   text-decoration: none;
 }
 
@@ -240,7 +240,7 @@
   width: 30%;
   height: 30%;
   padding: 40px;
-  border: 1px solid #000000;
+  border: 1px solid var(--foreground);
   display: flex;
   flex-direction: column;
   gap: 25px;
@@ -259,7 +259,7 @@
 }
 
 .shoppingBagTotalTable tr {
-  border-bottom: 1px solid #e4e4e4;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .shoppingBagTotalTable th {
@@ -267,7 +267,7 @@
   vertical-align: baseline;
   font-size: 14px;
   font-weight: 500;
-  border-bottom: 1px solid #e4e4e4;
+  border-bottom: 1px solid var(--border-soft);
   text-transform: uppercase;
   padding: 20px 10px;
 }
@@ -285,8 +285,8 @@
 }
 
 .shoppingBagTotal button {
-  background-color: #000;
-  color: #fff;
+  background-color: var(--foreground);
+  color: var(--background);
   padding: 20px 10px;
   border: none;
   cursor: pointer;
@@ -314,7 +314,7 @@
 .shopCartFooterContainer form {
   display: flex;
   gap: 10px;
-  border: 2px solid #e4e4e4;
+  border: 2px solid var(--border-soft);
 }
 
 .shopCartFooterContainer form input {
@@ -325,7 +325,7 @@
 }
 
 .shopCartFooterContainer form button {
-  background-color: white;
+  background-color: var(--surface-1);
   padding: 0 20px;
   border: none;
   cursor: pointer;
@@ -335,8 +335,8 @@
 }
 
 .shopCartFooterbutton {
-  background-color: #000;
-  color: #fff;
+  background-color: var(--foreground);
+  color: var(--background);
   padding: 0 20px;
   border: none;
   cursor: pointer;
@@ -378,14 +378,14 @@
 .checkoutDetailsForm input {
   height: 52px;
   padding: 0px 20px;
-  border: 2px solid #e4e4e4;
-  outline-color: black;
+  border: 2px solid var(--border-soft);
+  outline-color: var(--foreground);
 }
 
 .checkoutDetailsForm select {
   height: 52px;
   padding: 0px 20px;
-  border: 2px solid #e4e4e4;
+  border: 2px solid var(--border-soft);
   outline: none;
   appearance: none;
   -webkit-appearance: none;
@@ -395,13 +395,13 @@
   background-repeat: no-repeat;
   background-position: right 8px top 50%;
   background-size: 20px 20px;
-  outline-color: black;
+  outline-color: var(--foreground);
 }
 
 .checkoutDetailsForm textarea {
   padding: 10px 20px;
-  border: 2px solid #e4e4e4;
-  outline-color: black;
+  border: 2px solid var(--border-soft);
+  outline-color: var(--foreground);
 }
 
 .checkoutDetailsFormRow {
@@ -432,7 +432,7 @@
 .checkoutDetailsFormCheck input {
   appearance: none;
   padding: 6px !important;
-  border: 2px solid #e4e4e4;
+  border: 2px solid var(--border-soft);
   position: relative;
   cursor: pointer;
   outline: none;
@@ -443,7 +443,7 @@
 }
 
 .checkoutDetailsFormCheck input:checked {
-  border: 2px solid #000000;
+  border: 2px solid var(--foreground);
 }
 
 .checkoutDetailsFormCheck input::after {
@@ -451,7 +451,7 @@
   display: block;
   width: 8px;
   height: 8px;
-  background-color: black;
+  background-color: var(--foreground);
   position: absolute;
   top: 50%;
   left: 50%;
@@ -473,7 +473,7 @@
 }
 
 .checkoutTotalContainer {
-  border: 1px solid #000000;
+  border: 1px solid var(--foreground);
   padding: 40px;
   display: flex;
   flex-direction: column;
@@ -496,7 +496,7 @@
   text-align: left;
   font-size: 14px;
   font-weight: 500;
-  border-bottom: 1px solid #e4e4e4;
+  border-bottom: 1px solid var(--border-soft);
   text-transform: uppercase;
   padding: 10px 0;
 }
@@ -508,7 +508,7 @@
 }
 
 .checkoutItems table tbody {
-  border-bottom: 1px solid #e4e4e4;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .checkoutTotal table {
@@ -531,7 +531,7 @@
 }
 
 .checkoutTotal table tr {
-  border-bottom: 1px solid #e4e4e4;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 /* Checkout Payment */
@@ -540,7 +540,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  border: 1px solid #e4e4e4;
+  border: 1px solid var(--border-soft);
   padding: 40px;
 }
 
@@ -553,7 +553,7 @@
 .checkoutPaymentContainer input {
   appearance: none;
   padding: 5px;
-  border: 2px solid #e4e4e4;
+  border: 2px solid var(--border-soft);
   border-radius: 50%;
   position: relative;
   cursor: pointer;
@@ -561,7 +561,7 @@
 }
 
 .checkoutPaymentContainer input:checked {
-  border: 2px solid #000000;
+  border: 2px solid var(--foreground);
 }
 
 .checkoutPaymentContainer input::after {
@@ -569,7 +569,7 @@
   display: block;
   width: 6px;
   height: 6px;
-  background-color: black;
+  background-color: var(--foreground);
   border-radius: 50%;
   position: absolute;
   top: 50%;
@@ -608,8 +608,8 @@
 }
 
 .checkoutPaymentSection button {
-  background-color: #000;
-  color: #fff;
+  background-color: var(--foreground);
+  color: var(--background);
   padding: 20px 10px;
   border: none;
   cursor: pointer;
@@ -661,7 +661,7 @@
 
 .orderCompleteMessage p {
   font-size: 14px;
-  color: #767676;
+  color: var(--muted-text);
 }
 
 .orderInfo {
@@ -669,7 +669,7 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  border: 2px dashed black;
+  border: 2px dashed var(--foreground);
 }
 
 .orderInfoItem {
@@ -681,7 +681,7 @@
 
 .orderInfoItem p {
   font-size: 14px;
-  color: #767676;
+  color: var(--muted-text);
 }
 
 .orderInfoItem h4 {
@@ -692,7 +692,7 @@
 /* order total */
 
 .orderTotalContainer {
-  border: 1px solid #000000;
+  border: 1px solid var(--foreground);
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -719,7 +719,7 @@
   text-align: left;
   font-size: 14px;
   font-weight: 500;
-  border-bottom: 1px solid #e4e4e4;
+  border-bottom: 1px solid var(--border-soft);
   text-transform: uppercase;
   padding: 10px 0;
 }
@@ -731,7 +731,7 @@
 }
 
 .orderItems table tbody {
-  border-bottom: 1px solid #e4e4e4;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .orderTotal {
@@ -759,7 +759,7 @@
 }
 
 .orderTotal table tr {
-  border-bottom: 1px solid #e4e4e4;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 /* Responsive */
@@ -795,13 +795,13 @@
 
   .shoppingCartTabs button {
     border-bottom: none;
-    border-left: 2px solid #e4e4e4;
+    border-left: 2px solid var(--border-soft);
     padding: 15px;
   }
 
   .shoppingCartTabs button.active {
     border-bottom: none;
-    border-left: 2px solid #000;
+    border-left: 2px solid var(--foreground);
   }
 
   /* tab underline effect */
@@ -812,7 +812,7 @@
     position: absolute;
     left: 0;
     width: 2px;
-    background-color: #000;
+    background-color: var(--foreground);
     top: 0;
     bottom: 0;
   }
@@ -891,7 +891,7 @@
     display: flex;
     align-items: center;
     gap: 20px;
-    border-top: 1px solid #e4e4e4;
+    border-top: 1px solid var(--border-soft);
     border-bottom: 0.5px solid #e4e4e4;
     padding: 20px 0;
   }
@@ -927,13 +927,13 @@
   }
 
   .shoppingBagTableMobileItemsDetailMain a {
-    color: #000;
+    color: var(--foreground);
     text-decoration: none;
   }
 
   .shoppingBagTableMobileItemsDetailMain p {
     font-size: 14px;
-    color: #767676;
+    color: var(--muted-text);
   }
 
   .shoppingBagTableMobileItemsDetailMain span {

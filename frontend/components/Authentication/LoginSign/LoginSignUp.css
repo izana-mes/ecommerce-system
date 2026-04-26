@@ -4,8 +4,8 @@
   align-items: center;
   padding-top: 50px;
   padding-bottom: 70px;
-  background-color: #000;
-  color: #fff;
+  background-color: var(--foreground);
+  color: var(--background);
 }
 
 .loginSignUpContainer {
@@ -38,11 +38,11 @@
 }
 
 .loginSignUpTabs p:hover {
-  color: #ffffff;
+  color: var(--background);
 }
 
 .loginSignUpTabs p.active {
-  color: #ffffff;
+  color: var(--background);
 }
 
 .loginSignUpTabs p.active::after {
@@ -52,7 +52,7 @@
   left: 0;
   width: 100%;
   height: 2px;
-  background-color: #fff;
+  background-color: var(--surface-1);
 }
 
 .loginSignUpTabs p:not(.active)::after {
@@ -62,7 +62,7 @@
   left: 0;
   width: 0;
   height: 2px;
-  background-color: #fff;
+  background-color: var(--surface-1);
   transition: width 0.2s ease, left 0.2s ease;
 }
 
@@ -89,10 +89,10 @@
 .loginSignUpTabsContentLogin form input {
   padding: 20px;
   border: 2px solid #9a9a9a;
-  outline-color: #ffffff;
-  background-color: #000;
-  color: #fff;
-  caret-color: #ffffff;
+  outline-color: var(--background);
+  background-color: var(--foreground);
+  color: var(--background);
+  caret-color: var(--background);
 }
 
 .loginSignUpForgetPass {
@@ -108,14 +108,14 @@
 
 .loginSignUpForgetPass a {
   font-size: 14px;
-  color: #fff;
+  color: var(--background);
 }
 
 /* custom radio button */
 
 .loginSignUpForgetPass label input {
   appearance: none;
-  border: 2px solid #e4e4e4;
+  border: 2px solid var(--border-soft);
   position: relative;
   cursor: pointer;
   outline: none;
@@ -131,7 +131,7 @@
   display: block;
   width: 8px;
   height: 8px;
-  background-color: #ffffff;
+  background-color: var(--surface-1);
   position: absolute;
   top: 50%;
   left: 50%;
@@ -146,14 +146,14 @@
 /* custom radio button end */
 
 .loginSignUpForgetPass p {
-  color: #767676;
+  color: var(--muted-text);
   font-size: 14px;
 }
 
 .loginSignUpTabsContentLogin button {
   padding: 20px;
-  background-color: #ffffff;
-  color: #111111;
+  background-color: var(--surface-1);
+  color: var(--foreground);
   border: 1px solid #ffffff;
   cursor: pointer;
   text-transform: uppercase;
@@ -172,11 +172,11 @@
 .loginSignUpTabsContentLoginText p {
   font-size: 14px;
   text-align: center;
-  color: #767676;
+  color: var(--muted-text);
 }
 
 .loginSignUpTabsContentLoginText p span {
-  color: black;
+  color: var(--foreground);
   cursor: pointer;
   text-decoration: underline;
   font-weight: 500;
@@ -194,21 +194,21 @@
 .loginSignUpTabsContentRegister input {
   padding: 20px;
   border: 2px solid #9a9a9a;
-  outline-color: #ffffff;
-  background-color: #000;
-  color: #fff;
-  caret-color: #ffffff;
+  outline-color: var(--background);
+  background-color: var(--foreground);
+  color: var(--background);
+  caret-color: var(--background);
 }
 
 .loginSignUpTabsContentRegister p {
-  color: #767676;
+  color: var(--muted-text);
   font-size: 14px;
 }
 
 .loginSignUpTabsContentRegister button {
   padding: 20px;
-  background-color: #ffffff;
-  color: #111111;
+  background-color: var(--surface-1);
+  color: var(--foreground);
   border: 1px solid #ffffff;
   cursor: pointer;
   text-transform: uppercase;
@@ -225,21 +225,21 @@
 .loginSignUpTabsContentVerify input {
   padding: 20px;
   border: 2px solid #9a9a9a;
-  outline-color: #ffffff;
-  background-color: #000;
-  color: #fff;
-  caret-color: #ffffff;
+  outline-color: var(--background);
+  background-color: var(--foreground);
+  color: var(--background);
+  caret-color: var(--background);
 }
 
 .loginSignUpTabsContentVerify p {
-  color: #767676;
+  color: var(--muted-text);
   font-size: 14px;
 }
 
 .loginSignUpTabsContentVerify button {
   padding: 20px;
-  background-color: #ffffff;
-  color: #111111;
+  background-color: var(--surface-1);
+  color: var(--foreground);
   border: 1px solid #ffffff;
   cursor: pointer;
   text-transform: uppercase;
@@ -248,7 +248,7 @@
 
 .loginSignUpTabsContentVerify button.secondaryButton {
   background-color: transparent;
-  color: #fff;
+  color: var(--background);
   border: 1px solid #9a9a9a;
 }
 

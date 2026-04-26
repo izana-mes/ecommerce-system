@@ -19,7 +19,7 @@
   justify-content: flex-end;
   padding: 30px;
   gap: 10px;
-  background-color: #eff0f1;
+  background-color: var(--surface-2);
   animation: collectionPanelIn 0.75s ease 0.08s both;
 }
 
@@ -27,7 +27,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.28) 45%, transparent 70%);
+  background: linear-gradient(120deg, transparent 0%, var(--surface-1) 45%, transparent 70%);
   transform: translateX(-125%);
   animation: collectionShimmer 7s ease-in-out 1s infinite;
   pointer-events: none;
@@ -55,7 +55,7 @@
   left: 0;
   width: 0;
   height: 3px;
-  background-color: #1b1b1b;
+  background-color: var(--foreground);
   transition: width 0.2s ease;
 }
 
@@ -67,7 +67,7 @@
 .col-p,
 .col-h3,
 .col-link {
-  color: #1b1b1b;
+  color: var(--foreground);
 }
 
 .collectionRight {
@@ -89,7 +89,7 @@
   justify-content: flex-end;
   padding: 30px;
   gap: 5px;
-  background-color: #eff0f1;
+  background-color: var(--surface-2);
   animation: collectionPanelIn 0.75s ease 0.2s both;
 }
 
@@ -111,7 +111,7 @@
   align-items: flex-start;
   padding: 30px;
   gap: 5px;
-  background-color: #eff0f1;
+  background-color: var(--surface-2);
   animation: collectionPanelIn 0.75s ease 0.25s both;
 }
 
@@ -134,7 +134,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.22), transparent 40%);
+  background: radial-gradient(circle at 15% 20%, var(--surface-1), transparent 40%);
   opacity: 0.6;
   animation: collectionGlow 6s ease-in-out infinite;
   pointer-events: none;

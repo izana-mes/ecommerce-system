@@ -7,7 +7,7 @@
 .staffChatbotContainer {
   max-width: 980px;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--surface-1);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(216, 226, 242, 0.8);
   border-radius: 20px;
@@ -58,7 +58,7 @@
 }
 
 .staffPromptButton:hover:not(:disabled) {
-  background: white;
+  background: var(--surface-1);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(30, 59, 102, 0.1);
 }
@@ -98,7 +98,7 @@
 }
 
 .staffMessageBubble.assistant {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--surface-1);
   border: 1px solid rgba(213, 222, 238, 0.5);
   color: #1c2d4b;
   justify-self: start;
@@ -107,7 +107,7 @@
 
 .staffMessageBubble.user {
   background: linear-gradient(135deg, #1f5eff, #0044ff);
-  color: #ffffff;
+  color: var(--background);
   justify-self: end;
   border-bottom-right-radius: 4px;
 }
@@ -135,7 +135,7 @@
   color: #1d2f4f;
   resize: vertical;
   min-height: 80px;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--surface-1);
   backdrop-filter: blur(4px);
   transition: all 0.3s ease;
   font-family: inherit;
@@ -143,7 +143,7 @@
 
 .staffChatbotComposer textarea:focus {
   outline: none;
-  background: #fff;
+  background: var(--surface-1);
   border-color: #1f5eff;
   box-shadow: 0 0 0 4px rgba(31, 94, 255, 0.12);
 }
@@ -152,7 +152,7 @@
   justify-self: end;
   border: 0;
   background: linear-gradient(135deg, #1f5eff, #0044ff);
-  color: #fff;
+  color: var(--background);
   font-weight: 600;
   border-radius: 999px;
   padding: 10px 24px;

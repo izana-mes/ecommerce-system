@@ -1,6 +1,6 @@
 .footer {
   padding: 30px 160px;
-  background-color: #e4e4e4;
+  background-color: var(--surface-2);
   margin-top: 50px;
   display: flex;
   flex-direction: column;
@@ -76,7 +76,7 @@
 }
 
 .links_container ul li a {
-  color: black;
+  color: var(--foreground);
   text-decoration: none;
   font-size: 14px;
   position: relative;
@@ -89,7 +89,7 @@
   left: 0;
   width: 0;
   height: 2px;
-  background-color: black;
+  background-color: var(--foreground);
   transition: width 0.3s ease-out;
 }
 
@@ -128,8 +128,8 @@
 
 .footer_right form button {
   padding: 10px 20px;
-  background-color: white;
-  color: black;
+  background-color: var(--surface-1);
+  color: var(--foreground);
   border: none;
   cursor: pointer;
   text-transform: uppercase;

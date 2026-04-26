@@ -17,8 +17,10 @@ import { useRouter } from "next/navigation";
 import { MdOutlineClose } from "react-icons/md";
 import "./wishList.css";
 import toast from "react-hot-toast";
+import { useLocale } from "@/components/providers/LocaleProvider";
 
 export default function WishList() {
+  const { t } = useLocale();
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { products } = useProducts();
@@ -106,7 +108,7 @@ export default function WishList() {
   return (
     <>
       <div className="wishListSection">
-        <h2>My Wishlist</h2>
+        <h2>{t("wishlist_title")}</h2>
         <div className="wishListContainer">
           {Object.keys(wishlistItems).length > 0 ? (
             <div className="wishListGrid">
@@ -143,7 +145,7 @@ export default function WishList() {
                         className="wishListAddToCartBtn"
                         onClick={() => handleAddToCart(item)}
                       >
-                        Add to Cart
+                        {t("wishlist_add_to_cart")}
                       </button>
                     </div>
                   </div>
@@ -152,9 +154,9 @@ export default function WishList() {
             </div>
           ) : (
             <div className="wishListEmpty">
-              <span>Your wishlist is empty</span>
+              <span>{t("wishlist_empty")}</span>
               <Link href={"/"} onClick={scrollToTop}>
-                <button>Continue Shopping</button>
+                <button>{t("wishlist_continue_shopping")}</button>
               </Link>
             </div>
           )}

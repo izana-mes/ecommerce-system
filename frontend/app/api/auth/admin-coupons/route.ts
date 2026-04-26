@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { getConnection } from "@/lib/db";
+
+import {
+  normalizeDiscountType,
+  requireAdminUser,
+  withCouponTables,
+} from "@/lib/coupons";
 
 type DiscountType = "percentage" | "fixed";
 
@@ -9,100 +14,109 @@ function toPositiveInt(value: string | null, fallback: number): number {
   return Math.floor(parsed);
 }
 
-function normalizeDiscountType(value: unknown): DiscountType | null {
-  const normalized = String(value || "").trim().toLowerCase();
-  if (normalized === "percentage" || normalized === "fixed") {
-    return normalized;
-  }
-  return null;
-}
-
-function isMissingTableError(message: string): boolean {
-  const lower = message.toLowerCase();
-  return lower.includes("coupons") && (
-    lower.includes("doesn't exist") ||
-    lower.includes("does not exist") ||
-    lower.includes("relation") ||
-    lower.includes("no such table")
-  );
-}
-
 export async function GET(request: Request) {
-  const conn = await getConnection();
+  const admin = await requireAdminUser(request);
+  if (!admin) {
+    return NextResponse.json({ error: "Admin authorization required" }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const page = Math.max(0, toPositiveInt(searchParams.get("page"), 1) - 1);
     const size = Math.min(100, toPositiveInt(searchParams.get("size"), 15));
-    const q = String(searchParams.get("q") || "").trim();
-    const whereSql = q ? "WHERE LOWER(code) LIKE LOWER(?)" : "";
-    const whereParams = q ? [`%${q}%`] : [];
+    const q = String(searchParams.get("q") || "").trim().toLowerCase();
 
-    const [countRows] = await conn.execute<Array<{ total: number }>>(
-      `SELECT COUNT(*) AS total FROM coupons ${whereSql}`,
-      whereParams
-    );
-    const totalElements = Number(countRows?.[0]?.total || 0);
-    const totalPages = Math.max(1, Math.ceil(totalElements / size));
+    const result = await withCouponTables(async (conn) => {
+      const whereSql = q
+        ? "WHERE LOWER(c.code) LIKE ? OR LOWER(c.title) LIKE ?"
+        : "";
+      const whereParams = q ? [`%${q}%`, `%${q}%`] : [];
 
-    const [rows] = await conn.execute<
-      Array<{
-        id: number;
-        code: string;
-        title: string;
-        description: string | null;
-        discount_type: DiscountType;
-        discount_value: number;
-        min_order_amount: number;
-        max_discount_amount: number | null;
-        usage_limit: number | null;
-        usage_count: number;
-        starts_at: string | null;
-        expires_at: string | null;
-        is_active: number;
-        created_at: string;
-        updated_at: string;
-      }>
-    >(
-      `SELECT id, code, title, description, discount_type, discount_value, min_order_amount, max_discount_amount,
-              usage_limit, usage_count, starts_at, expires_at, is_active, created_at, updated_at
-       FROM coupons
-       ${whereSql}
-       ORDER BY created_at DESC
-       LIMIT ? OFFSET ?`,
-      [...whereParams, size, page * size]
-    );
+      const [countRows] = await conn.execute<Array<{ total: number }>>(
+        `SELECT COUNT(*) AS total FROM coupons c ${whereSql}`,
+        whereParams
+      );
+      const totalElements = Number(countRows?.[0]?.total || 0);
+      const totalPages = Math.max(1, Math.ceil(totalElements / size));
 
-    return NextResponse.json({
-      content: rows.map((row) => ({
-        ...row,
-        is_active: Boolean(row.is_active),
-      })),
-      totalElements,
-      totalPages,
-      number: page,
-      size,
+      const [rows] = await conn.execute<
+        Array<{
+          id: number;
+          code: string;
+          title: string;
+          description: string | null;
+          discount_type: DiscountType;
+          discount_value: number;
+          min_order_amount: number;
+          max_discount_amount: number | null;
+          usage_limit: number | null;
+          usage_count: number;
+          starts_at: string | null;
+          expires_at: string | null;
+          is_active: boolean | number;
+          created_at: string;
+          updated_at: string;
+          assigned_count: number;
+          acknowledged_count: number;
+          used_assignment_count: number;
+        }>
+      >(
+        `SELECT
+           c.id,
+           c.code,
+           c.title,
+           c.description,
+           c.discount_type,
+           c.discount_value,
+           c.min_order_amount,
+           c.max_discount_amount,
+           c.usage_limit,
+           c.usage_count,
+           c.starts_at,
+           c.expires_at,
+           c.is_active,
+           c.created_at,
+           c.updated_at,
+           COALESCE(COUNT(ca.id), 0) AS assigned_count,
+           COALESCE(SUM(CASE WHEN ca.acknowledged_at IS NOT NULL THEN 1 ELSE 0 END), 0) AS acknowledged_count,
+           COALESCE(SUM(CASE WHEN ca.used_at IS NOT NULL THEN 1 ELSE 0 END), 0) AS used_assignment_count
+         FROM coupons c
+         LEFT JOIN coupon_assignments ca ON ca.coupon_id = c.id
+         ${whereSql}
+         GROUP BY c.id
+         ORDER BY c.created_at DESC
+         LIMIT ? OFFSET ?`,
+        [...whereParams, size, page * size]
+      );
+
+      return {
+        content: rows.map((row) => ({
+          ...row,
+          is_active: Boolean(row.is_active),
+          assigned_count: Number(row.assigned_count || 0),
+          acknowledged_count: Number(row.acknowledged_count || 0),
+          used_assignment_count: Number(row.used_assignment_count || 0),
+        })),
+        totalElements,
+        totalPages,
+        number: page,
+        size,
+      };
     });
+
+    return NextResponse.json(result);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    if (isMissingTableError(message)) {
-      return NextResponse.json({
-        content: [],
-        totalElements: 0,
-        totalPages: 1,
-        number: 0,
-        size: 15,
-        unavailable: true,
-        details: "coupons table is missing",
-      });
-    }
     return NextResponse.json({ error: "Failed to fetch coupons", details: message }, { status: 500 });
-  } finally {
-    await conn.end();
   }
 }
 
 export async function POST(request: Request) {
-  const conn = await getConnection();
+  const admin = await requireAdminUser(request);
+  if (!admin) {
+    return NextResponse.json({ error: "Admin authorization required" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const code = String(body?.code || "").trim().toUpperCase();
@@ -118,10 +132,7 @@ export async function POST(request: Request) {
     const isActive = body?.is_active === false ? 0 : 1;
 
     if (!code || !title || !discountType) {
-      return NextResponse.json(
-        { error: "code, title and discount_type are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "code, title and discount_type are required" }, { status: 400 });
     }
     if (!Number.isFinite(discountValue) || discountValue <= 0) {
       return NextResponse.json({ error: "discount_value must be > 0" }, { status: 400 });
@@ -130,39 +141,43 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "percentage discount cannot exceed 100" }, { status: 400 });
     }
 
-    await conn.execute(
-      `INSERT INTO coupons (
-        code, title, description, discount_type, discount_value, min_order_amount, max_discount_amount,
-        usage_limit, usage_count, starts_at, expires_at, is_active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
-      [
-        code,
-        title,
-        description,
-        discountType,
-        discountValue,
-        Number.isFinite(minOrderAmount) && minOrderAmount > 0 ? minOrderAmount : 0,
-        maxDiscountAmount != null && Number.isFinite(maxDiscountAmount) && maxDiscountAmount > 0
-          ? maxDiscountAmount
-          : null,
-        usageLimit != null && Number.isFinite(usageLimit) && usageLimit > 0 ? usageLimit : null,
-        startsAt,
-        expiresAt,
-        isActive,
-      ]
-    );
+    await withCouponTables(async (conn) => {
+      await conn.execute(
+        `INSERT INTO coupons (
+          code, title, description, discount_type, discount_value, min_order_amount, max_discount_amount,
+          usage_limit, usage_count, starts_at, expires_at, is_active
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+        [
+          code,
+          title,
+          description,
+          discountType,
+          discountValue,
+          Number.isFinite(minOrderAmount) && minOrderAmount > 0 ? minOrderAmount : 0,
+          maxDiscountAmount != null && Number.isFinite(maxDiscountAmount) && maxDiscountAmount > 0
+            ? maxDiscountAmount
+            : null,
+          usageLimit != null && Number.isFinite(usageLimit) && usageLimit > 0 ? usageLimit : null,
+          startsAt,
+          expiresAt,
+          isActive,
+        ]
+      );
+    });
 
     return NextResponse.json({ success: true, message: "Coupon created successfully" }, { status: 201 });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     return NextResponse.json({ error: "Failed to create coupon", details: message }, { status: 500 });
-  } finally {
-    await conn.end();
   }
 }
 
 export async function PATCH(request: Request) {
-  const conn = await getConnection();
+  const admin = await requireAdminUser(request);
+  if (!admin) {
+    return NextResponse.json({ error: "Admin authorization required" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const id = Number(body?.id);
@@ -181,9 +196,9 @@ export async function PATCH(request: Request) {
       updates.push("title = ?");
       params.push(String(body.title).trim());
     }
-    if (body.description != null) {
+    if (body.description !== undefined) {
+      const description = String(body.description || "").trim();
       updates.push("description = ?");
-      const description = String(body.description).trim();
       params.push(description || null);
     }
     if (body.discount_type != null) {
@@ -218,11 +233,11 @@ export async function PATCH(request: Request) {
     }
     if (body.starts_at !== undefined) {
       updates.push("starts_at = ?");
-      params.push(body.starts_at ? String(body.starts_at).trim() : null);
+      params.push(String(body.starts_at || "").trim() || null);
     }
     if (body.expires_at !== undefined) {
       updates.push("expires_at = ?");
-      params.push(body.expires_at ? String(body.expires_at).trim() : null);
+      params.push(String(body.expires_at || "").trim() || null);
     }
     if (body.is_active !== undefined) {
       updates.push("is_active = ?");
@@ -230,17 +245,16 @@ export async function PATCH(request: Request) {
     }
 
     if (updates.length === 0) {
-      return NextResponse.json({ error: "No valid update fields provided" }, { status: 400 });
+      return NextResponse.json({ error: "No updates provided" }, { status: 400 });
     }
 
-    updates.push("updated_at = CURRENT_TIMESTAMP");
-    await conn.execute(`UPDATE coupons SET ${updates.join(", ")} WHERE id = ?`, [...params, id]);
+    await withCouponTables(async (conn) => {
+      await conn.execute(`UPDATE coupons SET ${updates.join(", ")} WHERE id = ?`, [...params, id]);
+    });
 
     return NextResponse.json({ success: true, message: "Coupon updated successfully" });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     return NextResponse.json({ error: "Failed to update coupon", details: message }, { status: 500 });
-  } finally {
-    await conn.end();
   }
 }

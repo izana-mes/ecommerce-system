@@ -1,3 +1,4 @@
+"use client";
 import Banner from "@/components/Home/Banner/Banner";
 import CollectionBox from "@/components/Home/Collection/CollectionBox";
 import DealTimer from "@/components/Home/DealTimer/DealTimer";
@@ -5,8 +6,10 @@ import HeroSection from "@/components/Home/Hero/HeroSection";
 import Trendy from "@/components/Home/Trendy/Trendy";
 import LimitedEdition from "@/components/Home/Limited/LimitedEdition";
 import Instagram from "@/components/Home/Instagram/Instagram";
+import { useLocale } from "@/components/providers/LocaleProvider";
 
 export default function HomePage() {
+  const { t } = useLocale();
   return (
     <div className="animate-slide-up">
       <div className="animate-float" style={{ animationDuration: '4s' }}>
@@ -14,16 +17,16 @@ export default function HomePage() {
       </div>
       <section className="homeTrustStrip animate-bounce-soft">
         <article>
-          <h3>Fast Dispatch</h3>
-          <p>Orders placed before 2PM ship the same day.</p>
+          <h3>{t("home_fast_dispatch")}</h3>
+          <p>{t("home_fast_dispatch_desc")}</p>
         </article>
         <article>
-          <h3>Flexible Returns</h3>
-          <p>30-day returns with instant store credit option.</p>
+          <h3>{t("home_flexible_returns")}</h3>
+          <p>{t("home_flexible_returns_desc")}</p>
         </article>
         <article>
-          <h3>Member Rewards</h3>
-          <p>Earn points on every purchase and unlock perks.</p>
+          <h3>{t("home_member_rewards")}</h3>
+          <p>{t("home_member_rewards_desc")}</p>
         </article>
       </section>
       <div className="animate-slide-up">

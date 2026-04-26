@@ -22,7 +22,7 @@
 .resetPasswordContainer p {
   font-size: 14px;
   font-weight: 400;
-  color: #767676;
+  color: var(--muted-text);
 }
 
 .resetPasswordContainer form {
@@ -33,14 +33,14 @@
 
 .resetPasswordContainer form input {
   padding: 20px;
-  border: 2px solid #e4e4e4;
-  outline-color: black;
+  border: 2px solid var(--border-soft);
+  outline-color: var(--foreground);
 }
 
 .resetPasswordContainer form button {
   padding: 20px;
-  background-color: black;
-  color: white;
+  background-color: var(--foreground);
+  color: var(--background);
   border: none;
   cursor: pointer;
   text-transform: uppercase;
@@ -50,11 +50,11 @@
 .resetPasswordSection p {
   font-size: 14px;
   font-weight: 400;
-  color: #767676;
+  color: var(--muted-text);
 }
 
 .resetPasswordSection p a {
-  color: black;
+  color: var(--foreground);
 }
 
 @media screen and (max-width: 450px) {
