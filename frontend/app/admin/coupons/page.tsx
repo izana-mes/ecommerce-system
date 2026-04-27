@@ -147,6 +147,12 @@ export default function AdminCouponsPage() {
     () => coupons.find((coupon) => coupon.id === selectedCouponId) ?? null,
     [coupons, selectedCouponId]
   );
+  const selectedRecipients = useMemo(
+    () => selectedRecipientIds
+      .map((recipientId) => customers.find((customer) => customer.id === recipientId))
+      .filter((customer): customer is Customer => Boolean(customer)),
+    [customers, selectedRecipientIds]
+  );
 
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -227,9 +233,7 @@ export default function AdminCouponsPage() {
 
     setIssuing(true);
     try {
-      const recipients = selectedRecipientIds
-        .map((recipientId) => customers.find((customer) => customer.id === recipientId))
-        .filter((customer): customer is Customer => Boolean(customer))
+      const recipients = selectedRecipients
         .map((customer) => ({
           userId: customer.id,
           email: customer.email,
@@ -254,8 +258,14 @@ export default function AdminCouponsPage() {
       if (!response.ok) {
         throw new Error(data?.details || data?.error || "Failed to issue coupon");
       }
+      if (!Number(data?.issued || 0)) {
+        throw new Error(data?.message || "No coupon assignments were created");
+      }
 
       toast.success(data?.message || "Coupon issued");
+      if (Array.isArray(data?.emailFailures) && data.emailFailures.length > 0) {
+        toast.error(`Email delivery failed for ${data.emailFailures.length} recipient(s)`);
+      }
       setSelectedRecipientIds([]);
       setNotificationTitle("");
       setNotificationMessage("");
@@ -367,26 +377,78 @@ export default function AdminCouponsPage() {
               : "Choose a coupon from the table first."}
           </p>
 
-          <label style={{ display: "block", fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Recipients</label>
-          <select
-            multiple
-            value={selectedRecipientIds}
-            onChange={(event) => {
-              const values = Array.from(event.target.selectedOptions).map((option) => option.value);
-              setSelectedRecipientIds(values);
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, gap: 8 }}>
+            <label style={{ display: "block", fontSize: 14, fontWeight: 600 }}>Recipients</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setSelectedRecipientIds(customers.map((customer) => customer.id))}
+                disabled={customersLoading || customers.length === 0}
+              >
+                Select all
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedRecipientIds([])}
+                disabled={selectedRecipientIds.length === 0}
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+          <div
+            style={{
+              maxHeight: 220,
+              overflowY: "auto",
+              border: "1px solid #d7d7d7",
+              borderRadius: 8,
+              padding: 10,
+              marginBottom: 12,
+              background: customers.length === 0 ? "#fafafa" : "#fff",
             }}
-            disabled={customersLoading || customers.length === 0}
-            style={{ width: "100%", minHeight: 170, marginBottom: 12 }}
           >
-            {customers.map((customer) => {
-              const name = [customer.firstName, customer.lastName].filter(Boolean).join(" ").trim();
+            {customersLoading ? <p style={{ margin: 0, color: "#666" }}>Loading customers...</p> : null}
+            {!customersLoading && customers.length === 0 ? (
+              <p style={{ margin: 0, color: "#666" }}>No active customers available.</p>
+            ) : null}
+            {!customersLoading ? customers.map((customer) => {
+              const name = [customer.firstName, customer.lastName].filter(Boolean).join(" ").trim() || "Unnamed customer";
+              const checked = selectedRecipientIds.includes(customer.id);
               return (
-                <option key={customer.id} value={customer.id}>
-                  {name ? `${name} - ` : ""}{customer.email}
-                </option>
+                <label
+                  key={customer.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "8px 4px",
+                    borderBottom: "1px solid #f0f0f0",
+                    cursor: "pointer",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => {
+                      setSelectedRecipientIds((current) =>
+                        current.includes(customer.id)
+                          ? current.filter((id) => id !== customer.id)
+                          : [...current, customer.id]
+                      );
+                    }}
+                  />
+                  <span>
+                    {name} - {customer.email}
+                  </span>
+                </label>
               );
-            })}
-          </select>
+            }) : null}
+          </div>
+          <p style={{ color: "#555", fontSize: 13, marginTop: -4, marginBottom: 12 }}>
+            {selectedRecipients.length > 0
+              ? `${selectedRecipients.length} recipient(s) selected`
+              : "Select at least one recipient before issuing."}
+          </p>
 
           <label style={{ display: "block", fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Notification Title</label>
           <input
