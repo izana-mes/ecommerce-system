@@ -16,6 +16,7 @@ import java.util.Map;
 
 @Slf4j
 @Configuration
+@ConditionalOnProperty(name = "app.cache.backend", havingValue = "redis", matchIfMissing = true)
 public class RedisCacheConfig {
 
     public static final String PRODUCTS_ALL = "products:all";
