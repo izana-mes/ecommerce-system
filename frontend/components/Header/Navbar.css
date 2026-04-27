@@ -14,8 +14,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--surface-1);
-  backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
   position: relative;
   padding: 24px 160px;
   top: 0;
@@ -23,12 +24,30 @@
   z-index: 100;
   box-shadow: 0 10px 40px rgba(18, 40, 75, 0.06), inset 0 -1px 0 rgba(216, 229, 255, 0.5);
   transform: translateY(0);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), padding 0.3s ease;
+  transition:
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    padding 0.3s ease,
+    background-color 0.25s ease,
+    box-shadow 0.25s ease,
+    backdrop-filter 0.25s ease,
+    -webkit-backdrop-filter 0.25s ease,
+    border-color 0.25s ease;
   will-change: transform;
+  border-bottom: 1px solid rgba(216, 229, 255, 0.45);
 }
 
 .navBarHidden {
   transform: translateY(calc(-100% - 12px));
+}
+
+.navBarOverBanner {
+  background: rgba(255, 255, 255, 0.64);
+  backdrop-filter: blur(26px) saturate(185%);
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+  box-shadow:
+    0 18px 48px rgba(18, 40, 75, 0.14),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.5);
+  border-bottom-color: rgba(255, 255, 255, 0.72);
 }
 
 .logoContainer {

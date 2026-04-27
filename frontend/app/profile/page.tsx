@@ -20,6 +20,72 @@ import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
 import { useLocale } from "@/components/providers/LocaleProvider";
 
+type SupplierProductRequest = {
+  id: string;
+  actionType: "CREATE" | "UPDATE" | "DELETE" | "BULK_UPSERT";
+  targetProductId?: string | null;
+  requestPayload?: string | null;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  requestedByEmail?: string | null;
+  reviewerNote?: string | null;
+  createdAt?: string | null;
+  reviewedAt?: string | null;
+};
+
+type SupplierProductPayload = {
+  productID?: string;
+  productName?: string;
+  productPrice?: number;
+  stockQuantity?: number;
+};
+
+type OrderItem = {
+  product_id: string;
+  product_name: string;
+  unit_price: number;
+  quantity: number;
+  line_total: number;
+};
+
+type Order = {
+  id: number;
+  order_number: string;
+  total_amount: number;
+  currency: string;
+  payment_method: string;
+  payment_status: string;
+  order_status: string;
+  created_at: string;
+  items: OrderItem[];
+};
+
+type HistoryResponse = {
+  content: Order[];
+  totalPages: number;
+};
+
+function formatMoney(value: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: (currency || "USD").toUpperCase(),
+      maximumFractionDigits: 2,
+    }).format(Number(value || 0));
+  } catch {
+    return `${Number(value || 0).toFixed(2)} ${currency || "USD"}`;
+  }
+}
+
+function parseSupplierProductPayload(requestPayload?: string | null): SupplierProductPayload | null {
+  if (!requestPayload) return null;
+  try {
+    const parsed = JSON.parse(requestPayload) as SupplierProductPayload;
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function ProfilePage() {
   const { t } = useLocale();
   const router = useRouter();
@@ -63,6 +129,12 @@ export default function ProfilePage() {
   const [supplierRequestNote, setSupplierRequestNote] = useState("");
   const [supplierRequestLoading, setSupplierRequestLoading] = useState(false);
   const [supplierRequestSubmitting, setSupplierRequestSubmitting] = useState(false);
+  const [supplierProductRequests, setSupplierProductRequests] = useState<SupplierProductRequest[]>([]);
+  const [supplierProductsLoading, setSupplierProductsLoading] = useState(false);
+  const [adminProductRequests, setAdminProductRequests] = useState<SupplierProductRequest[]>([]);
+  const [adminProductsLoading, setAdminProductsLoading] = useState(false);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
 
   useEffect(() => {
     const syncUser = () => {
@@ -142,11 +214,114 @@ export default function ProfilePage() {
     }
   }, []);
 
+  const fetchSupplierProductRequests = useCallback(async () => {
+    const token = getToken();
+    if (!token) {
+      setSupplierProductRequests([]);
+      return;
+    }
+
+    setSupplierProductsLoading(true);
+    try {
+      const response = await fetch("/api/products/change-requests/mine", {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || "Failed to load supplier product requests");
+      }
+      setSupplierProductRequests(Array.isArray(data) ? data : []);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load supplier product requests";
+      toast.error(message);
+      setSupplierProductRequests([]);
+    } finally {
+      setSupplierProductsLoading(false);
+    }
+  }, []);
+
+  const fetchAdminProductRequests = useCallback(async () => {
+    const token = getToken();
+    if (!token) {
+      setAdminProductRequests([]);
+      return;
+    }
+
+    setAdminProductsLoading(true);
+    try {
+      const response = await fetch("/api/auth/admin-product-requests?status=PENDING", {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || "Failed to load product approvals");
+      }
+      setAdminProductRequests(Array.isArray(data) ? data : []);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load product approvals";
+      toast.error(message);
+      setAdminProductRequests([]);
+    } finally {
+      setAdminProductsLoading(false);
+    }
+  }, []);
+
+  const fetchRecentOrders = useCallback(async () => {
+    const token = getToken();
+    setOrdersLoading(true);
+    try {
+      const response = await fetch("/api/orders/history?page=0&size=3", {
+        method: "GET",
+        cache: "no-store",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const data = (await response.json()) as Partial<HistoryResponse> & {
+        message?: string;
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || "Failed to load purchase history");
+      }
+      setRecentOrders(Array.isArray(data.content) ? data.content : []);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load purchase history";
+      toast.error(message);
+      setRecentOrders([]);
+    } finally {
+      setOrdersLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!user) return;
     void fetchCouponItems();
     void fetchSupplierRequest();
-  }, [fetchCouponItems, fetchSupplierRequest, user]);
+    void fetchRecentOrders();
+    if (user.role === "supplier") {
+      void fetchSupplierProductRequests();
+      setAdminProductRequests([]);
+    } else if (user.role === "admin") {
+      void fetchAdminProductRequests();
+      setSupplierProductRequests([]);
+    } else {
+      setSupplierProductRequests([]);
+      setAdminProductRequests([]);
+    }
+  }, [fetchAdminProductRequests, fetchCouponItems, fetchRecentOrders, fetchSupplierProductRequests, fetchSupplierRequest, user]);
 
   const pendingCouponCount = useMemo(
     () => couponItems.filter((item) => item.status === "pending").length,
@@ -156,6 +331,21 @@ export default function ProfilePage() {
   const readyCouponCount = useMemo(
     () => couponItems.filter((item) => item.status === "ready").length,
     [couponItems]
+  );
+
+  const pendingSupplierProducts = useMemo(
+    () => supplierProductRequests.filter((item) => item.status === "PENDING"),
+    [supplierProductRequests]
+  );
+
+  const approvedSupplierProducts = useMemo(
+    () => supplierProductRequests.filter((item) => item.status === "APPROVED").length,
+    [supplierProductRequests]
+  );
+
+  const adminSupplierCount = useMemo(
+    () => new Set(adminProductRequests.map((item) => item.requestedByEmail).filter(Boolean)).size,
+    [adminProductRequests]
   );
 
   const handleConfirmCoupon = async (assignmentId: number) => {
@@ -262,70 +452,256 @@ export default function ProfilePage() {
   const supplierRequestStatus = supplierRequest?.status || null;
   const canRequestSupplierAccess = user.role === "user" && supplierRequestStatus !== "PENDING";
   const isSupplier = user.role === "supplier";
+  const isAdmin = user.role === "admin";
 
   return (
     <div className="profilePage">
       <div className="profileLayout">
-        <div className="profileCard">
-          <h2>{t("profile_title")}</h2>
-          <div className="profileField">
-            <span className="profileLabel">{t("profile_email")}</span>
-            <span className="profileValue">{user.email}</span>
-          </div>
-          {user.firstName || user.lastName ? (
+        <div className="profileSidebar">
+          <div className="profileCard">
+            <h2>{t("profile_title")}</h2>
             <div className="profileField">
-              <span className="profileLabel">{t("profile_name")}</span>
+              <span className="profileLabel">{t("profile_email")}</span>
+              <span className="profileValue">{user.email}</span>
+            </div>
+            {user.firstName || user.lastName ? (
+              <div className="profileField">
+                <span className="profileLabel">{t("profile_name")}</span>
+                <span className="profileValue">
+                  {[user.firstName, user.lastName].filter(Boolean).join(" ")}
+                </span>
+              </div>
+            ) : null}
+            <div className="profileField">
+              <span className="profileLabel">{t("profile_role")}</span>
+              <span className="profileValue">{user.role}</span>
+            </div>
+            <div className="profileField">
+              <span className="profileLabel">{t("profile_orders")}</span>
               <span className="profileValue">
-                {[user.firstName, user.lastName].filter(Boolean).join(" ")}
+                <Link href="/orders">{t("profile_view_history")}</Link>
               </span>
             </div>
-          ) : null}
-          <div className="profileField">
-            <span className="profileLabel">{t("profile_role")}</span>
-            <span className="profileValue">{user.role}</span>
+            {isSupplier ? (
+              <div className="profileField">
+                <span className="profileLabel">Supplier portal</span>
+                <span className="profileValue">
+                  <Link href="/supplier">Open portal</Link>
+                </span>
+              </div>
+            ) : null}
+            <button className="profileLogoutButton" onClick={handleLogout}>
+              {t("profile_logout")}
+            </button>
           </div>
-          <div className="profileField">
-            <span className="profileLabel">{t("profile_orders")}</span>
-            <span className="profileValue">
-              <Link href="/orders">{t("profile_view_history")}</Link>
-            </span>
-          </div>
-          {isSupplier ? (
-            <div className="profileField">
-              <span className="profileLabel">Supplier portal</span>
-              <span className="profileValue">
-                <Link href="/supplier">Open portal</Link>
-              </span>
-            </div>
+
+          {!isAdmin ? (
+            <section className="profileCard profileHistoryCard profileHistoryCardCompact">
+              <div className="profileHistoryHeader">
+                <div>
+                  <h2>{t("orders_history")}</h2>
+                  <p>Your latest purchases in one place.</p>
+                </div>
+                <Link href="/orders" className="profileSecondaryButton profileLinkButton">
+                  View all
+                </Link>
+              </div>
+
+              {ordersLoading ? <p className="profileHistoryEmpty">Loading purchase history...</p> : null}
+              {!ordersLoading && recentOrders.length === 0 ? (
+                <p className="profileHistoryEmpty">No purchases yet.</p>
+              ) : null}
+
+              <div className="profileHistoryList profileHistoryListCompact">
+                {recentOrders.slice(0, 3).map((order) => (
+                  <article key={order.id} className="profileHistoryItem profileHistoryItemCompact">
+                    <div className="profileHistoryTopRow">
+                      <strong>{order.order_number}</strong>
+                      <span>{new Date(order.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <div className="profileHistoryMeta">
+                      <span>{order.order_status}</span>
+                      <span>{formatMoney(order.total_amount, order.currency)}</span>
+                    </div>
+                    <p>
+                      {order.items.slice(0, 2).map((item) => item.product_name).join(", ")}
+                      {order.items.length > 2 ? ` +${order.items.length - 2} more` : ""}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </section>
           ) : null}
-          <button className="profileLogoutButton" onClick={handleLogout}>
-            {t("profile_logout")}
-          </button>
         </div>
 
         <section className="profileCard profileSupplierCard">
           <div className="profileSupplierHeader">
             <div>
-              <h2>Supplier access</h2>
-              <p>Request permission to submit products for admin review.</p>
+              <h2>{isAdmin ? "Supplier accounts" : isSupplier ? "Supplier account" : "Supplier access"}</h2>
+              <p>
+                {isAdmin
+                  ? "Monitor products that are still waiting for approval and review recent account purchases."
+                  : isSupplier
+                  ? "Track product submissions that are still waiting for admin approval."
+                  : "Request permission to submit products for admin review."}
+              </p>
             </div>
-            {supplierRequestStatus ? (
+            {!isSupplier && !isAdmin && supplierRequestStatus ? (
               <span className={`profileSupplierStatus profileSupplierStatus${supplierRequestStatus.toLowerCase()}`}>
                 {supplierRequestStatus.toLowerCase()}
               </span>
             ) : null}
           </div>
 
+          {isAdmin ? (
+            <div className="profileSupplierSummary">
+              <div className="profileSupplierMetrics">
+                <div className="profileMetric">
+                  <strong>{adminProductRequests.length}</strong>
+                  <span>Products under approval</span>
+                </div>
+                <div className="profileMetric">
+                  <strong>{adminSupplierCount}</strong>
+                  <span>Suppliers in queue</span>
+                </div>
+              </div>
+
+              <div className="profilePendingList">
+                {adminProductsLoading ? <p>Loading approval queue...</p> : null}
+                {!adminProductsLoading && adminProductRequests.length === 0 ? (
+                  <p>No product submissions are currently waiting for approval.</p>
+                ) : null}
+                {!adminProductsLoading
+                  ? adminProductRequests.slice(0, 4).map((request) => {
+                      const payload = parseSupplierProductPayload(request.requestPayload);
+                      const productLabel = payload?.productName || request.targetProductId || "New product submission";
+                      const productId = payload?.productID || request.targetProductId;
+                      return (
+                        <article key={request.id} className="profilePendingItem">
+                          <div className="profilePendingItemHeader">
+                            <div>
+                              <h3>{productLabel}</h3>
+                              <p>
+                                {request.requestedByEmail || "Unknown supplier"}
+                                {" · "}
+                                {request.actionType.toLowerCase()} request
+                                {productId ? ` · ${productId}` : ""}
+                              </p>
+                            </div>
+                            <span className="profileSupplierStatus profileSupplierStatuspending">pending</span>
+                          </div>
+                          <div className="profilePendingMeta">
+                            <span>
+                              Submitted {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : "recently"}
+                            </span>
+                            {typeof payload?.productPrice === "number" ? (
+                              <span>{formatMoney(payload.productPrice, "USD")}</span>
+                            ) : null}
+                            {typeof payload?.stockQuantity === "number" ? (
+                              <span>Stock {payload.stockQuantity}</span>
+                            ) : null}
+                          </div>
+                        </article>
+                      );
+                    })
+                  : null}
+              </div>
+
+              <div className="profileMiniSection">
+                <div className="profileMiniSectionHeader">
+                  <div>
+                    <h3>Purchase history</h3>
+                    <p>Your latest account orders.</p>
+                  </div>
+                  <Link href="/orders" className="profileSecondaryButton profileLinkButton">
+                    View all
+                  </Link>
+                </div>
+                {ordersLoading ? <p className="profileHistoryEmpty">Loading purchase history...</p> : null}
+                {!ordersLoading && recentOrders.length === 0 ? (
+                  <p className="profileHistoryEmpty">No purchases yet.</p>
+                ) : null}
+                {!ordersLoading && recentOrders.length > 0 ? (
+                  <div className="profileMiniHistoryList">
+                    {recentOrders.slice(0, 2).map((order) => (
+                      <article key={order.id} className="profileMiniHistoryItem">
+                        <div className="profileHistoryTopRow">
+                          <strong>{order.order_number}</strong>
+                          <span>{new Date(order.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <div className="profileHistoryMeta">
+                          <span>{order.order_status}</span>
+                          <span>{formatMoney(order.total_amount, order.currency)}</span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+
+              <Link href="/admin" className="profilePrimaryButton profileLinkButton">
+                Open review queue
+              </Link>
+            </div>
+          ) : null}
+
           {isSupplier ? (
             <div className="profileSupplierSummary">
-              <p>Your account already has supplier access.</p>
+              <div className="profileSupplierMetrics">
+                <div className="profileMetric">
+                  <strong>{pendingSupplierProducts.length}</strong>
+                  <span>Awaiting approval</span>
+                </div>
+                <div className="profileMetric">
+                  <strong>{approvedSupplierProducts}</strong>
+                  <span>Approved</span>
+                </div>
+              </div>
+              <div className="profilePendingList">
+                {supplierProductsLoading ? <p>Loading product submissions...</p> : null}
+                {!supplierProductsLoading && pendingSupplierProducts.length === 0 ? (
+                  <p>No products are currently waiting for approval.</p>
+                ) : null}
+                {!supplierProductsLoading
+                  ? pendingSupplierProducts.slice(0, 4).map((request) => {
+                      const payload = parseSupplierProductPayload(request.requestPayload);
+                      const productLabel = payload?.productName || request.targetProductId || "New product submission";
+                      const productId = payload?.productID || request.targetProductId;
+                      return (
+                        <article key={request.id} className="profilePendingItem">
+                          <div className="profilePendingItemHeader">
+                            <div>
+                              <h3>{productLabel}</h3>
+                              <p>
+                                {request.actionType.toLowerCase()} request
+                                {productId ? ` · ${productId}` : ""}
+                              </p>
+                            </div>
+                            <span className="profileSupplierStatus profileSupplierStatuspending">pending</span>
+                          </div>
+                          <div className="profilePendingMeta">
+                            <span>
+                              Submitted {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : "recently"}
+                            </span>
+                            {typeof payload?.productPrice === "number" ? (
+                              <span>{formatMoney(payload.productPrice, "USD")}</span>
+                            ) : null}
+                            {typeof payload?.stockQuantity === "number" ? (
+                              <span>Stock {payload.stockQuantity}</span>
+                            ) : null}
+                          </div>
+                        </article>
+                      );
+                    })
+                  : null}
+              </div>
               <Link href="/supplier" className="profilePrimaryButton profileLinkButton">
                 Manage product submissions
               </Link>
             </div>
           ) : null}
 
-          {!isSupplier && supplierRequest ? (
+          {!isSupplier && !isAdmin && supplierRequest ? (
             <div className="profileSupplierSummary">
               <p>
                 Latest request: <strong>{supplierRequest.status.toLowerCase()}</strong>
@@ -337,7 +713,7 @@ export default function ProfilePage() {
             </div>
           ) : null}
 
-          {!isSupplier && canRequestSupplierAccess ? (
+          {!isSupplier && !isAdmin && canRequestSupplierAccess ? (
             <div className="profileSupplierForm">
               <input
                 className="profileTextInput"

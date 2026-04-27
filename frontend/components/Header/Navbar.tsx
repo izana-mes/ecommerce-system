@@ -58,8 +58,10 @@ export default function Navbar() {
   const [showSearchPopup, setShowSearchPopup] = useState(false);
   const [searchPopupText, setSearchPopupText] = useState("");
   const [isNavHidden, setIsNavHidden] = useState(false);
+  const [isOverHomeBanner, setIsOverHomeBanner] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const lastScrollY = useRef(0);
+  const navRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -205,9 +207,31 @@ export default function Navbar() {
   }, [menuMobileOpen]);
 
   useEffect(() => {
+    const updateBannerOverlap = () => {
+      if (pathname !== "/") {
+        setIsOverHomeBanner(false);
+        return;
+      }
+
+      const navElement = navRef.current;
+      const bannerElement = document.querySelector('[data-nav-blur-region="home-banner"]');
+
+      if (!navElement || !bannerElement) {
+        setIsOverHomeBanner(false);
+        return;
+      }
+
+      const navRect = navElement.getBoundingClientRect();
+      const bannerRect = bannerElement.getBoundingClientRect();
+      const overlapsBanner = bannerRect.top < navRect.bottom - 12 && bannerRect.bottom > navRect.top + 12;
+
+      setIsOverHomeBanner(overlapsBanner);
+    };
+
     const handleScroll = () => {
       if (menuMobileOpen) {
         setIsNavHidden(false);
+        updateBannerOverlap();
         return;
       }
 
@@ -215,6 +239,7 @@ export default function Navbar() {
       if (currentY <= 16) {
         setIsNavHidden(false);
         lastScrollY.current = currentY;
+        updateBannerOverlap();
         return;
       }
 
@@ -228,11 +253,17 @@ export default function Navbar() {
       }
 
       lastScrollY.current = currentY;
+      updateBannerOverlap();
     };
 
+    updateBannerOverlap();
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [menuMobileOpen]);
+    window.addEventListener("resize", updateBannerOverlap);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", updateBannerOverlap);
+    };
+  }, [menuMobileOpen, pathname]);
 
   const navLinks = useMemo(() => {
     if (isAdminUser || isStaffUser) {
@@ -308,7 +339,10 @@ export default function Navbar() {
       <div className="announcementBar">
         {t("announcement_bar")}
       </div>
-      <nav className={`navBar ${isNavHidden ? "navBarHidden" : ""}`}>
+      <nav
+        ref={navRef}
+        className={`navBar ${isNavHidden ? "navBarHidden" : ""} ${isOverHomeBanner ? "navBarOverBanner" : ""}`}
+      >
         <div className="logoContainer">
           <Link href="/" onClick={scrollToTop} aria-label="Uomo Home">
             <img src="/logo.png" alt="Uomo" />

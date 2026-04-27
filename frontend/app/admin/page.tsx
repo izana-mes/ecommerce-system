@@ -3201,7 +3201,7 @@ export default function AdminPage() {
                   <div className="overviewSection">
                     <h3>Coupons & Vouchers</h3>
                     <p className="sectionHint">
-                      Create percentage or fixed discounts, issue them to customers, and let shoppers confirm receipt before checkout.
+                      
                     </p>
                     <div className="actionList">
                       <button
@@ -3571,7 +3571,7 @@ export default function AdminPage() {
               <>
                 <div style={{ marginBottom: 12 }}>
                   <h3 style={{ marginBottom: 6 }}>Product Submission Requests</h3>
-                  <p className="sectionHint">Review supplier product uploads before they become visible in the catalog.</p>
+                  <p className="sectionHint"></p>
                 </div>
                 <div className="adminTableWrapper" style={{ marginBottom: 24 }}>
                   <table className="adminTable">
@@ -3641,7 +3641,7 @@ export default function AdminPage() {
 
                 <div style={{ marginBottom: 12 }}>
                   <h3 style={{ marginBottom: 6 }}>Supplier Access Requests</h3>
-                  <p className="sectionHint">Approve or reject business accounts that want supplier portal access.</p>
+                  <p className="sectionHint"></p>
                 </div>
                 <div className="adminTableWrapper">
                   <table className="adminTable">
@@ -4020,14 +4020,12 @@ export default function AdminPage() {
         ) : activeTab === "inventory" ? (
           <>
             <section className="overviewSection">
-              <h3>Why Inventory Monitoring Matters</h3>
+              <h3></h3>
               <p>
-                Inventory is the operational truth of what we can actually sell. This section helps prevent overselling,
-                highlights stock at risk of stockout, and shows where revenue may be blocked by low availability.
+               
               </p>
               <p>
-                Data source: product stock and active status from the `products` table, reserved quantities from `cart_items`,
-                and top-selling products from order history (`orders` + `order_items`) in PostgreSQL.
+              
               </p>
             </section>
 
@@ -5165,13 +5163,12 @@ export default function AdminPage() {
         ) : activeTab === "audit" ? (
           <>
             <section className="overviewSection">
-              <h3>Why Audit Logs Matter</h3>
+              <h3></h3>
               <p>
-                Audit logs provide accountability for sensitive actions and system events. They are essential for incident
-                investigation, compliance checks, and understanding who changed what and when.
+
               </p>
               <p>
-                Data source: persisted records from the `audit_events` table in PostgreSQL (including metadata in JSONB `details`).
+                
               </p>
             </section>
 
@@ -5230,7 +5227,7 @@ export default function AdminPage() {
                     </span>
                   </div>
                   <div className="adminInsightList">
-                    <p>Use this page to answer what changed, who changed it, and whether the change is isolated or repeating.</p>
+                    <p></p>
                     <p>
                       {auditEvents.length === 0
                         ? "No audit events matched the current filters. Widen the date range or confirm backend event publishing is enabled."
@@ -5288,14 +5285,12 @@ export default function AdminPage() {
         ) : activeTab === "queues" ? (
           <>
             <section className="overviewSection">
-              <h3>Why Queue Monitoring Matters</h3>
+              <h3></h3>
               <p>
-                Queues protect user-facing performance by processing heavy work asynchronously. Monitoring backlog, consumers,
-                retry queues, and DLQs helps us catch delivery bottlenecks before they delay emails, status updates, and alerts.
+
               </p>
               <p>
-                Data source: live queue depth/consumer state from RabbitMQ management API, plus operational business context from PostgreSQL
-                (`orders` and `audit_events`) to connect broker health with real store impact.
+
               </p>
             </section>
 
