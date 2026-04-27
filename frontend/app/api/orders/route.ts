@@ -4,6 +4,16 @@ import { finalizeCouponRedemption, validateCouponCode } from "@/lib/coupons";
 
 const API_URL = backendApiBaseUrl();
 
+type OrderRequestItem = {
+  productPrice?: number | string | null;
+  quantity?: number | string | null;
+};
+
+type OrderRequestBody = Record<string, unknown> & {
+  items?: OrderRequestItem[];
+  couponCode?: string | null;
+};
+
 function getAuthHeader(request: NextRequest): string | null {
   return request.headers.get("authorization") || request.headers.get("Authorization");
 }
@@ -14,13 +24,13 @@ function getCookieHeader(request: NextRequest): string | null {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json().catch(() => null);
+    const body = (await request.json().catch(() => null)) as OrderRequestBody | null;
     if (!body || typeof body !== "object") {
       return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
 
-    const items = Array.isArray(body.items) ? body.items : [];
-    const subtotal = items.reduce((sum, item) => {
+    const items: OrderRequestItem[] = Array.isArray(body.items) ? body.items : [];
+    const subtotal = items.reduce((sum: number, item: OrderRequestItem) => {
       const price = Number(item?.productPrice ?? 0);
       const quantity = Number(item?.quantity ?? 0);
       if (!Number.isFinite(price) || !Number.isFinite(quantity) || quantity <= 0) {
