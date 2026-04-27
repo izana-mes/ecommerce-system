@@ -172,7 +172,7 @@ async function ensureCouponTables(conn: DbConnection): Promise<void> {
       CREATE TABLE IF NOT EXISTS coupon_assignments (
         id BIGSERIAL PRIMARY KEY,
         coupon_id BIGINT NOT NULL REFERENCES coupons(id) ON DELETE CASCADE,
-        user_id UUID NOT NULL REFERENCES users(users_id) ON DELETE CASCADE,
+        user_id UUID NOT NULL,
         user_email VARCHAR(255) NOT NULL,
         notification_title VARCHAR(160) NULL,
         notification_message TEXT NULL,
@@ -180,7 +180,7 @@ async function ensureCouponTables(conn: DbConnection): Promise<void> {
         issued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         acknowledged_at TIMESTAMP NULL,
         used_at TIMESTAMP NULL,
-        used_order_id BIGINT NULL REFERENCES orders(id) ON DELETE SET NULL,
+        used_order_id BIGINT NULL,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
