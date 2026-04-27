@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HiSparkles } from "react-icons/hi2";
+import { HiInformationCircle, HiSparkles } from "react-icons/hi2";
 import { MdSupportAgent } from "react-icons/md";
 
 import styles from "./FloatingChatButtons.module.css";
@@ -26,6 +26,12 @@ export default function FloatingChatButtons() {
           <span className={styles.eyebrow}>AI assistant</span>
           <span className={styles.title}>Open chatbot</span>
         </span>
+        <span className={styles.trailingBanner} aria-hidden="true">
+          <span className={styles.trailingText}>AI</span>
+          <span className={styles.infoIcon}>
+            <HiInformationCircle size={16} />
+          </span>
+        </span>
       </Link>
 
       <Link href="/support-chat" className={`${styles.floatingAction} ${styles.staff}`}>
@@ -35,6 +41,12 @@ export default function FloatingChatButtons() {
         <span className={styles.labelGroup}>
           <span className={styles.eyebrow}>Live support</span>
           <span className={styles.title}>Chat with staff</span>
+        </span>
+        <span className={styles.trailingBanner} aria-hidden="true">
+          <span className={styles.trailingText}>Help</span>
+          <span className={styles.infoIcon}>
+            <HiInformationCircle size={16} />
+          </span>
         </span>
       </Link>
     </aside>

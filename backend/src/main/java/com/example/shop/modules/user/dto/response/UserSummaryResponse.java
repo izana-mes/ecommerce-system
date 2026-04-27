@@ -36,7 +36,9 @@ public class UserSummaryResponse {
 
         String normalizedRole = roles.stream().anyMatch("ROLE_ADMIN"::equalsIgnoreCase)
                 ? "admin"
-                : roles.stream().anyMatch("ROLE_EMPLOYEE"::equalsIgnoreCase) ? "employee" : "user";
+                : roles.stream().anyMatch("ROLE_EMPLOYEE"::equalsIgnoreCase) ? "employee"
+                : roles.stream().anyMatch("ROLE_SUPPLIER"::equalsIgnoreCase) ? "supplier"
+                : "user";
 
         return UserSummaryResponse.builder()
                 .id(user.getId())

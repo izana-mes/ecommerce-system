@@ -203,6 +203,9 @@ public class UserService {
         } else if ("ROLE_EMPLOYEE".equals(normalizedRole)) {
             Role employeeRole = findOrCreateSystemRole("ROLE_EMPLOYEE");
             nextRoles.add(employeeRole);
+        } else if ("ROLE_SUPPLIER".equals(normalizedRole)) {
+            Role supplierRole = findOrCreateSystemRole("ROLE_SUPPLIER");
+            nextRoles.add(supplierRole);
         }
 
         user.setRoles(nextRoles);
@@ -224,14 +227,17 @@ public class UserService {
             normalized = "ROLE_ADMIN";
         } else if ("EMPLOYEE".equals(normalized)) {
             normalized = "ROLE_EMPLOYEE";
+        } else if ("SUPPLIER".equals(normalized)) {
+            normalized = "ROLE_SUPPLIER";
         } else if ("USER".equals(normalized)) {
             normalized = "ROLE_USER";
         }
 
         if (!"ROLE_USER".equals(normalized)
                 && !"ROLE_ADMIN".equals(normalized)
-                && !"ROLE_EMPLOYEE".equals(normalized)) {
-            throw new BusinessException("Unsupported role. Allowed values: user, employee, admin", HttpStatus.BAD_REQUEST);
+                && !"ROLE_EMPLOYEE".equals(normalized)
+                && !"ROLE_SUPPLIER".equals(normalized)) {
+            throw new BusinessException("Unsupported role. Allowed values: user, employee, supplier, admin", HttpStatus.BAD_REQUEST);
         }
         return normalized;
     }

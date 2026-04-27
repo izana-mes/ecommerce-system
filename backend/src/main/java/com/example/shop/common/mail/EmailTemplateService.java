@@ -97,4 +97,50 @@ public class EmailTemplateService {
                 reviewType == null ? "WARNING" : reviewType
         );
     }
+
+    public String generateCouponIssuedEmail(
+            String name,
+            String couponTitle,
+            String couponCode,
+            String notificationTitle,
+            String notificationMessage,
+            String redeemUrl,
+            String expiresAt
+    ) {
+        return String.format(
+                """
+                        <html>
+                            <body style="font-family: Arial, sans-serif; color: #111;">
+                                <h2>Hello %s,</h2>
+                                <p><strong>%s</strong></p>
+                                <p>%s</p>
+                                <p>Coupon: <strong>%s</strong></p>
+                                <p>Code: <strong style="font-family: monospace;">%s</strong></p>
+                                <p>
+                                    <a href="%s" style="display: inline-block; background-color: #111827; color: #ffffff; padding: 12px 18px; text-decoration: none; border-radius: 6px;">Redeem Coupon</a>
+                                </p>
+                                <p>Or copy this link: %s</p>
+                                <p>%s</p>
+                            </body>
+                        </html>
+                        """,
+                escapeHtml(name == null || name.isBlank() ? "there" : name),
+                escapeHtml(notificationTitle == null || notificationTitle.isBlank() ? "A new coupon has been issued to your account." : notificationTitle),
+                escapeHtml(notificationMessage == null || notificationMessage.isBlank() ? "Click the link below to open your coupon redemption page." : notificationMessage),
+                escapeHtml(couponTitle == null || couponTitle.isBlank() ? "Discount voucher" : couponTitle),
+                escapeHtml(couponCode),
+                escapeHtml(redeemUrl),
+                escapeHtml(redeemUrl),
+                escapeHtml(expiresAt == null || expiresAt.isBlank() ? "Use this coupon before it expires." : "Expires on " + expiresAt + ".")
+        );
+    }
+
+    private String escapeHtml(String value) {
+        return (value == null ? "" : value)
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+    }
 }

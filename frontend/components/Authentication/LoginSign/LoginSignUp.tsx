@@ -3,7 +3,7 @@
 import React, { useState, FormEvent } from "react";
 import "./LoginSignUp.css";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { useAppDispatch } from "@/store";
 import { clearCart, fetchCartAsync } from "@/store/cartSlice";
@@ -16,6 +16,7 @@ const LoginSignUp = () => {
   const { t } = useLocale();
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("tabButton1");
   const [loading, setLoading] = useState(false);
   
@@ -37,14 +38,20 @@ const LoginSignUp = () => {
     error instanceof Error ? error.message : fallback;
   const resolveRole = (
     profile: { role?: string; roles?: string[] } | null | undefined
-  ): "user" | "admin" | "employee" => {
+  ): "user" | "admin" | "employee" | "supplier" => {
     if (profile?.role === "admin") return "admin";
     if (profile?.role === "employee") return "employee";
+    if (profile?.role === "supplier") return "supplier";
     if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_ADMIN")) return "admin";
     if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_EMPLOYEE")) return "employee";
+    if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_SUPPLIER")) return "supplier";
 
     return "user";
   };
+  const returnToParam = (searchParams.get("returnTo") || "").trim();
+  const returnTo = returnToParam.startsWith("/") && !returnToParam.startsWith("//")
+    ? returnToParam
+    : "/";
 
   const handleTab = (tab: string) => {
     setActiveTab(tab);
@@ -110,7 +117,7 @@ const LoginSignUp = () => {
 
       let resolvedUser = {
         email: loginEmail,
-        role: "user" as "user" | "admin" | "employee",
+        role: "user" as "user" | "admin" | "employee" | "supplier",
         firstName: undefined as string | undefined,
         lastName: undefined as string | undefined,
         id: undefined as string | number | undefined,
@@ -168,7 +175,7 @@ const LoginSignUp = () => {
       });
 
       // Redirect to home page immediately after successful login
-      router.replace("/");
+      router.replace(returnTo);
       router.refresh();
     } catch (error: unknown) {
       console.error("Login error details:", error);

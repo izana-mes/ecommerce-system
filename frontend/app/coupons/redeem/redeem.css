@@ -1,0 +1,141 @@
+.couponRedeemPage {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  background:
+    radial-gradient(circle at top, rgba(189, 220, 255, 0.7), transparent 35%),
+    linear-gradient(180deg, #f7f4ea 0%, #eef2f7 100%);
+}
+
+.couponRedeemCard {
+  width: min(100%, 720px);
+  padding: 32px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.couponRedeemCard h1 {
+  margin: 16px 0 12px;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  line-height: 1.1;
+  color: #0f172a;
+}
+
+.couponRedeemCard p {
+  margin: 0;
+  color: #334155;
+  line-height: 1.6;
+}
+
+.couponRedeemBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.couponRedeemBadgeError {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.couponRedeemBadgeMuted {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.couponRedeemDetails {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 28px 0;
+}
+
+.couponRedeemDetails > div {
+  padding: 18px;
+  border-radius: 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.couponRedeemLabel {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+
+.couponRedeemActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.couponRedeemHint {
+  color: #475569;
+}
+
+.couponRedeemPrimaryButton,
+.couponRedeemPrimaryLink,
+.couponRedeemSecondaryLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.couponRedeemPrimaryButton,
+.couponRedeemPrimaryLink {
+  border: none;
+  background: #0f172a;
+  color: #fff;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.18);
+  cursor: pointer;
+}
+
+.couponRedeemPrimaryButton:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.couponRedeemSecondaryLink {
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  background: #fff;
+}
+
+.couponRedeemPrimaryButton:hover:not(:disabled),
+.couponRedeemPrimaryLink:hover,
+.couponRedeemSecondaryLink:hover {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .couponRedeemCard {
+    padding: 24px;
+    border-radius: 20px;
+  }
+
+  .couponRedeemDetails {
+    grid-template-columns: 1fr;
+  }
+}

@@ -52,6 +52,17 @@ public class ProductChangeRequestService {
     }
 
     @Transactional(readOnly = true)
+    public List<ProductChangeRequestResponseDto> listRequestsForRequester(User requester) {
+        if (requester == null || requester.getId() == null) {
+            throw new BusinessException("Requester is required", HttpStatus.UNAUTHORIZED);
+        }
+        return productChangeRequestRepository.findAllByRequestedByIdOrderByCreatedAtDesc(requester.getId())
+                .stream()
+                .map(ProductChangeRequestResponseDto::fromEntity)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<ProductChangeRequestResponseDto> listRequests(String status) {
         List<ProductChangeRequest> requests;
         if (!StringUtils.hasText(status)) {

@@ -1,14 +1,19 @@
 .profilePage {
   min-height: 60vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   padding: 40px 16px;
   background-color: #f9f9fb;
 }
 
+.profileLayout {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
 .profileCard {
-  max-width: 480px;
   width: 100%;
   background-color: var(--surface-1);
   border-radius: 12px;
@@ -20,7 +25,6 @@
   margin: 0 0 24px;
   font-size: 24px;
   font-weight: 600;
-  text-align: center;
 }
 
 .profileField {
@@ -59,3 +63,194 @@
   box-shadow: 0 8px 20px rgba(195, 41, 41, 0.35);
 }
 
+.profileCouponsCard {
+  min-height: 100%;
+}
+
+.profileSupplierCard {
+  min-height: 100%;
+}
+
+.profileSupplierHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.profileSupplierHeader p,
+.profileSupplierSummary p {
+  margin: 6px 0 0;
+  color: var(--muted-text);
+}
+
+.profileSupplierStatus {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.profileSupplierStatuspending {
+  background: #fff4db;
+  color: #8a5a00;
+}
+
+.profileSupplierStatusapproved {
+  background: #dff7e8;
+  color: #17663a;
+}
+
+.profileSupplierStatusrejected {
+  background: #fde8e8;
+  color: #b42318;
+}
+
+.profileSupplierForm {
+  display: grid;
+  gap: 12px;
+}
+
+.profileTextInput,
+.profileTextarea {
+  width: 100%;
+  border: 1px solid rgba(16, 24, 40, 0.12);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #fff;
+  color: var(--foreground);
+}
+
+.profileTextarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.profileCouponsHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.profileCouponsHeader p {
+  margin: 6px 0 0;
+  color: var(--muted-text);
+}
+
+.profileCouponList {
+  display: grid;
+  gap: 14px;
+}
+
+.profileCouponItem {
+  border: 1px solid rgba(16, 24, 40, 0.08);
+  border-radius: 14px;
+  padding: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(244, 247, 251, 0.9));
+}
+
+.profileCouponItem h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.profileCouponItem p {
+  margin: 0;
+  color: var(--muted-text);
+}
+
+.profileCouponStatusRow,
+.profileCouponMeta,
+.profileCouponActions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.profileCouponStatusRow {
+  margin-bottom: 12px;
+}
+
+.profileCouponMeta {
+  margin-top: 14px;
+  color: var(--foreground);
+  flex-wrap: wrap;
+}
+
+.profileCouponActions {
+  margin-top: 18px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.profileCouponStatus {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.profileCouponStatuspending {
+  background: #fff4db;
+  color: #8a5a00;
+}
+
+.profileCouponStatusready {
+  background: #dff7e8;
+  color: #17663a;
+}
+
+.profileCouponStatusused {
+  background: #eceff3;
+  color: #475467;
+}
+
+.profileCouponCode {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.profilePrimaryButton,
+.profileSecondaryButton,
+.profileLinkButton {
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.profilePrimaryButton,
+.profileLinkButton {
+  background: #101828;
+  color: #fff;
+}
+
+.profileSecondaryButton {
+  background: #eef2f6;
+  color: #101828;
+}
+
+.profileCouponsEmpty,
+.profileUsedText {
+  color: var(--muted-text);
+}
+
+@media (max-width: 900px) {
+  .profileLayout {
+    grid-template-columns: 1fr;
+  }
+}

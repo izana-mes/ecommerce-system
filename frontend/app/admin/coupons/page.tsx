@@ -231,6 +231,8 @@ export default function AdminCouponsPage() {
         .map((customer) => ({
           userId: customer.id,
           email: customer.email,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
         }));
 
       const response = await fetch("/api/auth/admin-coupons/issue", {
@@ -267,7 +269,7 @@ export default function AdminCouponsPage() {
   return (
     <section style={{ maxWidth: 1180, margin: "30px auto", padding: "0 16px 40px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700 }}>Admin Coupons</h1>
+        <h1 style={{ fontSize: 28, fontWeight: 700 }}>Coupons & Discount Vouchers</h1>
         <Link href="/admin" style={{ textDecoration: "underline" }}>Back to Admin</Link>
       </div>
 
@@ -356,7 +358,7 @@ export default function AdminCouponsPage() {
         </div>
 
         <aside style={{ border: "1px solid #d7d7d7", borderRadius: 10, padding: 14 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 10 }}>Issue Coupon</h2>
+          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 10 }}>Issue to Customers</h2>
           <p style={{ color: "#555", marginBottom: 12 }}>
             {selectedCoupon
               ? `Selected: ${selectedCoupon.code} (${selectedCoupon.title})`

@@ -12,4 +12,6 @@ public interface ProductChangeRequestRepository extends JpaRepository<ProductCha
     List<ProductChangeRequest> findAllByOrderByCreatedAtDesc();
 
     List<ProductChangeRequest> findAllByStatusOrderByCreatedAtAsc(ProductChangeRequestStatus status);
+
+    List<ProductChangeRequest> findAllByRequestedByIdOrderByCreatedAtDesc(UUID requestedById);
 }

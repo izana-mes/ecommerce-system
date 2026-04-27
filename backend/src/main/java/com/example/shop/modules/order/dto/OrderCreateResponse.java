@@ -13,8 +13,10 @@ public class OrderCreateResponse {
     private BigDecimal subtotal;
     private BigDecimal shippingFee;
     private BigDecimal vat;
+    private BigDecimal discountAmount;
     private BigDecimal totalAmount;
     private String currency;
+    private String couponCode;
     private String paymentStatus;
     private String orderStatus;
 }

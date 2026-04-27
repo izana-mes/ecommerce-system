@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { MdOutlineClose } from "react-icons/md";
@@ -107,6 +107,7 @@ export default function ShoppingCart() {
   const requestedStep = (searchParams.get("step") || "").trim().toLowerCase();
   const requestedBuyNow = (searchParams.get("buyNow") || "").trim();
   const requestedPayment = (searchParams.get("payment") || "").trim().toLowerCase();
+  const requestedCoupon = (searchParams.get("coupon") || "").trim().toUpperCase();
 
   useEffect(() => {
     setMounted(true);
@@ -167,7 +168,7 @@ export default function ShoppingCart() {
   useEffect(() => {
     if (!appliedCoupon) return;
     setAppliedCoupon(null);
-  }, [checkoutSubtotal]);
+  }, [appliedCoupon, checkoutSubtotal]);
 
   const handleCheckoutFieldChange = (field: keyof CheckoutForm, value: string | boolean) => {
     setCheckoutForm((prev) => ({
@@ -435,8 +436,8 @@ export default function ShoppingCart() {
     }
   };
 
-  const handleApplyCoupon = async () => {
-    const normalizedCode = couponCode.trim().toUpperCase();
+  const handleApplyCoupon = useCallback(async (inputCode?: string) => {
+    const normalizedCode = (inputCode ?? couponCode).trim().toUpperCase();
     if (!normalizedCode) {
       toast.error("Please enter a coupon code");
       return;
@@ -471,7 +472,15 @@ export default function ShoppingCart() {
     } finally {
       setCouponApplying(false);
     }
-  };
+  }, [checkoutSubtotal, couponCode]);
+
+  useEffect(() => {
+    if (!requestedCoupon || couponApplying || appliedCoupon?.code === requestedCoupon || checkoutSubtotal <= 0) {
+      return;
+    }
+    setCouponCode(requestedCoupon);
+    void handleApplyCoupon(requestedCoupon);
+  }, [appliedCoupon?.code, checkoutSubtotal, couponApplying, handleApplyCoupon, requestedCoupon]);
 
   return (
     <div className="shoppingCartSection">

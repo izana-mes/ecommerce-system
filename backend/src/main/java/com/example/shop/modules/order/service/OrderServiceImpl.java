@@ -100,7 +100,15 @@ public class OrderServiceImpl implements OrderService {
 
         BigDecimal shippingFee = request.getShippingFee() == null ? (subtotal.compareTo(BigDecimal.ZERO) > 0 ? money(5) : BigDecimal.ZERO) : money(request.getShippingFee());
         BigDecimal vat = request.getVat() == null ? (subtotal.compareTo(BigDecimal.ZERO) > 0 ? money(11) : BigDecimal.ZERO) : money(request.getVat());
-        BigDecimal totalAmount = subtotal.add(shippingFee).add(vat).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal discountAmount = request.getCouponDiscount() == null
+                ? BigDecimal.ZERO
+                : money(Math.max(0D, request.getCouponDiscount()));
+        BigDecimal maxAllowedDiscount = subtotal.add(shippingFee).add(vat).setScale(2, RoundingMode.HALF_UP);
+        if (discountAmount.compareTo(maxAllowedDiscount) > 0) {
+            discountAmount = maxAllowedDiscount;
+        }
+        BigDecimal totalAmount = subtotal.add(shippingFee).add(vat).subtract(discountAmount).max(BigDecimal.ZERO)
+                .setScale(2, RoundingMode.HALF_UP);
 
         String currency = safe(request.getCurrency()).isBlank() ? "USD" : safe(request.getCurrency()).toUpperCase(Locale.ROOT);
         if (currency.length() > 3) {
@@ -109,7 +117,7 @@ public class OrderServiceImpl implements OrderService {
 
         String orderNumber = generateOrderNumber();
 
-        Long orderId = insertOrder(request, effectiveEmail, orderNumber, subtotal, shippingFee, vat, totalAmount, currency);
+        Long orderId = insertOrder(request, effectiveEmail, orderNumber, subtotal, shippingFee, vat, discountAmount, totalAmount, currency);
         insertOrderItems(orderId, orderLines);
         insertPayment(orderId, orderNumber, request.getPaymentMethod(), totalAmount, currency, request.getOrderSource());
 
@@ -155,6 +163,7 @@ public class OrderServiceImpl implements OrderService {
                     .subtotal(subtotal)
                     .shippingFee(shippingFee)
                     .vat(vat)
+                    .discountAmount(discountAmount)
                     .totalAmount(totalAmount)
                     .currency(currency)
                     .paymentMethod(request.getPaymentMethod())
@@ -178,8 +187,10 @@ public class OrderServiceImpl implements OrderService {
                 .subtotal(subtotal)
                 .shippingFee(shippingFee)
                 .vat(vat)
+                .discountAmount(discountAmount)
                 .totalAmount(totalAmount)
                 .currency(currency)
+                .couponCode(nullable(request.getCouponCode()))
                 .paymentStatus("pending")
                 .orderStatus("pending")
                 .build();
@@ -333,6 +344,7 @@ public class OrderServiceImpl implements OrderService {
                              BigDecimal subtotal,
                              BigDecimal shippingFee,
                              BigDecimal vat,
+                             BigDecimal discountAmount,
                              BigDecimal totalAmount,
                              String currency) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -358,14 +370,17 @@ public class OrderServiceImpl implements OrderService {
                                 subtotal,
                                 shipping_fee,
                                 vat,
+                                discount_amount,
                                 total_amount,
                                 currency,
+                                coupon_code,
+                                coupon_assignment_id,
                                 payment_method,
                                 payment_status,
                                 order_status,
                                 created_at,
                                 updated_at
-                            ) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending', ?, ?)
+                            ) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending', ?, ?)
                             """,
                     new String[]{"id"}
             );
@@ -384,11 +399,18 @@ public class OrderServiceImpl implements OrderService {
             ps.setBigDecimal(13, subtotal);
             ps.setBigDecimal(14, shippingFee);
             ps.setBigDecimal(15, vat);
-            ps.setBigDecimal(16, totalAmount);
-            ps.setString(17, currency);
-            ps.setString(18, safe(request.getPaymentMethod()));
-            ps.setTimestamp(19, Timestamp.valueOf(now));
-            ps.setTimestamp(20, Timestamp.valueOf(now));
+            ps.setBigDecimal(16, discountAmount);
+            ps.setBigDecimal(17, totalAmount);
+            ps.setString(18, currency);
+            ps.setString(19, nullable(request.getCouponCode()));
+            if (request.getCouponAssignmentId() == null) {
+                ps.setNull(20, java.sql.Types.BIGINT);
+            } else {
+                ps.setLong(20, request.getCouponAssignmentId());
+            }
+            ps.setString(21, safe(request.getPaymentMethod()));
+            ps.setTimestamp(22, Timestamp.valueOf(now));
+            ps.setTimestamp(23, Timestamp.valueOf(now));
             return ps;
         }, keyHolder);
 

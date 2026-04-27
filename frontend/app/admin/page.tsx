@@ -17,6 +17,20 @@ type AdminUser = {
   roles?: string[];
 };
 
+type SupplierAccessRequest = {
+  id: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  businessName?: string | null;
+  websiteUrl?: string | null;
+  contactPhone?: string | null;
+  note?: string | null;
+  reviewerNote?: string | null;
+  createdAt?: string | null;
+  reviewedAt?: string | null;
+  requestedByUserId?: string | null;
+  requestedByEmail?: string | null;
+};
+
 type PagedUsers = {
   content?: AdminUser[];
   totalPages?: number;
@@ -590,11 +604,13 @@ function summarizeAuditDetails(details: Record<string, unknown> | null | undefin
   return fallback.length > 0 ? fallback.join(" • ") : "Structured metadata available";
 }
 
-function resolveAdminUserRole(user: { role?: string; roles?: string[] }): "user" | "employee" | "admin" {
+function resolveAdminUserRole(user: { role?: string; roles?: string[] }): "user" | "employee" | "supplier" | "admin" {
   if ((user.role || "").toLowerCase() === "admin") return "admin";
   if ((user.role || "").toLowerCase() === "employee") return "employee";
+  if ((user.role || "").toLowerCase() === "supplier") return "supplier";
   if (Array.isArray(user.roles) && user.roles.some((role) => role.toUpperCase() === "ROLE_ADMIN")) return "admin";
   if (Array.isArray(user.roles) && user.roles.some((role) => role.toUpperCase() === "ROLE_EMPLOYEE")) return "employee";
+  if (Array.isArray(user.roles) && user.roles.some((role) => role.toUpperCase() === "ROLE_SUPPLIER")) return "supplier";
   return "user";
 }
 
@@ -666,6 +682,10 @@ export default function AdminPage() {
   const [userPage, setUserPage] = useState(0);
   const [userTotalPages, setUserTotalPages] = useState(1);
   const [userError, setUserError] = useState<string | null>(null);
+  const [supplierRequests, setSupplierRequests] = useState<SupplierAccessRequest[]>([]);
+  const [loadingSupplierRequests, setLoadingSupplierRequests] = useState(true);
+  const [supplierRequestError, setSupplierRequestError] = useState<string | null>(null);
+  const [supplierRequestProcessingId, setSupplierRequestProcessingId] = useState<string | null>(null);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -1097,6 +1117,37 @@ export default function AdminPage() {
     },
     [router, token]
   );
+
+  const fetchSupplierRequests = useCallback(async () => {
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    setLoadingSupplierRequests(true);
+    setSupplierRequestError(null);
+    try {
+      const response = await fetch("/api/auth/admin-supplier-requests?status=PENDING", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || "Failed to load supplier requests");
+      }
+      setSupplierRequests(Array.isArray(data) ? data : []);
+      setLastUpdatedAt(new Date().toISOString());
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load supplier requests";
+      setSupplierRequestError(message);
+    } finally {
+      setLoadingSupplierRequests(false);
+    }
+  }, [router, token]);
 
   const fetchProducts = useCallback(
     async (keyword: string) => {
@@ -1766,7 +1817,7 @@ export default function AdminPage() {
     if (activeTab === "overview") {
       void fetchDashboard();
     } else if (activeTab === "users") {
-      void fetchUsers(0);
+      void Promise.all([fetchUsers(0), fetchSupplierRequests()]);
     } else if (activeTab === "orders") {
       void fetchOrders(0);
     } else if (activeTab === "inventory") {
@@ -1803,6 +1854,7 @@ export default function AdminPage() {
     fetchSettings,
     fetchSystemHealth,
     fetchUsers,
+    fetchSupplierRequests,
     loadedTabs,
   ]);
 
@@ -1829,7 +1881,7 @@ export default function AdminPage() {
 
   const handleRefreshActiveTab = useCallback(async () => {
     if (activeTab === "overview") { await fetchDashboard(); return; }
-    if (activeTab === "users") { await fetchUsers(userPage); return; }
+    if (activeTab === "users") { await Promise.all([fetchUsers(userPage), fetchSupplierRequests()]); return; }
     if (activeTab === "orders") { await fetchOrders(orderPage); return; }
     if (activeTab === "inventory") { await fetchInventoryHealth(); return; }
     if (activeTab === "attendance") { await fetchAttendance(); return; }
@@ -1856,6 +1908,7 @@ export default function AdminPage() {
     fetchSettings,
     fetchSystemHealth,
     fetchUsers,
+    fetchSupplierRequests,
     orderPage,
     productSearchTerm,
     reviewPage,
@@ -1903,7 +1956,7 @@ export default function AdminPage() {
     }
   };
 
-  const handleUpdateUserRole = async (user: AdminUser, nextRole: "user" | "employee" | "admin") => {
+  const handleUpdateUserRole = async (user: AdminUser, nextRole: "user" | "employee" | "supplier" | "admin") => {
     if (!token) {
       router.replace("/login");
       return;
@@ -1939,6 +1992,8 @@ export default function AdminPage() {
                 roles:
                   nextRole === "admin"
                     ? ["ROLE_USER", "ROLE_ADMIN"]
+                    : nextRole === "supplier"
+                      ? ["ROLE_USER", "ROLE_SUPPLIER"]
                     : nextRole === "employee"
                       ? ["ROLE_USER", "ROLE_EMPLOYEE"]
                       : ["ROLE_USER"],
@@ -1958,6 +2013,47 @@ export default function AdminPage() {
       });
     } finally {
       setUserProcessingId(null);
+    }
+  };
+
+  const handleReviewSupplierRequest = async (
+    request: SupplierAccessRequest,
+    action: "approve" | "reject"
+  ) => {
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    setSupplierRequestProcessingId(request.id);
+    try {
+      const response = await fetch("/api/auth/admin-supplier-requests", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ requestId: request.id, action }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || `Failed to ${action} supplier request`);
+      }
+
+      setSupplierRequests((prev) => prev.filter((item) => item.id !== request.id));
+      await fetchUsers(userPage);
+      toast.success(`Supplier request ${action}d`, {
+        duration: 2000,
+        style: { backgroundColor: "#07bc0c", color: "#fff" },
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `Failed to ${action} supplier request`, {
+        duration: 2500,
+        style: { backgroundColor: "#fb0404", color: "#fff" },
+      });
+    } finally {
+      setSupplierRequestProcessingId(null);
     }
   };
 
@@ -2786,7 +2882,7 @@ export default function AdminPage() {
       <div className="adminContainer">
         <div className="adminHeader">
           <h1>Admin Dashboard</h1>
-          <p>Manage users, orders, and product data.</p>
+          <p>Manage users, orders, product data, and customer coupon campaigns.</p>
         </div>
 
         <div className="adminTopBar">
@@ -2962,6 +3058,23 @@ export default function AdminPage() {
                 </div>
 
                 <div className="overviewSections">
+                  <div className="overviewSection">
+                    <h3>Coupons & Vouchers</h3>
+                    <p className="sectionHint">
+                      Create percentage or fixed discounts, issue them to customers, and let shoppers confirm receipt before checkout.
+                    </p>
+                    <div className="actionList">
+                      <button
+                        className="actionItem actionItem-info"
+                        onClick={() => router.push("/admin/coupons")}
+                      >
+                        <strong>Open Coupon Center</strong>
+                        <span>Manage campaigns</span>
+                        <small>Create, issue, and track coupon confirmations.</small>
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="overviewSection">
                     <h3>Action Required</h3>
                     <div className="actionList">
@@ -3308,9 +3421,68 @@ export default function AdminPage() {
           <>
             {loadingUsers ? <p className="adminStatus">Loading users...</p> : null}
             {userError ? <p className="adminStatus adminStatusError">{userError}</p> : null}
+            {loadingSupplierRequests ? <p className="adminStatus">Loading supplier access requests...</p> : null}
+            {supplierRequestError ? <p className="adminStatus adminStatusError">{supplierRequestError}</p> : null}
 
             {!loadingUsers && !userError ? (
               <>
+                <div className="adminTableWrapper" style={{ marginBottom: 24 }}>
+                  <table className="adminTable">
+                    <thead>
+                      <tr>
+                        <th>User</th>
+                        <th>Business</th>
+                        <th>Submitted</th>
+                        <th>Details</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {supplierRequests.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="adminEmpty">
+                            No pending supplier requests.
+                          </td>
+                        </tr>
+                      ) : (
+                        supplierRequests.map((request) => {
+                          const isProcessing = supplierRequestProcessingId === request.id;
+                          return (
+                            <tr key={request.id}>
+                              <td>{request.requestedByEmail || "-"}</td>
+                              <td>{request.businessName || "-"}</td>
+                              <td>{request.createdAt ? formatDateTime(request.createdAt) : "-"}</td>
+                              <td>
+                                {[request.websiteUrl, request.contactPhone, request.note]
+                                  .filter(Boolean)
+                                  .join(" • ") || "-"}
+                              </td>
+                              <td>
+                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                  <button
+                                    className="adminActionButton"
+                                    disabled={isProcessing}
+                                    onClick={() => void handleReviewSupplierRequest(request, "approve")}
+                                  >
+                                    {isProcessing ? "Processing..." : "Approve"}
+                                  </button>
+                                  <button
+                                    className="adminActionButton"
+                                    disabled={isProcessing}
+                                    onClick={() => void handleReviewSupplierRequest(request, "reject")}
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
                 <div className="adminTableWrapper">
                   <table className="adminTable">
                     <thead>
@@ -3345,12 +3517,13 @@ export default function AdminPage() {
                                   onChange={(event) =>
                                     void handleUpdateUserRole(
                                       user,
-                                      event.target.value as "user" | "employee" | "admin"
+                                      event.target.value as "user" | "employee" | "supplier" | "admin"
                                     )
                                   }
                                 >
                                   <option value="user">User</option>
                                   <option value="employee">Employee</option>
+                                  <option value="supplier">Supplier</option>
                                   <option value="admin">Admin</option>
                                 </select>
                               </td>

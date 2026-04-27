@@ -33,6 +33,9 @@ public class OrderCreateRequest {
     private String currency;
     private Double shippingFee;
     private Double vat;
+    private String couponCode;
+    private Double couponDiscount;
+    private Long couponAssignmentId;
 
     @Valid
     @NotEmpty(message = "items is required")

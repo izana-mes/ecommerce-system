@@ -34,6 +34,13 @@ export type ValidatedCoupon = {
   discountAmount: number;
 };
 
+export type FinalizedCouponRedemption = {
+  couponId: number;
+  assignmentId: number | null;
+  code: string;
+  discountAmount: number;
+};
+
 export type AuthUser = {
   id: string;
   email: string;
@@ -423,4 +430,62 @@ export async function validateCouponCode(
       discountAmount,
     };
   });
+}
+
+export async function finalizeCouponRedemption(
+  request: Request,
+  orderId: number,
+  couponCode: string,
+  subtotal: number
+): Promise<FinalizedCouponRedemption | null> {
+  const normalizedCode = String(couponCode || "").trim().toUpperCase();
+  if (!normalizedCode) {
+    return null;
+  }
+
+  const validated = await validateCouponCode(request, normalizedCode, subtotal);
+
+  await withCouponTables(async (conn) => {
+    if (validated.assignmentId != null) {
+      const [assignmentRows] = await conn.execute<Array<{ used_at: string | null }>>(
+        `SELECT used_at
+         FROM coupon_assignments
+         WHERE id = ?
+         LIMIT 1`,
+        [validated.assignmentId]
+      );
+      const assignment = assignmentRows?.[0];
+      if (!assignment) {
+        throw new Error("Coupon assignment not found");
+      }
+      if (assignment.used_at) {
+        throw new Error("This coupon has already been used");
+      }
+    }
+
+    await conn.execute(
+      `UPDATE coupons
+       SET usage_count = usage_count + 1, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [validated.couponId]
+    );
+
+    if (validated.assignmentId != null) {
+      await conn.execute(
+        `UPDATE coupon_assignments
+         SET used_at = CURRENT_TIMESTAMP,
+             used_order_id = ?,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [orderId, validated.assignmentId]
+      );
+    }
+  });
+
+  return {
+    couponId: validated.couponId,
+    assignmentId: validated.assignmentId,
+    code: validated.code,
+    discountAmount: validated.discountAmount,
+  };
 }

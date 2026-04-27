@@ -32,6 +32,7 @@ public class OrderCreatedEvent {
     private BigDecimal subtotal;
     private BigDecimal shippingFee;
     private BigDecimal vat;
+    private BigDecimal discountAmount;
     private BigDecimal totalAmount;
     private String currency;
     private String paymentMethod;

@@ -33,7 +33,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
             new RateLimitRule("POST", "/api/v1/auth/reset-password", 12, 15 * 60_000L, "reset_password"),
             new RateLimitRule("POST", "/api/v1/auth/resend-otp", 8, 15 * 60_000L, "resend_otp"),
             new RateLimitRule("POST", "/api/v1/auth/verify-otp", 20, 15 * 60_000L, "verify_otp"),
-            new RateLimitRule("POST", "/api/internal/notifications/order-paid", 60, 60_000L, "order_paid_notify")
+            new RateLimitRule("POST", "/api/internal/notifications/order-paid", 60, 60_000L, "order_paid_notify"),
+            new RateLimitRule("POST", "/api/internal/notifications/coupon-issued", 120, 60_000L, "coupon_issued_notify")
     );
 
     @Override
