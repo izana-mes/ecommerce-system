@@ -91,7 +91,25 @@ export async function GET(request: Request) {
     return NextResponse.json({ content: payload });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ error: "Failed to load coupon notifications", details: message }, { status: 500 });
+    const status =
+      message.includes("Missing PostgreSQL configuration") ||
+      message.includes("Missing DB configuration") ||
+      message.includes("Database connection failed")
+        ? 503
+        : 500;
+    return NextResponse.json(
+      {
+        error: "Failed to load coupon notifications",
+        details: message,
+        ...(status === 503
+          ? {
+              hint:
+                "Coupon DB is not configured for this deployment. Set DATABASE_URL (Postgres) or MYSQL_URL / DB_HOST/DB_USER/DB_PASSWORD/DB_NAME in Vercel Environment Variables.",
+            }
+          : {}),
+      },
+      { status }
+    );
   }
 }
 

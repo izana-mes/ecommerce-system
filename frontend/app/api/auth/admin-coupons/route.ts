@@ -122,7 +122,25 @@ export async function GET(request: Request) {
     return NextResponse.json(result);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ error: "Failed to fetch coupons", details: message }, { status: 500 });
+    const status =
+      message.includes("Missing PostgreSQL configuration") ||
+      message.includes("Missing DB configuration") ||
+      message.includes("Database connection failed")
+        ? 503
+        : 500;
+    return NextResponse.json(
+      {
+        error: "Failed to fetch coupons",
+        details: message,
+        ...(status === 503
+          ? {
+              hint:
+                "Coupon DB is not configured for this deployment. Set DATABASE_URL (Postgres) or MYSQL_URL / DB_HOST/DB_USER/DB_PASSWORD/DB_NAME in Vercel Environment Variables.",
+            }
+          : {}),
+      },
+      { status }
+    );
   }
 }
 
@@ -183,7 +201,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, message: "Coupon created successfully" }, { status: 201 });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ error: "Failed to create coupon", details: message }, { status: 500 });
+    const status =
+      message.includes("Missing PostgreSQL configuration") ||
+      message.includes("Missing DB configuration") ||
+      message.includes("Database connection failed")
+        ? 503
+        : 500;
+    return NextResponse.json(
+      {
+        error: "Failed to create coupon",
+        details: message,
+        ...(status === 503
+          ? {
+              hint:
+                "Coupon DB is not configured for this deployment. Set DATABASE_URL (Postgres) or MYSQL_URL / DB_HOST/DB_USER/DB_PASSWORD/DB_NAME in Vercel Environment Variables.",
+            }
+          : {}),
+      },
+      { status }
+    );
   }
 }
 
@@ -270,6 +306,24 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ success: true, message: "Coupon updated successfully" });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ error: "Failed to update coupon", details: message }, { status: 500 });
+    const status =
+      message.includes("Missing PostgreSQL configuration") ||
+      message.includes("Missing DB configuration") ||
+      message.includes("Database connection failed")
+        ? 503
+        : 500;
+    return NextResponse.json(
+      {
+        error: "Failed to update coupon",
+        details: message,
+        ...(status === 503
+          ? {
+              hint:
+                "Coupon DB is not configured for this deployment. Set DATABASE_URL (Postgres) or MYSQL_URL / DB_HOST/DB_USER/DB_PASSWORD/DB_NAME in Vercel Environment Variables.",
+            }
+          : {}),
+      },
+      { status }
+    );
   }
 }
