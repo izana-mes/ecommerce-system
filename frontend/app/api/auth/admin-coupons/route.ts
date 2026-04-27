@@ -5,6 +5,7 @@ import {
   requireAdminUser,
   withCouponTables,
 } from "@/lib/coupons";
+import { getDbRuntimeInfo } from "@/lib/db";
 
 type DiscountType = "percentage" | "fixed";
 
@@ -12,6 +13,38 @@ function toPositiveInt(value: string | null, fallback: number): number {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
   return Math.floor(parsed);
+}
+
+function normalizeDbDatetime(raw: unknown): string | null {
+  const value = String(raw || "").trim();
+  if (!value) return null;
+
+  const { client } = getDbRuntimeInfo();
+  if (client === "postgres") {
+    return value;
+  }
+
+  // MySQL DATETIME typically does not accept `YYYY-MM-DDTHH:mm` (from <input type="datetime-local">).
+  // Normalize to `YYYY-MM-DD HH:mm:ss` to avoid "Incorrect datetime value" errors.
+  const trimmed = value.replace(/Z$/i, "");
+  const replaced = trimmed.includes("T") ? trimmed.replace("T", " ") : trimmed;
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(replaced)) {
+    return `${replaced}:00`;
+  }
+  return replaced;
+}
+
+function toErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function isDuplicateCouponCodeError(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("duplicate entry") ||
+    lower.includes("unique constraint") ||
+    lower.includes("duplicate key value violates unique constraint")
+  );
 }
 
 export async function GET(request: Request) {
@@ -121,7 +154,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(result);
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = toErrorMessage(error);
     const status =
       message.includes("Missing PostgreSQL configuration") ||
       message.includes("Missing DB configuration") ||
@@ -160,8 +193,8 @@ export async function POST(request: Request) {
     const minOrderAmount = Number(body?.min_order_amount ?? 0);
     const maxDiscountAmount = body?.max_discount_amount == null ? null : Number(body?.max_discount_amount);
     const usageLimit = body?.usage_limit == null ? null : Number(body?.usage_limit);
-    const startsAt = String(body?.starts_at || "").trim() || null;
-    const expiresAt = String(body?.expires_at || "").trim() || null;
+    const startsAt = normalizeDbDatetime(body?.starts_at);
+    const expiresAt = normalizeDbDatetime(body?.expires_at);
     const isActive = body?.is_active === false ? 0 : 1;
 
     if (!code || !title || !discountType) {
@@ -200,7 +233,16 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, message: "Coupon created successfully" }, { status: 201 });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = toErrorMessage(error);
+    console.error("admin-coupons POST failed", { message, error });
+
+    if (isDuplicateCouponCodeError(message)) {
+      return NextResponse.json(
+        { error: "Coupon code already exists", details: message },
+        { status: 409 }
+      );
+    }
+
     const status =
       message.includes("Missing PostgreSQL configuration") ||
       message.includes("Missing DB configuration") ||
@@ -284,11 +326,11 @@ export async function PATCH(request: Request) {
     }
     if (body.starts_at !== undefined) {
       updates.push("starts_at = ?");
-      params.push(String(body.starts_at || "").trim() || null);
+      params.push(normalizeDbDatetime(body.starts_at));
     }
     if (body.expires_at !== undefined) {
       updates.push("expires_at = ?");
-      params.push(String(body.expires_at || "").trim() || null);
+      params.push(normalizeDbDatetime(body.expires_at));
     }
     if (body.is_active !== undefined) {
       updates.push("is_active = ?");
@@ -305,7 +347,8 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({ success: true, message: "Coupon updated successfully" });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = toErrorMessage(error);
+    console.error("admin-coupons PATCH failed", { message, error });
     const status =
       message.includes("Missing PostgreSQL configuration") ||
       message.includes("Missing DB configuration") ||

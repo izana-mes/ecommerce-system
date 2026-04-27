@@ -172,7 +172,7 @@ export default function AdminCouponsPage() {
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data?.error || "Failed to create coupon");
+        throw new Error(data?.details || data?.error || "Failed to create coupon");
       }
       toast.success("Coupon created");
       setForm({
