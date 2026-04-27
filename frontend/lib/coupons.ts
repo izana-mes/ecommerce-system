@@ -185,6 +185,7 @@ async function ensureCouponTables(conn: DbConnection): Promise<void> {
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    await ensureCouponColumns(conn);
     await ensureIndex(conn, "coupons", "idx_coupons_code", `CREATE INDEX idx_coupons_code ON coupons(code)`);
     await ensureIndex(
       conn,
@@ -256,6 +257,7 @@ async function ensureCouponTables(conn: DbConnection): Promise<void> {
       CONSTRAINT fk_coupon_assignments_coupon FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE CASCADE
     )
   `);
+  await ensureCouponColumns(conn);
   await ensureIndex(conn, "coupons", "idx_coupons_code", `CREATE INDEX idx_coupons_code ON coupons(code)`);
   await ensureIndex(
     conn,
@@ -286,6 +288,209 @@ async function ensureCouponTables(conn: DbConnection): Promise<void> {
     "coupon_assignments",
     "idx_coupon_assignments_status",
     `CREATE INDEX idx_coupon_assignments_status ON coupon_assignments(acknowledged_at, used_at, issued_at)`
+  );
+}
+
+async function ensureCouponColumns(conn: DbConnection): Promise<void> {
+  const { client } = getDbRuntimeInfo();
+
+  if (client === "postgres") {
+    await ensureColumn(
+      conn,
+      "coupons",
+      "max_discount_amount",
+      `ALTER TABLE coupons ADD COLUMN max_discount_amount NUMERIC(10, 2) NULL`
+    );
+    await ensureColumn(
+      conn,
+      "coupons",
+      "usage_limit",
+      `ALTER TABLE coupons ADD COLUMN usage_limit INT NULL`
+    );
+    await ensureColumn(
+      conn,
+      "coupons",
+      "usage_count",
+      `ALTER TABLE coupons ADD COLUMN usage_count INT NOT NULL DEFAULT 0`
+    );
+    await ensureColumn(
+      conn,
+      "coupons",
+      "starts_at",
+      `ALTER TABLE coupons ADD COLUMN starts_at TIMESTAMP NULL`
+    );
+    await ensureColumn(
+      conn,
+      "coupons",
+      "expires_at",
+      `ALTER TABLE coupons ADD COLUMN expires_at TIMESTAMP NULL`
+    );
+    await ensureColumn(
+      conn,
+      "coupons",
+      "is_active",
+      `ALTER TABLE coupons ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT TRUE`
+    );
+    await ensureColumn(
+      conn,
+      "coupons",
+      "created_at",
+      `ALTER TABLE coupons ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`
+    );
+    await ensureColumn(
+      conn,
+      "coupons",
+      "updated_at",
+      `ALTER TABLE coupons ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`
+    );
+
+    await ensureColumn(
+      conn,
+      "coupon_assignments",
+      "notification_title",
+      `ALTER TABLE coupon_assignments ADD COLUMN notification_title VARCHAR(160) NULL`
+    );
+    await ensureColumn(
+      conn,
+      "coupon_assignments",
+      "notification_message",
+      `ALTER TABLE coupon_assignments ADD COLUMN notification_message TEXT NULL`
+    );
+    await ensureColumn(
+      conn,
+      "coupon_assignments",
+      "issued_by_email",
+      `ALTER TABLE coupon_assignments ADD COLUMN issued_by_email VARCHAR(255) NULL`
+    );
+    await ensureColumn(
+      conn,
+      "coupon_assignments",
+      "acknowledged_at",
+      `ALTER TABLE coupon_assignments ADD COLUMN acknowledged_at TIMESTAMP NULL`
+    );
+    await ensureColumn(
+      conn,
+      "coupon_assignments",
+      "used_at",
+      `ALTER TABLE coupon_assignments ADD COLUMN used_at TIMESTAMP NULL`
+    );
+    await ensureColumn(
+      conn,
+      "coupon_assignments",
+      "used_order_id",
+      `ALTER TABLE coupon_assignments ADD COLUMN used_order_id BIGINT NULL`
+    );
+    await ensureColumn(
+      conn,
+      "coupon_assignments",
+      "created_at",
+      `ALTER TABLE coupon_assignments ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`
+    );
+    await ensureColumn(
+      conn,
+      "coupon_assignments",
+      "updated_at",
+      `ALTER TABLE coupon_assignments ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`
+    );
+    return;
+  }
+
+  await ensureColumn(
+    conn,
+    "coupons",
+    "max_discount_amount",
+    `ALTER TABLE coupons ADD COLUMN max_discount_amount DECIMAL(10, 2) NULL`
+  );
+  await ensureColumn(
+    conn,
+    "coupons",
+    "usage_limit",
+    `ALTER TABLE coupons ADD COLUMN usage_limit INT NULL`
+  );
+  await ensureColumn(
+    conn,
+    "coupons",
+    "usage_count",
+    `ALTER TABLE coupons ADD COLUMN usage_count INT NOT NULL DEFAULT 0`
+  );
+  await ensureColumn(
+    conn,
+    "coupons",
+    "starts_at",
+    `ALTER TABLE coupons ADD COLUMN starts_at DATETIME NULL`
+  );
+  await ensureColumn(
+    conn,
+    "coupons",
+    "expires_at",
+    `ALTER TABLE coupons ADD COLUMN expires_at DATETIME NULL`
+  );
+  await ensureColumn(
+    conn,
+    "coupons",
+    "is_active",
+    `ALTER TABLE coupons ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1`
+  );
+  await ensureColumn(
+    conn,
+    "coupons",
+    "created_at",
+    `ALTER TABLE coupons ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`
+  );
+  await ensureColumn(
+    conn,
+    "coupons",
+    "updated_at",
+    `ALTER TABLE coupons ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`
+  );
+
+  await ensureColumn(
+    conn,
+    "coupon_assignments",
+    "notification_title",
+    `ALTER TABLE coupon_assignments ADD COLUMN notification_title VARCHAR(160) NULL`
+  );
+  await ensureColumn(
+    conn,
+    "coupon_assignments",
+    "notification_message",
+    `ALTER TABLE coupon_assignments ADD COLUMN notification_message TEXT NULL`
+  );
+  await ensureColumn(
+    conn,
+    "coupon_assignments",
+    "issued_by_email",
+    `ALTER TABLE coupon_assignments ADD COLUMN issued_by_email VARCHAR(255) NULL`
+  );
+  await ensureColumn(
+    conn,
+    "coupon_assignments",
+    "acknowledged_at",
+    `ALTER TABLE coupon_assignments ADD COLUMN acknowledged_at DATETIME NULL`
+  );
+  await ensureColumn(
+    conn,
+    "coupon_assignments",
+    "used_at",
+    `ALTER TABLE coupon_assignments ADD COLUMN used_at DATETIME NULL`
+  );
+  await ensureColumn(
+    conn,
+    "coupon_assignments",
+    "used_order_id",
+    `ALTER TABLE coupon_assignments ADD COLUMN used_order_id BIGINT NULL`
+  );
+  await ensureColumn(
+    conn,
+    "coupon_assignments",
+    "created_at",
+    `ALTER TABLE coupon_assignments ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`
+  );
+  await ensureColumn(
+    conn,
+    "coupon_assignments",
+    "updated_at",
+    `ALTER TABLE coupon_assignments ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`
   );
 }
 
@@ -324,6 +529,44 @@ async function ensureIndex(
   );
   if (rows.length === 0) {
     await conn.execute(createSql);
+  }
+}
+
+async function ensureColumn(
+  conn: DbConnection,
+  tableName: string,
+  columnName: string,
+  alterSql: string
+): Promise<void> {
+  const { client } = getDbRuntimeInfo();
+
+  if (client === "postgres") {
+    const [rows] = await conn.execute<Array<{ column_name: string }>>(
+      `SELECT column_name
+       FROM information_schema.columns
+       WHERE table_schema = ANY (current_schemas(false))
+         AND table_name = ?
+         AND column_name = ?
+       LIMIT 1`,
+      [tableName, columnName]
+    );
+    if (rows.length === 0) {
+      await conn.execute(alterSql);
+    }
+    return;
+  }
+
+  const [rows] = await conn.execute<Array<{ column_name: string }>>(
+    `SELECT column_name
+     FROM information_schema.columns
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+       AND column_name = ?
+     LIMIT 1`,
+    [tableName, columnName]
+  );
+  if (rows.length === 0) {
+    await conn.execute(alterSql);
   }
 }
 
