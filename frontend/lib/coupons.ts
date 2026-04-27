@@ -506,7 +506,7 @@ async function ensureIndex(
     const [rows] = await conn.execute<Array<{ indexname: string }>>(
       `SELECT indexname
        FROM pg_indexes
-       WHERE schemaname = ANY (current_schemas(false))
+       WHERE schemaname = current_schema()
          AND tablename = ?
          AND indexname = ?
        LIMIT 1`,
@@ -541,12 +541,16 @@ async function ensureColumn(
   const { client } = getDbRuntimeInfo();
 
   if (client === "postgres") {
-    const [rows] = await conn.execute<Array<{ column_name: string }>>(
-      `SELECT column_name
-       FROM information_schema.columns
-       WHERE table_schema = ANY (current_schemas(false))
-         AND table_name = ?
-         AND column_name = ?
+    const [rows] = await conn.execute<Array<{ attname: string }>>(
+      `SELECT a.attname
+       FROM pg_attribute a
+       INNER JOIN pg_class c ON c.oid = a.attrelid
+       INNER JOIN pg_namespace n ON n.oid = c.relnamespace
+       WHERE n.nspname = current_schema()
+         AND c.relname = ?
+         AND a.attname = ?
+         AND a.attnum > 0
+         AND NOT a.attisdropped
        LIMIT 1`,
       [tableName, columnName]
     );

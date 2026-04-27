@@ -83,7 +83,22 @@ export async function GET(request: Request) {
          FROM coupons c
          LEFT JOIN coupon_assignments ca ON ca.coupon_id = c.id
          ${whereSql}
-         GROUP BY c.id
+         GROUP BY
+           c.id,
+           c.code,
+           c.title,
+           c.description,
+           c.discount_type,
+           c.discount_value,
+           c.min_order_amount,
+           c.max_discount_amount,
+           c.usage_limit,
+           c.usage_count,
+           c.starts_at,
+           c.expires_at,
+           c.is_active,
+           c.created_at,
+           c.updated_at
          ORDER BY c.created_at DESC
          LIMIT ? OFFSET ?`,
         [...whereParams, size, page * size]

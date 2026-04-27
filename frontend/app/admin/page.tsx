@@ -31,6 +31,21 @@ type SupplierAccessRequest = {
   requestedByEmail?: string | null;
 };
 
+type ProductChangeRequest = {
+  id: string;
+  actionType: "CREATE" | "UPDATE" | "DELETE" | "BULK_UPSERT";
+  targetProductId?: string | null;
+  requestPayload?: string | null;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  requestedByUserId?: string | null;
+  requestedByEmail?: string | null;
+  reviewedByUserId?: string | null;
+  reviewedByEmail?: string | null;
+  reviewerNote?: string | null;
+  reviewedAt?: string | null;
+  createdAt?: string | null;
+};
+
 type PagedUsers = {
   content?: AdminUser[];
   totalPages?: number;
@@ -351,6 +366,7 @@ type AdminPerformanceReviewStatusFilter = "all" | "OPEN" | "ACKNOWLEDGED" | "RES
 
 type AdminTab =
   | "overview"
+  | "requests"
   | "users"
   | "orders"
   | "inventory"
@@ -380,6 +396,15 @@ type RatingAnalyticsSummary = {
   highRatingCount: number;
   distribution: Record<RatingBucket, number>;
   productStats: ProductRatingStat[];
+};
+
+type ProductRequestPayload = {
+  productID?: string;
+  productName?: string;
+  productPrice?: number;
+  stockQuantity?: number;
+  sizes?: string[];
+  active?: boolean;
 };
 
 const ORDER_STATUS_OPTIONS = ["pending", "processing", "paid", "shipped", "completed", "cancelled"];
@@ -614,6 +639,20 @@ function resolveAdminUserRole(user: { role?: string; roles?: string[] }): "user"
   return "user";
 }
 
+function parseProductRequestPayload(request: ProductChangeRequest): ProductRequestPayload | null {
+  if (!request.requestPayload) return null;
+
+  try {
+    const parsed = JSON.parse(request.requestPayload) as ProductRequestPayload | ProductRequestPayload[];
+    if (Array.isArray(parsed)) {
+      return parsed[0] ?? null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 function buildRatingAnalytics(reviews: AdminReview[]): RatingAnalyticsSummary {
   const distribution: Record<RatingBucket, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
 
@@ -682,6 +721,10 @@ export default function AdminPage() {
   const [userPage, setUserPage] = useState(0);
   const [userTotalPages, setUserTotalPages] = useState(1);
   const [userError, setUserError] = useState<string | null>(null);
+  const [productRequests, setProductRequests] = useState<ProductChangeRequest[]>([]);
+  const [loadingProductRequests, setLoadingProductRequests] = useState(true);
+  const [productRequestError, setProductRequestError] = useState<string | null>(null);
+  const [productRequestProcessingId, setProductRequestProcessingId] = useState<string | null>(null);
   const [supplierRequests, setSupplierRequests] = useState<SupplierAccessRequest[]>([]);
   const [loadingSupplierRequests, setLoadingSupplierRequests] = useState(true);
   const [supplierRequestError, setSupplierRequestError] = useState<string | null>(null);
@@ -800,6 +843,7 @@ export default function AdminPage() {
 
   const [loadedTabs, setLoadedTabs] = useState<Record<AdminTab, boolean>>({
     overview: false,
+    requests: false,
     users: false,
     orders: false,
     inventory: false,
@@ -1117,6 +1161,37 @@ export default function AdminPage() {
     },
     [router, token]
   );
+
+  const fetchProductRequests = useCallback(async () => {
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    setLoadingProductRequests(true);
+    setProductRequestError(null);
+    try {
+      const response = await fetch("/api/auth/admin-product-requests?status=PENDING", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || "Failed to load product requests");
+      }
+      setProductRequests(Array.isArray(data) ? data : []);
+      setLastUpdatedAt(new Date().toISOString());
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load product requests";
+      setProductRequestError(message);
+    } finally {
+      setLoadingProductRequests(false);
+    }
+  }, [router, token]);
 
   const fetchSupplierRequests = useCallback(async () => {
     if (!token) {
@@ -1816,8 +1891,10 @@ export default function AdminPage() {
 
     if (activeTab === "overview") {
       void fetchDashboard();
+    } else if (activeTab === "requests") {
+      void Promise.all([fetchProductRequests(), fetchSupplierRequests()]);
     } else if (activeTab === "users") {
-      void Promise.all([fetchUsers(0), fetchSupplierRequests()]);
+      void fetchUsers(0);
     } else if (activeTab === "orders") {
       void fetchOrders(0);
     } else if (activeTab === "inventory") {
@@ -1848,6 +1925,7 @@ export default function AdminPage() {
     fetchNotes,
     fetchOrders,
     fetchProducts,
+    fetchProductRequests,
     fetchQueues,
     fetchRatingAnalytics,
     fetchReviews,
@@ -1881,7 +1959,8 @@ export default function AdminPage() {
 
   const handleRefreshActiveTab = useCallback(async () => {
     if (activeTab === "overview") { await fetchDashboard(); return; }
-    if (activeTab === "users") { await Promise.all([fetchUsers(userPage), fetchSupplierRequests()]); return; }
+    if (activeTab === "requests") { await Promise.all([fetchProductRequests(), fetchSupplierRequests()]); return; }
+    if (activeTab === "users") { await fetchUsers(userPage); return; }
     if (activeTab === "orders") { await fetchOrders(orderPage); return; }
     if (activeTab === "inventory") { await fetchInventoryHealth(); return; }
     if (activeTab === "attendance") { await fetchAttendance(); return; }
@@ -1902,6 +1981,7 @@ export default function AdminPage() {
     fetchNotes,
     fetchOrders,
     fetchProducts,
+    fetchProductRequests,
     fetchQueues,
     fetchRatingAnalytics,
     fetchReviews,
@@ -2016,6 +2096,49 @@ export default function AdminPage() {
     }
   };
 
+  const handleReviewProductRequest = async (
+    request: ProductChangeRequest,
+    action: "approve" | "reject"
+  ) => {
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    setProductRequestProcessingId(request.id);
+    try {
+      const response = await fetch("/api/auth/admin-product-requests", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ requestId: request.id, action }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || `Failed to ${action} product request`);
+      }
+
+      setProductRequests((prev) => prev.filter((item) => item.id !== request.id));
+      if (loadedTabs.products) {
+        await fetchProducts(productSearchTerm);
+      }
+      toast.success(`Product request ${action}d`, {
+        duration: 2000,
+        style: { backgroundColor: "#07bc0c", color: "#fff" },
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `Failed to ${action} product request`, {
+        duration: 2500,
+        style: { backgroundColor: "#fb0404", color: "#fff" },
+      });
+    } finally {
+      setProductRequestProcessingId(null);
+    }
+  };
+
   const handleReviewSupplierRequest = async (
     request: SupplierAccessRequest,
     action: "approve" | "reject"
@@ -2042,7 +2165,9 @@ export default function AdminPage() {
       }
 
       setSupplierRequests((prev) => prev.filter((item) => item.id !== request.id));
-      await fetchUsers(userPage);
+      if (loadedTabs.users) {
+        await fetchUsers(userPage);
+      }
       toast.success(`Supplier request ${action}d`, {
         duration: 2000,
         style: { backgroundColor: "#07bc0c", color: "#fff" },
@@ -2540,9 +2665,17 @@ export default function AdminPage() {
     [completedOrders, statusCountMap]
   );
   const maxFunnelValue = Math.max(...funnelSteps.map((step) => step.value), 1);
+  const pendingAdminRequests = productRequests.length + supplierRequests.length;
 
   const actionItems = useMemo(
     () => [
+      {
+        label: "Pending requests",
+        value: pendingAdminRequests,
+        detail: "Product submissions and supplier access",
+        severity: pendingAdminRequests > 0 ? "high" : "low",
+        tab: "requests" as AdminTab,
+      },
       {
         label: "Pending orders",
         value: dashboard.pendingOrders,
@@ -2578,6 +2711,7 @@ export default function AdminPage() {
       dashboard.pendingOrders,
       dashboardLowStockThreshold,
       failedPayments,
+      pendingAdminRequests,
     ]
   );
 
@@ -2902,6 +3036,12 @@ export default function AdminPage() {
             Overview
           </button>
           <button
+            className={`tabButton ${activeTab === "requests" ? "tabButtonActive" : ""}`}
+            onClick={() => setActiveTab("requests")}
+          >
+            Requests
+          </button>
+          <button
             className={`tabButton ${activeTab === "users" ? "tabButtonActive" : ""}`}
             onClick={() => setActiveTab("users")}
           >
@@ -3182,6 +3322,9 @@ export default function AdminPage() {
                       <button className="pageButton" onClick={() => setActiveTab("products")}>
                         Update Products
                       </button>
+                      <button className="pageButton" onClick={() => setActiveTab("requests")}>
+                        Review Requests
+                      </button>
                       <button className="pageButton" onClick={() => setActiveTab("users")}>
                         Manage Users
                       </button>
@@ -3417,16 +3560,90 @@ export default function AdminPage() {
               </>
             ) : null}
           </>
-        ) : activeTab === "users" ? (
+        ) : activeTab === "requests" ? (
           <>
-            {loadingUsers ? <p className="adminStatus">Loading users...</p> : null}
-            {userError ? <p className="adminStatus adminStatusError">{userError}</p> : null}
+            {loadingProductRequests ? <p className="adminStatus">Loading product submissions...</p> : null}
+            {productRequestError ? <p className="adminStatus adminStatusError">{productRequestError}</p> : null}
             {loadingSupplierRequests ? <p className="adminStatus">Loading supplier access requests...</p> : null}
             {supplierRequestError ? <p className="adminStatus adminStatusError">{supplierRequestError}</p> : null}
 
-            {!loadingUsers && !userError ? (
+            {!loadingProductRequests && !productRequestError ? (
               <>
+                <div style={{ marginBottom: 12 }}>
+                  <h3 style={{ marginBottom: 6 }}>Product Submission Requests</h3>
+                  <p className="sectionHint">Review supplier product uploads before they become visible in the catalog.</p>
+                </div>
                 <div className="adminTableWrapper" style={{ marginBottom: 24 }}>
+                  <table className="adminTable">
+                    <thead>
+                      <tr>
+                        <th>Action</th>
+                        <th>Supplier</th>
+                        <th>Product</th>
+                        <th>Submitted</th>
+                        <th>Details</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {productRequests.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="adminEmpty">
+                            No pending product submissions.
+                          </td>
+                        </tr>
+                      ) : (
+                        productRequests.map((request) => {
+                          const isProcessing = productRequestProcessingId === request.id;
+                          const payload = parseProductRequestPayload(request);
+                          return (
+                            <tr key={request.id}>
+                              <td>{request.actionType}</td>
+                              <td>{request.requestedByEmail || "-"}</td>
+                              <td>{payload?.productName || request.targetProductId || "-"}</td>
+                              <td>{request.createdAt ? formatDateTime(request.createdAt) : "-"}</td>
+                              <td>
+                                {[
+                                  payload?.productID ? `ID: ${payload.productID}` : null,
+                                  typeof payload?.productPrice === "number" ? `Price: ${formatCurrency(payload.productPrice)}` : null,
+                                  typeof payload?.stockQuantity === "number" ? `Stock: ${payload.stockQuantity}` : null,
+                                  Array.isArray(payload?.sizes) && payload.sizes.length > 0 ? `Sizes: ${payload.sizes.join(", ")}` : null,
+                                  typeof payload?.active === "boolean" ? `Active: ${payload.active ? "Yes" : "No"}` : null,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" • ") || "Request payload available"}
+                              </td>
+                              <td>
+                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                  <button
+                                    className="adminActionButton"
+                                    disabled={isProcessing}
+                                    onClick={() => void handleReviewProductRequest(request, "approve")}
+                                  >
+                                    {isProcessing ? "Processing..." : "Approve"}
+                                  </button>
+                                  <button
+                                    className="adminActionButton"
+                                    disabled={isProcessing}
+                                    onClick={() => void handleReviewProductRequest(request, "reject")}
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <h3 style={{ marginBottom: 6 }}>Supplier Access Requests</h3>
+                  <p className="sectionHint">Approve or reject business accounts that want supplier portal access.</p>
+                </div>
+                <div className="adminTableWrapper">
                   <table className="adminTable">
                     <thead>
                       <tr>
@@ -3441,7 +3658,7 @@ export default function AdminPage() {
                       {supplierRequests.length === 0 ? (
                         <tr>
                           <td colSpan={5} className="adminEmpty">
-                            No pending supplier requests.
+                            No pending supplier access requests.
                           </td>
                         </tr>
                       ) : (
@@ -3482,7 +3699,16 @@ export default function AdminPage() {
                     </tbody>
                   </table>
                 </div>
+              </>
+            ) : null}
+          </>
+        ) : activeTab === "users" ? (
+          <>
+            {loadingUsers ? <p className="adminStatus">Loading users...</p> : null}
+            {userError ? <p className="adminStatus adminStatusError">{userError}</p> : null}
 
+            {!loadingUsers && !userError ? (
+              <>
                 <div className="adminTableWrapper">
                   <table className="adminTable">
                     <thead>
