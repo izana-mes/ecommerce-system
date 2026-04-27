@@ -1,6 +1,6 @@
 "use client";
 
-import { CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
+import { CSSProperties, ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getToken, getUser, refreshCurrentUserFromServer, subscribeToAuthChanges } from "@/lib/auth";
 import toast from "react-hot-toast";
@@ -27,6 +27,15 @@ type ProductChangeRequest = {
   reviewedAt?: string | null;
 };
 
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
 const INITIAL_FORM: ProductFormState = {
   productID: "",
   productName: "",
@@ -44,6 +53,8 @@ export default function SupplierPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [requestsLoading, setRequestsLoading] = useState(false);
+  const [uploadingFront, setUploadingFront] = useState(false);
+  const [uploadingBack, setUploadingBack] = useState(false);
   const [form, setForm] = useState<ProductFormState>(INITIAL_FORM);
   const [requests, setRequests] = useState<ProductChangeRequest[]>([]);
 
@@ -109,6 +120,35 @@ export default function SupplierPage() {
 
   const handleChange = (field: keyof ProductFormState, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleImageUpload = async (
+    field: "frontImg" | "backImg",
+    event: ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      event.target.value = "";
+      return;
+    }
+
+    try {
+      if (field === "frontImg") setUploadingFront(true);
+      if (field === "backImg") setUploadingBack(true);
+
+      const imageDataUrl = await fileToDataUrl(file);
+      setForm((prev) => ({ ...prev, [field]: imageDataUrl }));
+      toast.success(`${field === "frontImg" ? "Front" : "Back"} image selected`);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to read image");
+    } finally {
+      if (field === "frontImg") setUploadingFront(false);
+      if (field === "backImg") setUploadingBack(false);
+      event.target.value = "";
+    }
   };
 
   const handleSubmit = async () => {
@@ -179,10 +219,46 @@ export default function SupplierPage() {
             <input value={form.productName} onChange={(event) => handleChange("productName", event.target.value)} placeholder="Product name" style={inputStyle} />
             <input value={form.productPrice} onChange={(event) => handleChange("productPrice", event.target.value)} placeholder="Price" type="number" min="0" step="0.01" style={inputStyle} />
             <input value={form.stockQuantity} onChange={(event) => handleChange("stockQuantity", event.target.value)} placeholder="Stock quantity" type="number" min="0" style={inputStyle} />
-            <input value={form.frontImg} onChange={(event) => handleChange("frontImg", event.target.value)} placeholder="Front image URL" style={inputStyle} />
-            <input value={form.backImg} onChange={(event) => handleChange("backImg", event.target.value)} placeholder="Back image URL" style={inputStyle} />
+            <input value={form.frontImg} onChange={(event) => handleChange("frontImg", event.target.value)} placeholder="Front image URL or data" style={inputStyle} />
+            <div style={uploadFieldStyle}>
+              <label style={uploadLabelStyle}>Choose front image from your computer</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => void handleImageUpload("frontImg", event)}
+                style={inputStyle}
+              />
+              <span style={uploadHintStyle}>{uploadingFront ? "Reading image..." : "Supports JPG, PNG, WEBP and similar image files."}</span>
+            </div>
+            <input value={form.backImg} onChange={(event) => handleChange("backImg", event.target.value)} placeholder="Back image URL or data" style={inputStyle} />
+            <div style={uploadFieldStyle}>
+              <label style={uploadLabelStyle}>Choose back image from your computer</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => void handleImageUpload("backImg", event)}
+                style={inputStyle}
+              />
+              <span style={uploadHintStyle}>{uploadingBack ? "Reading image..." : "Supports JPG, PNG, WEBP and similar image files."}</span>
+            </div>
             <input value={form.sizes} onChange={(event) => handleChange("sizes", event.target.value)} placeholder="Sizes, comma separated" style={inputStyle} />
           </div>
+          {(form.frontImg || form.backImg) ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginTop: 14 }}>
+              {form.frontImg ? (
+                <div style={previewCardStyle}>
+                  <strong style={{ fontSize: 14 }}>Front preview</strong>
+                  <img src={form.frontImg} alt="Front preview" style={previewImageStyle} />
+                </div>
+              ) : null}
+              {form.backImg ? (
+                <div style={previewCardStyle}>
+                  <strong style={{ fontSize: 14 }}>Back preview</strong>
+                  <img src={form.backImg} alt="Back preview" style={previewImageStyle} />
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <textarea
             value={form.productReviews}
             onChange={(event) => handleChange("productReviews", event.target.value)}
@@ -265,6 +341,40 @@ const inputStyle: CSSProperties = {
   padding: "12px 14px",
   background: "#fff",
   color: "#101828",
+};
+
+const uploadFieldStyle: CSSProperties = {
+  display: "grid",
+  gap: 6,
+};
+
+const uploadLabelStyle: CSSProperties = {
+  fontSize: 14,
+  fontWeight: 600,
+  color: "#344054",
+};
+
+const uploadHintStyle: CSSProperties = {
+  fontSize: 12,
+  color: "#667085",
+};
+
+const previewCardStyle: CSSProperties = {
+  display: "grid",
+  gap: 10,
+  padding: 14,
+  border: "1px solid rgba(16, 24, 40, 0.08)",
+  borderRadius: 16,
+  background: "#fcfcfd",
+};
+
+const previewImageStyle: CSSProperties = {
+  width: "100%",
+  maxHeight: 260,
+  objectFit: "contain",
+  borderRadius: 12,
+  background: "#fff",
+  border: "1px solid rgba(16, 24, 40, 0.08)",
 };
 
 const cellHead: CSSProperties = {

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
-import { getUser, refreshCurrentUserFromServer, subscribeToAuthChanges, User } from "@/lib/auth";
+import { getToken, getUser, refreshCurrentUserFromServer, subscribeToAuthChanges, User } from "@/lib/auth";
 
 import "./redeem.css";
 
@@ -66,9 +66,11 @@ function CouponRedeemContent() {
 
     setLoading(true);
     try {
+      const token = getToken();
       const response = await fetch("/api/coupons/notifications", {
         cache: "no-store",
         credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       const data = await response.json();
       if (!response.ok) {
@@ -103,11 +105,13 @@ function CouponRedeemContent() {
 
     setConfirming(true);
     try {
+      const token = getToken();
       const response = await fetch("/api/coupons/notifications", {
         method: "PATCH",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ assignmentId: matchedCoupon.id }),
       });

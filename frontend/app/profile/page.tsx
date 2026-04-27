@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import "./profile.css";
 import {
+  getToken,
   getUser,
   logout as clearAuth,
   logoutServerSession,
@@ -86,9 +87,11 @@ export default function ProfilePage() {
   const fetchCouponItems = useCallback(async () => {
     setCouponLoading(true);
     try {
+      const token = getToken();
       const response = await fetch("/api/coupons/notifications", {
         cache: "no-store",
         credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       const data = await response.json();
       if (!response.ok) {
@@ -158,11 +161,13 @@ export default function ProfilePage() {
   const handleConfirmCoupon = async (assignmentId: number) => {
     setConfirmingId(assignmentId);
     try {
+      const token = getToken();
       const response = await fetch("/api/coupons/notifications", {
         method: "PATCH",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ assignmentId }),
       });

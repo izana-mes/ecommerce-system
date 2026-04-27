@@ -54,7 +54,7 @@ function getDbClient(): DbClient {
     hasEnvValue("MYSQL_HOST") ||
     hasEnvValue("MYSQL_USER") ||
     hasEnvValue("MYSQL_DATABASE") ||
-    (hasSharedDbParts && (portHint === "3306" || portHint.length === 0));
+    (hasSharedDbParts && portHint === "3306");
 
   if (hasMysqlConfig && !hasPgConfig) {
     return "mysql";
@@ -63,7 +63,7 @@ function getDbClient(): DbClient {
     return "postgres";
   }
 
-  // Keep existing default when ambiguous to avoid surprise behavior.
+  // Prefer Postgres when DB settings are generic or ambiguous.
   return "postgres";
 }
 

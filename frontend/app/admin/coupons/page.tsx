@@ -45,7 +45,7 @@ type AdminUsersResponse = {
 };
 
 export default function AdminCouponsPage() {
-  const [token, setToken] = useState("");
+  const [token, setToken] = useState<string | null>(null);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCouponId, setSelectedCouponId] = useState<number | null>(null);
@@ -71,6 +71,7 @@ export default function AdminCouponsPage() {
   }, []);
 
   const fetchCoupons = useCallback(async () => {
+    if (token === null) return;
     setLoading(true);
     try {
       const response = await fetch("/api/auth/admin-coupons", {
@@ -100,6 +101,7 @@ export default function AdminCouponsPage() {
   }, [token]);
 
   const fetchCustomers = useCallback(async () => {
+    if (token === null) return;
     setCustomersLoading(true);
     try {
       const response = await fetch("/api/auth/admin?page=0&size=100", {
