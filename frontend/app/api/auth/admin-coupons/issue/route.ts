@@ -100,8 +100,11 @@ export async function POST(request: Request) {
              user_email,
              notification_title,
              notification_message,
-             issued_by_email
-           ) VALUES (?, ?, ?, ?, ?, ?)`,
+             issued_by_email,
+             issued_at,
+             created_at,
+             updated_at
+           ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
           [
             couponId,
             userId,

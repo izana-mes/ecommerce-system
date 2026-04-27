@@ -343,6 +343,7 @@ async function ensureCouponColumns(conn: DbConnection): Promise<void> {
       "updated_at",
       `ALTER TABLE coupons ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`
     );
+    await ensureTimestampDefaults(conn, "coupons", ["created_at", "updated_at"]);
 
     await ensureColumn(
       conn,
@@ -392,6 +393,7 @@ async function ensureCouponColumns(conn: DbConnection): Promise<void> {
       "updated_at",
       `ALTER TABLE coupon_assignments ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`
     );
+    await ensureTimestampDefaults(conn, "coupon_assignments", ["issued_at", "created_at", "updated_at"]);
     return;
   }
 
@@ -443,6 +445,7 @@ async function ensureCouponColumns(conn: DbConnection): Promise<void> {
     "updated_at",
     `ALTER TABLE coupons ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`
   );
+  await ensureTimestampDefaults(conn, "coupons", ["created_at", "updated_at"]);
 
   await ensureColumn(
     conn,
@@ -492,6 +495,7 @@ async function ensureCouponColumns(conn: DbConnection): Promise<void> {
     "updated_at",
     `ALTER TABLE coupon_assignments ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`
   );
+  await ensureTimestampDefaults(conn, "coupon_assignments", ["issued_at", "created_at", "updated_at"]);
 }
 
 async function ensureIndex(
@@ -571,6 +575,31 @@ async function ensureColumn(
   );
   if (rows.length === 0) {
     await conn.execute(alterSql);
+  }
+}
+
+async function ensureTimestampDefaults(
+  conn: DbConnection,
+  tableName: string,
+  columnNames: string[]
+): Promise<void> {
+  if (getDbRuntimeInfo().client !== "postgres") {
+    return;
+  }
+
+  for (const columnName of columnNames) {
+    const [rows] = await conn.execute<Array<{ column_default: string | null }>>(
+      `SELECT column_default
+       FROM information_schema.columns
+       WHERE table_schema = current_schema()
+         AND table_name = ?
+         AND column_name = ?
+       LIMIT 1`,
+      [tableName, columnName]
+    );
+    if (rows.length > 0 && !rows[0]?.column_default) {
+      await conn.execute(`ALTER TABLE ${tableName} ALTER COLUMN ${columnName} SET DEFAULT CURRENT_TIMESTAMP`);
+    }
   }
 }
 

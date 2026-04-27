@@ -211,8 +211,8 @@ export async function POST(request: Request) {
       await conn.execute(
         `INSERT INTO coupons (
           code, title, description, discount_type, discount_value, min_order_amount, max_discount_amount,
-          usage_limit, usage_count, starts_at, expires_at, is_active
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+          usage_limit, usage_count, starts_at, expires_at, is_active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
         [
           code,
           title,

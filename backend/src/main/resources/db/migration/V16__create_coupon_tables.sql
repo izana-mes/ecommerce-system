@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS coupons (
     starts_at TIMESTAMP,
     expires_at TIMESTAMP,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS coupon_assignments (
@@ -24,12 +24,12 @@ CREATE TABLE IF NOT EXISTS coupon_assignments (
     notification_title VARCHAR(160),
     notification_message TEXT,
     issued_by_email VARCHAR(255),
-    issued_at TIMESTAMP NOT NULL,
+    issued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     acknowledged_at TIMESTAMP,
     used_at TIMESTAMP,
     used_order_id BIGINT,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_coupon_assignments_coupon_user_issued
