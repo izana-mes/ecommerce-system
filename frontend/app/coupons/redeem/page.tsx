@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 import { getUser, refreshCurrentUserFromServer, subscribeToAuthChanges, User } from "@/lib/auth";
@@ -27,7 +27,7 @@ type CouponNotificationItem = {
   };
 };
 
-export default function CouponRedeemPage() {
+function CouponRedeemContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
@@ -260,5 +260,25 @@ export default function CouponRedeemPage() {
         ) : null}
       </section>
     </main>
+  );
+}
+
+function CouponRedeemFallback() {
+  return (
+    <main className="couponRedeemPage">
+      <section className="couponRedeemCard">
+        <span className="couponRedeemBadge">Coupon redemption</span>
+        <h1>Loading your coupon</h1>
+        <p>Preparing the redemption link details.</p>
+      </section>
+    </main>
+  );
+}
+
+export default function CouponRedeemPage() {
+  return (
+    <Suspense fallback={<CouponRedeemFallback />}>
+      <CouponRedeemContent />
+    </Suspense>
   );
 }
