@@ -380,7 +380,7 @@ public class OrderServiceImpl implements OrderService {
                                 order_status,
                                 created_at,
                                 updated_at
-                            ) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending', ?, ?)
+                            ) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending', ?, ?)
                             """,
                     new String[]{"id"}
             );
