@@ -382,6 +382,11 @@
   color: #475467;
 }
 
+.profileCouponStatusexpired {
+  background: #fde8e8;
+  color: #b42318;
+}
+
 .profileCouponCode {
   font-weight: 700;
   letter-spacing: 0.08em;

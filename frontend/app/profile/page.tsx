@@ -94,7 +94,7 @@ export default function ProfilePage() {
   const [couponItems, setCouponItems] = useState<
     Array<{
       id: number;
-      status: "pending" | "ready" | "used";
+      status: "pending" | "ready" | "used" | "expired";
       issuedAt: string;
       acknowledgedAt: string | null;
       usedAt: string | null;
@@ -107,6 +107,7 @@ export default function ProfilePage() {
         discountType: "percentage" | "fixed";
         discountValue: number;
         minOrderAmount: number;
+        expiresAt?: string | null;
       };
     }>
   >([]);
@@ -330,6 +331,10 @@ export default function ProfilePage() {
 
   const readyCouponCount = useMemo(
     () => couponItems.filter((item) => item.status === "ready").length,
+    [couponItems]
+  );
+  const expiredCouponCount = useMemo(
+    () => couponItems.filter((item) => item.status === "expired").length,
     [couponItems]
   );
 
@@ -760,7 +765,7 @@ export default function ProfilePage() {
             <div>
               <h2>Coupons & Vouchers</h2>
               <p>
-                {pendingCouponCount} pending confirmation, {readyCouponCount} ready to use
+                {pendingCouponCount} pending confirmation, {readyCouponCount} ready to use, {expiredCouponCount} expired
               </p>
             </div>
             <button
@@ -782,12 +787,16 @@ export default function ProfilePage() {
               <article key={item.id} className="profileCouponItem">
                 <div className="profileCouponStatusRow">
                   <span className={`profileCouponStatus profileCouponStatus${item.status}`}>
-                    {item.status === "pending" ? "Pending" : item.status === "ready" ? "Ready" : "Used"}
+                    {item.status === "pending" ? "Pending" : item.status === "ready" ? "Ready" : item.status === "expired" ? "Expired" : "Used"}
                   </span>
                   <span className="profileCouponCode">{item.coupon.code}</span>
                 </div>
                 <h3>{item.notificationTitle || item.coupon.title}</h3>
-                <p>{item.notificationMessage || item.coupon.description || "Discount available for your next order."}</p>
+                <p>
+                  {item.status === "expired"
+                    ? `This coupon expired${item.coupon.expiresAt ? ` on ${new Date(item.coupon.expiresAt).toLocaleString()}` : ""}.`
+                    : item.notificationMessage || item.coupon.description || "Discount available for your next order."}
+                </p>
                 <div className="profileCouponMeta">
                   <span>
                     {item.coupon.discountType === "percentage"
@@ -815,6 +824,11 @@ export default function ProfilePage() {
                   {item.status === "used" ? (
                     <span className="profileUsedText">
                       Used {item.usedAt ? new Date(item.usedAt).toLocaleDateString() : ""}
+                    </span>
+                  ) : null}
+                  {item.status === "expired" ? (
+                    <span className="profileUsedText">
+                      Expired {item.coupon.expiresAt ? new Date(item.coupon.expiresAt).toLocaleDateString() : ""}
                     </span>
                   ) : null}
                 </div>

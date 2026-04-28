@@ -30,6 +30,12 @@ type IssuedAssignment = {
 
 const API_URL = backendApiBaseUrl();
 
+function parseTimestampMs(value: string | null): number | null {
+  if (!value) return null;
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
 export async function POST(request: Request) {
   const admin = await requireAdminUser(request);
   if (!admin) {
@@ -61,6 +67,10 @@ export async function POST(request: Request) {
       }
       if (!coupon.is_active) {
         throw new Error("Coupon must be active before issuing");
+      }
+      const expiresAtMs = parseTimestampMs(coupon.expires_at);
+      if (expiresAtMs != null && Date.now() > expiresAtMs) {
+        throw new Error("Coupon has expired and must be reactivated with a new date before issuing");
       }
 
       let issued = 0;
@@ -180,8 +190,19 @@ export async function POST(request: Request) {
 
     const internalToken = process.env.INTERNAL_NOTIFY_TOKEN?.trim();
     const appOrigin = new URL(request.url).origin;
-    const mailResults = await Promise.allSettled(
-      result.assignments.map(async (assignment) => {
+    const mailResults: PromiseSettledResult<string>[] = [];
+    let notificationAuthFailed = false;
+
+    for (const assignment of result.assignments) {
+      if (notificationAuthFailed) {
+        mailResults.push({
+          status: "rejected",
+          reason: new Error("Notification service authorization failed"),
+        });
+        continue;
+      }
+
+      try {
         const redeemUrl = new URL("/coupons/redeem", appOrigin);
         redeemUrl.searchParams.set("assignmentId", String(assignment.assignmentId));
         redeemUrl.searchParams.set("coupon", result.coupon.code);
@@ -209,12 +230,26 @@ export async function POST(request: Request) {
 
         if (!response.ok) {
           const payload = await response.json().catch(() => null) as { message?: string; error?: string } | null;
+          if (response.status === 401) {
+            notificationAuthFailed = true;
+            throw new Error(
+              "Notification service authorization failed. Check that INTERNAL_NOTIFY_TOKEN matches on the frontend and backend."
+            );
+          }
           throw new Error(payload?.message || payload?.error || `Email request failed with ${response.status}`);
         }
 
-        return assignment.userEmail;
-      })
-    );
+        mailResults.push({
+          status: "fulfilled",
+          value: assignment.userEmail,
+        });
+      } catch (error: unknown) {
+        mailResults.push({
+          status: "rejected",
+          reason: error,
+        });
+      }
+    }
 
     const emailFailures = mailResults.flatMap((mailResult, index) => {
       if (mailResult.status === "fulfilled") {

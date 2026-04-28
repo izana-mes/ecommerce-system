@@ -52,10 +52,12 @@ export default function AdminCouponsPage() {
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
   const [notificationTitle, setNotificationTitle] = useState("");
   const [notificationMessage, setNotificationMessage] = useState("");
+  const [reactivationDate, setReactivationDate] = useState("");
   const [loading, setLoading] = useState(true);
   const [customersLoading, setCustomersLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [issuing, setIssuing] = useState(false);
+  const [reactivating, setReactivating] = useState(false);
   const [form, setForm] = useState({
     code: "",
     title: "",
@@ -143,9 +145,27 @@ export default function AdminCouponsPage() {
     void fetchCustomers();
   }, [fetchCoupons, fetchCustomers]);
 
+  const isCouponExpired = useCallback((coupon: Coupon) => {
+    if (!coupon.expires_at) return false;
+    const timestamp = new Date(coupon.expires_at).getTime();
+    return Number.isFinite(timestamp) && Date.now() > timestamp;
+  }, []);
+
   const selectedCoupon = useMemo(
     () => coupons.find((coupon) => coupon.id === selectedCouponId) ?? null,
     [coupons, selectedCouponId]
+  );
+  const activeCoupons = useMemo(
+    () => coupons.filter((coupon) => !isCouponExpired(coupon)),
+    [coupons, isCouponExpired]
+  );
+  const expiredCoupons = useMemo(
+    () => coupons.filter((coupon) => isCouponExpired(coupon)),
+    [coupons, isCouponExpired]
+  );
+  const selectedCouponExpired = useMemo(
+    () => (selectedCoupon ? isCouponExpired(selectedCoupon) : false),
+    [isCouponExpired, selectedCoupon]
   );
   const selectedRecipients = useMemo(
     () => selectedRecipientIds
@@ -153,6 +173,18 @@ export default function AdminCouponsPage() {
       .filter((customer): customer is Customer => Boolean(customer)),
     [customers, selectedRecipientIds]
   );
+
+  useEffect(() => {
+    if (!selectedCoupon || !selectedCouponExpired) {
+      setReactivationDate("");
+      return;
+    }
+    if (reactivationDate) return;
+
+    const nextDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const timezoneOffsetMs = nextDate.getTimezoneOffset() * 60 * 1000;
+    setReactivationDate(new Date(nextDate.getTime() - timezoneOffsetMs).toISOString().slice(0, 16));
+  }, [reactivationDate, selectedCoupon, selectedCouponExpired]);
 
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -226,6 +258,10 @@ export default function AdminCouponsPage() {
       toast.error("Choose a coupon to issue");
       return;
     }
+    if (selectedCouponExpired) {
+      toast.error("This coupon is expired. Reactivate it with a new expiry date first.");
+      return;
+    }
     if (!selectedCoupon.is_active) {
       toast.error("Enable this coupon before issuing it");
       return;
@@ -262,7 +298,7 @@ export default function AdminCouponsPage() {
       if (!response.ok) {
         throw new Error(data?.details || data?.error || "Failed to issue coupon");
       }
-      if (!Number(data?.issued || 0)) {
+      if (!Number(data?.issued || 0) && !Number(data?.resent || 0)) {
         throw new Error(data?.message || "No coupon assignments were created");
       }
 
@@ -283,6 +319,55 @@ export default function AdminCouponsPage() {
       toast.error(message);
     } finally {
       setIssuing(false);
+    }
+  };
+
+  const handleReactivate = async () => {
+    if (!selectedCoupon) {
+      toast.error("Choose an expired coupon to reactivate");
+      return;
+    }
+    if (!selectedCouponExpired) {
+      toast.error("Only expired coupons can be reactivated from history");
+      return;
+    }
+    if (!reactivationDate) {
+      toast.error("Choose a new expiration date");
+      return;
+    }
+
+    const nextExpirationMs = new Date(reactivationDate).getTime();
+    if (!Number.isFinite(nextExpirationMs) || nextExpirationMs <= Date.now()) {
+      toast.error("Choose a future expiration date");
+      return;
+    }
+
+    setReactivating(true);
+    try {
+      const response = await fetch("/api/auth/admin-coupons", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          id: selectedCoupon.id,
+          expires_at: reactivationDate,
+          is_active: true,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.details || data?.error || "Failed to reactivate coupon");
+      }
+      toast.success("Coupon reactivated with a new expiration date");
+      setReactivationDate("");
+      await fetchCoupons();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to reactivate coupon";
+      toast.error(message);
+    } finally {
+      setReactivating(false);
     }
   };
 
@@ -327,6 +412,7 @@ export default function AdminCouponsPage() {
           alignItems: "start",
         }}
       >
+        <div style={{ display: "grid", gap: 18 }}>
         <div style={{ border: "1px solid #d7d7d7", borderRadius: 10, overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -343,10 +429,10 @@ export default function AdminCouponsPage() {
             <tbody>
               {loading ? (
                 <tr><td colSpan={7} style={{ padding: 12 }}>Loading coupons...</td></tr>
-              ) : coupons.length === 0 ? (
-                <tr><td colSpan={7} style={{ padding: 12 }}>No coupons yet.</td></tr>
+              ) : activeCoupons.length === 0 ? (
+                <tr><td colSpan={7} style={{ padding: 12 }}>No active or scheduled coupons.</td></tr>
               ) : (
-                coupons.map((coupon) => (
+                activeCoupons.map((coupon) => (
                   <tr
                     key={coupon.id}
                     onClick={() => setSelectedCouponId(coupon.id)}
@@ -396,19 +482,104 @@ export default function AdminCouponsPage() {
             </tbody>
           </table>
         </div>
+        <div style={{ border: "1px solid #d7d7d7", borderRadius: 10, overflowX: "auto" }}>
+          <div style={{ padding: "12px 14px", borderBottom: "1px solid #efefef" }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Expired Coupon History</h2>
+            <p style={{ margin: "6px 0 0", color: "#555" }}>
+              Expired coupons stay here until an admin reactivates them with a new date.
+            </p>
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: "left", padding: 10 }}>Code</th>
+                <th style={{ textAlign: "left", padding: 10 }}>Title</th>
+                <th style={{ textAlign: "left", padding: 10 }}>Expired on</th>
+                <th style={{ textAlign: "left", padding: 10 }}>Assignments</th>
+                <th style={{ textAlign: "left", padding: 10 }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={5} style={{ padding: 12 }}>Loading expired coupons...</td></tr>
+              ) : expiredCoupons.length === 0 ? (
+                <tr><td colSpan={5} style={{ padding: 12 }}>No expired coupons yet.</td></tr>
+              ) : (
+                expiredCoupons.map((coupon) => (
+                  <tr
+                    key={coupon.id}
+                    onClick={() => setSelectedCouponId(coupon.id)}
+                    style={{
+                      background: selectedCouponId === coupon.id ? "#fff7ed" : undefined,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <td style={{ padding: 10, borderTop: "1px solid #efefef" }}>{coupon.code}</td>
+                    <td style={{ padding: 10, borderTop: "1px solid #efefef" }}>{coupon.title}</td>
+                    <td style={{ padding: 10, borderTop: "1px solid #efefef" }}>
+                      {coupon.expires_at ? new Date(coupon.expires_at).toLocaleString() : "Unknown"}
+                    </td>
+                    <td style={{ padding: 10, borderTop: "1px solid #efefef" }}>
+                      {Number(coupon.assigned_count || 0)} issued / {Number(coupon.acknowledged_count || 0)} confirmed
+                    </td>
+                    <td style={{ padding: 10, borderTop: "1px solid #efefef" }}>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedCouponId(coupon.id);
+                        }}
+                      >
+                        {selectedCouponId === coupon.id ? "Selected" : "Select"}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        </div>
 
         <aside style={{ border: "1px solid #d7d7d7", borderRadius: 10, padding: 14 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 10 }}>Issue to Customers</h2>
+          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 10 }}>
+            {selectedCouponExpired ? "Reactivate Expired Coupon" : "Issue to Customers"}
+          </h2>
           <p style={{ color: "#555", marginBottom: 12 }}>
             {selectedCoupon
               ? `Selected: ${selectedCoupon.code} (${selectedCoupon.title})`
               : "Choose a coupon from the table first."}
           </p>
-          {selectedCoupon && !selectedCoupon.is_active ? (
+          {selectedCouponExpired ? (
+            <p style={{ color: "#9a3412", marginTop: -4, marginBottom: 12 }}>
+              This coupon expired{selectedCoupon?.expires_at ? ` on ${new Date(selectedCoupon.expires_at).toLocaleString()}` : ""}. Set a new date to reactivate it.
+            </p>
+          ) : null}
+          {selectedCoupon && !selectedCouponExpired && !selectedCoupon.is_active ? (
             <p style={{ color: "#9a3412", marginTop: -4, marginBottom: 12 }}>
               This coupon is inactive. Enable it before issuing or resending emails.
             </p>
           ) : null}
+          {selectedCouponExpired ? (
+            <>
+              <label style={{ display: "block", fontSize: 14, fontWeight: 600, marginBottom: 6 }}>New Expiration Date</label>
+              <input
+                type="datetime-local"
+                value={reactivationDate}
+                onChange={(event) => setReactivationDate(event.target.value)}
+                style={{ width: "100%", marginBottom: 12 }}
+              />
+              <button
+                type="button"
+                onClick={() => void handleReactivate()}
+                disabled={!selectedCoupon || !selectedCouponExpired || reactivating}
+                style={{ width: "100%" }}
+              >
+                {reactivating ? "Reactivating..." : "Reactivate coupon"}
+              </button>
+            </>
+          ) : (
+            <>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, gap: 8 }}>
             <label style={{ display: "block", fontSize: 14, fontWeight: 600 }}>Recipients</label>
@@ -503,11 +674,13 @@ export default function AdminCouponsPage() {
           <button
             type="button"
             onClick={() => void handleIssue()}
-            disabled={!selectedCoupon || !selectedCoupon?.is_active || issuing || customersLoading || customers.length === 0}
+            disabled={!selectedCoupon || selectedCouponExpired || !selectedCoupon?.is_active || issuing || customersLoading || customers.length === 0}
             style={{ width: "100%" }}
           >
             {issuing ? "Issuing..." : `Issue to ${selectedRecipientIds.length || 0} customer(s)`}
           </button>
+            </>
+          )}
         </aside>
       </div>
     </section>

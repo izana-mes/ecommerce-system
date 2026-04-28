@@ -11,7 +11,7 @@ import "./redeem.css";
 
 type CouponNotificationItem = {
   id: number;
-  status: "pending" | "ready" | "used";
+  status: "pending" | "ready" | "used" | "expired";
   issuedAt: string;
   acknowledgedAt: string | null;
   usedAt: string | null;
@@ -24,6 +24,7 @@ type CouponNotificationItem = {
     discountType: "percentage" | "fixed";
     discountValue: number;
     minOrderAmount: number;
+    expiresAt?: string | null;
   };
 };
 
@@ -181,6 +182,8 @@ function CouponRedeemContent() {
                   ? "Pending confirmation"
                   : matchedCoupon.status === "ready"
                     ? "Ready to use"
+                    : matchedCoupon.status === "expired"
+                      ? "Expired"
                     : "Already used"
                 : user
                   ? loading
@@ -256,6 +259,18 @@ function CouponRedeemContent() {
             <span className="couponRedeemBadge couponRedeemBadgeMuted">Redeemed</span>
             <p className="couponRedeemHint">
               This coupon was already used{matchedCoupon.usedAt ? ` on ${new Date(matchedCoupon.usedAt).toLocaleString()}` : ""}.
+            </p>
+            <Link href="/profile" className="couponRedeemSecondaryLink">
+              View my coupons
+            </Link>
+          </div>
+        ) : null}
+
+        {user && matchedCoupon?.status === "expired" ? (
+          <div className="couponRedeemActions">
+            <span className="couponRedeemBadge couponRedeemBadgeError">Expired</span>
+            <p className="couponRedeemHint">
+              This coupon expired{matchedCoupon.coupon.expiresAt ? ` on ${new Date(matchedCoupon.coupon.expiresAt).toLocaleString()}` : ""}.
             </p>
             <Link href="/profile" className="couponRedeemSecondaryLink">
               View my coupons
