@@ -38,6 +38,19 @@ public class SupportChatConversation {
     @Column(name = "status", length = 16, nullable = false)
     private String status = "open";
 
+    @Column(name = "assigned_to_user_id", length = 64)
+    private String assignedToUserId;
+
+    @Column(name = "assigned_to_email", length = 255)
+    private String assignedToEmail;
+
+    @Column(name = "internal_note", columnDefinition = "TEXT")
+    private String internalNote;
+
+    @Builder.Default
+    @Column(name = "priority", length = 16, nullable = false)
+    private String priority = "normal";
+
     @Builder.Default
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();

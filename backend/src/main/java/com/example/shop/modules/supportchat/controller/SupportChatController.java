@@ -3,6 +3,7 @@ package com.example.shop.modules.supportchat.controller;
 import com.example.shop.modules.supportchat.dto.ConversationSummaryDto;
 import com.example.shop.modules.supportchat.dto.SendMessageRequest;
 import com.example.shop.modules.supportchat.dto.SupportChatResponseDto;
+import com.example.shop.modules.supportchat.dto.UpdateConversationRequest;
 import com.example.shop.modules.supportchat.service.SupportChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -45,6 +46,21 @@ public class SupportChatController {
             @RequestParam(required = false, defaultValue = "30") int limit) {
         
         List<ConversationSummaryDto> response = supportChatService.getConversations(limit);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/conversations/{conversationId}")
+    public ResponseEntity<SupportChatResponseDto> updateConversation(
+            @PathVariable("conversationId") String conversationId,
+            @RequestBody(required = false) UpdateConversationRequest request,
+            Authentication authentication) {
+
+        Object principal = authentication != null ? authentication.getPrincipal() : null;
+        SupportChatResponseDto response = supportChatService.updateConversation(
+                conversationId,
+                request == null ? new UpdateConversationRequest() : request,
+                principal
+        );
         return ResponseEntity.ok(response);
     }
 }

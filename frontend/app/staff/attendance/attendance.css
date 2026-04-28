@@ -115,6 +115,35 @@
   color: var(--foreground);
 }
 
+.attendanceInsights {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.attendanceInsights article {
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 16px;
+  padding: 18px;
+  background: linear-gradient(180deg, rgba(14, 165, 233, 0.03), transparent);
+}
+
+.attendanceInsights h2 {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+  font-weight: 600;
+}
+
+.attendanceInsights p {
+  margin: 10px 0 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
 .attendanceBadge {
   display: inline-flex;
   border-radius: 999px;
@@ -237,6 +266,21 @@
   gap: 14px;
 }
 
+.attendanceHistoryControls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.attendanceHistoryControls select {
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: var(--surface-1);
+  color: var(--foreground);
+}
+
 .attendanceHistoryHead h2 {
   margin: 0;
   font-size: 1.35rem;
@@ -273,6 +317,106 @@
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  color: var(--muted-text);
+}
+
+.attendanceReviewGrid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.attendanceReviewCard {
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 18px;
+  padding: 18px;
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.03), rgba(255, 255, 255, 0.94));
+  display: grid;
+  gap: 14px;
+}
+
+.attendanceReviewHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.attendanceReviewHead h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.attendanceReviewHead p {
+  margin: 6px 0 0;
+  color: var(--muted-text);
+  text-transform: capitalize;
+}
+
+.attendanceReviewBadge {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.attendanceReviewBadge.status-open {
+  background: rgba(248, 113, 113, 0.14);
+  color: #b91c1c;
+}
+
+.attendanceReviewBadge.status-acknowledged {
+  background: rgba(59, 130, 246, 0.14);
+  color: #1d4ed8;
+}
+
+.attendanceReviewBadge.status-resolved {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+}
+
+.attendanceReviewSummary {
+  margin: 0;
+  color: var(--foreground);
+  line-height: 1.55;
+}
+
+.attendanceReviewMeta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: var(--muted-text);
+  font-size: 0.9rem;
+}
+
+.attendanceReviewActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.attendanceReviewActions button {
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 999px;
+  background: var(--surface-1);
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.attendanceReviewActions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.attendanceReviewEmpty {
+  margin: 0;
+  border: 1px dashed rgba(148, 163, 184, 0.45);
+  border-radius: 16px;
+  padding: 28px;
+  text-align: center;
   color: var(--muted-text);
 }
 

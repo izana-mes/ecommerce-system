@@ -5,6 +5,7 @@ import com.example.shop.modules.supportchat.dto.ChatMessageDto;
 import com.example.shop.modules.supportchat.dto.ConversationSummaryDto;
 import com.example.shop.modules.supportchat.dto.SendMessageRequest;
 import com.example.shop.modules.supportchat.dto.SupportChatResponseDto;
+import com.example.shop.modules.supportchat.dto.UpdateConversationRequest;
 import com.example.shop.modules.supportchat.entity.SupportChatConversation;
 import com.example.shop.modules.supportchat.entity.SupportChatMessage;
 import com.example.shop.modules.supportchat.repository.SupportChatConversationRepository;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -50,6 +52,7 @@ public class SupportChatServiceImpl implements SupportChatService {
 
         return SupportChatResponseDto.builder()
                 .conversationId(conversationId)
+                .conversation(toSummaryDto(conversationRepository.findById(conversationId).orElseThrow()))
                 .messages(messages)
                 .build();
     }
@@ -98,6 +101,7 @@ public class SupportChatServiceImpl implements SupportChatService {
 
         return SupportChatResponseDto.builder()
                 .conversationId(conversationId)
+                .conversation(toSummaryDto(conv))
                 .messages(messages)
                 .build();
     }
@@ -107,6 +111,48 @@ public class SupportChatServiceImpl implements SupportChatService {
     public List<ConversationSummaryDto> getConversations(int limit) {
         Page<SupportChatConversation> page = conversationRepository.findAllByOrderByLastMessageAtDesc(PageRequest.of(0, Math.max(1, limit)));
         return page.stream().map(this::toSummaryDto).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public SupportChatResponseDto updateConversation(String conversationId, UpdateConversationRequest request, Object principal) {
+        User actor = (principal instanceof User) ? (User) principal : null;
+        requireStaffAccess(actor);
+
+        SupportChatConversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new BusinessException("Conversation not found", HttpStatus.NOT_FOUND));
+
+        if (request.getStatus() != null) {
+            conversation.setStatus(normalizeStatus(request.getStatus()));
+        }
+        if (request.getPriority() != null) {
+            conversation.setPriority(normalizePriority(request.getPriority()));
+        }
+        if (request.getInternalNote() != null) {
+            conversation.setInternalNote(trimmed(request.getInternalNote()));
+        }
+        if (Boolean.TRUE.equals(request.getAssignToSelf())) {
+            conversation.setAssignedToUserId(actor.getId() == null ? actor.getEmail() : actor.getId().toString());
+            conversation.setAssignedToEmail(actor.getEmail());
+            if ("open".equals(conversation.getStatus())) {
+                conversation.setStatus("in_progress");
+            }
+        }
+        if (Boolean.TRUE.equals(request.getClearAssignment())) {
+            conversation.setAssignedToUserId(null);
+            conversation.setAssignedToEmail(null);
+        }
+
+        conversation.setUpdatedAt(LocalDateTime.now());
+        SupportChatConversation saved = conversationRepository.save(conversation);
+        List<ChatMessageDto> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId)
+                .stream().map(this::toDto).collect(Collectors.toList());
+
+        return SupportChatResponseDto.builder()
+                .conversationId(conversationId)
+                .conversation(toSummaryDto(saved))
+                .messages(messages)
+                .build();
     }
 
     private SupportChatConversation getOrCreateConversation(User user, String guestId) {
@@ -161,6 +207,40 @@ public class SupportChatServiceImpl implements SupportChatService {
         return "customer";
     }
 
+    private void requireStaffAccess(User user) {
+        String role = getSenderRole(user);
+        if (!"employee".equals(role) && !"admin".equals(role)) {
+            throw new BusinessException("Access denied", HttpStatus.FORBIDDEN);
+        }
+    }
+
+    private String normalizeStatus(String value) {
+        String normalized = value == null ? "open" : value.trim().toLowerCase(Locale.ROOT);
+        return switch (normalized) {
+            case "open", "in_progress", "resolved" -> normalized;
+            default -> throw new BusinessException("Unsupported conversation status", HttpStatus.BAD_REQUEST);
+        };
+    }
+
+    private String normalizePriority(String value) {
+        String normalized = value == null ? "normal" : value.trim().toLowerCase(Locale.ROOT);
+        return switch (normalized) {
+            case "low", "normal", "high", "urgent" -> normalized;
+            default -> throw new BusinessException("Unsupported conversation priority", HttpStatus.BAD_REQUEST);
+        };
+    }
+
+    private String trimmed(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        if (normalized.isEmpty()) {
+            return null;
+        }
+        return normalized.length() > 2000 ? normalized.substring(0, 2000) : normalized;
+    }
+
     private ChatMessageDto toDto(SupportChatMessage msg) {
         return ChatMessageDto.builder()
                 .messageId(msg.getMessageId())
@@ -183,6 +263,11 @@ public class SupportChatServiceImpl implements SupportChatService {
                 .conversationId(conv.getConversationId())
                 .customerLabel(customerLabel)
                 .status(conv.getStatus())
+                .priority(conv.getPriority())
+                .assignedToEmail(conv.getAssignedToEmail())
+                .assignedToUserId(conv.getAssignedToUserId())
+                .internalNote(conv.getInternalNote())
+                .createdAt(conv.getCreatedAt().toString() + "Z")
                 .lastMessageAt(conv.getLastMessageAt().toString() + "Z")
                 .lastMessagePreview(preview)
                 .build();

@@ -5,15 +5,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SupportChatResponseDto {
-    private String conversationId;
-    private ConversationSummaryDto conversation;
-    private List<ChatMessageDto> messages;
-    private String error;
+public class UpdateConversationRequest {
+    private String status;
+    private String priority;
+    private String internalNote;
+    private Boolean assignToSelf;
+    private Boolean clearAssignment;
 }

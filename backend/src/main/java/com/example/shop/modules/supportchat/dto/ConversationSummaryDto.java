@@ -13,6 +13,11 @@ public class ConversationSummaryDto {
     private String conversationId;
     private String customerLabel;
     private String status;
+    private String priority;
+    private String assignedToEmail;
+    private String assignedToUserId;
+    private String internalNote;
+    private String createdAt;
     private String lastMessageAt;
     private String lastMessagePreview;
 }

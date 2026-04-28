@@ -156,6 +156,36 @@ public class AttendanceService {
             long updatedAt
     ) {}
 
+    public record EmployeePerformanceReview(
+            String reviewId,
+            String reviewType,
+            String category,
+            String title,
+            String summary,
+            String status,
+            String relatedShiftId,
+            Long lastNotifiedAt,
+            int notificationCount,
+            String createdBy,
+            long createdAt,
+            long updatedAt
+    ) {}
+
+    public record EmployeePerformanceReviewSummary(
+            long totalReviews,
+            long openReviews,
+            long acknowledgedReviews,
+            long resolvedReviews
+    ) {}
+
+    public record EmployeePerformanceReviewsResponse(
+            String employeeUserId,
+            String employeeEmail,
+            long generatedAt,
+            EmployeePerformanceReviewSummary summary,
+            List<EmployeePerformanceReview> reviews
+    ) {}
+
     public record AdminAttendanceSnapshot(
             String timezone,
             long generatedAt,
@@ -280,6 +310,50 @@ public class AttendanceService {
     public AttendanceSnapshot getAttendanceSnapshot(User user) {
         ensureAttendanceTables();
         return buildSnapshot(resolveEmployee(user), System.currentTimeMillis());
+    }
+
+    @Transactional(readOnly = true)
+    public EmployeePerformanceReviewsResponse getCurrentEmployeePerformanceReviews(User user, String rawStatus) {
+        ensureAttendanceTables();
+        EmployeeIdentity employee = resolveEmployee(user);
+        String status = normalizeReviewStatusFilter(rawStatus);
+        List<PerformanceReviewRow> rows = loadPerformanceReviewsForEmployee(employee, status);
+
+        long openReviews = rows.stream().filter(row -> REVIEW_STATUS_OPEN.equals(row.status())).count();
+        long acknowledgedReviews = rows.stream().filter(row -> REVIEW_STATUS_ACKNOWLEDGED.equals(row.status())).count();
+        long resolvedReviews = rows.stream().filter(row -> REVIEW_STATUS_RESOLVED.equals(row.status())).count();
+
+        return new EmployeePerformanceReviewsResponse(
+                employee.userId(),
+                employee.email(),
+                System.currentTimeMillis(),
+                new EmployeePerformanceReviewSummary(rows.size(), openReviews, acknowledgedReviews, resolvedReviews),
+                rows.stream().map(this::toEmployeePerformanceReview).toList()
+        );
+    }
+
+    @Transactional
+    public EmployeePerformanceReview updateCurrentEmployeePerformanceReviewStatus(User user, String reviewId, String nextStatusRaw) {
+        ensureAttendanceTables();
+        EmployeeIdentity employee = resolveEmployee(user);
+        String normalizedReviewId = sanitizeRequiredText(reviewId, 64, "Review id is required.");
+        String nextStatus = normalizeReviewStatus(nextStatusRaw);
+        PerformanceReviewRow current = requireOwnedPerformanceReviewRow(normalizedReviewId, employee);
+        long now = System.currentTimeMillis();
+
+        jdbcTemplate.update(
+                """
+                UPDATE employee_performance_reviews
+                   SET review_status = ?,
+                       updated_at = ?
+                 WHERE review_id = ?
+                """,
+                nextStatus,
+                now,
+                normalizedReviewId
+        );
+
+        return toEmployeePerformanceReview(requireOwnedPerformanceReviewRow(normalizedReviewId, employee));
     }
 
     @Transactional
@@ -1278,6 +1352,40 @@ public class AttendanceService {
         ).stream().map(this::toAdminPerformanceReview).toList();
     }
 
+    private List<PerformanceReviewRow> loadPerformanceReviewsForEmployee(EmployeeIdentity employee, String reviewStatus) {
+        StringBuilder sql = new StringBuilder(
+                """
+                SELECT *
+                  FROM employee_performance_reviews
+                 WHERE (
+                        (employee_user_id IS NOT NULL AND employee_user_id = ?)
+                     OR (employee_email IS NOT NULL AND LOWER(employee_email) = LOWER(?))
+                 )
+                """
+        );
+        List<Object> params = new ArrayList<>();
+        List<Integer> paramTypes = new ArrayList<>();
+        params.add(employee.userId());
+        paramTypes.add(Types.VARCHAR);
+        params.add(employee.email());
+        paramTypes.add(Types.VARCHAR);
+
+        if (!"all".equals(reviewStatus)) {
+            sql.append(" AND review_status = ?");
+            params.add(reviewStatus);
+            paramTypes.add(Types.VARCHAR);
+        }
+
+        sql.append(" ORDER BY updated_at DESC, created_at DESC");
+
+        return jdbcTemplate.query(
+                sql.toString(),
+                params.toArray(),
+                paramTypes.stream().mapToInt(Integer::intValue).toArray(),
+                performanceReviewRowMapper()
+        );
+    }
+
     private AdminPerformanceSummary loadPerformanceSummary() {
         return jdbcTemplate.queryForObject(
                 """
@@ -1332,6 +1440,29 @@ public class AttendanceService {
         return rows.getFirst();
     }
 
+    private PerformanceReviewRow requireOwnedPerformanceReviewRow(String reviewId, EmployeeIdentity employee) {
+        List<PerformanceReviewRow> rows = jdbcTemplate.query(
+                """
+                SELECT *
+                  FROM employee_performance_reviews
+                 WHERE review_id = ?
+                   AND (
+                        (employee_user_id IS NOT NULL AND employee_user_id = ?)
+                     OR (employee_email IS NOT NULL AND LOWER(employee_email) = LOWER(?))
+                   )
+                 LIMIT 1
+                """,
+                performanceReviewRowMapper(),
+                reviewId,
+                employee.userId(),
+                employee.email()
+        );
+        if (rows.isEmpty()) {
+            throw new IllegalStateException("Performance review not found.");
+        }
+        return rows.getFirst();
+    }
+
     private AdminPerformanceReview requirePerformanceReview(String reviewId) {
         return toAdminPerformanceReview(requirePerformanceReviewRow(reviewId));
     }
@@ -1345,6 +1476,26 @@ public class AttendanceService {
                 row.employeeUserId(),
                 row.employeeEmail(),
                 row.employeeName(),
+                row.reviewType(),
+                row.category(),
+                row.title(),
+                row.summary(),
+                row.status(),
+                row.relatedShiftId(),
+                row.lastNotifiedAt(),
+                row.notificationCount(),
+                createdBy,
+                row.createdAt(),
+                row.updatedAt()
+        );
+    }
+
+    private EmployeePerformanceReview toEmployeePerformanceReview(PerformanceReviewRow row) {
+        String createdBy = StringUtils.hasText(row.createdByEmail())
+                ? row.createdByEmail()
+                : (StringUtils.hasText(row.createdByUserId()) ? row.createdByUserId() : SYSTEM_ACTOR);
+        return new EmployeePerformanceReview(
+                row.reviewId(),
                 row.reviewType(),
                 row.category(),
                 row.title(),

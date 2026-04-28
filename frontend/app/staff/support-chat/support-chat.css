@@ -91,10 +91,77 @@
   font-weight: 700;
 }
 
+.staffConversationItem small {
+  color: #7b8aab;
+  font-size: 12px;
+}
+
 .staffConversationItem span {
   color: #5f6f90;
   font-size: 13px;
   line-height: 1.4;
+}
+
+.staffConversationMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.staffConversationTagRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.staffStatusBadge,
+.staffPriorityTag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.staffStatusBadge.status-open {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+}
+
+.staffStatusBadge.status-in_progress {
+  background: rgba(245, 158, 11, 0.16);
+  color: #b45309;
+}
+
+.staffStatusBadge.status-resolved {
+  background: rgba(16, 185, 129, 0.16);
+  color: #047857;
+}
+
+.staffPriorityTag.priority-low {
+  background: rgba(148, 163, 184, 0.18);
+  color: #475569;
+}
+
+.staffPriorityTag.priority-normal {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+}
+
+.staffPriorityTag.priority-high {
+  background: rgba(249, 115, 22, 0.16);
+  color: #c2410c;
+}
+
+.staffPriorityTag.priority-urgent {
+  background: rgba(239, 68, 68, 0.16);
+  color: #b91c1c;
 }
 
 .staffConversationThread {
@@ -107,6 +174,10 @@
   padding: 18px 24px;
   border-bottom: 1px solid rgba(226, 235, 255, 0.6);
   background: linear-gradient(180deg, var(--surface-1) 0%, rgba(248, 251, 255, 0.6) 100%);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
 }
 
 .staffThreadHeader h2 {
@@ -115,6 +186,76 @@
   font-weight: 700;
   color: #172c55;
   letter-spacing: -0.01em;
+}
+
+.staffThreadHeader p {
+  margin: 6px 0 0;
+  color: #62759e;
+  font-size: 14px;
+}
+
+.staffClaimButton {
+  border: 1px solid rgba(202, 217, 255, 0.7);
+  border-radius: 999px;
+  background: var(--surface-1);
+  color: #0f3dad;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.staffWorkflowPanel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(226, 235, 255, 0.6);
+  background: rgba(248, 251, 255, 0.72);
+}
+
+.staffWorkflowField {
+  display: grid;
+  gap: 8px;
+}
+
+.staffWorkflowFieldWide {
+  grid-column: 1 / -1;
+}
+
+.staffWorkflowField label {
+  color: #33486f;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.staffWorkflowField select,
+.staffWorkflowField textarea {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(202, 217, 255, 0.6);
+  background: var(--surface-1);
+  padding: 12px 14px;
+  font: inherit;
+  color: #1a2f57;
+}
+
+.staffWorkflowActions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.staffWorkflowActions button {
+  border: 1px solid rgba(202, 217, 255, 0.7);
+  border-radius: 999px;
+  background: var(--surface-1);
+  color: #0f3dad;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .staffThreadMessages {
@@ -257,6 +398,10 @@
 
   .staffConversationItem {
     padding: 10px;
+  }
+
+  .staffWorkflowPanel {
+    grid-template-columns: 1fr;
   }
 
   .staffThreadBubble {

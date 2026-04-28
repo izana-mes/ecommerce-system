@@ -8,7 +8,12 @@ import "./support-chat.css";
 type ConversationItem = {
   conversationId: string;
   customerLabel: string;
-  status: string;
+  status: "open" | "in_progress" | "resolved" | string;
+  priority?: "low" | "normal" | "high" | "urgent" | string;
+  assignedToEmail?: string | null;
+  assignedToUserId?: string | null;
+  internalNote?: string | null;
+  createdAt?: string | null;
   lastMessageAt: string;
   lastMessagePreview: string;
 };
@@ -16,7 +21,7 @@ type ConversationItem = {
 type SupportMessage = {
   messageId: string;
   conversationId: string;
-  senderRole: "customer" | "staff" | "admin";
+  senderRole: "customer" | "employee" | "admin";
   senderEmail: string | null;
   body: string;
   createdAt: string;
@@ -29,9 +34,34 @@ type ConversationListResponse = {
 
 type ConversationMessagesResponse = {
   conversationId?: string;
+  conversation?: ConversationItem;
   messages?: SupportMessage[];
   error?: string;
 };
+
+const STATUS_OPTIONS = [
+  { value: "open", label: "Open" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "resolved", label: "Resolved" },
+] as const;
+
+const PRIORITY_OPTIONS = [
+  { value: "low", label: "Low" },
+  { value: "normal", label: "Normal" },
+  { value: "high", label: "High" },
+  { value: "urgent", label: "Urgent" },
+] as const;
+
+function formatRelativeTime(value: string | null | undefined): string {
+  if (!value) return "-";
+  const diffMs = Date.now() - new Date(value).getTime();
+  const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
+  if (diffMinutes < 1) return "just now";
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return `${Math.floor(diffHours / 24)}d ago`;
+}
 
 export default function StaffSupportChatPage() {
   const router = useRouter();
@@ -41,12 +71,15 @@ export default function StaffSupportChatPage() {
   const [activeConversationId, setActiveConversationId] = useState("");
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [draft, setDraft] = useState("");
+  const [internalNoteDraft, setInternalNoteDraft] = useState("");
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
+  const [savingWorkflow, setSavingWorkflow] = useState(false);
   const [error, setError] = useState("");
 
   const endRef = useRef<HTMLDivElement | null>(null);
   const token = getToken();
+  const currentUser = getUser();
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -146,6 +179,12 @@ export default function StaffSupportChatPage() {
       }
 
       setMessages(Array.isArray(data.messages) ? data.messages : []);
+      if (data.conversation) {
+        setConversations((current) =>
+          current.map((item) => (item.conversationId === conversationId ? { ...item, ...data.conversation } : item))
+        );
+        setInternalNoteDraft(data.conversation.internalNote || "");
+      }
       setError("");
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "Failed to load messages.");
@@ -173,9 +212,9 @@ export default function StaffSupportChatPage() {
 
     const intervalId = window.setInterval(() => {
       void fetchConversations().catch(() => {
-        // Keep polling even when a single attempt fails.
+        // keep polling
       });
-    }, 2000);
+    }, 4000);
 
     return () => {
       canceled = true;
@@ -190,9 +229,9 @@ export default function StaffSupportChatPage() {
 
     const intervalId = window.setInterval(() => {
       void fetchMessages(activeConversationId).catch(() => {
-        // Keep polling for near real-time updates.
+        // keep polling
       });
-    }, 2000);
+    }, 4000);
 
     return () => window.clearInterval(intervalId);
   }, [allowed, activeConversationId, fetchMessages]);
@@ -200,6 +239,11 @@ export default function StaffSupportChatPage() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
+
+  const activeConversation = useMemo(
+    () => conversations.find((item) => item.conversationId === activeConversationId) || null,
+    [activeConversationId, conversations]
+  );
 
   const canSend = useMemo(() => draft.trim().length > 0 && !sending && !!activeConversationId, [draft, sending, activeConversationId]);
 
@@ -236,6 +280,45 @@ export default function StaffSupportChatPage() {
     }
   };
 
+  const updateConversation = async (payload: Record<string, unknown>) => {
+    if (!activeConversationId) return;
+
+    setSavingWorkflow(true);
+    try {
+      const response = await fetch(`/api/support-chat/conversations/${encodeURIComponent(activeConversationId)}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = (await response.json().catch(() => ({}))) as ConversationMessagesResponse;
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to update conversation (${response.status})`);
+      }
+
+      if (data.conversation) {
+        setConversations((current) =>
+          current.map((item) =>
+            item.conversationId === activeConversationId ? { ...item, ...data.conversation } : item
+          )
+        );
+        setInternalNoteDraft(data.conversation.internalNote || "");
+      }
+      if (Array.isArray(data.messages)) {
+        setMessages(data.messages);
+      }
+      setError("");
+      await fetchConversations();
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "Failed to update conversation.");
+    } finally {
+      setSavingWorkflow(false);
+    }
+  };
+
   if (loadingAccess) {
     return (
       <section className="staffSupportChatPage">
@@ -263,8 +346,8 @@ export default function StaffSupportChatPage() {
       <div className="staffSupportChatCard">
         <aside className="staffConversationList">
           <header>
-            <h2>Live Conversations</h2>
-            <p>{conversations.length} active</p>
+            <h2>Support Queue</h2>
+            <p>{conversations.length} active conversations</p>
           </header>
           <div className="staffConversationItems">
             {conversations.length === 0 ? <p className="staffEmpty">No conversations yet.</p> : null}
@@ -275,8 +358,20 @@ export default function StaffSupportChatPage() {
                 className={`staffConversationItem ${item.conversationId === activeConversationId ? "active" : ""}`}
                 onClick={() => setActiveConversationId(item.conversationId)}
               >
-                <strong>{item.customerLabel}</strong>
+                <div className="staffConversationMeta">
+                  <strong>{item.customerLabel}</strong>
+                  <span className={`staffStatusBadge status-${String(item.status || "open").toLowerCase()}`}>
+                    {String(item.status || "open").replaceAll("_", " ")}
+                  </span>
+                </div>
+                <div className="staffConversationTagRow">
+                  <span className={`staffPriorityTag priority-${String(item.priority || "normal").toLowerCase()}`}>
+                    {item.priority || "normal"}
+                  </span>
+                  <span>{item.assignedToEmail || "Unassigned"}</span>
+                </div>
                 <span>{item.lastMessagePreview || "No messages yet"}</span>
+                <small>{formatRelativeTime(item.lastMessageAt)}</small>
               </button>
             ))}
           </div>
@@ -284,8 +379,83 @@ export default function StaffSupportChatPage() {
 
         <main className="staffConversationThread">
           <header className="staffThreadHeader">
-            <h2>{activeConversationId ? `Conversation ${activeConversationId}` : "Select a conversation"}</h2>
+            <div>
+              <h2>{activeConversation ? activeConversation.customerLabel : "Select a conversation"}</h2>
+              <p>
+                {activeConversation
+                  ? `Opened ${formatRelativeTime(activeConversation.createdAt)} · last reply ${formatRelativeTime(activeConversation.lastMessageAt)}`
+                  : "Pick a conversation to start."}
+              </p>
+            </div>
+            {activeConversation ? (
+              <button
+                type="button"
+                className="staffClaimButton"
+                onClick={() => void updateConversation({ assignToSelf: true })}
+                disabled={savingWorkflow}
+              >
+                {savingWorkflow ? "Saving..." : activeConversation.assignedToEmail === currentUser?.email ? "Assigned to you" : "Assign to me"}
+              </button>
+            ) : null}
           </header>
+
+          {activeConversation ? (
+            <section className="staffWorkflowPanel">
+              <div className="staffWorkflowField">
+                <label>Status</label>
+                <select
+                  value={activeConversation.status || "open"}
+                  onChange={(event) => void updateConversation({ status: event.target.value })}
+                  disabled={savingWorkflow}
+                >
+                  {STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="staffWorkflowField">
+                <label>Priority</label>
+                <select
+                  value={activeConversation.priority || "normal"}
+                  onChange={(event) => void updateConversation({ priority: event.target.value })}
+                  disabled={savingWorkflow}
+                >
+                  {PRIORITY_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="staffWorkflowField staffWorkflowFieldWide">
+                <label>Internal note</label>
+                <textarea
+                  value={internalNoteDraft}
+                  onChange={(event) => setInternalNoteDraft(event.target.value)}
+                  placeholder="Add a private handoff note for the support team."
+                  rows={3}
+                />
+              </div>
+              <div className="staffWorkflowActions">
+                <button
+                  type="button"
+                  onClick={() => void updateConversation({ internalNote: internalNoteDraft })}
+                  disabled={savingWorkflow}
+                >
+                  {savingWorkflow ? "Saving..." : "Save Note"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void updateConversation({ clearAssignment: true })}
+                  disabled={savingWorkflow || !activeConversation.assignedToEmail}
+                >
+                  Clear Assignment
+                </button>
+              </div>
+            </section>
+          ) : null}
 
           <div className="staffThreadMessages" role="log" aria-live="polite">
             {loadingMessages ? <p className="staffEmpty">Loading messages...</p> : null}
@@ -295,7 +465,7 @@ export default function StaffSupportChatPage() {
             ) : null}
 
             {messages.map((message) => {
-              const isTeam = message.senderRole === "staff" || message.senderRole === "admin";
+              const isTeam = message.senderRole === "employee" || message.senderRole === "admin";
               return (
                 <article key={message.messageId} className={`staffThreadBubble ${isTeam ? "team" : "customer"}`}>
                   <p>{message.body}</p>

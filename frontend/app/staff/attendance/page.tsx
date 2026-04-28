@@ -6,6 +6,8 @@ import { getToken, getUser } from "@/lib/auth";
 import "./attendance.css";
 
 type AttendanceAction = "clock_in" | "clock_out" | "start_break" | "end_break";
+type ReviewStatus = "OPEN" | "ACKNOWLEDGED" | "RESOLVED";
+type ReviewStatusFilter = "ALL" | ReviewStatus;
 
 type AttendanceSnapshot = {
   employee: {
@@ -39,6 +41,35 @@ type AttendanceSnapshot = {
   }>;
 };
 
+type EmployeePerformanceReview = {
+  reviewId: string;
+  reviewType: string;
+  category: string;
+  title: string;
+  summary: string;
+  status: ReviewStatus;
+  relatedShiftId: string | null;
+  lastNotifiedAt: number | null;
+  notificationCount: number;
+  createdBy: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
+type EmployeePerformanceReviewsResponse = {
+  employeeUserId: string;
+  employeeEmail: string;
+  generatedAt: number;
+  summary: {
+    totalReviews: number;
+    openReviews: number;
+    acknowledgedReviews: number;
+    resolvedReviews: number;
+  };
+  reviews: EmployeePerformanceReview[];
+  error?: string;
+};
+
 function formatDuration(totalMinutes: number): string {
   const safe = Math.max(0, Math.floor(totalMinutes));
   const hours = Math.floor(safe / 60);
@@ -51,13 +82,26 @@ function formatDateTime(value: number | null): string {
   return new Date(value).toLocaleString();
 }
 
+function formatReviewType(value: string): string {
+  return value.toLowerCase().replaceAll("_", " ");
+}
+
+function formatReviewCategory(value: string): string {
+  return value.toLowerCase().replaceAll("_", " ");
+}
+
 export default function StaffAttendancePage() {
   const router = useRouter();
   const [loadingAccess, setLoadingAccess] = useState(true);
   const [allowed, setAllowed] = useState(false);
   const [snapshot, setSnapshot] = useState<AttendanceSnapshot | null>(null);
+  const [reviews, setReviews] = useState<EmployeePerformanceReview[]>([]);
+  const [reviewSummary, setReviewSummary] = useState<EmployeePerformanceReviewsResponse["summary"] | null>(null);
+  const [reviewFilter, setReviewFilter] = useState<ReviewStatusFilter>("ALL");
   const [loadingSnapshot, setLoadingSnapshot] = useState(false);
-  const [runningAction, setRunningAction] = useState<AttendanceAction | "" >("");
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [runningAction, setRunningAction] = useState<AttendanceAction | "">("");
+  const [reviewUpdateId, setReviewUpdateId] = useState<string>("");
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
   const [tick, setTick] = useState(Date.now());
@@ -87,6 +131,35 @@ export default function StaffAttendancePage() {
       setError(err instanceof Error ? err.message : "Failed to load attendance.");
     } finally {
       setLoadingSnapshot(false);
+    }
+  }, [token]);
+
+  const fetchReviews = useCallback(async (statusFilter: ReviewStatusFilter) => {
+    setLoadingReviews(true);
+    try {
+      const query = statusFilter === "ALL" ? "" : `?status=${encodeURIComponent(statusFilter)}`;
+      const response = await fetch(`/api/attendance/reviews${query}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        cache: "no-store",
+      });
+
+      const payload = (await response.json().catch(() => ({}))) as EmployeePerformanceReviewsResponse;
+      if (!response.ok) {
+        throw new Error(payload.error || `Failed to load reviews (${response.status}).`);
+      }
+
+      setReviews(Array.isArray(payload.reviews) ? payload.reviews : []);
+      setReviewSummary(payload.summary || null);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load performance reviews.");
+      setReviews([]);
+      setReviewSummary(null);
+    } finally {
+      setLoadingReviews(false);
     }
   }, [token]);
 
@@ -141,13 +214,15 @@ export default function StaffAttendancePage() {
   useEffect(() => {
     if (!allowed) return;
     void fetchSnapshot();
+    void fetchReviews(reviewFilter);
 
     const interval = window.setInterval(() => {
       void fetchSnapshot();
+      void fetchReviews(reviewFilter);
     }, 20_000);
 
     return () => window.clearInterval(interval);
-  }, [allowed, fetchSnapshot]);
+  }, [allowed, fetchReviews, fetchSnapshot, reviewFilter]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -198,6 +273,11 @@ export default function StaffAttendancePage() {
     return Math.max(snapshot.weekTotalMinutes, snapshot.weekTotalMinutes + elapsedSinceSnapshotMinutes);
   }, [elapsedSinceSnapshotMinutes, snapshot]);
 
+  const attendanceCompletion = useMemo(() => {
+    const minutes = dynamicTodayTotalMinutes;
+    return Math.min(100, Math.max(0, Math.round((minutes / 480) * 100)));
+  }, [dynamicTodayTotalMinutes]);
+
   const runAction = async (action: AttendanceAction) => {
     setRunningAction(action);
     try {
@@ -224,6 +304,42 @@ export default function StaffAttendancePage() {
       setError(err instanceof Error ? err.message : "Attendance action failed.");
     } finally {
       setRunningAction("");
+    }
+  };
+
+  const updateReviewStatus = async (reviewId: string, status: ReviewStatus) => {
+    setReviewUpdateId(reviewId);
+    try {
+      const response = await fetch(`/api/attendance/reviews/${encodeURIComponent(reviewId)}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ status }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as EmployeePerformanceReview & { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error || `Failed to update review (${response.status}).`);
+      }
+
+      setReviews((current) => current.map((review) => (review.reviewId === reviewId ? payload : review)));
+      setReviewSummary((current) => {
+        if (!current) return current;
+        const nextReviews = reviews.map((review) => (review.reviewId === reviewId ? payload : review));
+        return {
+          totalReviews: nextReviews.length,
+          openReviews: nextReviews.filter((review) => review.status === "OPEN").length,
+          acknowledgedReviews: nextReviews.filter((review) => review.status === "ACKNOWLEDGED").length,
+          resolvedReviews: nextReviews.filter((review) => review.status === "RESOLVED").length,
+        };
+      });
+      setError("");
+      await fetchReviews(reviewFilter);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to update performance review.");
+    } finally {
+      setReviewUpdateId("");
     }
   };
 
@@ -258,7 +374,7 @@ export default function StaffAttendancePage() {
       <div className="attendanceCard">
         <header className="attendanceHeader">
           <h1>Employee Attendance</h1>
-          <p>Track working time with clock-in/out and break controls.</p>
+          <p>Track working time, monitor progress, and handle review follow-ups from one page.</p>
         </header>
 
         <div className="attendanceMetaGrid">
@@ -311,10 +427,29 @@ export default function StaffAttendancePage() {
           </article>
 
           <article>
+            <h2>Daily Goal</h2>
+            <p>{attendanceCompletion}% of 8h</p>
+          </article>
+        </div>
+
+        <section className="attendanceInsights">
+          <article>
             <h2>Open Shift Since</h2>
             <p>{formatDateTime(snapshot?.openShift?.clockInAt ?? null)}</p>
           </article>
-        </div>
+          <article>
+            <h2>Open Reviews</h2>
+            <p>{reviewSummary?.openReviews ?? 0}</p>
+          </article>
+          <article>
+            <h2>Acknowledged Reviews</h2>
+            <p>{reviewSummary?.acknowledgedReviews ?? 0}</p>
+          </article>
+          <article>
+            <h2>Resolved Reviews</h2>
+            <p>{reviewSummary?.resolvedReviews ?? 0}</p>
+          </article>
+        </section>
 
         <form className="attendanceNoteForm" onSubmit={handleSubmitNote}>
           <label htmlFor="attendance-note">Optional note for clock in/out</label>
@@ -367,6 +502,77 @@ export default function StaffAttendancePage() {
             {runningAction === "clock_out" ? "Clocking Out..." : "Clock Out"}
           </button>
         </div>
+
+        <section className="attendanceHistory">
+          <div className="attendanceHistoryHead">
+            <h2>Performance Reviews</h2>
+            <div className="attendanceHistoryControls">
+              <select
+                value={reviewFilter}
+                onChange={(event) => setReviewFilter(event.target.value as ReviewStatusFilter)}
+              >
+                <option value="ALL">All reviews</option>
+                <option value="OPEN">Open</option>
+                <option value="ACKNOWLEDGED">Acknowledged</option>
+                <option value="RESOLVED">Resolved</option>
+              </select>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => void fetchReviews(reviewFilter)}
+                disabled={loadingReviews}
+              >
+                {loadingReviews ? "Refreshing..." : "Refresh"}
+              </button>
+            </div>
+          </div>
+
+          <div className="attendanceReviewGrid">
+            {reviews.length === 0 ? (
+              <p className="attendanceReviewEmpty">
+                {loadingReviews ? "Loading reviews..." : "No reviews in this view."}
+              </p>
+            ) : (
+              reviews.map((review) => (
+                <article key={review.reviewId} className="attendanceReviewCard">
+                  <div className="attendanceReviewHead">
+                    <div>
+                      <h3>{review.title}</h3>
+                      <p>
+                        {formatReviewType(review.reviewType)} · {formatReviewCategory(review.category)}
+                      </p>
+                    </div>
+                    <span className={`attendanceReviewBadge status-${review.status.toLowerCase()}`}>
+                      {review.status}
+                    </span>
+                  </div>
+                  <p className="attendanceReviewSummary">{review.summary}</p>
+                  <div className="attendanceReviewMeta">
+                    <span>Created by {review.createdBy}</span>
+                    <span>{formatDateTime(review.createdAt)}</span>
+                    <span>Notifications: {review.notificationCount}</span>
+                  </div>
+                  <div className="attendanceReviewActions">
+                    <button
+                      type="button"
+                      onClick={() => void updateReviewStatus(review.reviewId, "ACKNOWLEDGED")}
+                      disabled={reviewUpdateId === review.reviewId || review.status === "ACKNOWLEDGED" || review.status === "RESOLVED"}
+                    >
+                      {reviewUpdateId === review.reviewId ? "Saving..." : "Acknowledge"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void updateReviewStatus(review.reviewId, "RESOLVED")}
+                      disabled={reviewUpdateId === review.reviewId || review.status === "RESOLVED"}
+                    >
+                      {reviewUpdateId === review.reviewId ? "Saving..." : "Mark Resolved"}
+                    </button>
+                  </div>
+                </article>
+              ))
+            )}
+          </div>
+        </section>
 
         <section className="attendanceHistory">
           <div className="attendanceHistoryHead">
