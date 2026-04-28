@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
-import { finalizeCouponRedemption, validateCouponCode } from "@/lib/coupons";
+import { validateCouponCode } from "@/lib/coupons";
 
 const API_URL = backendApiBaseUrl();
 
@@ -93,23 +93,6 @@ export async function POST(request: NextRequest) {
               details: rawText || backendResponse.statusText || "Unknown backend error",
             };
       return NextResponse.json(payload, { status: backendResponse.status });
-    }
-
-    const backendPayload =
-      data && typeof data === "object"
-        ? data as { data?: { orderId?: number } | null }
-        : null;
-
-    if (validatedCoupon) {
-      const orderId = Number(backendPayload?.data?.orderId ?? 0);
-      if (orderId > 0) {
-        try {
-          await finalizeCouponRedemption(request, orderId, validatedCoupon.code, subtotal);
-        } catch (error: unknown) {
-          const message = error instanceof Error ? error.message : "Failed to finalize coupon redemption";
-          console.error(`Order ${orderId} created but coupon redemption sync failed:`, message);
-        }
-      }
     }
 
     return NextResponse.json(data ?? { success: true }, { status: backendResponse.status });

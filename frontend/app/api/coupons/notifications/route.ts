@@ -68,6 +68,7 @@ export async function GET(request: Request) {
          FROM coupon_assignments ca
          INNER JOIN coupons c ON c.id = ca.coupon_id
          WHERE ca.user_id = ?
+           AND ca.used_at IS NULL
          ORDER BY
            CASE WHEN ca.acknowledged_at IS NULL THEN 0 ELSE 1 END,
            ca.issued_at DESC`,

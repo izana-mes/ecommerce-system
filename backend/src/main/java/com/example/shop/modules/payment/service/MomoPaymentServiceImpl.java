@@ -1,5 +1,6 @@
 package com.example.shop.modules.payment.service;
 
+import com.example.shop.modules.coupon.service.CouponService;
 import com.example.shop.modules.messaging.notification.OrderPaidEmailMessagePublisher;
 import com.example.shop.modules.notification.dto.OrderPaidEmailRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -32,6 +33,7 @@ public class MomoPaymentServiceImpl implements MomoPaymentService {
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
     private final OrderPaidEmailMessagePublisher orderPaidEmailMessagePublisher;
+    private final CouponService couponService;
 
     @Value("${application.payment.momo.secret-key:}")
     private String secretKey;
@@ -162,6 +164,7 @@ public class MomoPaymentServiceImpl implements MomoPaymentService {
         );
 
         if (paid) {
+            couponService.redeemCouponForPaidOrder(order.id());
             sendPaidNotification(order.id());
         }
         

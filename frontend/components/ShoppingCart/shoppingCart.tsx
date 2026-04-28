@@ -173,11 +173,6 @@ export default function ShoppingCart() {
   const discountAmount = Math.min(checkoutSubtotal, Number(appliedCoupon?.discountAmount || 0));
   const checkoutGrandTotal = Math.max(0, checkoutSubtotal + shippingFee + vatAmount - discountAmount);
 
-  useEffect(() => {
-    if (!appliedCoupon) return;
-    setAppliedCoupon(null);
-  }, [appliedCoupon, checkoutSubtotal]);
-
   const handleCheckoutFieldChange = (field: keyof CheckoutForm, value: string | boolean) => {
     setCheckoutForm((prev) => ({
       ...prev,

@@ -1,5 +1,6 @@
 package com.example.shop.modules.payment.service;
 
+import com.example.shop.modules.coupon.service.CouponService;
 import com.example.shop.modules.messaging.notification.OrderPaidEmailMessagePublisher;
 import com.example.shop.modules.messaging.payment.PaymentIpnMessagePublisher;
 import com.example.shop.modules.messaging.payment.VnpayIpnMessage;
@@ -37,6 +38,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
     private final ObjectMapper objectMapper;
     private final PaymentIpnMessagePublisher paymentIpnMessagePublisher;
     private final OrderPaidEmailMessagePublisher orderPaidEmailMessagePublisher;
+    private final CouponService couponService;
 
     @Value("${application.payment.vnpay.hash-secret:}")
     private String hashSecret;
@@ -173,6 +175,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
         );
 
         if (paid) {
+            couponService.redeemCouponForPaidOrder(order.id());
             sendPaidNotification(order.id());
         }
 

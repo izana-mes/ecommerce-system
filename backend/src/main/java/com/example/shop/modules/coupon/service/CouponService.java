@@ -5,8 +5,10 @@ import com.example.shop.modules.coupon.entity.CouponAssignment;
 import com.example.shop.modules.coupon.repository.CouponAssignmentRepository;
 import com.example.shop.modules.coupon.repository.CouponRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,10 +20,12 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CouponService {
 
     private final CouponRepository couponRepository;
     private final CouponAssignmentRepository couponAssignmentRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     // ──────────────────────────────────────────────
     // Admin: list
@@ -211,6 +215,72 @@ public class CouponService {
         return validated;
     }
 
+    @Transactional
+    public void redeemCouponForPaidOrder(Long orderId) {
+        if (orderId == null || orderId <= 0) {
+            return;
+        }
+
+        OrderCouponSnapshot order = jdbcTemplate.query(
+                """
+                SELECT id, coupon_code, coupon_assignment_id, payment_status
+                FROM orders
+                WHERE id = ?
+                LIMIT 1
+                """,
+                (rs, rowNum) -> new OrderCouponSnapshot(
+                        rs.getLong("id"),
+                        rs.getString("coupon_code"),
+                        rs.getObject("coupon_assignment_id") == null ? null : rs.getLong("coupon_assignment_id"),
+                        rs.getString("payment_status")
+                ),
+                orderId
+        ).stream().findFirst().orElse(null);
+
+        if (order == null || order.couponCode() == null || order.couponCode().isBlank()) {
+            return;
+        }
+
+        if (!"paid".equalsIgnoreCase(order.paymentStatus())) {
+            log.warn("Skipping coupon redemption for order {} because payment_status is {}", orderId, order.paymentStatus());
+            return;
+        }
+
+        Coupon coupon = couponRepository.findByCode(order.couponCode().trim().toUpperCase()).orElse(null);
+        if (coupon == null) {
+            log.warn("Coupon {} was stored on order {} but no longer exists", order.couponCode(), orderId);
+            return;
+        }
+
+        if (order.couponAssignmentId() != null) {
+            CouponAssignment assignment = couponAssignmentRepository.findById(order.couponAssignmentId()).orElse(null);
+            if (assignment == null) {
+                log.warn("Coupon assignment {} was stored on order {} but no longer exists", order.couponAssignmentId(), orderId);
+                return;
+            }
+            if (assignment.getUsedAt() != null) {
+                if (orderId.equals(assignment.getUsedOrderId())) {
+                    return;
+                }
+                throw new IllegalStateException("Coupon assignment " + assignment.getId() + " is already linked to order " + assignment.getUsedOrderId());
+            }
+
+            coupon.setUsageCount(coupon.getUsageCount() + 1);
+            coupon.setUpdatedAt(LocalDateTime.now());
+            couponRepository.save(coupon);
+
+            assignment.setUsedAt(LocalDateTime.now());
+            assignment.setUsedOrderId(orderId);
+            assignment.setUpdatedAt(LocalDateTime.now());
+            couponAssignmentRepository.save(assignment);
+            return;
+        }
+
+        coupon.setUsageCount(coupon.getUsageCount() + 1);
+        coupon.setUpdatedAt(LocalDateTime.now());
+        couponRepository.save(coupon);
+    }
+
     // ──────────────────────────────────────────────
     // Customer: notifications (coupon assignments)
     // ──────────────────────────────────────────────
@@ -271,4 +341,11 @@ public class CouponService {
         if (o == null || o.toString().isBlank()) return null;
         try { return LocalDateTime.parse(o.toString().replace(" ", "T")); } catch (Exception e) { return null; }
     }
+
+    private record OrderCouponSnapshot(
+            Long id,
+            String couponCode,
+            Long couponAssignmentId,
+            String paymentStatus
+    ) {}
 }
