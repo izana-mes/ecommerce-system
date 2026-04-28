@@ -32,6 +32,22 @@ type SupplierProductRequest = {
   reviewedAt?: string | null;
 };
 
+type SupplierAccessRequest = {
+  id: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  businessName?: string | null;
+  websiteUrl?: string | null;
+  contactPhone?: string | null;
+  note?: string | null;
+  reviewerNote?: string | null;
+  createdAt?: string | null;
+  reviewedAt?: string | null;
+  requestedByUserId?: string | null;
+  requestedByEmail?: string | null;
+  reviewedByUserId?: string | null;
+  reviewedByEmail?: string | null;
+};
+
 type SupplierProductPayload = {
   productID?: string;
   productName?: string;
@@ -134,6 +150,8 @@ export default function ProfilePage() {
   const [supplierProductsLoading, setSupplierProductsLoading] = useState(false);
   const [adminProductRequests, setAdminProductRequests] = useState<SupplierProductRequest[]>([]);
   const [adminProductsLoading, setAdminProductsLoading] = useState(false);
+  const [adminSupplierRequests, setAdminSupplierRequests] = useState<SupplierAccessRequest[]>([]);
+  const [adminSupplierRequestsLoading, setAdminSupplierRequestsLoading] = useState(false);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
 
@@ -277,6 +295,37 @@ export default function ProfilePage() {
     }
   }, []);
 
+  const fetchAdminSupplierRequests = useCallback(async () => {
+    const token = getToken();
+    if (!token) {
+      setAdminSupplierRequests([]);
+      return;
+    }
+
+    setAdminSupplierRequestsLoading(true);
+    try {
+      const response = await fetch("/api/auth/admin-supplier-requests?status=PENDING", {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || "Failed to load supplier requests");
+      }
+      setAdminSupplierRequests(Array.isArray(data) ? data : []);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load supplier requests";
+      toast.error(message);
+      setAdminSupplierRequests([]);
+    } finally {
+      setAdminSupplierRequestsLoading(false);
+    }
+  }, []);
+
   const fetchRecentOrders = useCallback(async () => {
     const token = getToken();
     setOrdersLoading(true);
@@ -315,14 +364,25 @@ export default function ProfilePage() {
     if (user.role === "supplier") {
       void fetchSupplierProductRequests();
       setAdminProductRequests([]);
+      setAdminSupplierRequests([]);
     } else if (user.role === "admin") {
       void fetchAdminProductRequests();
+      void fetchAdminSupplierRequests();
       setSupplierProductRequests([]);
     } else {
       setSupplierProductRequests([]);
       setAdminProductRequests([]);
+      setAdminSupplierRequests([]);
     }
-  }, [fetchAdminProductRequests, fetchCouponItems, fetchRecentOrders, fetchSupplierProductRequests, fetchSupplierRequest, user]);
+  }, [
+    fetchAdminProductRequests,
+    fetchAdminSupplierRequests,
+    fetchCouponItems,
+    fetchRecentOrders,
+    fetchSupplierProductRequests,
+    fetchSupplierRequest,
+    user,
+  ]);
 
   const pendingCouponCount = useMemo(
     () => couponItems.filter((item) => item.status === "pending").length,
@@ -348,10 +408,7 @@ export default function ProfilePage() {
     [supplierProductRequests]
   );
 
-  const adminSupplierCount = useMemo(
-    () => new Set(adminProductRequests.map((item) => item.requestedByEmail).filter(Boolean)).size,
-    [adminProductRequests]
-  );
+  const adminQueueLoading = adminProductsLoading || adminSupplierRequestsLoading;
 
   const handleConfirmCoupon = async (assignmentId: number) => {
     setConfirmingId(assignmentId);
@@ -566,17 +623,40 @@ export default function ProfilePage() {
                   <span>Products under approval</span>
                 </div>
                 <div className="profileMetric">
-                  <strong>{adminSupplierCount}</strong>
+                  <strong>{adminSupplierRequests.length}</strong>
                   <span>Suppliers in queue</span>
                 </div>
               </div>
 
               <div className="profilePendingList">
-                {adminProductsLoading ? <p>Loading approval queue...</p> : null}
-                {!adminProductsLoading && adminProductRequests.length === 0 ? (
-                  <p>No product submissions are currently waiting for approval.</p>
+                {adminQueueLoading ? <p>Loading approval queue...</p> : null}
+                {!adminQueueLoading &&
+                adminSupplierRequests.length === 0 &&
+                adminProductRequests.length === 0 ? (
+                  <p>No supplier access or product submissions are currently waiting for approval.</p>
                 ) : null}
-                {!adminProductsLoading
+                {!adminQueueLoading
+                  ? adminSupplierRequests.slice(0, 2).map((request) => {
+                      return (
+                        <article key={request.id} className="profilePendingItem">
+                          <div className="profilePendingItemHeader">
+                            <div>
+                              <h3>{request.businessName || request.requestedByEmail || "Supplier access request"}</h3>
+                              <p>{request.requestedByEmail || "Unknown applicant"} · supplier access request</p>
+                            </div>
+                            <span className="profileSupplierStatus profileSupplierStatuspending">pending</span>
+                          </div>
+                          <div className="profilePendingMeta">
+                            <span>
+                              Submitted {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : "recently"}
+                            </span>
+                            {request.contactPhone ? <span>{request.contactPhone}</span> : null}
+                          </div>
+                        </article>
+                      );
+                    })
+                  : null}
+                {!adminQueueLoading
                   ? adminProductRequests.slice(0, 4).map((request) => {
                       const payload = parseSupplierProductPayload(request.requestPayload);
                       const productLabel = payload?.productName || request.targetProductId || "New product submission";
