@@ -14,6 +14,8 @@ type CouponRow = {
 
 type AssignmentRow = {
   id: number;
+  notification_title?: string | null;
+  notification_message?: string | null;
 };
 
 type IssuedAssignment = {
@@ -63,6 +65,7 @@ export async function POST(request: Request) {
 
       let issued = 0;
       let skipped = 0;
+      let resent = 0;
       const assignments: IssuedAssignment[] = [];
 
       for (const entry of recipients as Array<Record<string, unknown>>) {
@@ -79,7 +82,7 @@ export async function POST(request: Request) {
         const effectiveMessage = notificationMessage || `Confirm receipt to unlock ${coupon.title}.`;
 
         const [existingRows] = await conn.execute<AssignmentRow[]>(
-          `SELECT id
+          `SELECT id, notification_title, notification_message
            FROM coupon_assignments
            WHERE coupon_id = ?
              AND user_id = ?
@@ -88,8 +91,28 @@ export async function POST(request: Request) {
           [couponId, userId]
         );
 
-        if (existingRows.length > 0) {
-          skipped += 1;
+        const existingAssignment = existingRows?.[0];
+        if (existingAssignment) {
+          await conn.execute(
+            `UPDATE coupon_assignments
+             SET user_email = ?,
+                 notification_title = ?,
+                 notification_message = ?,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = ?`,
+            [userEmail, effectiveTitle, effectiveMessage, existingAssignment.id]
+          );
+
+          assignments.push({
+            assignmentId: Number(existingAssignment.id),
+            userId,
+            userEmail,
+            firstName,
+            lastName,
+            notificationTitle: effectiveTitle,
+            notificationMessage: effectiveMessage,
+          });
+          resent += 1;
           continue;
         }
 
@@ -144,6 +167,7 @@ export async function POST(request: Request) {
       return {
         issued,
         skipped,
+        resent,
         coupon: {
           code: coupon.code,
           title: coupon.title,
@@ -208,8 +232,8 @@ export async function POST(request: Request) {
       success: true,
       message:
         emailFailures.length > 0
-          ? `Issued to ${result.issued} customer(s), but ${emailFailures.length} email(s) failed`
-          : `Issued to ${result.issued} customer(s)`,
+          ? `Issued to ${result.issued} customer(s), resent ${result.resent} email(s), but ${emailFailures.length} email(s) failed`
+          : `Issued to ${result.issued} customer(s)${result.resent > 0 ? ` and resent ${result.resent} email(s)` : ""}`,
       ...result,
       emailFailures,
     });

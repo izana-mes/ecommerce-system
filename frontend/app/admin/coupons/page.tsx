@@ -226,6 +226,10 @@ export default function AdminCouponsPage() {
       toast.error("Choose a coupon to issue");
       return;
     }
+    if (!selectedCoupon.is_active) {
+      toast.error("Enable this coupon before issuing it");
+      return;
+    }
     if (selectedRecipientIds.length === 0) {
       toast.error("Choose at least one customer");
       return;
@@ -264,7 +268,11 @@ export default function AdminCouponsPage() {
 
       toast.success(data?.message || "Coupon issued");
       if (Array.isArray(data?.emailFailures) && data.emailFailures.length > 0) {
-        toast.error(`Email delivery failed for ${data.emailFailures.length} recipient(s)`);
+        const preview = data.emailFailures
+          .slice(0, 2)
+          .map((failure: { email?: string; error?: string }) => `${failure.email || "unknown"}: ${failure.error || "Failed to send"}`)
+          .join(" | ");
+        toast.error(`Email delivery failed for ${data.emailFailures.length} recipient(s). ${preview}`);
       }
       setSelectedRecipientIds([]);
       setNotificationTitle("");
@@ -339,7 +347,14 @@ export default function AdminCouponsPage() {
                 <tr><td colSpan={7} style={{ padding: 12 }}>No coupons yet.</td></tr>
               ) : (
                 coupons.map((coupon) => (
-                  <tr key={coupon.id} style={{ background: selectedCouponId === coupon.id ? "#f8fbff" : undefined }}>
+                  <tr
+                    key={coupon.id}
+                    onClick={() => setSelectedCouponId(coupon.id)}
+                    style={{
+                      background: selectedCouponId === coupon.id ? "#f8fbff" : undefined,
+                      cursor: "pointer",
+                    }}
+                  >
                     <td style={{ padding: 10, borderTop: "1px solid #efefef" }}>{coupon.code}</td>
                     <td style={{ padding: 10, borderTop: "1px solid #efefef" }}>{coupon.title}</td>
                     <td style={{ padding: 10, borderTop: "1px solid #efefef" }}>
@@ -355,10 +370,23 @@ export default function AdminCouponsPage() {
                     </td>
                     <td style={{ padding: 10, borderTop: "1px solid #efefef" }}>{coupon.is_active ? "Active" : "Inactive"}</td>
                     <td style={{ padding: 10, borderTop: "1px solid #efefef", whiteSpace: "nowrap" }}>
-                      <button type="button" onClick={() => setSelectedCouponId(coupon.id)} style={{ marginRight: 8 }}>
-                        Issue
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedCouponId(coupon.id);
+                        }}
+                        style={{ marginRight: 8 }}
+                      >
+                        {selectedCouponId === coupon.id ? "Selected" : "Select"}
                       </button>
-                      <button type="button" onClick={() => void toggleCoupon(coupon)}>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void toggleCoupon(coupon);
+                        }}
+                      >
                         {coupon.is_active ? "Disable" : "Enable"}
                       </button>
                     </td>
@@ -376,6 +404,11 @@ export default function AdminCouponsPage() {
               ? `Selected: ${selectedCoupon.code} (${selectedCoupon.title})`
               : "Choose a coupon from the table first."}
           </p>
+          {selectedCoupon && !selectedCoupon.is_active ? (
+            <p style={{ color: "#9a3412", marginTop: -4, marginBottom: 12 }}>
+              This coupon is inactive. Enable it before issuing or resending emails.
+            </p>
+          ) : null}
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, gap: 8 }}>
             <label style={{ display: "block", fontSize: 14, fontWeight: 600 }}>Recipients</label>
@@ -470,7 +503,7 @@ export default function AdminCouponsPage() {
           <button
             type="button"
             onClick={() => void handleIssue()}
-            disabled={!selectedCoupon || issuing || customersLoading || customers.length === 0}
+            disabled={!selectedCoupon || !selectedCoupon?.is_active || issuing || customersLoading || customers.length === 0}
             style={{ width: "100%" }}
           >
             {issuing ? "Issuing..." : `Issue to ${selectedRecipientIds.length || 0} customer(s)`}
