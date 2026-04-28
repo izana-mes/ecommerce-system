@@ -36,8 +36,10 @@ services:
         sync: false
       - key: JWT_SECRET_KEY
         generateValue: true
+      # Shared secret for frontend -> backend internal notification calls.
+      # Set the same explicit value on both services in the Render dashboard.
       - key: INTERNAL_NOTIFY_TOKEN
-        generateValue: true
+        sync: false
       - key: SPRING_MAIL_HOST
         value: smtp.gmail.com
       - key: SPRING_MAIL_PORT
@@ -103,7 +105,7 @@ services:
         sync: false
       - key: NEXT_PUBLIC_API_URL
         sync: false
-      # Internal token — must match backend INTERNAL_NOTIFY_TOKEN
+      # Internal token — must exactly match the backend INTERNAL_NOTIFY_TOKEN
       - key: INTERNAL_NOTIFY_TOKEN
         sync: false
       # VNPay (must match backend)
@@ -128,4 +130,3 @@ services:
         sync: false
       - key: MOMO_USD_TO_VND_RATE
         value: "26000"
-

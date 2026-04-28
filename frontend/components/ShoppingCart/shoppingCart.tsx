@@ -64,6 +64,14 @@ type AppliedCoupon = {
   discountAmount: number;
 };
 
+function normalizeAuthorizationHeader(token: string | null): string | null {
+  if (!token) return null;
+  const trimmed = token.trim();
+  if (!trimmed) return null;
+  const normalizedToken = trimmed.replace(/^Bearer\s+/i, "");
+  return `Bearer ${normalizedToken}`;
+}
+
 function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
@@ -449,9 +457,14 @@ export default function ShoppingCart() {
 
     setCouponApplying(true);
     try {
+      const authorizationHeader = normalizeAuthorizationHeader(getToken());
       const response = await fetch("/api/coupons/validate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authorizationHeader ? { Authorization: authorizationHeader } : {}),
+        },
         body: JSON.stringify({
           code: normalizedCode,
           subtotal: checkoutSubtotal,
