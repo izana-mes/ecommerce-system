@@ -135,6 +135,82 @@ public class EmailTemplateService {
         );
     }
 
+    public String generateSupplierAccessReviewEmail(
+            String name,
+            boolean approved,
+            String businessName,
+            String reviewerNote
+    ) {
+        String decision = approved ? "approved" : "rejected";
+        String title = approved ? "Your supplier access request has been approved" : "Your supplier access request has been rejected";
+        String summary = approved
+                ? "You can now access supplier features and manage your supplier website listings."
+                : "Your request was not approved at this time.";
+        String noteSection = String.format(
+                "<p><strong>Admin note:</strong> %s</p>",
+                escapeHtml(reviewerNote == null || reviewerNote.isBlank() ? "No additional note was provided." : reviewerNote)
+        );
+
+        return String.format(
+                """
+                        <html>
+                            <body style="font-family: Arial, sans-serif; color: #111;">
+                                <h2>Hello %s,</h2>
+                                <p>%s</p>
+                                <p>Your request to become a supplier for <strong>%s</strong> has been <strong>%s</strong>.</p>
+                                <p>%s</p>
+                                %s
+                            </body>
+                        </html>
+                        """,
+                escapeHtml(name == null || name.isBlank() ? "there" : name),
+                escapeHtml(title),
+                escapeHtml(businessName == null || businessName.isBlank() ? "your business" : businessName),
+                escapeHtml(decision),
+                escapeHtml(summary),
+                noteSection
+        );
+    }
+
+    public String generateProductChangeReviewEmail(
+            String name,
+            boolean approved,
+            String actionLabel,
+            String productLabel,
+            String reviewerNote
+    ) {
+        String decision = approved ? "approved" : "rejected";
+        String title = approved ? "Your product submission has been approved" : "Your product submission has been rejected";
+        String summary = approved
+                ? "The product request has been accepted for inclusion on the supplier website."
+                : "The product request was not accepted for inclusion on the supplier website.";
+        String noteSection = String.format(
+                "<p><strong>Admin note:</strong> %s</p>",
+                escapeHtml(reviewerNote == null || reviewerNote.isBlank() ? "No additional note was provided." : reviewerNote)
+        );
+
+        return String.format(
+                """
+                        <html>
+                            <body style="font-family: Arial, sans-serif; color: #111;">
+                                <h2>Hello %s,</h2>
+                                <p>%s</p>
+                                <p>Your product request for <strong>%s</strong> (%s) has been <strong>%s</strong>.</p>
+                                <p>%s</p>
+                                %s
+                            </body>
+                        </html>
+                        """,
+                escapeHtml(name == null || name.isBlank() ? "there" : name),
+                escapeHtml(title),
+                escapeHtml(productLabel == null || productLabel.isBlank() ? "your product" : productLabel),
+                escapeHtml(actionLabel == null || actionLabel.isBlank() ? "request" : actionLabel),
+                escapeHtml(decision),
+                escapeHtml(summary),
+                noteSection
+        );
+    }
+
     private String escapeHtml(String value) {
         return (value == null ? "" : value)
                 .replace("&", "&amp;")

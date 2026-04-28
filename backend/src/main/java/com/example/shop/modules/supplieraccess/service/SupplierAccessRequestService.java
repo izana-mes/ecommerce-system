@@ -2,6 +2,8 @@ package com.example.shop.modules.supplieraccess.service;
 
 import com.example.shop.common.audit.AdminAuditLogger;
 import com.example.shop.common.exception.BusinessException;
+import com.example.shop.common.mail.EmailService;
+import com.example.shop.common.mail.EmailTemplateService;
 import com.example.shop.modules.role.entity.Role;
 import com.example.shop.modules.role.repository.RoleRepository;
 import com.example.shop.modules.supplieraccess.dto.SupplierAccessRequestResponseDto;
@@ -35,6 +37,8 @@ public class SupplierAccessRequestService {
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final AdminAuditLogger adminAuditLogger;
+    private final EmailService emailService;
+    private final EmailTemplateService emailTemplateService;
 
     public SupplierAccessRequestResponseDto createRequest(CreateSupplierAccessRequestDto payload, User requester) {
         if (requester == null) {
@@ -110,6 +114,7 @@ public class SupplierAccessRequestService {
                 actorEmail(reviewer),
                 Map.of("requestId", requestId.toString(), "supplierUserId", supplier.getId().toString())
         );
+        sendSupplierAccessReviewEmail(saved, supplier, true);
         return SupplierAccessRequestResponseDto.fromEntity(saved);
     }
 
@@ -126,6 +131,7 @@ public class SupplierAccessRequestService {
                 actorEmail(reviewer),
                 Map.of("requestId", requestId.toString())
         );
+        sendSupplierAccessReviewEmail(saved, loadUser(saved.getRequestedBy().getId()), false);
         return SupplierAccessRequestResponseDto.fromEntity(saved);
     }
 
@@ -166,5 +172,30 @@ public class SupplierAccessRequestService {
             return null;
         }
         return value.trim();
+    }
+
+    private void sendSupplierAccessReviewEmail(SupplierAccessRequest request, User supplier, boolean approved) {
+        if (supplier == null || !StringUtils.hasText(supplier.getEmail())) {
+            return;
+        }
+        String subject = approved
+                ? "Supplier access request approved"
+                : "Supplier access request rejected";
+        String content = emailTemplateService.generateSupplierAccessReviewEmail(
+                fullName(supplier),
+                approved,
+                request.getBusinessName(),
+                request.getReviewerNote()
+        );
+        emailService.sendEmail(supplier.getEmail(), subject, content);
+    }
+
+    private String fullName(User user) {
+        if (user == null) {
+            return null;
+        }
+        String fullName = ((user.getFirstName() == null ? "" : user.getFirstName().trim()) + " "
+                + (user.getLastName() == null ? "" : user.getLastName().trim())).trim();
+        return fullName.isBlank() ? user.getEmail() : fullName;
     }
 }

@@ -2,6 +2,8 @@ package com.example.shop.modules.productapproval.service;
 
 import com.example.shop.common.audit.AdminAuditLogger;
 import com.example.shop.common.exception.BusinessException;
+import com.example.shop.common.mail.EmailService;
+import com.example.shop.common.mail.EmailTemplateService;
 import com.example.shop.modules.product.dto.ProductDto;
 import com.example.shop.modules.product.service.ProductService;
 import com.example.shop.modules.productapproval.dto.ProductChangeRequestResponseDto;
@@ -24,6 +26,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +37,8 @@ public class ProductChangeRequestService {
     private final ProductService productService;
     private final ObjectMapper objectMapper;
     private final AdminAuditLogger adminAuditLogger;
+    private final EmailService emailService;
+    private final EmailTemplateService emailTemplateService;
 
     public ProductChangeRequestResponseDto requestCreate(ProductDto payload, User requester) {
         return createRequest(ProductChangeAction.CREATE, payload == null ? null : payload.getProductID(), payload, requester);
@@ -88,6 +93,7 @@ public class ProductChangeRequestService {
                 actorEmail(reviewer),
                 Map.of("requestId", requestId.toString(), "action", request.getActionType().name())
         );
+        sendProductChangeReviewEmail(saved, true);
 
         return ProductChangeRequestResponseDto.fromEntity(saved);
     }
@@ -105,6 +111,7 @@ public class ProductChangeRequestService {
                 actorEmail(reviewer),
                 Map.of("requestId", requestId.toString(), "action", request.getActionType().name())
         );
+        sendProductChangeReviewEmail(saved, false);
 
         return ProductChangeRequestResponseDto.fromEntity(saved);
     }
@@ -194,5 +201,73 @@ public class ProductChangeRequestService {
             return null;
         }
         return value.trim();
+    }
+
+    private void sendProductChangeReviewEmail(ProductChangeRequest request, boolean approved) {
+        User requester = request.getRequestedBy();
+        if (requester == null || !StringUtils.hasText(requester.getEmail())) {
+            return;
+        }
+        String subject = approved
+                ? "Product request approved"
+                : "Product request rejected";
+        String content = emailTemplateService.generateProductChangeReviewEmail(
+                fullName(requester),
+                approved,
+                humanizeAction(request.getActionType()),
+                resolveProductLabel(request),
+                request.getReviewerNote()
+        );
+        emailService.sendEmail(requester.getEmail(), subject, content);
+    }
+
+    private String resolveProductLabel(ProductChangeRequest request) {
+        try {
+            return switch (request.getActionType()) {
+                case CREATE, UPDATE -> {
+                    ProductDto payload = objectMapper.readValue(request.getRequestPayload(), ProductDto.class);
+                    String productName = trimToNull(payload.getProductName());
+                    yield StringUtils.hasText(productName) ? productName : trimToNull(payload.getProductID());
+                }
+                case DELETE -> trimToNull(request.getTargetProductId());
+                case BULK_UPSERT -> {
+                    List<ProductDto> payload = objectMapper.readValue(
+                            request.getRequestPayload(),
+                            new TypeReference<>() {
+                            }
+                    );
+                    String names = payload.stream()
+                            .map(ProductDto::getProductName)
+                            .filter(StringUtils::hasText)
+                            .map(String::trim)
+                            .limit(3)
+                            .collect(Collectors.joining(", "));
+                    if (StringUtils.hasText(names)) {
+                        yield payload.size() > 3 ? names + " and more" : names;
+                    }
+                    yield payload.isEmpty() ? "your submitted products" : payload.size() + " submitted products";
+                }
+            };
+        } catch (JsonProcessingException ex) {
+            return trimToNull(request.getTargetProductId());
+        }
+    }
+
+    private String humanizeAction(ProductChangeAction action) {
+        return switch (action) {
+            case CREATE -> "create request";
+            case UPDATE -> "update request";
+            case DELETE -> "delete request";
+            case BULK_UPSERT -> "bulk product request";
+        };
+    }
+
+    private String fullName(User user) {
+        if (user == null) {
+            return null;
+        }
+        String fullName = ((user.getFirstName() == null ? "" : user.getFirstName().trim()) + " "
+                + (user.getLastName() == null ? "" : user.getLastName().trim())).trim();
+        return fullName.isBlank() ? user.getEmail() : fullName;
     }
 }
