@@ -23,7 +23,7 @@ const BlogList: React.FC = () => {
   return (
     <div className="blogListSection">
       {/* HEADER */}
-      <div className="blogListHeaderContainer">
+      <div className="blogListHeaderContainer" data-floating-banner>
         <div className="blogListHeader">
           <h2>The Blog</h2>
 

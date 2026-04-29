@@ -22,7 +22,7 @@ const BlogDetails: React.FC = () => {
     <div className="blogDetailsSection">
       <div className="blogDetailsSectionContainer">
         {/* HEADER */}
-        <div className="blogDetailsHeading">
+        <div className="blogDetailsHeading" data-floating-banner>
           <h2>5 Tips to Increase Your Online Sales</h2>
           <div className="blogDetailsMetaData">
             <span>by admin</span>
@@ -32,7 +32,7 @@ const BlogDetails: React.FC = () => {
         </div>
 
         {/* FEATURE IMAGE */}
-        <div className="blogDetailsFeaturedImg">
+        <div className="blogDetailsFeaturedImg" data-floating-banner>
           <Image src={blogdetail1} alt="blog" />
         </div>
 

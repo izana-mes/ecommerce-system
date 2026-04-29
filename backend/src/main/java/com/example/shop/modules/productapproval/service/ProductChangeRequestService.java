@@ -16,6 +16,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class ProductChangeRequestService {
 
     private final ProductChangeRequestRepository productChangeRequestRepository;
@@ -93,7 +95,7 @@ public class ProductChangeRequestService {
                 actorEmail(reviewer),
                 Map.of("requestId", requestId.toString(), "action", request.getActionType().name())
         );
-        sendProductChangeReviewEmail(saved, true);
+        sendProductChangeReviewEmailSafely(saved, true);
 
         return ProductChangeRequestResponseDto.fromEntity(saved);
     }
@@ -111,7 +113,7 @@ public class ProductChangeRequestService {
                 actorEmail(reviewer),
                 Map.of("requestId", requestId.toString(), "action", request.getActionType().name())
         );
-        sendProductChangeReviewEmail(saved, false);
+        sendProductChangeReviewEmailSafely(saved, false);
 
         return ProductChangeRequestResponseDto.fromEntity(saved);
     }
@@ -219,6 +221,18 @@ public class ProductChangeRequestService {
                 request.getReviewerNote()
         );
         emailService.sendEmail(requester.getEmail(), subject, content);
+    }
+
+    private void sendProductChangeReviewEmailSafely(ProductChangeRequest request, boolean approved) {
+        try {
+            sendProductChangeReviewEmail(request, approved);
+        } catch (RuntimeException ex) {
+            log.error(
+                    "Failed to send product change review email for request {}",
+                    request == null ? null : request.getId(),
+                    ex
+            );
+        }
     }
 
     private String resolveProductLabel(ProductChangeRequest request) {

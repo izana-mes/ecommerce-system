@@ -14,6 +14,7 @@ import com.example.shop.modules.supplieraccess.repository.SupplierAccessRequestR
 import com.example.shop.modules.user.entity.User;
 import com.example.shop.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class SupplierAccessRequestService {
 
     private static final String ROLE_SUPPLIER = "ROLE_SUPPLIER";
@@ -114,7 +116,7 @@ public class SupplierAccessRequestService {
                 actorEmail(reviewer),
                 Map.of("requestId", requestId.toString(), "supplierUserId", supplier.getId().toString())
         );
-        sendSupplierAccessReviewEmail(saved, supplier, true);
+        sendSupplierAccessReviewEmailSafely(saved, supplier, true);
         return SupplierAccessRequestResponseDto.fromEntity(saved);
     }
 
@@ -131,7 +133,7 @@ public class SupplierAccessRequestService {
                 actorEmail(reviewer),
                 Map.of("requestId", requestId.toString())
         );
-        sendSupplierAccessReviewEmail(saved, loadUser(saved.getRequestedBy().getId()), false);
+        sendSupplierAccessReviewEmailSafely(saved, loadUser(saved.getRequestedBy().getId()), false);
         return SupplierAccessRequestResponseDto.fromEntity(saved);
     }
 
@@ -188,6 +190,18 @@ public class SupplierAccessRequestService {
                 request.getReviewerNote()
         );
         emailService.sendEmail(supplier.getEmail(), subject, content);
+    }
+
+    private void sendSupplierAccessReviewEmailSafely(SupplierAccessRequest request, User supplier, boolean approved) {
+        try {
+            sendSupplierAccessReviewEmail(request, supplier, approved);
+        } catch (RuntimeException ex) {
+            log.error(
+                    "Failed to send supplier access review email for request {}",
+                    request == null ? null : request.getId(),
+                    ex
+            );
+        }
     }
 
     private String fullName(User user) {

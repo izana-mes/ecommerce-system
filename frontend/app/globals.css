@@ -47,6 +47,20 @@ body {
   overflow-x: clip;
 }
 
+[data-floating-banner] {
+  --floating-banner-offset: 0px;
+  --floating-banner-shadow-opacity: 0.18;
+  --floating-banner-lift: 28px;
+  position: relative;
+  z-index: 0;
+  translate: 0 var(--floating-banner-offset);
+  will-change: translate, filter;
+  transition: translate 120ms linear, filter 180ms ease;
+  filter: drop-shadow(
+    0 var(--floating-banner-lift) 36px rgba(15, 23, 42, var(--floating-banner-shadow-opacity))
+  );
+}
+
 .pageTransition {
   will-change: opacity, transform, filter;
 }
@@ -178,12 +192,14 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  [data-floating-banner],
   .reveal-scroll,
   .reveal-visible,
   .pageTransitionEnter,
   .keyframePulseSoft {
     opacity: 1 !important;
     transform: none !important;
+    translate: none !important;
     filter: none !important;
     transition: none !important;
     animation: none !important;

@@ -3,6 +3,7 @@ import ReduxProvider from "@/store/provider";
 import Navbar from "@/components/Header/Navbar";
 import Footer from "@/components/Footer/Footer";
 import GlobalScrollReveal from "@/components/GlobalScrollReveal";
+import GlobalFloatingBanners from "@/components/GlobalFloatingBanners";
 import PageTransition from "@/components/PageTransition";
 import FloatingChatButtons from "@/components/Common/FloatingChatButtons";
 import { Toaster } from "react-hot-toast";
@@ -49,6 +50,7 @@ export default function RootLayout({
         <ReduxProvider>
           <LocaleProvider>
             <GlobalScrollReveal />
+            <GlobalFloatingBanners />
             <Navbar />
             <main id="page-content">
               <PageTransition>{children}</PageTransition>

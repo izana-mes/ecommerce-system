@@ -28,7 +28,7 @@ export default function Banner() {
   };
   return (
     <>
-      <div className="banner" data-nav-blur-region="home-banner">
+      <div className="banner" data-nav-blur-region="home-banner" data-floating-banner>
         <div className="bannerLeft bannerPanel bannerPanelDark" style={{ backgroundImage: `url("${leftUrl}")` }}>
           <h6 className="bannerh6">{t("home_starting_at_19")}</h6>
           <h3 className="bannerh3">{t("home_womens_tshirts")}</h3>

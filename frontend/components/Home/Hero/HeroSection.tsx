@@ -36,7 +36,7 @@ export default function HeroSection() {
 
     return (
     <>
-      <div className="heroSection" style={{ backgroundImage: `url("${heroBackgroundUrl}")` }}>
+      <div className="heroSection" data-floating-banner style={{ backgroundImage: `url("${heroBackgroundUrl}")` }}>
         <div className="sectionLeft">
           <p>{t("home_new_trend")}</p>
           <h1>{t("home_summer_sale")}</h1>

@@ -27,7 +27,7 @@ const ContactPage: React.FC = () => {
       <h2>{t("contact_us")}</h2>
 
       {/* MAP */}
-      <div className="contactMap">
+      <div className="contactMap" data-floating-banner>
         <iframe
           src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d49206.16593395236!2d2.5776979486328124!3d39.57346430000001!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x129793280de39c05%3A0x85d5f5ea839d6c2a!2sUOMO!5e0!3m2!1sen!2sin!4v1708798894132!5m2!1sen!2sin"
           width="800"

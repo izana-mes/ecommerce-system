@@ -27,7 +27,9 @@ const AboutPage: React.FC = () => {
       <div className="aboutSection">
         <h2>{t("about_title")}</h2>
 
-        <Image src={about1} alt="about" />
+        <div className="aboutHeroVisual" data-floating-banner>
+          <Image src={about1} alt="about" />
+        </div>
 
         <div className="aboutContent">
           <h3>{t("about_our_story")}</h3>

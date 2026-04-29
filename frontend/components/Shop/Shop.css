@@ -25,6 +25,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 18px 22px;
+  border-radius: 20px;
+  border: 1px solid rgba(216, 229, 255, 0.72);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(244, 246, 251, 0.92) 100%);
+  backdrop-filter: blur(12px);
 }
 
 .shopDetailsBreadcrumbLink a {

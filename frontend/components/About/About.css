@@ -25,6 +25,14 @@
   transition: transform 0.4s ease;
 }
 
+.aboutHeroVisual {
+  border-radius: 24px;
+}
+
+.aboutHeroVisual img {
+  margin-bottom: 0;
+}
+
 .aboutSection img:hover {
   transform: translateY(-4px);
 }
@@ -207,4 +215,5 @@
   .content2 img { width: 100%; border-radius: 16px; }
   .companyPartners { padding: 30px 15px; }
   .aboutBrands { flex-wrap: wrap; gap: 20px; }
+  .aboutHeroVisual { border-radius: 16px; }
 }

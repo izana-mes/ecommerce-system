@@ -857,7 +857,7 @@ export default function Shop() {
           </div>
 
           <div className="shopDetails__right">
-            <div className="shopDetailsSorting">
+            <div className="shopDetailsSorting" data-floating-banner>
               <div className="shopDetailsBreadcrumbLink">
                 <Link href="/" onClick={scrollToTop}>
                   {t("shop_home")}

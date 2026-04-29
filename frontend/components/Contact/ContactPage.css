@@ -17,6 +17,10 @@
 
 .contactMap {
   margin-bottom: 40px;
+  overflow: hidden;
+  border-radius: 28px;
+  margin-left: 20px;
+  margin-right: 20px;
 }
 
 .contactMap iframe {
@@ -177,4 +181,5 @@
   .contactSection h2 { padding: 30px 20px; font-size: 32px; }
   .contactInfo { padding: 0 20px; gap: 30px; }
   .contactAddress, .contactForm { padding: 24px; }
+  .contactMap { margin-left: 10px; margin-right: 10px; border-radius: 18px; }
 }
