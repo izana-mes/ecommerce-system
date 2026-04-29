@@ -172,6 +172,38 @@ public class EmailTemplateService {
         );
     }
 
+    public String generateSupplierAccessSubmissionEmail(
+            String requesterName,
+            String requesterEmail,
+            String businessName,
+            String websiteUrl,
+            String contactPhone,
+            String requestNote
+    ) {
+        return String.format(
+                """
+                        <html>
+                            <body style="font-family: Arial, sans-serif; color: #111;">
+                                <h2>New supplier access request</h2>
+                                <p>A user has requested supplier access and is waiting for admin review.</p>
+                                <p><strong>Applicant:</strong> %s</p>
+                                <p><strong>Email:</strong> %s</p>
+                                <p><strong>Business name:</strong> %s</p>
+                                <p><strong>Website:</strong> %s</p>
+                                <p><strong>Contact phone:</strong> %s</p>
+                                <p><strong>Request note:</strong> %s</p>
+                            </body>
+                        </html>
+                        """,
+                escapeHtml(requesterName == null || requesterName.isBlank() ? "Unknown user" : requesterName),
+                escapeHtml(requesterEmail == null || requesterEmail.isBlank() ? "Not provided" : requesterEmail),
+                escapeHtml(businessName == null || businessName.isBlank() ? "Not provided" : businessName),
+                escapeHtml(websiteUrl == null || websiteUrl.isBlank() ? "Not provided" : websiteUrl),
+                escapeHtml(contactPhone == null || contactPhone.isBlank() ? "Not provided" : contactPhone),
+                escapeHtml(requestNote == null || requestNote.isBlank() ? "No note provided." : requestNote)
+        );
+    }
+
     public String generateProductChangeReviewEmail(
             String name,
             boolean approved,
@@ -208,6 +240,32 @@ public class EmailTemplateService {
                 escapeHtml(decision),
                 escapeHtml(summary),
                 noteSection
+        );
+    }
+
+    public String generateProductChangeSubmissionEmail(
+            String requesterName,
+            String requesterEmail,
+            String actionLabel,
+            String productLabel
+    ) {
+        return String.format(
+                """
+                        <html>
+                            <body style="font-family: Arial, sans-serif; color: #111;">
+                                <h2>New supplier product submission</h2>
+                                <p>A supplier has submitted a product request for admin approval.</p>
+                                <p><strong>Supplier:</strong> %s</p>
+                                <p><strong>Email:</strong> %s</p>
+                                <p><strong>Request type:</strong> %s</p>
+                                <p><strong>Product:</strong> %s</p>
+                            </body>
+                        </html>
+                        """,
+                escapeHtml(requesterName == null || requesterName.isBlank() ? "Unknown supplier" : requesterName),
+                escapeHtml(requesterEmail == null || requesterEmail.isBlank() ? "Not provided" : requesterEmail),
+                escapeHtml(actionLabel == null || actionLabel.isBlank() ? "product request" : actionLabel),
+                escapeHtml(productLabel == null || productLabel.isBlank() ? "Submitted product" : productLabel)
         );
     }
 

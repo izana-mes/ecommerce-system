@@ -15,6 +15,7 @@ import com.example.shop.modules.user.entity.User;
 import com.example.shop.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +43,9 @@ public class SupplierAccessRequestService {
     private final EmailService emailService;
     private final EmailTemplateService emailTemplateService;
 
+    @Value("${application.bootstrap.admin.email:admin@example.com}")
+    private String adminEmail;
+
     public SupplierAccessRequestResponseDto createRequest(CreateSupplierAccessRequestDto payload, User requester) {
         if (requester == null) {
             throw new BusinessException("Requester is required", HttpStatus.UNAUTHORIZED);
@@ -68,6 +72,7 @@ public class SupplierAccessRequestService {
                 actorEmail(requester),
                 Map.of("requestId", saved.getId().toString())
         );
+        sendSupplierAccessSubmissionEmailSafely(saved, requester);
         return SupplierAccessRequestResponseDto.fromEntity(saved);
     }
 
@@ -198,6 +203,34 @@ public class SupplierAccessRequestService {
         } catch (RuntimeException ex) {
             log.error(
                     "Failed to send supplier access review email for request {}",
+                    request == null ? null : request.getId(),
+                    ex
+            );
+        }
+    }
+
+    private void sendSupplierAccessSubmissionEmail(SupplierAccessRequest request, User requester) {
+        if (!StringUtils.hasText(adminEmail)) {
+            return;
+        }
+        String subject = "New supplier access request";
+        String content = emailTemplateService.generateSupplierAccessSubmissionEmail(
+                fullName(requester),
+                requester == null ? null : requester.getEmail(),
+                request == null ? null : request.getBusinessName(),
+                request == null ? null : request.getWebsiteUrl(),
+                request == null ? null : request.getContactPhone(),
+                request == null ? null : request.getNote()
+        );
+        emailService.sendEmail(adminEmail, subject, content);
+    }
+
+    private void sendSupplierAccessSubmissionEmailSafely(SupplierAccessRequest request, User requester) {
+        try {
+            sendSupplierAccessSubmissionEmail(request, requester);
+        } catch (RuntimeException ex) {
+            log.error(
+                    "Failed to send supplier access submission email for request {}",
                     request == null ? null : request.getId(),
                     ex
             );

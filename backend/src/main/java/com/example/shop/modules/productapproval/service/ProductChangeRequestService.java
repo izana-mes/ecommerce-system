@@ -17,6 +17,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +42,9 @@ public class ProductChangeRequestService {
     private final AdminAuditLogger adminAuditLogger;
     private final EmailService emailService;
     private final EmailTemplateService emailTemplateService;
+
+    @Value("${application.bootstrap.admin.email:admin@example.com}")
+    private String adminEmail;
 
     public ProductChangeRequestResponseDto requestCreate(ProductDto payload, User requester) {
         return createRequest(ProductChangeAction.CREATE, payload == null ? null : payload.getProductID(), payload, requester);
@@ -138,6 +142,7 @@ public class ProductChangeRequestService {
                 actorEmail(requester),
                 Map.of("requestId", saved.getId().toString(), "action", action.name())
         );
+        sendProductChangeSubmissionEmailSafely(saved);
 
         return ProductChangeRequestResponseDto.fromEntity(saved);
     }
@@ -229,6 +234,33 @@ public class ProductChangeRequestService {
         } catch (RuntimeException ex) {
             log.error(
                     "Failed to send product change review email for request {}",
+                    request == null ? null : request.getId(),
+                    ex
+            );
+        }
+    }
+
+    private void sendProductChangeSubmissionEmail(ProductChangeRequest request) {
+        if (request == null || !StringUtils.hasText(adminEmail)) {
+            return;
+        }
+        User requester = request.getRequestedBy();
+        String subject = "New supplier product submission";
+        String content = emailTemplateService.generateProductChangeSubmissionEmail(
+                fullName(requester),
+                requester == null ? null : requester.getEmail(),
+                humanizeAction(request.getActionType()),
+                resolveProductLabel(request)
+        );
+        emailService.sendEmail(adminEmail, subject, content);
+    }
+
+    private void sendProductChangeSubmissionEmailSafely(ProductChangeRequest request) {
+        try {
+            sendProductChangeSubmissionEmail(request);
+        } catch (RuntimeException ex) {
+            log.error(
+                    "Failed to send product change submission email for request {}",
                     request == null ? null : request.getId(),
                     ex
             );
