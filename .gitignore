@@ -4,6 +4,7 @@
 
 # Backend secrets (use .env.example as template)
 backend/.env
+.env
 
 # Backend build and local Maven caches
 backend/target/

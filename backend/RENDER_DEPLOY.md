@@ -67,9 +67,18 @@ For **MoMo Sandbox** payments set (in Vercel Environment Variables, not exposed 
 - `MOMO_REDIRECT_URL` = `https://<your-vercel-domain>/payment/momo-return`
 - `MOMO_IPN_URL` = `https://<your-render-domain>/api/payments/momo/ipn`
 
+For **VNPay Sandbox** payments set:
+- `VNPAY_TMN_CODE`
+- `VNPAY_HASH_SECRET`
+- `VNPAY_RETURN_URL` = `https://<your-vercel-domain>/payment/vnpay-return`
+
 > [!IMPORTANT]
 > `MOMO_IPN_URL` must point to your **public Render backend** URL. MoMo's servers
 > need to reach it from the internet. A local `localhost` URL will not work.
+
+> [!IMPORTANT]
+> `VNPAY_RETURN_URL` must be a public frontend URL. If it still points to
+> `http://localhost:3000`, VNPay will redirect users to a missing site after payment.
 
 Then redeploy Vercel.
 

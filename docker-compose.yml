@@ -47,12 +47,10 @@ services:
       retries: 20
 
   backend:
-    build: ../backend
+    build: ./backend
     restart: unless-stopped
     env_file:
-      - ../.env
-    ports:
-      - "8080:8080"
+      - ./.env
     environment:
       DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-shop}
       DB_HOST: postgres
@@ -74,6 +72,8 @@ services:
       CORS_ALLOWED_ORIGINS: http://localhost:3000
       MOMO_IPN_URL: http://localhost:8080/api/payments/momo/ipn
       CHATBOT_AI_REFERER: http://localhost:3000
+    ports:
+      - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -84,23 +84,21 @@ services:
 
   frontend:
     build:
-      context: .
+      context: ./frontend
       args:
         NEXT_PUBLIC_API_URL: http://localhost:8080/api
         NEXT_PUBLIC_BACKEND_URL: http://localhost:8080
     restart: unless-stopped
     env_file:
-      - ../.env
-    ports:
-      - "3000:3000"
+      - ./.env
     environment:
       PORT: 3000
       BACKEND_API_BASE_URL: http://backend:8080/api
       BACKEND_URL: http://backend:8080
       NEXT_PUBLIC_API_URL: http://localhost:8080/api
       NEXT_PUBLIC_BACKEND_URL: http://localhost:8080
-      DB_CLIENT: postgres
       DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-shop}
+      DB_CLIENT: postgres
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${DB_NAME:-shop}
@@ -110,6 +108,8 @@ services:
       MOMO_REDIRECT_URL: http://localhost:3000/payment/momo-return
       MOMO_IPN_URL: http://localhost:8080/api/payments/momo/ipn
       VNPAY_RETURN_URL: http://localhost:3000/payment/vnpay-return
+    ports:
+      - "3000:3000"
     depends_on:
       backend:
         condition: service_started

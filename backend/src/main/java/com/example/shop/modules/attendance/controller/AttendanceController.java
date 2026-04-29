@@ -44,8 +44,18 @@ public class AttendanceController {
         try {
             String actionRaw = body == null ? null : String.valueOf(body.get("action"));
             String noteRaw = body == null || body.get("note") == null ? null : String.valueOf(body.get("note"));
+            Map<String, Object> locationBody = null;
+            if (body != null && body.get("location") instanceof Map<?, ?> rawLocationMap) {
+                locationBody = new java.util.LinkedHashMap<>();
+                for (Map.Entry<?, ?> entry : rawLocationMap.entrySet()) {
+                    if (entry.getKey() != null) {
+                        locationBody.put(String.valueOf(entry.getKey()), entry.getValue());
+                    }
+                }
+            }
             AttendanceService.AttendanceAction action = AttendanceService.AttendanceAction.fromWire(actionRaw);
-            return ResponseEntity.ok(attendanceService.applyAttendanceAction(user, action, noteRaw));
+            AttendanceService.AttendanceActionLocation location = attendanceService.parseActionLocation(locationBody);
+            return ResponseEntity.ok(attendanceService.applyAttendanceAction(user, action, noteRaw, location));
         } catch (Exception error) {
             String message = error.getMessage() == null ? "Attendance action failed." : error.getMessage();
             return ResponseEntity.status(resolveStatus(message)).body(Map.of("error", message));

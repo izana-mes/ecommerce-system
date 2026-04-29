@@ -2,6 +2,13 @@ FROM node:22-alpine
 
 WORKDIR /app
 
+ARG NEXT_PUBLIC_API_URL=http://localhost:8080/api
+ARG NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
+
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
+ENV NEXT_TELEMETRY_DISABLED=1
+
 # Copy package trước để tận dụng cache
 COPY package*.json ./
 

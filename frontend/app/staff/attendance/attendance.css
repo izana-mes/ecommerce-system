@@ -144,6 +144,41 @@
   font-weight: 700;
 }
 
+.attendanceLocationPanel {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.attendanceLocationPanel article {
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 16px;
+  padding: 18px;
+  background: linear-gradient(180deg, rgba(249, 115, 22, 0.04), transparent);
+}
+
+.attendanceLocationPanel h2 {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+  font-weight: 600;
+}
+
+.attendanceLocationPanel p {
+  margin: 10px 0 6px;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.attendanceLocationPanel span,
+.attendanceLocationHint {
+  color: var(--muted-text);
+  font-size: 13px;
+}
+
 .attendanceBadge {
   display: inline-flex;
   border-radius: 999px;

@@ -105,6 +105,8 @@ public class AttendanceService {
             long liveBreakMinutes,
             long todayTotalMinutes,
             long weekTotalMinutes,
+            AttendanceActionLog latestAction,
+            List<AttendanceActionLog> recentActions,
             List<SnapshotShift> recentShifts
     ) {}
 
@@ -121,6 +123,27 @@ public class AttendanceService {
             long totalBreakMinutes,
             String status,
             String note
+    ) {}
+
+    public record AttendanceActionLocation(
+            double latitude,
+            double longitude,
+            Double accuracyMeters,
+            Long clientRecordedAt,
+            String locationLabel
+    ) {}
+
+    public record AttendanceActionLog(
+            String actionLogId,
+            String shiftId,
+            String actionType,
+            String note,
+            String locationLabel,
+            double latitude,
+            double longitude,
+            Double accuracyMeters,
+            Long clientRecordedAt,
+            long recordedAt
     ) {}
 
     public record AttendancePolicySnapshot(
@@ -270,6 +293,22 @@ public class AttendanceService {
             long durationMinutes
     ) {}
 
+    private record AttendanceActionLogRow(
+            String actionLogId,
+            String shiftId,
+            String employeeUserId,
+            String employeeEmail,
+            String employeeName,
+            String actionType,
+            String note,
+            String locationLabel,
+            double latitude,
+            double longitude,
+            Double accuracyMeters,
+            Long clientRecordedAt,
+            long recordedAt
+    ) {}
+
     private record SummaryRow(long employeesTracked, long activeEmployees, long employeesOnBreak) {}
 
     private record AdminAttendanceShiftRow(AttendanceShiftRow shift, boolean hasOpenBreak) {}
@@ -308,13 +347,11 @@ public class AttendanceService {
     ) {}
 
     public AttendanceSnapshot getAttendanceSnapshot(User user) {
-        ensureAttendanceTables();
         return buildSnapshot(resolveEmployee(user), System.currentTimeMillis());
     }
 
     @Transactional(readOnly = true)
     public EmployeePerformanceReviewsResponse getCurrentEmployeePerformanceReviews(User user, String rawStatus) {
-        ensureAttendanceTables();
         EmployeeIdentity employee = resolveEmployee(user);
         String status = normalizeReviewStatusFilter(rawStatus);
         List<PerformanceReviewRow> rows = loadPerformanceReviewsForEmployee(employee, status);
@@ -334,7 +371,6 @@ public class AttendanceService {
 
     @Transactional
     public EmployeePerformanceReview updateCurrentEmployeePerformanceReviewStatus(User user, String reviewId, String nextStatusRaw) {
-        ensureAttendanceTables();
         EmployeeIdentity employee = resolveEmployee(user);
         String normalizedReviewId = sanitizeRequiredText(reviewId, 64, "Review id is required.");
         String nextStatus = normalizeReviewStatus(nextStatusRaw);
@@ -357,13 +393,19 @@ public class AttendanceService {
     }
 
     @Transactional
-    public AttendanceSnapshot applyAttendanceAction(User user, AttendanceAction action, String rawNote) {
-        ensureAttendanceTables();
+    public AttendanceSnapshot applyAttendanceAction(
+            User user,
+            AttendanceAction action,
+            String rawNote,
+            AttendanceActionLocation location
+    ) {
         EmployeeIdentity employee = resolveEmployee(user);
         String note = sanitizeNote(rawNote);
+        AttendanceActionLocation requiredLocation = requireActionLocation(location);
         long now = System.currentTimeMillis();
 
         AttendanceShiftRow openShift = getOpenShift(employee.userId());
+        String actionShiftId = openShift == null ? null : openShift.shiftId();
 
         if (action == AttendanceAction.CLOCK_IN) {
             if (openShift != null) {
@@ -371,6 +413,7 @@ public class AttendanceService {
             }
 
             String shiftId = makeId("shift");
+            actionShiftId = shiftId;
             jdbcTemplate.update(
                     """
                     INSERT INTO attendance_shifts (
@@ -523,12 +566,29 @@ public class AttendanceService {
             );
         }
 
+        logAttendanceAction(employee, actionShiftId, action, note, requiredLocation, now);
         return buildSnapshot(employee, now);
     }
 
-    public AdminAttendanceSnapshot getAdminAttendanceSnapshot(AdminAttendanceFilters rawFilters) {
-        ensureAttendanceTables();
+    public AttendanceActionLocation parseActionLocation(Map<String, Object> body) {
+        if (body == null || body.isEmpty()) {
+            return null;
+        }
+        Double latitude = toBoundedCoordinate(body.get("latitude"), -90D, 90D, "latitude");
+        Double longitude = toBoundedCoordinate(body.get("longitude"), -180D, 180D, "longitude");
+        if (latitude == null || longitude == null) {
+            return null;
+        }
+        return new AttendanceActionLocation(
+                latitude,
+                longitude,
+                toPositiveDouble(body.get("accuracyMeters"), "accuracyMeters"),
+                toPositiveLong(body.get("capturedAt"), "capturedAt"),
+                sanitizeOptionalText(body.get("label") == null ? null : String.valueOf(body.get("label")), 255)
+        );
+    }
 
+    public AdminAttendanceSnapshot getAdminAttendanceSnapshot(AdminAttendanceFilters rawFilters) {
         long now = System.currentTimeMillis();
         String todayKey = dateKeyFromTimestamp(now);
         long weekCutoff = now - 6L * DAY_MS;
@@ -725,7 +785,6 @@ public class AttendanceService {
 
     @Transactional
     public AdminPerformanceReview createAdminPerformanceReview(User actor, AdminPerformanceReviewRequest request) {
-        ensureAttendanceTables();
         EmployeeIdentity admin = resolveAdminActor(actor);
         EmployeeIdentity employee = resolveTargetEmployee(request.employeeUserId(), request.employeeEmail(), request.employeeName());
         String reviewType = normalizeReviewType(request.reviewType());
@@ -793,7 +852,6 @@ public class AttendanceService {
             String reviewId,
             AdminPerformanceReviewUpdateRequest request
     ) {
-        ensureAttendanceTables();
         resolveAdminActor(actor);
         String normalizedReviewId = sanitizeRequiredText(reviewId, 64, "Review id is required.");
         PerformanceReviewRow current = requirePerformanceReviewRow(normalizedReviewId);
@@ -845,7 +903,6 @@ public class AttendanceService {
         if (!attendanceMonitorEnabled) {
             return;
         }
-        ensureAttendanceTables();
 
         long now = System.currentTimeMillis();
         try {
@@ -1089,6 +1146,57 @@ public class AttendanceService {
         );
     }
 
+    private AttendanceActionLocation requireActionLocation(AttendanceActionLocation location) {
+        if (location == null) {
+            throw new IllegalStateException("Location permission is required for attendance actions.");
+        }
+        return location;
+    }
+
+    private void logAttendanceAction(
+            EmployeeIdentity employee,
+            String shiftId,
+            AttendanceAction action,
+            String note,
+            AttendanceActionLocation location,
+            long now
+    ) {
+        jdbcTemplate.update(
+                """
+                INSERT INTO attendance_action_logs (
+                  action_log_id,
+                  shift_id,
+                  employee_user_id,
+                  employee_email,
+                  employee_name,
+                  action_type,
+                  note,
+                  location_label,
+                  latitude,
+                  longitude,
+                  accuracy_meters,
+                  client_recorded_at,
+                  recorded_at,
+                  created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                makeId("attlog"),
+                shiftId,
+                employee.userId(),
+                employee.email(),
+                employee.displayName(),
+                action.name(),
+                note,
+                location.locationLabel(),
+                location.latitude(),
+                location.longitude(),
+                location.accuracyMeters(),
+                location.clientRecordedAt(),
+                now,
+                now
+        );
+    }
+
     private AttendanceSnapshot buildSnapshot(EmployeeIdentity employee, long now) {
         List<AttendanceShiftRow> recentRows = jdbcTemplate.query(
                 """
@@ -1119,6 +1227,7 @@ public class AttendanceService {
         long todayTotalMinutes = 0L;
         long weekTotalMinutes = 0L;
         long weekCutoff = now - 6L * DAY_MS;
+        List<AttendanceActionLog> recentActions = getRecentActionLogs(employee.userId(), 10);
 
         for (AttendanceShiftRow shift : recentRows) {
             long workedMinutes = shift.clockOutAt() == null ? liveWorkedMinutes : shift.totalWorkMinutes();
@@ -1141,6 +1250,8 @@ public class AttendanceService {
                 openShift == null ? 0L : openShiftBreakMinutes,
                 todayTotalMinutes,
                 weekTotalMinutes,
+                recentActions.isEmpty() ? null : recentActions.getFirst(),
+                recentActions,
                 recentRows.stream().map(this::toShiftView).toList()
         );
     }
@@ -1233,6 +1344,21 @@ public class AttendanceService {
                 attendanceBreakRowMapper(),
                 shiftId
         );
+    }
+
+    private List<AttendanceActionLog> getRecentActionLogs(String employeeUserId, int limit) {
+        return jdbcTemplate.query(
+                """
+                SELECT *
+                  FROM attendance_action_logs
+                 WHERE employee_user_id = ?
+                 ORDER BY recorded_at DESC
+                 LIMIT ?
+                """,
+                attendanceActionLogRowMapper(),
+                employeeUserId,
+                limit
+        ).stream().map(this::toActionLog).toList();
     }
 
     private AttendanceShiftRow getOpenShift(String employeeUserId) {
@@ -1510,61 +1636,18 @@ public class AttendanceService {
         );
     }
 
-    private void ensureAttendanceTables() {
-        jdbcTemplate.execute(
-                """
-                CREATE TABLE IF NOT EXISTS attendance_shifts (
-                  shift_id VARCHAR(64) PRIMARY KEY,
-                  employee_email VARCHAR(255) NOT NULL,
-                  employee_name VARCHAR(255) NOT NULL,
-                  employee_role VARCHAR(50) NOT NULL,
-                  employee_user_id VARCHAR(64) NOT NULL,
-                  shift_date VARCHAR(10) NOT NULL,
-                  clock_in_at BIGINT NOT NULL,
-                  clock_out_at BIGINT NULL,
-                  total_work_minutes INT NOT NULL DEFAULT 0,
-                  total_break_minutes INT NOT NULL DEFAULT 0,
-                  note TEXT NULL,
-                  created_at BIGINT NOT NULL,
-                  updated_at BIGINT NOT NULL
-                )
-                """
-        );
-        jdbcTemplate.execute(
-                """
-                CREATE TABLE IF NOT EXISTS attendance_breaks (
-                  break_id VARCHAR(64) PRIMARY KEY,
-                  shift_id VARCHAR(64) NOT NULL,
-                  started_at BIGINT NOT NULL,
-                  ended_at BIGINT NULL,
-                  duration_minutes INT NOT NULL DEFAULT 0,
-                  created_at BIGINT NOT NULL,
-                  updated_at BIGINT NOT NULL
-                )
-                """
-        );
-        jdbcTemplate.execute(
-                """
-                CREATE TABLE IF NOT EXISTS employee_performance_reviews (
-                  review_id VARCHAR(64) PRIMARY KEY,
-                  employee_user_id VARCHAR(64) NOT NULL,
-                  employee_email VARCHAR(255) NOT NULL,
-                  employee_name VARCHAR(255) NOT NULL,
-                  review_type VARCHAR(32) NOT NULL,
-                  category VARCHAR(64) NOT NULL,
-                  title VARCHAR(160) NOT NULL,
-                  summary TEXT NOT NULL,
-                  review_status VARCHAR(32) NOT NULL DEFAULT 'OPEN',
-                  related_shift_id VARCHAR(64) NULL,
-                  source_key VARCHAR(160) NULL,
-                  last_notified_at BIGINT NULL,
-                  notification_count INT NOT NULL DEFAULT 0,
-                  created_by_user_id VARCHAR(64) NULL,
-                  created_by_email VARCHAR(255) NULL,
-                  created_at BIGINT NOT NULL,
-                  updated_at BIGINT NOT NULL
-                )
-                """
+    private AttendanceActionLog toActionLog(AttendanceActionLogRow row) {
+        return new AttendanceActionLog(
+                row.actionLogId(),
+                row.shiftId(),
+                row.actionType(),
+                row.note(),
+                row.locationLabel(),
+                row.latitude(),
+                row.longitude(),
+                row.accuracyMeters(),
+                row.clientRecordedAt(),
+                row.recordedAt()
         );
     }
 
@@ -1712,6 +1795,54 @@ public class AttendanceService {
         return trimmed.length() > maxLength ? trimmed.substring(0, maxLength) : trimmed;
     }
 
+    private Double toBoundedCoordinate(Object value, double min, double max, String fieldName) {
+        if (value == null) {
+            return null;
+        }
+        double parsed;
+        try {
+            parsed = Double.parseDouble(String.valueOf(value));
+        } catch (NumberFormatException error) {
+            throw new IllegalStateException("Invalid " + fieldName + ".");
+        }
+        if (parsed < min || parsed > max) {
+            throw new IllegalStateException("Invalid " + fieldName + ".");
+        }
+        return parsed;
+    }
+
+    private Double toPositiveDouble(Object value, String fieldName) {
+        if (value == null) {
+            return null;
+        }
+        double parsed;
+        try {
+            parsed = Double.parseDouble(String.valueOf(value));
+        } catch (NumberFormatException error) {
+            throw new IllegalStateException("Invalid " + fieldName + ".");
+        }
+        if (parsed < 0) {
+            throw new IllegalStateException("Invalid " + fieldName + ".");
+        }
+        return parsed;
+    }
+
+    private Long toPositiveLong(Object value, String fieldName) {
+        if (value == null) {
+            return null;
+        }
+        long parsed;
+        try {
+            parsed = Long.parseLong(String.valueOf(value));
+        } catch (NumberFormatException error) {
+            throw new IllegalStateException("Invalid " + fieldName + ".");
+        }
+        if (parsed < 0) {
+            throw new IllegalStateException("Invalid " + fieldName + ".");
+        }
+        return parsed;
+    }
+
     private String dateKeyFromTimestamp(long timestamp) {
         ZoneId zoneId = ZoneId.of(attendanceTimezone);
         return DATE_KEY_FORMATTER.format(Instant.ofEpochMilli(timestamp).atZone(zoneId).toLocalDate());
@@ -1822,6 +1953,24 @@ public class AttendanceService {
         );
     }
 
+    private RowMapper<AttendanceActionLogRow> attendanceActionLogRowMapper() {
+        return (rs, rowNum) -> new AttendanceActionLogRow(
+                rs.getString("action_log_id"),
+                rs.getString("shift_id"),
+                rs.getString("employee_user_id"),
+                rs.getString("employee_email"),
+                rs.getString("employee_name"),
+                rs.getString("action_type"),
+                rs.getString("note"),
+                rs.getString("location_label"),
+                rs.getDouble("latitude"),
+                rs.getDouble("longitude"),
+                getNullableDouble(rs, "accuracy_meters"),
+                getNullableLong(rs, "client_recorded_at"),
+                rs.getLong("recorded_at")
+        );
+    }
+
     private RowMapper<AdminAttendanceShiftRow> adminAttendanceShiftRowMapper() {
         return (rs, rowNum) -> new AdminAttendanceShiftRow(
                 attendanceShiftRowMapper().mapRow(rs, rowNum),
@@ -1871,6 +2020,11 @@ public class AttendanceService {
 
     private Long getNullableLong(ResultSet rs, String column) throws SQLException {
         long value = rs.getLong(column);
+        return rs.wasNull() ? null : value;
+    }
+
+    private Double getNullableDouble(ResultSet rs, String column) throws SQLException {
+        double value = rs.getDouble(column);
         return rs.wasNull() ? null : value;
     }
 }

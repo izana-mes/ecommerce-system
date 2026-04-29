@@ -366,6 +366,11 @@ public class OrderServiceImpl implements OrderService {
                                 shipping_state,
                                 shipping_postal_code,
                                 shipping_country,
+                                delivery_latitude,
+                                delivery_longitude,
+                                delivery_location_label,
+                                delivery_location_accuracy_meters,
+                                delivery_location_captured_at,
                                 notes,
                                 subtotal,
                                 shipping_fee,
@@ -380,7 +385,7 @@ public class OrderServiceImpl implements OrderService {
                                 order_status,
                                 created_at,
                                 updated_at
-                            ) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending', ?, ?)
+                            ) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending', ?, ?)
                             """,
                     new String[]{"id"}
             );
@@ -395,22 +400,31 @@ public class OrderServiceImpl implements OrderService {
             ps.setString(9, nullable(request.getShippingState()));
             ps.setString(10, nullable(request.getShippingPostalCode()));
             ps.setString(11, nullable(request.getShippingCountry()));
-            ps.setString(12, nullable(request.getNotes()));
-            ps.setBigDecimal(13, subtotal);
-            ps.setBigDecimal(14, shippingFee);
-            ps.setBigDecimal(15, vat);
-            ps.setBigDecimal(16, discountAmount);
-            ps.setBigDecimal(17, totalAmount);
-            ps.setString(18, currency);
-            ps.setString(19, nullable(request.getCouponCode()));
-            if (request.getCouponAssignmentId() == null) {
-                ps.setNull(20, java.sql.Types.BIGINT);
+            ps.setObject(12, request.getDeliveryLatitude());
+            ps.setObject(13, request.getDeliveryLongitude());
+            ps.setString(14, nullable(request.getDeliveryLocationLabel()));
+            ps.setObject(15, request.getDeliveryLocationAccuracyMeters());
+            if (request.getDeliveryLocationCapturedAt() == null) {
+                ps.setNull(16, java.sql.Types.BIGINT);
             } else {
-                ps.setLong(20, request.getCouponAssignmentId());
+                ps.setLong(16, request.getDeliveryLocationCapturedAt());
             }
-            ps.setString(21, safe(request.getPaymentMethod()));
-            ps.setTimestamp(22, Timestamp.valueOf(now));
-            ps.setTimestamp(23, Timestamp.valueOf(now));
+            ps.setString(17, nullable(request.getNotes()));
+            ps.setBigDecimal(18, subtotal);
+            ps.setBigDecimal(19, shippingFee);
+            ps.setBigDecimal(20, vat);
+            ps.setBigDecimal(21, discountAmount);
+            ps.setBigDecimal(22, totalAmount);
+            ps.setString(23, currency);
+            ps.setString(24, nullable(request.getCouponCode()));
+            if (request.getCouponAssignmentId() == null) {
+                ps.setNull(25, java.sql.Types.BIGINT);
+            } else {
+                ps.setLong(25, request.getCouponAssignmentId());
+            }
+            ps.setString(26, safe(request.getPaymentMethod()));
+            ps.setTimestamp(27, Timestamp.valueOf(now));
+            ps.setTimestamp(28, Timestamp.valueOf(now));
             return ps;
         }, keyHolder);
 

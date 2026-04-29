@@ -4,6 +4,13 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 type AttendancePostRequest = {
   action?: "clock_in" | "clock_out" | "start_break" | "end_break";
   note?: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+    accuracyMeters?: number | null;
+    capturedAt?: number;
+    label?: string;
+  };
 };
 
 async function proxyAttendance(request: Request, init?: RequestInit) {

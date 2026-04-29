@@ -2,6 +2,91 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rateLimit";
 import { buildVnpPaymentUrl, formatVnpDate, toGmt7 } from "@/lib/vnpay";
 
+function isLocalhostHostname(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
+function isPrivateIpv4(hostname: string): boolean {
+  return (
+    /^10\.\d+\.\d+\.\d+$/.test(hostname) ||
+    /^127\.\d+\.\d+\.\d+$/.test(hostname) ||
+    /^192\.168\.\d+\.\d+$/.test(hostname) ||
+    /^172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+$/.test(hostname)
+  );
+}
+
+function isPublicHostname(hostname: string): boolean {
+  const normalized = hostname.trim().toLowerCase();
+  if (!normalized || isLocalhostHostname(normalized) || isPrivateIpv4(normalized)) {
+    return false;
+  }
+
+  return !(
+    normalized === "0.0.0.0" ||
+    normalized.endsWith(".local") ||
+    normalized.endsWith(".internal")
+  );
+}
+
+const isDev = process.env.NODE_ENV !== "production";
+
+function buildReturnUrl(candidate: string | null | undefined): string | null {
+  if (!candidate) return null;
+
+  try {
+    const url = new URL(candidate);
+    if (!["http:", "https:"].includes(url.protocol)) return null;
+    // In development, allow localhost/private IPs so payment flow can be tested locally
+    if (!isDev && !isPublicHostname(url.hostname)) return null;
+    return new URL("/payment/vnpay-return", url.origin).toString();
+  } catch {
+    return null;
+  }
+}
+
+function buildReturnUrlFromReferer(referer: string | null | undefined): string | null {
+  if (!referer) return null;
+
+  try {
+    return buildReturnUrl(new URL(referer).origin);
+  } catch {
+    return null;
+  }
+}
+
+function resolveVnpReturnUrl(request: NextRequest): { returnUrl: string | null; source: string } {
+  const configured = buildReturnUrl(process.env.VNPAY_RETURN_URL?.trim());
+  if (configured) {
+    return { returnUrl: configured, source: "env" };
+  }
+
+  const originHeader = buildReturnUrl(request.headers.get("origin"));
+  if (originHeader) {
+    return { returnUrl: originHeader, source: "origin-header" };
+  }
+
+  const refererOrigin = buildReturnUrlFromReferer(request.headers.get("referer"));
+  if (refererOrigin) {
+    return { returnUrl: refererOrigin, source: "referer" };
+  }
+
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  if (forwardedProto && forwardedHost) {
+    const forwarded = buildReturnUrl(`${forwardedProto}://${forwardedHost}`);
+    if (forwarded) {
+      return { returnUrl: forwarded, source: "forwarded-host" };
+    }
+  }
+
+  const requestOrigin = buildReturnUrl(request.nextUrl.origin);
+  if (requestOrigin) {
+    return { returnUrl: requestOrigin, source: "request-url" };
+  }
+
+  return { returnUrl: null, source: "unresolved" };
+}
+
 export async function POST(request: NextRequest) {
   const limit = checkRateLimit(request, "payment-vnpay-create", 20, 5 * 60_000);
   if (!limit.ok) {
@@ -28,7 +113,7 @@ export async function POST(request: NextRequest) {
     const tmnCode = process.env.VNPAY_TMN_CODE;
     const hashSecret = process.env.VNPAY_HASH_SECRET;
     const vnpayUrl = process.env.VNPAY_URL ?? "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    const returnUrl = process.env.VNPAY_RETURN_URL;
+    const { returnUrl, source: returnUrlSource } = resolveVnpReturnUrl(request);
     const usdToVnd = Number(process.env.VNPAY_USD_TO_VND_RATE ?? "26000");
     const minVnd = Number(process.env.VNPAY_MIN_AMOUNT_VND ?? "5000");
 
@@ -36,6 +121,16 @@ export async function POST(request: NextRequest) {
       console.error("VNPAY env vars missing:", { tmnCode: !!tmnCode, hashSecret: !!hashSecret, returnUrl: !!returnUrl });
       return NextResponse.json({ error: "Payment gateway not configured" }, { status: 503 });
     }
+
+    console.info("VNPAY create-payment resolved return URL", {
+      returnUrl,
+      source: returnUrlSource,
+      requestOrigin: request.nextUrl.origin,
+      originHeader: request.headers.get("origin"),
+      referer: request.headers.get("referer"),
+      forwardedHost: request.headers.get("x-forwarded-host"),
+      forwardedProto: request.headers.get("x-forwarded-proto"),
+    });
 
     // Convert USD → VND, multiply by 100 as required by VNPAY
     const amountVnd = Math.round(amountNumber * usdToVnd);

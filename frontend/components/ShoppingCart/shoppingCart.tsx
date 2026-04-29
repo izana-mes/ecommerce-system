@@ -55,6 +55,13 @@ type CheckoutForm = {
 };
 
 type CheckoutErrorFields = Partial<Record<keyof CheckoutForm, string>>;
+type CapturedLocation = {
+  latitude: number;
+  longitude: number;
+  accuracyMeters: number | null;
+  label: string;
+  capturedAt: number;
+};
 type AppliedCoupon = {
   couponId: number;
   code: string;
@@ -109,6 +116,8 @@ export default function ShoppingCart() {
     notes: "",
   });
   const [checkoutErrors, setCheckoutErrors] = useState<CheckoutErrorFields>({});
+  const [checkoutLocation, setCheckoutLocation] = useState<CapturedLocation | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [couponApplying, setCouponApplying] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
@@ -116,6 +125,13 @@ export default function ShoppingCart() {
   const requestedBuyNow = (searchParams.get("buyNow") || "").trim();
   const requestedPayment = (searchParams.get("payment") || "").trim().toLowerCase();
   const requestedCoupon = (searchParams.get("coupon") || "").trim().toUpperCase();
+  const countryOptions = [
+    "India",
+    "Canada",
+    "United Kingdom",
+    "United States",
+    "Turkey",
+  ];
 
   useEffect(() => {
     setMounted(true);
@@ -261,6 +277,104 @@ export default function ShoppingCart() {
     setSelectedPayment(e.target.value);
   };
 
+  const captureBrowserLocation = useCallback(async (): Promise<CapturedLocation> => {
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+      throw new Error("This device does not support location detection.");
+    }
+
+    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 15_000,
+        maximumAge: 0,
+      });
+    });
+
+    const latitude = Number(position.coords.latitude);
+    const longitude = Number(position.coords.longitude);
+    const accuracyMeters = Number.isFinite(position.coords.accuracy)
+      ? Math.round(position.coords.accuracy)
+      : null;
+    const capturedAt = Date.now();
+
+    let label = `GPS ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+    try {
+      const reverseResponse = await fetch(
+        `/api/location/reverse?lat=${encodeURIComponent(String(latitude))}&lon=${encodeURIComponent(
+          String(longitude)
+        )}`,
+        { cache: "no-store" }
+      );
+      const reversePayload = await reverseResponse.json().catch(() => ({}));
+      if (reverseResponse.ok) {
+        const streetAddress1 = String(reversePayload?.streetAddress1 || "").trim();
+        const streetAddress2 = String(reversePayload?.streetAddress2 || "").trim();
+        const city = String(reversePayload?.city || "").trim();
+        const postalCode = String(reversePayload?.postalCode || "").trim();
+        const country = String(reversePayload?.country || "").trim();
+        const displayName = String(reversePayload?.displayName || "").trim();
+
+        setCheckoutForm((prev) => ({
+          ...prev,
+          streetAddress1: streetAddress1 || prev.streetAddress1 || "Current location",
+          streetAddress2:
+            streetAddress2 ||
+            prev.streetAddress2 ||
+            `Lat ${latitude.toFixed(5)}, Lng ${longitude.toFixed(5)}`,
+          city: city || prev.city || "Current area",
+          postalCode: postalCode || prev.postalCode || "GPS",
+          country: country || prev.country || "Current country",
+        }));
+        label = displayName || streetAddress1 || label;
+      } else {
+        setCheckoutForm((prev) => ({
+          ...prev,
+          streetAddress1: prev.streetAddress1 || "Current location",
+          streetAddress2:
+            prev.streetAddress2 || `Lat ${latitude.toFixed(5)}, Lng ${longitude.toFixed(5)}`,
+          postalCode: prev.postalCode || "GPS",
+        }));
+      }
+    } catch {
+      setCheckoutForm((prev) => ({
+        ...prev,
+        streetAddress1: prev.streetAddress1 || "Current location",
+        streetAddress2: prev.streetAddress2 || `Lat ${latitude.toFixed(5)}, Lng ${longitude.toFixed(5)}`,
+        postalCode: prev.postalCode || "GPS",
+      }));
+    }
+
+    setCheckoutErrors((prev) => ({
+      ...prev,
+      streetAddress1: undefined,
+      city: undefined,
+      postalCode: undefined,
+      country: undefined,
+    }));
+
+    return {
+      latitude,
+      longitude,
+      accuracyMeters,
+      label,
+      capturedAt,
+    };
+  }, []);
+
+  const handleUseCurrentLocation = useCallback(async () => {
+    setLocationLoading(true);
+    try {
+      const location = await captureBrowserLocation();
+      setCheckoutLocation(location);
+      toast.success("Current location added to delivery details");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unable to read current location";
+      toast.error(message);
+    } finally {
+      setLocationLoading(false);
+    }
+  }, [captureBrowserLocation]);
+
   const handlePlaceOrder = async () => {
     if (checkoutItems.length === 0 || isPlacingOrder) return;
     if (!validateCheckoutForm()) {
@@ -331,6 +445,11 @@ export default function ShoppingCart() {
           shippingCity: checkoutForm.city.trim(),
           shippingPostalCode: checkoutForm.postalCode.trim(),
           shippingCountry: checkoutForm.country.trim(),
+          deliveryLatitude: checkoutLocation?.latitude,
+          deliveryLongitude: checkoutLocation?.longitude,
+          deliveryLocationLabel: checkoutLocation?.label,
+          deliveryLocationAccuracyMeters: checkoutLocation?.accuracyMeters ?? undefined,
+          deliveryLocationCapturedAt: checkoutLocation?.capturedAt,
           notes: combinedNotes || undefined,
           paymentMethod: selectedPayment,
           orderSource: buyNowProductId ? "buy-now" : "checkout-ui",
@@ -889,6 +1008,21 @@ export default function ShoppingCart() {
                       value={checkoutForm.companyName}
                       onChange={(event) => handleCheckoutFieldChange("companyName", event.target.value)}
                     />
+                    <div className="checkoutLocationBar">
+                      <button
+                        type="button"
+                        className="checkoutLocationButton"
+                        onClick={() => void handleUseCurrentLocation()}
+                        disabled={locationLoading}
+                      >
+                        {locationLoading ? "Detecting current location..." : "Use current location"}
+                      </button>
+                      <p>
+                        {checkoutLocation
+                          ? `${checkoutLocation.label}${checkoutLocation.accuracyMeters ? ` · ±${checkoutLocation.accuracyMeters}m` : ""}`
+                          : "Fill delivery details from your device location"}
+                      </p>
+                    </div>
                     <select
                       name="country"
                       id="country"
@@ -899,6 +1033,9 @@ export default function ShoppingCart() {
                       <option value="" disabled>
                         {t("checkout_country")}
                       </option>
+                      {!countryOptions.includes(checkoutForm.country) && checkoutForm.country ? (
+                        <option value={checkoutForm.country}>{checkoutForm.country}</option>
+                      ) : null}
                       <option value="India">{t("checkout_country_india")}</option>
                       <option value="Canada">{t("checkout_country_canada")}</option>
                       <option value="United Kingdom">{t("checkout_country_uk")}</option>

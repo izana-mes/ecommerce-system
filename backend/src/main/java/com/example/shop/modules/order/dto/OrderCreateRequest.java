@@ -25,6 +25,11 @@ public class OrderCreateRequest {
     private String shippingPostalCode;
     private String shippingCountry;
     private String notes;
+    private Double deliveryLatitude;
+    private Double deliveryLongitude;
+    private String deliveryLocationLabel;
+    private Double deliveryLocationAccuracyMeters;
+    private Long deliveryLocationCapturedAt;
 
     @NotBlank(message = "paymentMethod is required")
     private String paymentMethod;

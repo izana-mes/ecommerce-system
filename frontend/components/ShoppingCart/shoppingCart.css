@@ -375,6 +375,34 @@
   gap: 30px;
 }
 
+.checkoutLocationBar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.checkoutLocationButton {
+  height: 52px;
+  border: 1px solid var(--foreground);
+  background: var(--surface-1);
+  color: var(--foreground);
+  padding: 0 20px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.checkoutLocationButton:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.checkoutLocationBar p {
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
 .checkoutDetailsForm input {
   height: 52px;
   padding: 0px 20px;

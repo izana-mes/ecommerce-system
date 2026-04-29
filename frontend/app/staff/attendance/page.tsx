@@ -29,6 +29,30 @@ type AttendanceSnapshot = {
   liveBreakMinutes: number;
   todayTotalMinutes: number;
   weekTotalMinutes: number;
+  latestAction: {
+    actionLogId: string;
+    shiftId: string | null;
+    actionType: string;
+    note: string | null;
+    locationLabel: string | null;
+    latitude: number;
+    longitude: number;
+    accuracyMeters: number | null;
+    clientRecordedAt: number | null;
+    recordedAt: number;
+  } | null;
+  recentActions: Array<{
+    actionLogId: string;
+    shiftId: string | null;
+    actionType: string;
+    note: string | null;
+    locationLabel: string | null;
+    latitude: number;
+    longitude: number;
+    accuracyMeters: number | null;
+    clientRecordedAt: number | null;
+    recordedAt: number;
+  }>;
   recentShifts: Array<{
     shiftId: string;
     shiftDate: string;
@@ -87,6 +111,10 @@ function formatReviewType(value: string): string {
 }
 
 function formatReviewCategory(value: string): string {
+  return value.toLowerCase().replaceAll("_", " ");
+}
+
+function formatActionType(value: string): string {
   return value.toLowerCase().replaceAll("_", " ");
 }
 
@@ -278,16 +306,45 @@ export default function StaffAttendancePage() {
     return Math.min(100, Math.max(0, Math.round((minutes / 480) * 100)));
   }, [dynamicTodayTotalMinutes]);
 
+  const captureAttendanceLocation = useCallback(async () => {
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+      throw new Error("This device does not support location detection.");
+    }
+
+    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 15_000,
+        maximumAge: 0,
+      });
+    });
+
+    const latitude = Number(position.coords.latitude);
+    const longitude = Number(position.coords.longitude);
+    const accuracyMeters = Number.isFinite(position.coords.accuracy)
+      ? Math.round(position.coords.accuracy)
+      : null;
+
+    return {
+      latitude,
+      longitude,
+      accuracyMeters,
+      capturedAt: Date.now(),
+      label: `GPS ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+    };
+  }, []);
+
   const runAction = async (action: AttendanceAction) => {
     setRunningAction(action);
     try {
+      const location = await captureAttendanceLocation();
       const response = await fetch("/api/attendance", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ action, note }),
+        body: JSON.stringify({ action, note, location }),
       });
 
       const payload = (await response.json().catch(() => ({}))) as AttendanceSnapshot & { error?: string };
@@ -451,8 +508,32 @@ export default function StaffAttendancePage() {
           </article>
         </section>
 
+        <section className="attendanceLocationPanel">
+          <article>
+            <h2>Latest Location Stamp</h2>
+            <p>{snapshot?.latestAction?.locationLabel || "No location recorded yet"}</p>
+            <span>
+              {snapshot?.latestAction
+                ? `${snapshot.latestAction.latitude.toFixed(5)}, ${snapshot.latestAction.longitude.toFixed(5)}`
+                : "-"}
+            </span>
+          </article>
+          <article>
+            <h2>Latest Action Time</h2>
+            <p>{formatDateTime(snapshot?.latestAction?.recordedAt ?? null)}</p>
+            <span>
+              {snapshot?.latestAction?.accuracyMeters
+                ? `Accuracy ±${snapshot.latestAction.accuracyMeters}m`
+                : "Accuracy unavailable"}
+            </span>
+          </article>
+        </section>
+
         <form className="attendanceNoteForm" onSubmit={handleSubmitNote}>
           <label htmlFor="attendance-note">Optional note for clock in/out</label>
+          <p className="attendanceLocationHint">
+            Live device location is required for every attendance action and is recorded with the server timestamp.
+          </p>
           <textarea
             id="attendance-note"
             value={note}
@@ -502,6 +583,39 @@ export default function StaffAttendancePage() {
             {runningAction === "clock_out" ? "Clocking Out..." : "Clock Out"}
           </button>
         </div>
+
+        <section className="attendanceHistory">
+          <div className="attendanceHistoryHead">
+            <h2>Recent Location Logs</h2>
+          </div>
+
+          <div className="attendanceReviewGrid">
+            {(snapshot?.recentActions || []).length === 0 ? (
+              <p className="attendanceReviewEmpty">No action logs yet.</p>
+            ) : (
+              (snapshot?.recentActions || []).map((action) => (
+                <article key={action.actionLogId} className="attendanceReviewCard">
+                  <div className="attendanceReviewHead">
+                    <div>
+                      <h3>{formatActionType(action.actionType)}</h3>
+                      <p>{action.locationLabel || "Device GPS capture"}</p>
+                    </div>
+                    <span className="attendanceReviewBadge status-open">
+                      {formatDateTime(action.recordedAt)}
+                    </span>
+                  </div>
+                  <p className="attendanceReviewSummary">
+                    {action.latitude.toFixed(5)}, {action.longitude.toFixed(5)}
+                  </p>
+                  <div className="attendanceReviewMeta">
+                    <span>{action.accuracyMeters ? `Accuracy ±${action.accuracyMeters}m` : "Accuracy unavailable"}</span>
+                    <span>{action.note || "No note"}</span>
+                  </div>
+                </article>
+              ))
+            )}
+          </div>
+        </section>
 
         <section className="attendanceHistory">
           <div className="attendanceHistoryHead">
