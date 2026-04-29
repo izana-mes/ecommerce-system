@@ -1,13 +1,20 @@
 import { NextResponse } from "next/server";
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080";
+function backendOrigin(): string {
+  const raw =
+    process.env.BACKEND_URL ||
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    process.env.BACKEND_API_BASE_URL ||
+    "http://localhost:8080";
+  return raw.replace(/\/api\/?$/, "").replace(/\/+$/, "");
+}
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const token = request.headers.get("Authorization") || "";
 
-    const response = await fetch(`${BACKEND_URL}/api/orders/status-changed`, {
+    const response = await fetch(`${backendOrigin()}/api/orders/status-changed`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
