@@ -40,6 +40,14 @@ services:
       # Set the same explicit value on both services in the Render dashboard.
       - key: INTERNAL_NOTIFY_TOKEN
         sync: false
+      - key: MAIL_PROVIDER
+        value: resend
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
+      - key: RESEND_FROM_NAME
+        value: Shop
       - key: SPRING_MAIL_HOST
         value: smtp.gmail.com
       - key: SPRING_MAIL_PORT
