@@ -79,11 +79,6 @@ logging:
     root: INFO
 
 application:
-  security:
-    # Comma-separated IPs of trusted reverse proxies (so we can safely honor X-Forwarded-For).
-    # Example: "10.0.0.1,10.0.0.2". Empty means: never trust proxy headers.
-    trusted-proxies: ${TRUSTED_PROXIES:}
-
   server:
     url: ${APPLICATION_SERVER_URL:http://localhost:8080}
 
@@ -95,6 +90,9 @@ application:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:${FRONTEND_URL:http://localhost:3000}}
 
   security:
+    # Comma-separated IPs of trusted reverse proxies (so we can safely honor X-Forwarded-For).
+    # Example: "10.0.0.1,10.0.0.2". Empty means: never trust proxy headers.
+    trusted-proxies: ${TRUSTED_PROXIES:}
     auth-cookie:
       name: ${AUTH_COOKIE_NAME:access_token}
     jwt:
