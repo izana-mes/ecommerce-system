@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private final ObjectMapper objectMapper;
+    private final ClientIpExtractor clientIpExtractor;
     private final ConcurrentHashMap<String, ConcurrentLinkedDeque<Long>> buckets = new ConcurrentHashMap<>();
 
     private static final List<RateLimitRule> RULES = List.of(
@@ -90,18 +91,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String extractClientIdentifier(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (StringUtils.hasText(forwardedFor)) {
-            String firstIp = forwardedFor.split(",")[0].trim();
-            if (StringUtils.hasText(firstIp)) {
-                return firstIp;
-            }
-        }
-        String realIp = request.getHeader("X-Real-IP");
-        if (StringUtils.hasText(realIp)) {
-            return realIp.trim();
-        }
-        return request.getRemoteAddr();
+        return clientIpExtractor.extractClientIp(request);
     }
 
     private record RateLimitRule(String method, String path, int limit, long windowMs, String name) {

@@ -13,7 +13,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -22,6 +21,11 @@ public class RequestObservabilityFilter extends OncePerRequestFilter {
 
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
     private static final String REQUEST_ID_MDC_KEY = "requestId";
+    private final ClientIpExtractor clientIpExtractor;
+
+    public RequestObservabilityFilter(ClientIpExtractor clientIpExtractor) {
+        this.clientIpExtractor = clientIpExtractor;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -38,7 +42,7 @@ public class RequestObservabilityFilter extends OncePerRequestFilter {
             int status = response.getStatus();
             String method = request.getMethod();
             String path = request.getRequestURI();
-            String clientIp = extractClientIp(request);
+            String clientIp = clientIpExtractor.extractClientIp(request);
             String actor = resolveActor();
             String userAgent = sanitize(request.getHeader("User-Agent"));
 
@@ -60,21 +64,6 @@ public class RequestObservabilityFilter extends OncePerRequestFilter {
             return incoming.trim();
         }
         return UUID.randomUUID().toString();
-    }
-
-    private String extractClientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (StringUtils.hasText(forwarded)) {
-            return Optional.of(forwarded.split(","))
-                    .map(parts -> parts[0].trim())
-                    .filter(StringUtils::hasText)
-                    .orElse(request.getRemoteAddr());
-        }
-        String realIp = request.getHeader("X-Real-IP");
-        if (StringUtils.hasText(realIp)) {
-            return realIp.trim();
-        }
-        return request.getRemoteAddr();
     }
 
     private String resolveActor() {

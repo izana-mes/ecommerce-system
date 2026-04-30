@@ -316,31 +316,24 @@ export default function ShoppingCart() {
 
         setCheckoutForm((prev) => ({
           ...prev,
-          streetAddress1: streetAddress1 || prev.streetAddress1 || "Current location",
+          streetAddress1: prev.streetAddress1 || streetAddress1,
           streetAddress2:
-            streetAddress2 ||
-            prev.streetAddress2 ||
-            `Lat ${latitude.toFixed(5)}, Lng ${longitude.toFixed(5)}`,
-          city: city || prev.city || "Current area",
-          postalCode: postalCode || prev.postalCode || "GPS",
-          country: country || prev.country || "Current country",
+            prev.streetAddress2 || streetAddress2 || `Lat ${latitude.toFixed(5)}, Lng ${longitude.toFixed(5)}`,
+          city: prev.city || city,
+          postalCode: prev.postalCode || postalCode,
+          country: prev.country || country,
         }));
         label = displayName || streetAddress1 || label;
       } else {
         setCheckoutForm((prev) => ({
           ...prev,
-          streetAddress1: prev.streetAddress1 || "Current location",
-          streetAddress2:
-            prev.streetAddress2 || `Lat ${latitude.toFixed(5)}, Lng ${longitude.toFixed(5)}`,
-          postalCode: prev.postalCode || "GPS",
+          streetAddress2: prev.streetAddress2 || `Lat ${latitude.toFixed(5)}, Lng ${longitude.toFixed(5)}`,
         }));
       }
     } catch {
       setCheckoutForm((prev) => ({
         ...prev,
-        streetAddress1: prev.streetAddress1 || "Current location",
         streetAddress2: prev.streetAddress2 || `Lat ${latitude.toFixed(5)}, Lng ${longitude.toFixed(5)}`,
-        postalCode: prev.postalCode || "GPS",
       }));
     }
 

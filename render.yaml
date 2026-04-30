@@ -41,13 +41,7 @@ services:
       - key: INTERNAL_NOTIFY_TOKEN
         sync: false
       - key: MAIL_PROVIDER
-        value: resend
-      - key: RESEND_API_KEY
-        sync: false
-      - key: RESEND_FROM_EMAIL
-        sync: false
-      - key: RESEND_FROM_NAME
-        value: Shop
+        value: smtp
       - key: SPRING_MAIL_HOST
         value: smtp.gmail.com
       - key: SPRING_MAIL_PORT

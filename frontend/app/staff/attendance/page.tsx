@@ -324,14 +324,27 @@ export default function StaffAttendancePage() {
     const accuracyMeters = Number.isFinite(position.coords.accuracy)
       ? Math.round(position.coords.accuracy)
       : null;
+    const capturedAt = Date.now();
 
-    return {
-      latitude,
-      longitude,
-      accuracyMeters,
-      capturedAt: Date.now(),
-      label: `GPS ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
-    };
+    let label = `GPS ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+    try {
+      const reverseResponse = await fetch(
+        `/api/location/reverse?lat=${encodeURIComponent(String(latitude))}&lon=${encodeURIComponent(
+          String(longitude)
+        )}`,
+        { cache: "no-store" }
+      );
+      const reversePayload = await reverseResponse.json().catch(() => ({}));
+      if (reverseResponse.ok) {
+        const displayName = String(reversePayload?.displayName || "").trim();
+        const streetAddress1 = String(reversePayload?.streetAddress1 || "").trim();
+        label = displayName || streetAddress1 || label;
+      }
+    } catch {
+      // Ignore reverse geocoding errors; GPS coordinates are sufficient.
+    }
+
+    return { latitude, longitude, accuracyMeters, capturedAt, label };
   }, []);
 
   const runAction = async (action: AttendanceAction) => {
