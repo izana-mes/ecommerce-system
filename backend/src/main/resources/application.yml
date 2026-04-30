@@ -30,6 +30,7 @@ spring:
     password: ${SPRING_MAIL_PASSWORD:}
     properties:
       mail:
+        debug: ${SPRING_MAIL_DEBUG:false}
         smtp:
           auth: true
           starttls:

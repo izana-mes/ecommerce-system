@@ -42,8 +42,10 @@ public class CouponNotificationController {
             while (root.getCause() != null) {
                 root = root.getCause();
             }
-            String message = root.getMessage() == null ? "Failed to send email" : root.getMessage();
-            log.error("Failed to send coupon email to {}", request.getTo(), ex);
+            String rootMessage = root.getMessage() == null ? "Failed to send email" : root.getMessage();
+            String rootType = root.getClass().getSimpleName();
+            String message = rootType + ": " + rootMessage;
+            log.error("Failed to send coupon email to {} ({})", request.getTo(), message, ex);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error(message));
         }
