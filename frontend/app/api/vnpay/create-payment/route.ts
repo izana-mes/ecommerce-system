@@ -55,9 +55,18 @@ function buildReturnUrlFromReferer(referer: string | null | undefined): string |
 }
 
 function resolveVnpReturnUrl(request: NextRequest): { returnUrl: string | null; source: string } {
-  const configured = buildReturnUrl(process.env.VNPAY_RETURN_URL?.trim());
-  if (configured) {
-    return { returnUrl: configured, source: "env" };
+  // Trust the explicitly configured URL unconditionally (supports localhost in Docker).
+  const rawConfigured = process.env.VNPAY_RETURN_URL?.trim();
+  if (rawConfigured) {
+    try {
+      const url = new URL(rawConfigured);
+      if (["http:", "https:"].includes(url.protocol)) {
+        const returnUrl = new URL("/payment/vnpay-return", url.origin).toString();
+        return { returnUrl, source: "env" };
+      }
+    } catch {
+      // fall through to auto-detection
+    }
   }
 
   const originHeader = buildReturnUrl(request.headers.get("origin"));

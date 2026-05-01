@@ -44,7 +44,8 @@ services:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
       timeout: 5s
-      retries: 20
+      retries: 40
+      start_period: 60s
 
   backend:
     build: ./backend

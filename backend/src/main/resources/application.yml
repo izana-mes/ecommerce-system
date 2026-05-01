@@ -64,7 +64,7 @@ spring:
   # when using a real broker (local Docker or SPRING_RABBITMQ_URI for CloudAMQP).
   rabbitmq:
     enabled: ${SPRING_RABBITMQ_ENABLED:false}
-    uri: ${SPRING_RABBITMQ_URI:amqp://${RABBITMQ_USERNAME:guest}:${RABBITMQ_PASSWORD:guest}@${RABBITMQ_HOST:localhost}:${RABBITMQ_PORT:5672}}
+    addresses: ${SPRING_RABBITMQ_URI:amqp://${RABBITMQ_USERNAME:guest}:${RABBITMQ_PASSWORD:guest}@${RABBITMQ_HOST:localhost}:${RABBITMQ_PORT:5672}}
     listener:
       simple:
         default-requeue-rejected: false
