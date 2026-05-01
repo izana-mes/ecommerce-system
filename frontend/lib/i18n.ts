@@ -277,7 +277,12 @@ export type TranslationKey =
   | "orders_prev"
   | "orders_page"
   | "orders_page_of"
-  | "orders_next";
+  | "orders_next"
+  | "orders_cancel"
+  | "orders_edit"
+  | "orders_cancelling"
+  | "orders_updating"
+  | "orders_cancel_confirm";
 
 type Dictionary = Record<TranslationKey, string>;
 
@@ -560,6 +565,11 @@ export const translations: Record<Locale, Dictionary> = {
     orders_page: "Page ",
     orders_page_of: " / ",
     orders_next: "Next",
+    orders_cancel: "Cancel Order",
+    orders_edit: "Edit Shipping",
+    orders_cancelling: "Cancelling...",
+    orders_updating: "Updating...",
+    orders_cancel_confirm: "Are you sure you want to cancel this order?",
   },
   ja: {
     announcement_bar: "80ドル以上のご注文は送料無料、30日間の返品保証。",
@@ -798,6 +808,7 @@ export const translations: Record<Locale, Dictionary> = {
     auth_last_name_optional: "姓 (オプション)",
     auth_privacy_1: "お客様の個人データは、本ウェブサイト全体での体験のサポート、アカウントへのアクセスの管理、および当社の",
     auth_privacy_2: "プライバシーポリシー",
+
     auth_privacy_3: "に記載されているその他の目的のために使用されます。",
     auth_registering: "登録中...",
     auth_verification_code_placeholder: "6桁の認証コード *",
@@ -839,6 +850,11 @@ export const translations: Record<Locale, Dictionary> = {
     orders_page: "ページ ",
     orders_page_of: " / ",
     orders_next: "次へ",
+    orders_cancel: "注文をキャンセル",
+    orders_edit: "配送情報を編集",
+    orders_cancelling: "キャンセル中...",
+    orders_updating: "更新中...",
+    orders_cancel_confirm: "この注文をキャンセルしてもよろしいですか？",
   },
 
 };

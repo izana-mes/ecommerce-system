@@ -62,44 +62,78 @@ export default function OrdersPage() {
   const token = useMemo(() => getToken(), []);
   const user = useMemo(() => getUser(), []);
 
-  useEffect(() => {
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
+
+  const fetchHistory = async () => {
     if (!token && !user) {
       router.replace("/login");
       return;
     }
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/orders/history?page=${page}&size=${size}`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const data = (await response.json()) as Partial<HistoryResponse> & {
+        message?: string;
+        error?: string;
+      };
 
-    const fetchHistory = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await fetch(`/api/orders/history?page=${page}&size=${size}`, {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
-        const data = (await response.json()) as Partial<HistoryResponse> & {
-          message?: string;
-          error?: string;
-        };
-
-        if (!response.ok) {
-          throw new Error(data?.message || data?.error || "Failed to fetch order history");
-        }
-
-        setOrders(Array.isArray(data.content) ? data.content : []);
-        setTotalPages(Math.max(1, Number(data.totalPages || 1)));
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : "Failed to fetch order history");
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || "Failed to fetch order history");
       }
-    };
 
+      setOrders(Array.isArray(data.content) ? data.content : []);
+      setTotalPages(Math.max(1, Number(data.totalPages || 1)));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to fetch order history");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     void fetchHistory();
-  }, [page, router, token, user]);
+  }, [page, token, user]);
+
+  const handleCancelOrder = async (orderNumber: string) => {
+    if (!window.confirm(t("orders_cancel_confirm"))) return;
+
+    setProcessingOrderId(orderNumber);
+    try {
+      const response = await fetch(`/api/orders/${orderNumber}/cancel`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data?.message || "Failed to cancel order");
+      }
+
+      void fetchHistory();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to cancel order");
+    } finally {
+      setProcessingOrderId(null);
+    }
+  };
+
+  const handleEditClick = (order: Order) => {
+    setEditingOrder(order);
+    setIsEditModalOpen(true);
+  };
 
   return (
     <div style={{ maxWidth: 960, margin: "40px auto", padding: "0 16px" }}>
@@ -132,6 +166,38 @@ export default function OrdersPage() {
               <p style={{ margin: "8px 0 6px" }}>
                 {t("orders_status")}{order.order_status}{t("orders_payment")}{order.payment_status} ({order.payment_method})
               </p>
+              {order.order_status === "pending" && order.payment_status === "pending" && (
+                <div style={{ display: "flex", gap: 10, margin: "10px 0" }}>
+                  <button
+                    onClick={() => handleCancelOrder(order.order_number)}
+                    disabled={processingOrderId === order.order_number}
+                    style={{
+                      padding: "6px 12px",
+                      backgroundColor: "#ff4d4f",
+                      color: "white",
+                      border: "none",
+                      borderRadius: 4,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {processingOrderId === order.order_number ? t("orders_cancelling") : t("orders_cancel")}
+                  </button>
+                  <button
+                    onClick={() => handleEditClick(order)}
+                    disabled={processingOrderId === order.order_number}
+                    style={{
+                      padding: "6px 12px",
+                      backgroundColor: "#1890ff",
+                      color: "white",
+                      border: "none",
+                      borderRadius: 4,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {t("orders_edit")}
+                  </button>
+                </div>
+              )}
               <p style={{ margin: "0 0 10px" }}>
                 {t("orders_subtotal")}{formatMoney(order.subtotal, order.currency)}{t("orders_shipping")}
                 {formatMoney(order.shipping_fee, order.currency)}{t("orders_vat")}
@@ -165,6 +231,185 @@ export default function OrdersPage() {
           </button>
         </div>
       ) : null}
+
+      {isEditModalOpen && editingOrder && (
+        <EditOrderModal
+          order={editingOrder}
+          token={token}
+          onClose={() => setIsEditModalOpen(false)}
+          onSuccess={() => {
+            setIsEditModalOpen(false);
+            void fetchHistory();
+          }}
+          t={t}
+        />
+      )}
+    </div>
+  );
+}
+
+function EditOrderModal({
+  order,
+  token,
+  onClose,
+  onSuccess,
+  t,
+}: {
+  order: Order;
+  token: string | null;
+  onClose: () => void;
+  onSuccess: () => void;
+  t: (key: any) => string;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    shippingAddressLine1: "",
+    shippingAddressLine2: "",
+    shippingCity: "",
+    shippingCountry: "",
+    shippingPostalCode: "",
+    customerPhone: "",
+    notes: "",
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/orders/${order.order_number}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data?.message || "Failed to update order");
+      }
+
+      onSuccess();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update order");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "white",
+          padding: 24,
+          borderRadius: 8,
+          width: "100%",
+          maxWidth: 500,
+          maxHeight: "90vh",
+          overflowY: "auto",
+        }}
+      >
+        <h2 style={{ marginBottom: 20 }}>{t("orders_edit")}</h2>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: "block", marginBottom: 4 }}>Address Line 1</label>
+            <input
+              type="text"
+              required
+              style={{ width: "100%", padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
+              value={formData.shippingAddressLine1}
+              onChange={(e) => setFormData({ ...formData, shippingAddressLine1: e.target.value })}
+            />
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: "block", marginBottom: 4 }}>Address Line 2 (Optional)</label>
+            <input
+              type="text"
+              style={{ width: "100%", padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
+              value={formData.shippingAddressLine2}
+              onChange={(e) => setFormData({ ...formData, shippingAddressLine2: e.target.value })}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: "block", marginBottom: 4 }}>City</label>
+              <input
+                type="text"
+                required
+                style={{ width: "100%", padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
+                value={formData.shippingCity}
+                onChange={(e) => setFormData({ ...formData, shippingCity: e.target.value })}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: "block", marginBottom: 4 }}>Postal Code</label>
+              <input
+                type="text"
+                required
+                style={{ width: "100%", padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
+                value={formData.shippingPostalCode}
+                onChange={(e) => setFormData({ ...formData, shippingPostalCode: e.target.value })}
+              />
+            </div>
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: "block", marginBottom: 4 }}>Phone</label>
+            <input
+              type="text"
+              required
+              style={{ width: "100%", padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
+              value={formData.customerPhone}
+              onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
+            />
+          </div>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: "block", marginBottom: 4 }}>Notes (Optional)</label>
+            <textarea
+              style={{ width: "100%", padding: 8, borderRadius: 4, border: "1px solid #ccc", minHeight: 80 }}
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            />
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{ padding: "8px 16px", borderRadius: 4, border: "1px solid #ccc", cursor: "pointer" }}
+            >
+              {t("shop_cancel")}
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                padding: "8px 16px",
+                borderRadius: 4,
+                border: "none",
+                backgroundColor: "#1890ff",
+                color: "white",
+                cursor: "pointer",
+              }}
+            >
+              {loading ? t("orders_updating") : t("shop_save")}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

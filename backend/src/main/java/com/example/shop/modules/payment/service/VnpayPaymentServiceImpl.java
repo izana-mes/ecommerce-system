@@ -75,9 +75,14 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
         String transactionStatus = safe(params.get("vnp_TransactionStatus"));
         String transactionNo = safe(params.get("vnp_TransactionNo"));
 
+        log.info("Processing VNPAY IPN for order {}: responseCode={}, transactionStatus={}", 
+                txnRef, responseCode, transactionStatus);
+
         if (!StringUtils.hasText(secureHash) || !StringUtils.hasText(txnRef)) {
             return new VnpayIpnResponse("99", "Invalid request");
         }
+        
+        // ... (existing code for hash check and order snapshot)
 
         Map<String, String> payload = new HashMap<>(params);
         payload.remove("vnp_SecureHash");
@@ -175,8 +180,13 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
         );
 
         if (paid) {
+            log.info("VNPAY payment successful for order {}", order.id());
             couponService.redeemCouponForPaidOrder(order.id());
+            log.info("Sending payment success notification for order {}", order.id());
             sendPaidNotification(order.id());
+        } else {
+            log.warn("VNPAY payment failed or pending for order {}: responseCode={}, transactionStatus={}", 
+                    order.id(), responseCode, transactionStatus);
         }
 
         return new VnpayIpnResponse("00", "Confirm Success");
@@ -384,7 +394,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
     }
 
     private String percentEncode(String value) {
-        return java.net.URLEncoder.encode(safe(value), StandardCharsets.US_ASCII)
+        return java.net.URLEncoder.encode(safe(value), StandardCharsets.UTF_8)
                 .replace("+", "%20")
                 .replace("*", "%2A")
                 .replace("%7E", "~");

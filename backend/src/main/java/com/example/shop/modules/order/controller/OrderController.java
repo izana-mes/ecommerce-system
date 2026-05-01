@@ -39,4 +39,22 @@ public class OrderController {
     ) {
         return ResponseEntity.ok(ApiResponse.success(orderService.getMyOrders(user, limit)));
     }
+
+    @PutMapping("/{orderNumber}")
+    public ResponseEntity<ApiResponse<OrderHistoryItemDto>> editOrder(
+            @PathVariable String orderNumber,
+            @Valid @RequestBody com.example.shop.modules.order.dto.OrderEditRequest request,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(orderService.editOrder(orderNumber, request, user)));
+    }
+
+    @PostMapping("/{orderNumber}/cancel")
+    public ResponseEntity<ApiResponse<Void>> cancelOrder(
+            @PathVariable String orderNumber,
+            @AuthenticationPrincipal User user
+    ) {
+        orderService.cancelOrder(orderNumber, user);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
 }

@@ -321,6 +321,105 @@ public class OrderServiceImpl implements OrderService {
         );
     }
 
+    @Override
+    public void cancelOrder(String orderNumber, User user) {
+        if (!StringUtils.hasText(orderNumber) || user == null || !StringUtils.hasText(user.getEmail())) {
+            throw new BusinessException("Invalid request", HttpStatus.BAD_REQUEST);
+        }
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT id, order_status, payment_status FROM orders WHERE UPPER(order_number) = UPPER(?) AND LOWER(customer_email) = LOWER(?)",
+                orderNumber, user.getEmail()
+        );
+        if (rows.isEmpty()) {
+            throw new BusinessException("Order not found", HttpStatus.NOT_FOUND);
+        }
+
+        Map<String, Object> order = rows.get(0);
+        Long orderId = ((Number) order.get("id")).longValue();
+        String orderStatus = (String) order.get("order_status");
+        String paymentStatus = (String) order.get("payment_status");
+
+        if (!"pending".equalsIgnoreCase(orderStatus) || !"pending".equalsIgnoreCase(paymentStatus)) {
+            throw new BusinessException("Only pending orders can be cancelled", HttpStatus.CONFLICT);
+        }
+
+        List<Map<String, Object>> items = jdbcTemplate.queryForList(
+                "SELECT product_id, quantity FROM order_items WHERE order_id = ?",
+                orderId
+        );
+        for (Map<String, Object> item : items) {
+            String productId = (String) item.get("product_id");
+            int quantity = ((Number) item.get("quantity")).intValue();
+            
+            productRepository.findByProductID(productId).ifPresent(product -> {
+                int newStock = (product.getStockQuantity() == null ? 0 : product.getStockQuantity()) + quantity;
+                product.setStockQuantity(newStock);
+                productRepository.save(product);
+            });
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        jdbcTemplate.update(
+                "UPDATE orders SET order_status = 'cancelled', payment_status = 'cancelled', updated_at = ? WHERE id = ?",
+                Timestamp.valueOf(now), orderId
+        );
+        jdbcTemplate.update(
+                "UPDATE payments SET status = 'cancelled', updated_at = ? WHERE order_id = ? AND status = 'pending'",
+                Timestamp.valueOf(now), orderId
+        );
+    }
+
+    @Override
+    public OrderHistoryItemDto editOrder(String orderNumber, com.example.shop.modules.order.dto.OrderEditRequest request, User user) {
+        if (!StringUtils.hasText(orderNumber) || user == null || !StringUtils.hasText(user.getEmail())) {
+            throw new BusinessException("Invalid request", HttpStatus.BAD_REQUEST);
+        }
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT id, order_status, payment_status FROM orders WHERE UPPER(order_number) = UPPER(?) AND LOWER(customer_email) = LOWER(?)",
+                orderNumber, user.getEmail()
+        );
+        if (rows.isEmpty()) {
+            throw new BusinessException("Order not found", HttpStatus.NOT_FOUND);
+        }
+
+        Map<String, Object> order = rows.get(0);
+        Long orderId = ((Number) order.get("id")).longValue();
+        String orderStatus = (String) order.get("order_status");
+        String paymentStatus = (String) order.get("payment_status");
+
+        if (!"pending".equalsIgnoreCase(orderStatus) || !"pending".equalsIgnoreCase(paymentStatus)) {
+            throw new BusinessException("Only pending orders can be edited", HttpStatus.CONFLICT);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        jdbcTemplate.update(
+                """
+                UPDATE orders SET
+                    customer_first_name = ?, customer_last_name = ?, customer_phone = ?,
+                    shipping_address_line1 = ?, shipping_address_line2 = ?, shipping_city = ?,
+                    shipping_state = ?, shipping_postal_code = ?, shipping_country = ?,
+                    delivery_latitude = ?, delivery_longitude = ?, delivery_location_label = ?,
+                    delivery_location_accuracy_meters = ?, delivery_location_captured_at = ?,
+                    notes = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                nullable(request.getCustomerFirstName()), nullable(request.getCustomerLastName()), nullable(request.getCustomerPhone()),
+                nullable(request.getShippingAddressLine1()), nullable(request.getShippingAddressLine2()), nullable(request.getShippingCity()),
+                nullable(request.getShippingState()), nullable(request.getShippingPostalCode()), nullable(request.getShippingCountry()),
+                request.getDeliveryLatitude(), request.getDeliveryLongitude(), nullable(request.getDeliveryLocationLabel()),
+                request.getDeliveryLocationAccuracyMeters(), request.getDeliveryLocationCapturedAt(),
+                nullable(request.getNotes()), Timestamp.valueOf(now),
+                orderId
+        );
+
+        return getMyOrders(user, 100).stream()
+                .filter(o -> o.getOrderNumber().equalsIgnoreCase(orderNumber))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("Error retrieving updated order", HttpStatus.INTERNAL_SERVER_ERROR));
+    }
+
     private void validateRequest(OrderCreateRequest request) {
         String orderSource = safe(request.getOrderSource()).toLowerCase(Locale.ROOT);
         if ("checkout-ui".equals(orderSource)) {

@@ -11,6 +11,10 @@ import java.util.Optional;
 public interface OrderService {
     OrderCreateResponse createOrder(OrderCreateRequest request, User user);
 
+    void cancelOrder(String orderNumber, User user);
+
+    OrderHistoryItemDto editOrder(String orderNumber, com.example.shop.modules.order.dto.OrderEditRequest request, User user);
+
     List<OrderHistoryItemDto> getMyOrders(User user, int limit);
 
     /** Admin/staff-scoped: look up a single order by order number (no email restriction). */
