@@ -236,7 +236,13 @@ export async function POST(request: Request) {
               "Notification service authorization failed. Check that INTERNAL_NOTIFY_TOKEN matches on the frontend and backend."
             );
           }
-          throw new Error(payload?.message || payload?.error || `Email request failed with ${response.status}`);
+          // Simplify verbose Resend free-tier restriction message
+          const rawMessage = payload?.message || payload?.error || "";
+          const friendlyMessage =
+            rawMessage.includes("only send testing emails") || rawMessage.includes("verify a domain")
+              ? "Email provider is in test mode. To send emails to all users, verify a domain at resend.com/domains and set RESEND_FROM_EMAIL to use that domain."
+              : rawMessage || `Email request failed with status ${response.status}`;
+          throw new Error(friendlyMessage);
         }
 
         mailResults.push({

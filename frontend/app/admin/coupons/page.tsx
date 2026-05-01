@@ -304,11 +304,12 @@ export default function AdminCouponsPage() {
 
       toast.success(data?.message || "Coupon issued");
       if (Array.isArray(data?.emailFailures) && data.emailFailures.length > 0) {
-        const preview = data.emailFailures
-          .slice(0, 2)
-          .map((failure: { email?: string; error?: string }) => `${failure.email || "unknown"}: ${failure.error || "Failed to send"}`)
-          .join(" | ");
-        toast.error(`Email delivery failed for ${data.emailFailures.length} recipient(s). ${preview}`);
+        const firstError = data.emailFailures[0]?.error || "";
+        const isTestModeError = firstError.includes("test mode") || firstError.includes("verify a domain") || firstError.includes("only send testing emails");
+        const warningMsg = isTestModeError
+          ? `⚠️ Coupon assigned, but email notifications couldn't be sent (${data.emailFailures.length} recipient(s)). Your email provider is in test mode — verify a domain at resend.com/domains to enable sending to all users.`
+          : `⚠️ Coupon assigned, but email failed for ${data.emailFailures.length} recipient(s). ${data.emailFailures.slice(0, 1).map((f: { email?: string; error?: string }) => f.email || "unknown").join(", ")}`;
+        toast(warningMsg, { icon: "⚠️", duration: 8000 });
       }
       setSelectedRecipientIds([]);
       setNotificationTitle("");
