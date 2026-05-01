@@ -7,9 +7,11 @@ import org.springframework.security.oauth2.client.web.AuthorizationRequestReposi
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.stereotype.Component;
 
+import lombok.extern.slf4j.Slf4j;
 import java.util.Base64;
 
 @Component
+@Slf4j
 public class OAuth2CookieAuthorizationRequestRepository implements AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
 
     private static final String COOKIE_NAME = "OAUTH2_AUTH_REQUEST";
@@ -18,21 +20,34 @@ public class OAuth2CookieAuthorizationRequestRepository implements Authorization
 
     @Override
     public OAuth2AuthorizationRequest loadAuthorizationRequest(HttpServletRequest request) {
+        log.debug("loadAuthorizationRequest path={}", request.getRequestURI());
         Cookie cookie = getCookie(request, COOKIE_NAME);
-        if (cookie == null) return null;
-        return deserialize(cookie.getValue());
+        if (cookie == null) {
+            log.debug("loadAuthorizationRequest: cookie not found");
+            return null;
+        }
+        try {
+            return deserialize(cookie.getValue());
+        } catch (Exception e) {
+            log.error("Failed to deserialize OAuth2AuthorizationRequest from cookie", e);
+            return null;
+        }
     }
 
     @Override
     public void saveAuthorizationRequest(OAuth2AuthorizationRequest authorizationRequest, HttpServletRequest request, HttpServletResponse response) {
         if (authorizationRequest == null) {
+            log.debug("saveAuthorizationRequest: null request, removing cookies");
             removeAuthorizationRequestCookies(request, response);
             return;
         }
+        
+        log.debug("saveAuthorizationRequest: saving request for state={}", authorizationRequest.getState());
         String value = serialize(authorizationRequest);
         addCookie(response, COOKIE_NAME, value, COOKIE_EXPIRE_SECONDS);
 
         String frontendRedirectUri = request.getParameter("frontend_redirect_uri");
+        log.debug("saveAuthorizationRequest: frontend_redirect_uri={}", frontendRedirectUri);
         if (isValidFrontendRedirectUri(frontendRedirectUri)) {
             addCookie(response, FRONTEND_REDIRECT_URI_COOKIE_NAME, serialize(frontendRedirectUri), COOKIE_EXPIRE_SECONDS);
         } else {
@@ -42,6 +57,7 @@ public class OAuth2CookieAuthorizationRequestRepository implements Authorization
 
     @Override
     public OAuth2AuthorizationRequest removeAuthorizationRequest(HttpServletRequest request, HttpServletResponse response) {
+        log.debug("removeAuthorizationRequest path={}", request.getRequestURI());
         OAuth2AuthorizationRequest authRequest = loadAuthorizationRequest(request);
         removeAuthorizationRequestCookies(request, response);
         return authRequest;

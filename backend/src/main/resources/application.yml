@@ -78,6 +78,8 @@ server:
 logging:
   level:
     root: INFO
+    org.springframework.security: DEBUG
+    com.example.shop: DEBUG
 
 application:
   server:

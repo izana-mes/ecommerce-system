@@ -47,7 +47,10 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         String familyName = oauthUser.getAttribute("family_name");
         String redirectTarget = resolveRedirectTarget(request);
 
+        log.info("OAuth2 login success: email={}, sub={}, redirectTarget={}", email, sub, redirectTarget);
+
         if (email == null || email.isBlank() || sub == null || sub.isBlank()) {
+            log.warn("OAuth2 success but missing critical attributes: email={}, sub={}", email, sub);
             response.sendRedirect(redirectTarget + "?success=0&error=missing_email");
             return;
         }
@@ -55,8 +58,14 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         // Upsert/link
         User user = userRepository.findByAuthProviderAndProviderId("GOOGLE", sub)
                 .or(() -> userRepository.findByEmail(email))
-                .map(existing -> linkGoogle(existing, sub, givenName, familyName, emailVerified))
-                .orElseGet(() -> createGoogleUser(email, sub, givenName, familyName, emailVerified));
+                .map(existing -> {
+                    log.debug("Linking Google account to existing user: {}", email);
+                    return linkGoogle(existing, sub, givenName, familyName, emailVerified);
+                })
+                .orElseGet(() -> {
+                    log.info("Creating new Google user: {}", email);
+                    return createGoogleUser(email, sub, givenName, familyName, emailVerified);
+                });
 
         String jwt = jwtProvider.generateAccessToken(user);
         accessTokenCookieWriter.addCookie(request, response, jwt);
@@ -67,7 +76,9 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                 ? redirectTarget + "&success=1"
                 : redirectTarget + "?success=1";
         String encodedToken = URLEncoder.encode(jwt, StandardCharsets.UTF_8);
-        response.sendRedirect(successUrl + "#access_token=" + encodedToken);
+        String finalRedirect = successUrl + "#access_token=" + encodedToken;
+        log.info("Redirecting to frontend: {}", finalRedirect);
+        response.sendRedirect(finalRedirect);
     }
 
     private User linkGoogle(User user, String sub, String givenName, String familyName, Boolean emailVerified) {
