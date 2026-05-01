@@ -312,7 +312,12 @@ export default function StaffAttendancePage() {
     }
 
     const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
+      navigator.geolocation.getCurrentPosition(resolve, (err) => {
+        let msg = "Could not detect location. Please allow location access.";
+        if (err.code === 1) msg = "Please allow location access to clock in.";
+        else if (err.message) msg = "Location error: " + err.message;
+        reject(new Error(msg));
+      }, {
         enableHighAccuracy: true,
         timeout: 15_000,
         maximumAge: 0,
@@ -350,7 +355,12 @@ export default function StaffAttendancePage() {
   const runAction = async (action: AttendanceAction) => {
     setRunningAction(action);
     try {
-      const location = await captureAttendanceLocation();
+      let location = undefined;
+      try {
+        location = await captureAttendanceLocation();
+      } catch (locErr) {
+        console.warn("Location capture failed, continuing without location.", locErr);
+      }
       const response = await fetch("/api/attendance", {
         method: "POST",
         headers: {

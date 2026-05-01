@@ -53,26 +53,26 @@ services:
     env_file:
       - ./.env
     environment:
-      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-shop}
-      DB_HOST: postgres
-      DB_PORT: 5432
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-shop}}
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
       DB_NAME: ${DB_NAME:-shop}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      SPRING_DATA_REDIS_URL: redis://redis:6379
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      SPRING_DATA_REDIS_URL: ${SPRING_DATA_REDIS_URL:-redis://redis:6379}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
       SPRING_RABBITMQ_ENABLED: ${SPRING_RABBITMQ_ENABLED:-true}
-      SPRING_RABBITMQ_URI: amqp://${RABBITMQ_USERNAME:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_URI: ${SPRING_RABBITMQ_URI:-amqp://${RABBITMQ_USERNAME:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
-      APPLICATION_SERVER_URL: http://localhost:8080
-      FRONTEND_URL: http://localhost:3000
-      CORS_ALLOWED_ORIGINS: http://localhost:3000
-      MOMO_IPN_URL: http://localhost:8080/api/payments/momo/ipn
-      CHATBOT_AI_REFERER: http://localhost:3000
+      APPLICATION_SERVER_URL: ${APPLICATION_SERVER_URL:-http://localhost:8080}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      MOMO_IPN_URL: ${MOMO_IPN_URL:-http://localhost:8080/api/payments/momo/ipn}
+      CHATBOT_AI_REFERER: ${CHATBOT_AI_REFERER:-http://localhost:3000}
     ports:
       - "8080:8080"
     depends_on:
@@ -98,17 +98,17 @@ services:
       BACKEND_URL: http://backend:8080
       NEXT_PUBLIC_API_URL: http://localhost:8080/api
       NEXT_PUBLIC_BACKEND_URL: http://localhost:8080
-      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-shop}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-shop}}
       DB_CLIENT: postgres
-      DB_HOST: postgres
-      DB_PORT: 5432
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
       DB_NAME: ${DB_NAME:-shop}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      RABBITMQ_MANAGEMENT_URL: http://rabbitmq:15672
-      MOMO_REDIRECT_URL: http://localhost:3000/payment/momo-return
-      MOMO_IPN_URL: http://localhost:8080/api/payments/momo/ipn
-      VNPAY_RETURN_URL: http://localhost:3000/payment/vnpay-return
+      RABBITMQ_MANAGEMENT_URL: ${RABBITMQ_MANAGEMENT_URL:-http://rabbitmq:15672}
+      MOMO_REDIRECT_URL: ${MOMO_REDIRECT_URL:-http://localhost:3000/payment/momo-return}
+      MOMO_IPN_URL: ${MOMO_IPN_URL:-http://localhost:8080/api/payments/momo/ipn}
+      VNPAY_RETURN_URL: ${VNPAY_RETURN_URL:-http://localhost:3000/payment/vnpay-return}
     ports:
       - "3000:3000"
     depends_on:
