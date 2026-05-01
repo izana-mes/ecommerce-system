@@ -308,7 +308,7 @@ export default function AdminCouponsPage() {
         const isTestModeError = firstError.includes("test mode") || firstError.includes("verify a domain") || firstError.includes("only send testing emails");
         const warningMsg = isTestModeError
           ? `⚠️ Coupon assigned, but email notifications couldn't be sent (${data.emailFailures.length} recipient(s)). Your email provider is in test mode — verify a domain at resend.com/domains to enable sending to all users.`
-          : `⚠️ Coupon assigned, but email failed for ${data.emailFailures.length} recipient(s). ${data.emailFailures.slice(0, 1).map((f: { email?: string; error?: string }) => f.email || "unknown").join(", ")}`;
+          : `⚠️ Coupon assigned, but email failed for ${data.emailFailures.length} recipient(s). ${data.emailFailures.slice(0, 1).map((f: { email?: string; error?: string }) => `${f.email || "unknown"}: ${f.error}`).join(", ")}`;
         toast(warningMsg, { icon: "⚠️", duration: 8000 });
       }
       setSelectedRecipientIds([]);
