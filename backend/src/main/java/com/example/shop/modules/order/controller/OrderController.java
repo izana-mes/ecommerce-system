@@ -4,6 +4,7 @@ import com.example.shop.common.response.ApiResponse;
 import com.example.shop.modules.order.dto.OrderCreateRequest;
 import com.example.shop.modules.order.dto.OrderCreateResponse;
 import com.example.shop.modules.order.dto.OrderHistoryItemDto;
+import com.example.shop.modules.order.dto.OrderTrackingDto;
 import com.example.shop.modules.order.service.OrderService;
 import com.example.shop.modules.user.entity.User;
 import jakarta.validation.Valid;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -38,6 +40,39 @@ public class OrderController {
             @RequestParam(value = "limit", required = false, defaultValue = "20") int limit
     ) {
         return ResponseEntity.ok(ApiResponse.success(orderService.getMyOrders(user, limit)));
+    }
+
+    /**
+     * Guest-safe tracking: requires the secret token issued when the order was placed.
+     */
+    @GetMapping("/track")
+    public ResponseEntity<ApiResponse<OrderTrackingDto>> trackOrderByToken(
+            @RequestParam("token") String token
+    ) {
+        if (!StringUtils.hasText(token)) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("token is required"));
+        }
+        return orderService.getOrderTrackingBySecret(token.trim())
+                .map(dto -> ResponseEntity.ok(ApiResponse.success(dto)))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("Order not found")));
+    }
+
+    /**
+     * Authenticated customer: same payload as {@link #trackOrderByToken} for an order they own.
+     */
+    @GetMapping("/number/{orderNumber}/track")
+    public ResponseEntity<ApiResponse<OrderTrackingDto>> trackOrderByNumber(
+            @PathVariable String orderNumber,
+            @AuthenticationPrincipal User user
+    ) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Unauthorized"));
+        }
+        return orderService.getOrderTrackingByNumberForCustomer(orderNumber, user)
+                .map(dto -> ResponseEntity.ok(ApiResponse.success(dto)))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("Order not found")));
     }
 
     @PutMapping("/{orderNumber}")

@@ -10,6 +10,8 @@ import java.math.BigDecimal;
 public class OrderCreateResponse {
     private Long orderId;
     private String orderNumber;
+    /** Opaque token for guest-safe order tracking (do not share publicly except with the customer). */
+    private String trackingSecret;
     private BigDecimal subtotal;
     private BigDecimal shippingFee;
     private BigDecimal vat;

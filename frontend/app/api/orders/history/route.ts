@@ -52,6 +52,7 @@ export async function GET(request: Request) {
       (order: Record<string, unknown>, index: number) => ({
         id: Number(order.id ?? startFallbackId(page, size, index)),
         order_number: String(order.order_number ?? order.orderNumber ?? ""),
+        tracking_secret: String(order.tracking_secret ?? order.trackingSecret ?? ""),
         subtotal: Number(order.subtotal ?? order.total_amount ?? order.totalAmount ?? 0),
         shipping_fee: Number(order.shipping_fee ?? order.shippingFee ?? 0),
         vat: Number(order.vat ?? 0),

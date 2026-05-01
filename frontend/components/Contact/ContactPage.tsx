@@ -1,14 +1,25 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import "./ContactPage.css";
 
 const ContactPage: React.FC = () => {
   const { t } = useLocale();
+  const searchParams = useSearchParams();
   const [name, setName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [message, setMessage] = useState<string>("");
+
+  useEffect(() => {
+    const order = (searchParams.get("order") || "").trim();
+    if (!order) return;
+    setMessage((prev) => {
+      if (prev.trim()) return prev;
+      return `${t("contact_prefill_order")}${order}:\n\n`;
+    });
+  }, [searchParams, t]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

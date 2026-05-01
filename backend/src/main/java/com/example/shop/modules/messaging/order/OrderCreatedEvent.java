@@ -18,6 +18,7 @@ public class OrderCreatedEvent {
 
     private Long orderId;
     private String orderNumber;
+    private String trackingSecret;
     private String customerEmail;
     private String customerFirstName;
     private String customerLastName;

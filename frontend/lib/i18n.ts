@@ -282,7 +282,48 @@ export type TranslationKey =
   | "orders_edit"
   | "orders_cancelling"
   | "orders_updating"
-  | "orders_cancel_confirm";
+  | "orders_cancel_confirm"
+  | "orders_track"
+  | "orders_track_auth"
+  | "orders_reorder"
+  | "orders_reorder_loading"
+  | "orders_support"
+  | "track_title"
+  | "track_meta_hint"
+  | "track_loading"
+  | "track_error"
+  | "track_order_number"
+  | "track_created"
+  | "track_status_order"
+  | "track_status_payment"
+  | "track_shipping_to"
+  | "track_delivery_pin"
+  | "track_timeline"
+  | "track_step_placed"
+  | "track_step_payment"
+  | "track_step_processing"
+  | "track_step_shipped"
+  | "track_step_complete"
+  | "track_items"
+  | "track_map_title"
+  | "track_home"
+  | "checkout_trust_title"
+  | "checkout_trust_secure"
+  | "checkout_trust_dispatch"
+  | "checkout_trust_returns"
+  | "checkout_trust_returns_link"
+  | "checkout_delivery_title"
+  | "checkout_delivery_sub"
+  | "checkout_delivery_captured"
+  | "checkout_shipping_est_default"
+  | "checkout_shipping_est_india"
+  | "checkout_shipping_est_canada"
+  | "checkout_shipping_est_uk"
+  | "checkout_shipping_est_us"
+  | "checkout_shipping_est_turkey"
+  | "order_track_link"
+  | "order_track_copy_hint"
+  | "contact_prefill_order";
 
 type Dictionary = Record<TranslationKey, string>;
 
@@ -570,6 +611,47 @@ export const translations: Record<Locale, Dictionary> = {
     orders_cancelling: "Cancelling...",
     orders_updating: "Updating...",
     orders_cancel_confirm: "Are you sure you want to cancel this order?",
+    orders_track: "Track shipment",
+    orders_track_auth: "Open tracking page",
+    orders_reorder: "Buy again",
+    orders_reorder_loading: "Adding to cart…",
+    orders_support: "Help with this order",
+    track_title: "Order tracking",
+    track_meta_hint: "This page was opened with your private tracking link. Do not share the URL.",
+    track_loading: "Loading order status…",
+    track_error: "We could not load this order. Check your link or sign in and open the order from your account.",
+    track_order_number: "Order number",
+    track_created: "Placed on",
+    track_status_order: "Fulfillment",
+    track_status_payment: "Payment",
+    track_shipping_to: "Ship to",
+    track_delivery_pin: "Delivery pin on map",
+    track_timeline: "Progress",
+    track_step_placed: "Order placed",
+    track_step_payment: "Payment confirmed",
+    track_step_processing: "Processing",
+    track_step_shipped: "Shipped",
+    track_step_complete: "Delivered",
+    track_items: "Items",
+    track_map_title: "Approximate delivery area",
+    track_home: "Back to home",
+    checkout_trust_title: "Why you can shop with confidence",
+    checkout_trust_secure: "Payments are processed securely; we never store your full card details on our servers.",
+    checkout_trust_dispatch: "Typical dispatch is 1–2 business days after payment clears (carrier times vary by region).",
+    checkout_trust_returns: "Easy returns within 30 days on qualifying items. See our",
+    checkout_trust_returns_link: "terms and policies",
+    checkout_delivery_title: "Delivery timing",
+    checkout_delivery_sub: "Estimates below are typical business-day ranges once your order leaves our warehouse.",
+    checkout_delivery_captured: "You shared a delivery location from your device to help couriers find you.",
+    checkout_shipping_est_default: "Most orders arrive within 5–10 business days worldwide.",
+    checkout_shipping_est_india: "India: typically 4–7 business days after dispatch.",
+    checkout_shipping_est_canada: "Canada: typically 5–9 business days after dispatch.",
+    checkout_shipping_est_uk: "United Kingdom: typically 3–6 business days after dispatch.",
+    checkout_shipping_est_us: "United States: typically 4–8 business days after dispatch.",
+    checkout_shipping_est_turkey: "Turkey: typically 5–9 business days after dispatch.",
+    order_track_link: "Track this order anytime",
+    order_track_copy_hint: "Bookmark this page or check your email for the same link.",
+    contact_prefill_order: "Regarding my order ",
   },
   ja: {
     announcement_bar: "80ドル以上のご注文は送料無料、30日間の返品保証。",
@@ -855,6 +937,47 @@ export const translations: Record<Locale, Dictionary> = {
     orders_cancelling: "キャンセル中...",
     orders_updating: "更新中...",
     orders_cancel_confirm: "この注文をキャンセルしてもよろしいですか？",
+    orders_track: "配送状況を見る",
+    orders_track_auth: "追跡ページを開く",
+    orders_reorder: "もう一度購入",
+    orders_reorder_loading: "カートに追加中…",
+    orders_support: "この注文のサポート",
+    track_title: "注文の追跡",
+    track_meta_hint: "非公開の追跡リンクから開いています。URLは他人と共有しないでください。",
+    track_loading: "ステータスを読み込み中…",
+    track_error: "注文を読み込めませんでした。リンクを確認するか、ログインしてアカウントから開いてください。",
+    track_order_number: "注文番号",
+    track_created: "注文日",
+    track_status_order: "出荷処理",
+    track_status_payment: "お支払い",
+    track_shipping_to: "お届け先",
+    track_delivery_pin: "地図上のお届け位置",
+    track_timeline: "進捗",
+    track_step_placed: "注文を受け付けました",
+    track_step_payment: "お支払いの確認",
+    track_step_processing: "処理中",
+    track_step_shipped: "発送済み",
+    track_step_complete: "配達完了",
+    track_items: "商品",
+    track_map_title: "おおよそのお届けエリア",
+    track_home: "ホームに戻る",
+    checkout_trust_title: "安心してお買い物いただける理由",
+    checkout_trust_secure: "お支払いは安全に処理されます。カードの完全な番号を当社サーバーに保存することはありません。",
+    checkout_trust_dispatch: "入金確認後、通常1〜2営業日で出荷します（地域により配送会社の所要日数は異なります）。",
+    checkout_trust_returns: "対象商品は30日以内の返品が可能です。詳細は",
+    checkout_trust_returns_link: "利用規約とポリシー",
+    checkout_delivery_title: "お届けの目安",
+    checkout_delivery_sub: "以下は倉庫からの発送後の営業日ベースの目安です。",
+    checkout_delivery_captured: "お届け先の参考として、端末から位置情報を共有済みです。",
+    checkout_shipping_est_default: "多くの地域で発送後5〜10営業日程度です。",
+    checkout_shipping_est_india: "インド: 発送後おおむね4〜7営業日。",
+    checkout_shipping_est_canada: "カナダ: 発送後おおむね5〜9営業日。",
+    checkout_shipping_est_uk: "イギリス: 発送後おおむね3〜6営業日。",
+    checkout_shipping_est_us: "アメリカ: 発送後おおむね4〜8営業日。",
+    checkout_shipping_est_turkey: "トルコ: 発送後おおむね5〜9営業日。",
+    order_track_link: "いつでもこの注文を追跡",
+    order_track_copy_hint: "このページをブックマークするか、同じリンクが記載されたメールをご確認ください。",
+    contact_prefill_order: "次の注文について: ",
   },
 
 };

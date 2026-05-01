@@ -4,9 +4,13 @@ import com.example.shop.common.mail.EmailService;
 import com.example.shop.modules.messaging.order.OrderCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
@@ -16,6 +20,9 @@ import java.util.stream.Collectors;
 public class OrderCreatedNotificationService {
 
     private final EmailService emailService;
+
+    @Value("${application.frontend.url:http://localhost:3000}")
+    private String frontendBaseUrl;
 
     public void sendOrderReceivedEmail(OrderCreatedEvent event) {
         String to = safe(event.getCustomerEmail());
@@ -40,12 +47,21 @@ public class OrderCreatedNotificationService {
                         + "</tr>")
                 .collect(Collectors.joining());
 
+        String trackingLinkHtml = "";
+        if (StringUtils.hasText(event.getTrackingSecret())) {
+            String base = safe(frontendBaseUrl).replaceAll("/+$", "");
+            String url = base + "/track?t=" + URLEncoder.encode(event.getTrackingSecret(), StandardCharsets.UTF_8);
+            trackingLinkHtml = "<p><strong>Track your order:</strong> <a href=\"" + esc(url) + "\">View status</a></p>"
+                    + "<p style=\"color:#6b7280;font-size:12px;\">Keep this link private; it confirms delivery details for your order.</p>";
+        }
+
         String content = """
                 <html>
                   <body style="font-family:Arial,sans-serif;color:#111;">
                     <h2 style="color:#2563eb;">Order Received!</h2>
                     <p>Hi %s,</p>
                     <p>We've received your order <strong>%s</strong> and it's being processed.</p>
+                    %s
                     <h3>Order Summary</h3>
                     <table style="border-collapse:collapse;width:100%%;">
                       <thead>
@@ -73,6 +89,7 @@ public class OrderCreatedNotificationService {
                 """.formatted(
                 esc(customerName.isBlank() ? "Customer" : customerName),
                 esc(orderNumber),
+                trackingLinkHtml,
                 itemsHtml,
                 esc(money(event.getSubtotal(), currency)),
                 esc(money(event.getShippingFee(), currency)),

@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getToken, getUser } from "@/lib/auth";
+import { useAppDispatch } from "@/store";
+import { addToCart, addToCartAsync, fetchCartAsync } from "@/store/cartSlice";
 
 type OrderItem = {
   product_id: string;
@@ -16,6 +18,7 @@ type OrderItem = {
 type Order = {
   id: number;
   order_number: string;
+  tracking_secret?: string;
   subtotal: number;
   shipping_fee: number;
   vat: number;
@@ -52,6 +55,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 export default function OrdersPage() {
   const { t } = useLocale();
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -65,6 +69,7 @@ export default function OrdersPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
+  const [reorderingOrderNumber, setReorderingOrderNumber] = useState<string | null>(null);
 
   const fetchHistory = async () => {
     if (!token && !user) {
@@ -135,6 +140,55 @@ export default function OrdersPage() {
     setIsEditModalOpen(true);
   };
 
+  const handleReorder = async (orderNumber: string) => {
+    if (!token && !user) {
+      router.push("/login");
+      return;
+    }
+    setReorderingOrderNumber(orderNumber);
+    try {
+      const response = await fetch(`/api/orders/${encodeURIComponent(orderNumber)}/track`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const json = (await response.json()) as { success?: boolean; data?: { items?: Record<string, unknown>[] } };
+      if (!response.ok || !json?.success || !Array.isArray(json.data?.items)) {
+        throw new Error("Could not load order lines for reorder");
+      }
+      const lines = json.data!.items!;
+      for (const line of lines) {
+        const productID = String(line.productId ?? line.product_id ?? "");
+        const productName = String(line.productName ?? line.product_name ?? "");
+        const productPrice = Number(line.unitPrice ?? line.unit_price ?? 0) || 0;
+        const quantity = Math.min(20, Math.max(1, Number(line.quantity ?? 1) || 1));
+        if (!productID) continue;
+        const payload = {
+          productID,
+          productName,
+          productPrice,
+          productReviews: "0",
+        };
+        for (let i = 0; i < quantity; i += 1) {
+          if (token || user) {
+            await dispatch(addToCartAsync(payload)).unwrap();
+          } else {
+            dispatch(addToCart(payload));
+          }
+        }
+      }
+      await dispatch(fetchCartAsync()).unwrap().catch(() => null);
+      router.push("/cart");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Reorder failed");
+    } finally {
+      setReorderingOrderNumber(null);
+    }
+  };
+
   return (
     <div style={{ maxWidth: 960, margin: "40px auto", padding: "0 16px" }}>
       <h1 style={{ marginBottom: 16 }}>{t("orders_history")}</h1>
@@ -166,38 +220,98 @@ export default function OrdersPage() {
               <p style={{ margin: "8px 0 6px" }}>
                 {t("orders_status")}{order.order_status}{t("orders_payment")}{order.payment_status} ({order.payment_method})
               </p>
-              {order.order_status === "pending" && order.payment_status === "pending" && (
-                <div style={{ display: "flex", gap: 10, margin: "10px 0" }}>
-                  <button
-                    onClick={() => handleCancelOrder(order.order_number)}
-                    disabled={processingOrderId === order.order_number}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, margin: "10px 0", alignItems: "center" }}>
+                {order.tracking_secret ? (
+                  <Link
+                    href={`/track?t=${encodeURIComponent(order.tracking_secret)}`}
                     style={{
                       padding: "6px 12px",
-                      backgroundColor: "#ff4d4f",
+                      backgroundColor: "#0f766e",
                       color: "white",
-                      border: "none",
                       borderRadius: 4,
-                      cursor: "pointer",
+                      textDecoration: "none",
+                      fontSize: 14,
                     }}
                   >
-                    {processingOrderId === order.order_number ? t("orders_cancelling") : t("orders_cancel")}
-                  </button>
-                  <button
-                    onClick={() => handleEditClick(order)}
-                    disabled={processingOrderId === order.order_number}
+                    {t("orders_track")}
+                  </Link>
+                ) : (
+                  <Link
+                    href={`/track?order=${encodeURIComponent(order.order_number)}`}
                     style={{
                       padding: "6px 12px",
-                      backgroundColor: "#1890ff",
+                      backgroundColor: "#0f766e",
                       color: "white",
-                      border: "none",
                       borderRadius: 4,
-                      cursor: "pointer",
+                      textDecoration: "none",
+                      fontSize: 14,
                     }}
                   >
-                    {t("orders_edit")}
-                  </button>
-                </div>
-              )}
+                    {t("orders_track_auth")}
+                  </Link>
+                )}
+                <Link
+                  href={`/contact?order=${encodeURIComponent(order.order_number)}`}
+                  style={{
+                    padding: "6px 12px",
+                    border: "1px solid #ccc",
+                    borderRadius: 4,
+                    textDecoration: "none",
+                    color: "#111",
+                    fontSize: 14,
+                  }}
+                >
+                  {t("orders_support")}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => void handleReorder(order.order_number)}
+                  disabled={reorderingOrderNumber === order.order_number}
+                  style={{
+                    padding: "6px 12px",
+                    backgroundColor: "#7c3aed",
+                    color: "white",
+                    border: "none",
+                    borderRadius: 4,
+                    cursor: "pointer",
+                    fontSize: 14,
+                  }}
+                >
+                  {reorderingOrderNumber === order.order_number ? t("orders_reorder_loading") : t("orders_reorder")}
+                </button>
+                {order.order_status === "pending" && order.payment_status === "pending" ? (
+                  <>
+                    <button
+                      onClick={() => handleCancelOrder(order.order_number)}
+                      disabled={processingOrderId === order.order_number}
+                      style={{
+                        padding: "6px 12px",
+                        backgroundColor: "#ff4d4f",
+                        color: "white",
+                        border: "none",
+                        borderRadius: 4,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {processingOrderId === order.order_number ? t("orders_cancelling") : t("orders_cancel")}
+                    </button>
+                    <button
+                      onClick={() => handleEditClick(order)}
+                      disabled={processingOrderId === order.order_number}
+                      style={{
+                        padding: "6px 12px",
+                        backgroundColor: "#1890ff",
+                        color: "white",
+                        border: "none",
+                        borderRadius: 4,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {t("orders_edit")}
+                    </button>
+                  </>
+                ) : null}
+              </div>
               <p style={{ margin: "0 0 10px" }}>
                 {t("orders_subtotal")}{formatMoney(order.subtotal, order.currency)}{t("orders_shipping")}
                 {formatMoney(order.shipping_fee, order.currency)}{t("orders_vat")}

@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 public class OrderHistoryItemDto {
     private Long id;
     private String orderNumber;
+    private String trackingSecret;
     private BigDecimal totalAmount;
     private String currency;
     private String paymentMethod;

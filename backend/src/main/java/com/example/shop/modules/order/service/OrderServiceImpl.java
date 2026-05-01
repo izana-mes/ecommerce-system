@@ -10,6 +10,8 @@ import com.example.shop.modules.messaging.order.OrderCreatedEventPublisher;
 import com.example.shop.modules.order.dto.OrderCreateRequest;
 import com.example.shop.modules.order.dto.OrderCreateResponse;
 import com.example.shop.modules.order.dto.OrderHistoryItemDto;
+import com.example.shop.modules.order.dto.OrderTrackingDto;
+import com.example.shop.modules.order.dto.OrderTrackingLineDto;
 import com.example.shop.modules.product.entity.Product;
 import com.example.shop.modules.product.repository.ProductRepository;
 import com.example.shop.modules.user.entity.User;
@@ -116,8 +118,21 @@ public class OrderServiceImpl implements OrderService {
         }
 
         String orderNumber = generateOrderNumber();
+        String trackingSecret = UUID.randomUUID().toString();
 
-        Long orderId = insertOrder(request, effectiveEmail, orderNumber, subtotal, shippingFee, vat, discountAmount, totalAmount, currency);
+        InsertOrderResult inserted = insertOrder(
+                request,
+                effectiveEmail,
+                orderNumber,
+                trackingSecret,
+                subtotal,
+                shippingFee,
+                vat,
+                discountAmount,
+                totalAmount,
+                currency
+        );
+        Long orderId = inserted.id();
         insertOrderItems(orderId, orderLines);
         insertPayment(orderId, orderNumber, request.getPaymentMethod(), totalAmount, currency, request.getOrderSource());
 
@@ -149,6 +164,7 @@ public class OrderServiceImpl implements OrderService {
             orderCreatedEventPublisher.publish(OrderCreatedEvent.builder()
                     .orderId(orderId)
                     .orderNumber(orderNumber)
+                    .trackingSecret(trackingSecret)
                     .customerEmail(effectiveEmail)
                     .customerFirstName(request.getCustomerFirstName())
                     .customerLastName(request.getCustomerLastName())
@@ -184,6 +200,7 @@ public class OrderServiceImpl implements OrderService {
         return OrderCreateResponse.builder()
                 .orderId(orderId)
                 .orderNumber(orderNumber)
+                .trackingSecret(trackingSecret)
                 .subtotal(subtotal)
                 .shippingFee(shippingFee)
                 .vat(vat)
@@ -206,6 +223,7 @@ public class OrderServiceImpl implements OrderService {
                 """
                 SELECT o.id,
                        o.order_number,
+                       MAX(o.tracking_secret) AS tracking_secret,
                        o.customer_email,
                        o.total_amount,
                        o.currency,
@@ -224,6 +242,7 @@ public class OrderServiceImpl implements OrderService {
                 (rs, rowNum) -> OrderHistoryItemDto.builder()
                         .id(rs.getLong("id"))
                         .orderNumber(rs.getString("order_number"))
+                        .trackingSecret(rs.getString("tracking_secret"))
                         .totalAmount(rs.getBigDecimal("total_amount"))
                         .currency(rs.getString("currency"))
                         .paymentMethod(rs.getString("payment_method"))
@@ -248,6 +267,7 @@ public class OrderServiceImpl implements OrderService {
                 """
                 SELECT o.id,
                        o.order_number,
+                       MAX(o.tracking_secret) AS tracking_secret,
                        o.customer_email,
                        o.total_amount,
                        o.currency,
@@ -266,6 +286,7 @@ public class OrderServiceImpl implements OrderService {
                 (rs, rowNum) -> OrderHistoryItemDto.builder()
                         .id(rs.getLong("id"))
                         .orderNumber(rs.getString("order_number"))
+                        .trackingSecret(rs.getString("tracking_secret"))
                         .totalAmount(rs.getBigDecimal("total_amount"))
                         .currency(rs.getString("currency"))
                         .paymentMethod(rs.getString("payment_method"))
@@ -291,6 +312,7 @@ public class OrderServiceImpl implements OrderService {
                 """
                         SELECT o.id,
                                o.order_number,
+                               MAX(o.tracking_secret) AS tracking_secret,
                                o.total_amount,
                                o.currency,
                                o.payment_method,
@@ -308,6 +330,7 @@ public class OrderServiceImpl implements OrderService {
                 (rs, rowNum) -> OrderHistoryItemDto.builder()
                         .id(rs.getLong("id"))
                         .orderNumber(rs.getString("order_number"))
+                        .trackingSecret(rs.getString("tracking_secret"))
                         .totalAmount(rs.getBigDecimal("total_amount"))
                         .currency(rs.getString("currency"))
                         .paymentMethod(rs.getString("payment_method"))
@@ -319,6 +342,90 @@ public class OrderServiceImpl implements OrderService {
                 user.getEmail(),
                 safeLimit
         );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<OrderTrackingDto> getOrderTrackingBySecret(String trackingSecret) {
+        if (!StringUtils.hasText(trackingSecret) || trackingSecret.length() > 80) {
+            return Optional.empty();
+        }
+        List<Long> ids = jdbcTemplate.query(
+                "SELECT id FROM orders WHERE tracking_secret = ? LIMIT 1",
+                (rs, rowNum) -> rs.getLong("id"),
+                trackingSecret.trim()
+        );
+        if (ids.isEmpty()) {
+            return Optional.empty();
+        }
+        return loadOrderTracking(ids.get(0));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<OrderTrackingDto> getOrderTrackingByNumberForCustomer(String orderNumber, User user) {
+        if (!StringUtils.hasText(orderNumber) || user == null || !StringUtils.hasText(user.getEmail())) {
+            return Optional.empty();
+        }
+        List<Long> ids = jdbcTemplate.query(
+                """
+                        SELECT id FROM orders
+                        WHERE UPPER(order_number) = UPPER(?) AND LOWER(customer_email) = LOWER(?)
+                        LIMIT 1
+                        """,
+                (rs, rowNum) -> rs.getLong("id"),
+                orderNumber.trim(),
+                user.getEmail()
+        );
+        if (ids.isEmpty()) {
+            return Optional.empty();
+        }
+        return loadOrderTracking(ids.get(0));
+    }
+
+    private Optional<OrderTrackingDto> loadOrderTracking(Long orderId) {
+        List<OrderTrackingDto> headers = jdbcTemplate.query(
+                """
+                        SELECT order_number, order_status, payment_status, created_at,
+                               shipping_city, shipping_country,
+                               delivery_latitude, delivery_longitude, delivery_location_label,
+                               delivery_location_accuracy_meters
+                        FROM orders WHERE id = ?
+                        """,
+                (rs, rowNum) -> OrderTrackingDto.builder()
+                        .orderNumber(rs.getString("order_number"))
+                        .orderStatus(rs.getString("order_status"))
+                        .paymentStatus(rs.getString("payment_status"))
+                        .createdAt(toLocalDateTime(rs.getTimestamp("created_at")))
+                        .shippingCity(rs.getString("shipping_city"))
+                        .shippingCountry(rs.getString("shipping_country"))
+                        .deliveryLatitude(rs.getBigDecimal("delivery_latitude"))
+                        .deliveryLongitude(rs.getBigDecimal("delivery_longitude"))
+                        .deliveryLocationLabel(rs.getString("delivery_location_label"))
+                        .deliveryLocationAccuracyMeters(rs.getBigDecimal("delivery_location_accuracy_meters"))
+                        .build(),
+                orderId
+        );
+        if (headers.isEmpty()) {
+            return Optional.empty();
+        }
+        OrderTrackingDto dto = headers.get(0);
+        List<OrderTrackingLineDto> lines = jdbcTemplate.query(
+                """
+                        SELECT product_id, product_name, unit_price, quantity, line_total
+                        FROM order_items WHERE order_id = ? ORDER BY id
+                        """,
+                (rs, rowNum) -> OrderTrackingLineDto.builder()
+                        .productId(rs.getString("product_id"))
+                        .productName(rs.getString("product_name"))
+                        .unitPrice(rs.getBigDecimal("unit_price"))
+                        .quantity(rs.getInt("quantity"))
+                        .lineTotal(rs.getBigDecimal("line_total"))
+                        .build(),
+                orderId
+        );
+        dto.setItems(lines);
+        return Optional.of(dto);
     }
 
     @Override
@@ -437,15 +544,16 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    private Long insertOrder(OrderCreateRequest request,
-                             String effectiveEmail,
-                             String orderNumber,
-                             BigDecimal subtotal,
-                             BigDecimal shippingFee,
-                             BigDecimal vat,
-                             BigDecimal discountAmount,
-                             BigDecimal totalAmount,
-                             String currency) {
+    private InsertOrderResult insertOrder(OrderCreateRequest request,
+                                          String effectiveEmail,
+                                          String orderNumber,
+                                          String trackingSecret,
+                                          BigDecimal subtotal,
+                                          BigDecimal shippingFee,
+                                          BigDecimal vat,
+                                          BigDecimal discountAmount,
+                                          BigDecimal totalAmount,
+                                          String currency) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         LocalDateTime now = LocalDateTime.now();
 
@@ -454,6 +562,7 @@ public class OrderServiceImpl implements OrderService {
                     """
                             INSERT INTO orders (
                                 order_number,
+                                tracking_secret,
                                 user_id,
                                 customer_email,
                                 customer_first_name,
@@ -484,46 +593,47 @@ public class OrderServiceImpl implements OrderService {
                                 order_status,
                                 created_at,
                                 updated_at
-                            ) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending', ?, ?)
+                            ) VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending', ?, ?)
                             """,
                     new String[]{"id"}
             );
             ps.setString(1, orderNumber);
-            ps.setString(2, effectiveEmail);
-            ps.setString(3, nullable(request.getCustomerFirstName()));
-            ps.setString(4, nullable(request.getCustomerLastName()));
-            ps.setString(5, nullable(request.getCustomerPhone()));
-            ps.setString(6, nullable(request.getShippingAddressLine1()));
-            ps.setString(7, nullable(request.getShippingAddressLine2()));
-            ps.setString(8, nullable(request.getShippingCity()));
-            ps.setString(9, nullable(request.getShippingState()));
-            ps.setString(10, nullable(request.getShippingPostalCode()));
-            ps.setString(11, nullable(request.getShippingCountry()));
-            ps.setObject(12, request.getDeliveryLatitude());
-            ps.setObject(13, request.getDeliveryLongitude());
-            ps.setString(14, nullable(request.getDeliveryLocationLabel()));
-            ps.setObject(15, request.getDeliveryLocationAccuracyMeters());
+            ps.setString(2, trackingSecret);
+            ps.setString(3, effectiveEmail);
+            ps.setString(4, nullable(request.getCustomerFirstName()));
+            ps.setString(5, nullable(request.getCustomerLastName()));
+            ps.setString(6, nullable(request.getCustomerPhone()));
+            ps.setString(7, nullable(request.getShippingAddressLine1()));
+            ps.setString(8, nullable(request.getShippingAddressLine2()));
+            ps.setString(9, nullable(request.getShippingCity()));
+            ps.setString(10, nullable(request.getShippingState()));
+            ps.setString(11, nullable(request.getShippingPostalCode()));
+            ps.setString(12, nullable(request.getShippingCountry()));
+            ps.setObject(13, request.getDeliveryLatitude());
+            ps.setObject(14, request.getDeliveryLongitude());
+            ps.setString(15, nullable(request.getDeliveryLocationLabel()));
+            ps.setObject(16, request.getDeliveryLocationAccuracyMeters());
             if (request.getDeliveryLocationCapturedAt() == null) {
-                ps.setNull(16, java.sql.Types.BIGINT);
+                ps.setNull(17, java.sql.Types.BIGINT);
             } else {
-                ps.setLong(16, request.getDeliveryLocationCapturedAt());
+                ps.setLong(17, request.getDeliveryLocationCapturedAt());
             }
-            ps.setString(17, nullable(request.getNotes()));
-            ps.setBigDecimal(18, subtotal);
-            ps.setBigDecimal(19, shippingFee);
-            ps.setBigDecimal(20, vat);
-            ps.setBigDecimal(21, discountAmount);
-            ps.setBigDecimal(22, totalAmount);
-            ps.setString(23, currency);
-            ps.setString(24, nullable(request.getCouponCode()));
+            ps.setString(18, nullable(request.getNotes()));
+            ps.setBigDecimal(19, subtotal);
+            ps.setBigDecimal(20, shippingFee);
+            ps.setBigDecimal(21, vat);
+            ps.setBigDecimal(22, discountAmount);
+            ps.setBigDecimal(23, totalAmount);
+            ps.setString(24, currency);
+            ps.setString(25, nullable(request.getCouponCode()));
             if (request.getCouponAssignmentId() == null) {
-                ps.setNull(25, java.sql.Types.BIGINT);
+                ps.setNull(26, java.sql.Types.BIGINT);
             } else {
-                ps.setLong(25, request.getCouponAssignmentId());
+                ps.setLong(26, request.getCouponAssignmentId());
             }
-            ps.setString(26, safe(request.getPaymentMethod()));
-            ps.setTimestamp(27, Timestamp.valueOf(now));
+            ps.setString(27, safe(request.getPaymentMethod()));
             ps.setTimestamp(28, Timestamp.valueOf(now));
+            ps.setTimestamp(29, Timestamp.valueOf(now));
             return ps;
         }, keyHolder);
 
@@ -531,7 +641,7 @@ public class OrderServiceImpl implements OrderService {
         if (key == null) {
             throw new BusinessException("Failed to create order", HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        return key.longValue();
+        return new InsertOrderResult(key.longValue(), trackingSecret);
     }
 
     private void insertOrderItems(Long orderId, List<OrderLine> lines) {
@@ -659,6 +769,9 @@ public class OrderServiceImpl implements OrderService {
 
     private LocalDateTime toLocalDateTime(Timestamp timestamp) {
         return timestamp == null ? null : timestamp.toLocalDateTime();
+    }
+
+    private record InsertOrderResult(long id, String trackingSecret) {
     }
 
     private record OrderLine(Product product, int quantity, BigDecimal unitPrice, BigDecimal lineTotal) {

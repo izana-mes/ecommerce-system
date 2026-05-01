@@ -96,6 +96,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/products/stock/validate-reserve").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/products/stock/release").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/orders/track").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/payments/vnpay/ipn").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/payments/vnpay/ipn").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/payments/momo/ipn").permitAll()

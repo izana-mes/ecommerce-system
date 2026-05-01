@@ -18,8 +18,20 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store";
 import { getToken, getUser } from "@/lib/auth";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import type { TranslationKey } from "@/lib/i18n";
 
 import "./shoppingCart.css";
+
+function shippingEstimateKey(country: string): TranslationKey {
+  const map: Record<string, TranslationKey> = {
+    India: "checkout_shipping_est_india",
+    Canada: "checkout_shipping_est_canada",
+    "United Kingdom": "checkout_shipping_est_uk",
+    "United States": "checkout_shipping_est_us",
+    Turkey: "checkout_shipping_est_turkey",
+  };
+  return map[country] ?? "checkout_shipping_est_default";
+}
 
 const success = "/success.png";
 
@@ -112,6 +124,7 @@ export default function ShoppingCart() {
   const [selectedPayment, setSelectedPayment] = useState("Direct Bank Transfer");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [lastOrderNumber, setLastOrderNumber] = useState<string | null>(null);
+  const [lastTrackingSecret, setLastTrackingSecret] = useState<string | null>(null);
   const [buyNowProductId, setBuyNowProductId] = useState<string | null>(null);
   const [checkoutForm, setCheckoutForm] = useState<CheckoutForm>({
     firstName: "",
@@ -497,7 +510,9 @@ export default function ShoppingCart() {
 
       const orderId = data?.data?.orderId as number | undefined;
       const orderNumber = data?.data?.orderNumber as string | undefined;
+      const trackingSecret = data?.data?.trackingSecret as string | undefined;
       if (orderNumber) setLastOrderNumber(orderNumber);
+      setLastTrackingSecret(trackingSecret && String(trackingSecret).trim() ? String(trackingSecret).trim() : null);
 
       if (isVnpay && orderId && orderNumber) {
         const paymentResponse = await fetch("/api/vnpay/create-payment", {
@@ -1044,6 +1059,9 @@ export default function ShoppingCart() {
                           ? `${checkoutLocation.label}${checkoutLocation.accuracyMeters ? ` · ±${checkoutLocation.accuracyMeters}m` : ""}`
                           : "Fill delivery details from your device location"}
                       </p>
+                      {checkoutLocation ? (
+                        <p className="checkoutDeliveryCapturedNote">{t("checkout_delivery_captured")}</p>
+                      ) : null}
                     </div>
                     <select
                       name="country"
@@ -1064,6 +1082,13 @@ export default function ShoppingCart() {
                       <option value="United States">{t("checkout_country_us")}</option>
                       <option value="Turkey">{t("checkout_country_turkey")}</option>
                     </select>
+                    {checkoutForm.country ? (
+                      <div className="checkoutDeliveryEstimate">
+                        <p className="checkoutDeliveryEstimateTitle">{t("checkout_delivery_title")}</p>
+                        <p className="checkoutDeliveryEstimateBody">{t("checkout_delivery_sub")}</p>
+                        <p className="checkoutDeliveryEstimateBody">{t(shippingEstimateKey(checkoutForm.country))}</p>
+                      </div>
+                    ) : null}
                     <input
                       type="text"
                       placeholder={t("checkout_street1")}
@@ -1294,6 +1319,21 @@ export default function ShoppingCart() {
                     </Link>
                     {t("checkout_privacy_3")}
                   </div>
+
+                  <div className="checkoutTrustPanel">
+                    <h4 className="checkoutTrustTitle">{t("checkout_trust_title")}</h4>
+                    <ul className="checkoutTrustList">
+                      <li>{t("checkout_trust_secure")}</li>
+                      <li>{t("checkout_trust_dispatch")}</li>
+                      <li>
+                        {t("checkout_trust_returns")}{" "}
+                        <Link href="/terms" onClick={scrollToTop}>
+                          {t("checkout_trust_returns_link")}
+                        </Link>
+                        .
+                      </li>
+                    </ul>
+                  </div>
                 </div>
 
                 <button onClick={handlePlaceOrder} disabled={isPlacingOrder}>
@@ -1332,6 +1372,15 @@ export default function ShoppingCart() {
                     <h4>{selectedPayment}</h4>
                   </div>
                 </div>
+
+                {lastTrackingSecret ? (
+                  <div className="orderTrackCallout">
+                    <Link href={`/track?t=${encodeURIComponent(lastTrackingSecret)}`} onClick={scrollToTop}>
+                      {t("order_track_link")}
+                    </Link>
+                    <p className="orderTrackHint">{t("order_track_copy_hint")}</p>
+                  </div>
+                ) : null}
 
                 <div className="orderTotalContainer">
                   <h3>{t("order_details")}</h3>
