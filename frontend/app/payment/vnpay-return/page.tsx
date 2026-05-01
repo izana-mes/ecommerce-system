@@ -50,12 +50,134 @@ type ReturnState = {
   order: ReturnedOrder | null;
 };
 
+type HistoryOrderItem = {
+  product_id?: string;
+  productID?: string;
+  product_name?: string;
+  productName?: string;
+  unit_price?: number | string;
+  unitPrice?: number | string;
+  quantity?: number | string;
+  line_total?: number | string;
+  lineTotal?: number | string;
+};
+
+type HistoryOrder = {
+  id?: number | string;
+  order_number?: string;
+  orderNumber?: string;
+  customer_email?: string;
+  customerEmail?: string;
+  customer_first_name?: string | null;
+  customerFirstName?: string | null;
+  customer_last_name?: string | null;
+  customerLastName?: string | null;
+  customer_phone?: string | null;
+  customerPhone?: string | null;
+  shipping_address_line1?: string | null;
+  shippingAddressLine1?: string | null;
+  shipping_address_line2?: string | null;
+  shippingAddressLine2?: string | null;
+  shipping_city?: string | null;
+  shippingCity?: string | null;
+  shipping_state?: string | null;
+  shippingState?: string | null;
+  shipping_postal_code?: string | null;
+  shippingPostalCode?: string | null;
+  shipping_country?: string | null;
+  shippingCountry?: string | null;
+  notes?: string | null;
+  subtotal?: number | string;
+  shipping_fee?: number | string;
+  shippingFee?: number | string;
+  vat?: number | string;
+  total_amount?: number | string;
+  totalAmount?: number | string;
+  currency?: string;
+  payment_method?: string;
+  paymentMethod?: string;
+  payment_status?: string;
+  paymentStatus?: string;
+  order_status?: string;
+  orderStatus?: string;
+  items?: HistoryOrderItem[];
+};
+
 function normalizeAuthorizationHeader(token: string | null): string | null {
   if (!token) return null;
   const trimmed = token.trim();
   if (!trimmed) return null;
   const normalizedToken = trimmed.replace(/^Bearer\s+/i, "");
   return `Bearer ${normalizedToken}`;
+}
+
+function toNumber(value: unknown): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function mapHistoryOrderToReturnedOrder(order: HistoryOrder): ReturnedOrder {
+  const mappedItems: ReturnedOrderItem[] = Array.isArray(order.items)
+    ? order.items.map((item) => {
+        const quantity = Math.max(0, Math.floor(toNumber(item.quantity)));
+        const unitPrice = toNumber(item.unit_price ?? item.unitPrice);
+        const lineTotalRaw = toNumber(item.line_total ?? item.lineTotal);
+        return {
+          productID: String(item.product_id ?? item.productID ?? ""),
+          productName: String(item.product_name ?? item.productName ?? "Unknown product"),
+          unitPrice,
+          quantity,
+          lineTotal: lineTotalRaw > 0 ? lineTotalRaw : unitPrice * quantity,
+        };
+      })
+    : [];
+
+  return {
+    id: toNumber(order.id),
+    orderNumber: String(order.order_number ?? order.orderNumber ?? ""),
+    customerEmail: String(order.customer_email ?? order.customerEmail ?? ""),
+    customerFirstName: (order.customer_first_name ?? order.customerFirstName ?? null) as string | null,
+    customerLastName: (order.customer_last_name ?? order.customerLastName ?? null) as string | null,
+    customerPhone: (order.customer_phone ?? order.customerPhone ?? null) as string | null,
+    shippingAddressLine1: (order.shipping_address_line1 ?? order.shippingAddressLine1 ?? null) as string | null,
+    shippingAddressLine2: (order.shipping_address_line2 ?? order.shippingAddressLine2 ?? null) as string | null,
+    shippingCity: (order.shipping_city ?? order.shippingCity ?? null) as string | null,
+    shippingState: (order.shipping_state ?? order.shippingState ?? null) as string | null,
+    shippingPostalCode: (order.shipping_postal_code ?? order.shippingPostalCode ?? null) as string | null,
+    shippingCountry: (order.shipping_country ?? order.shippingCountry ?? null) as string | null,
+    notes: (order.notes ?? null) as string | null,
+    subtotal: toNumber(order.subtotal),
+    shippingFee: toNumber(order.shipping_fee ?? order.shippingFee),
+    vat: toNumber(order.vat),
+    totalAmount: toNumber(order.total_amount ?? order.totalAmount),
+    currency: String(order.currency ?? "USD"),
+    paymentMethod: String(order.payment_method ?? order.paymentMethod ?? ""),
+    paymentStatus: String(order.payment_status ?? order.paymentStatus ?? ""),
+    orderStatus: String(order.order_status ?? order.orderStatus ?? ""),
+    items: mappedItems,
+  };
+}
+
+async function fetchOrderFromHistory(orderNumber: string, token: string | null): Promise<ReturnedOrder | null> {
+  if (!orderNumber) return null;
+  try {
+    const response = await fetch("/api/orders/history?page=0&size=50", {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: token } : {}),
+      },
+    });
+    if (!response.ok) return null;
+
+    const payload = await response.json().catch(() => null);
+    const orders = Array.isArray(payload?.content) ? (payload.content as HistoryOrder[]) : [];
+    const matched = orders.find((o) => String(o.order_number ?? o.orderNumber ?? "").toUpperCase() === orderNumber.toUpperCase());
+    return matched ? mapHistoryOrderToReturnedOrder(matched) : null;
+  } catch {
+    return null;
+  }
 }
 
 function VnpayReturnContent() {
@@ -137,12 +259,23 @@ function VnpayReturnContent() {
           await dispatch(fetchCartAsync());
         }
 
+        let resolvedOrder = (data?.order as ReturnedOrder | null) ?? null;
+        const resolvedOrderNumber = String(data?.orderNumber || data?.order?.orderNumber || "");
+
+        if (data?.success && (!resolvedOrder || !Array.isArray(resolvedOrder.items) || resolvedOrder.items.length === 0)) {
+          const authorizationHeader = normalizeAuthorizationHeader(getToken());
+          const fallbackOrder = await fetchOrderFromHistory(resolvedOrderNumber, authorizationHeader);
+          if (fallbackOrder) {
+            resolvedOrder = fallbackOrder;
+          }
+        }
+
         setState({
           loading: false,
           success: !!data?.success,
           message: data?.message || "Unknown payment result",
-          orderNumber: data?.orderNumber || "",
-          order: data?.order || null,
+          orderNumber: resolvedOrderNumber,
+          order: resolvedOrder,
         });
       } catch {
         setState({
@@ -243,16 +376,18 @@ function VnpayReturnContent() {
                     <table>
                       <thead>
                         <tr>
-                          <th>PRODUCTS</th>
-                          <th>SUBTOTALS</th>
+                          <th>PRODUCT</th>
+                          <th>QTY</th>
+                          <th>UNIT PRICE</th>
+                          <th>LINE TOTAL</th>
                         </tr>
                       </thead>
                       <tbody>
                         {order.items.map((item) => (
-                          <tr key={item.productID}>
-                            <td>
-                              {item.productName} x {item.quantity}
-                            </td>
+                          <tr key={`${item.productID}-${item.productName}`}>
+                            <td>{item.productName}</td>
+                            <td>{item.quantity}</td>
+                            <td>{formatCurrency(item.unitPrice, order.currency)}</td>
                             <td>{formatCurrency(item.lineTotal, order.currency)}</td>
                           </tr>
                         ))}
