@@ -3,6 +3,8 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getToken, getUser } from "@/lib/auth";
+import { Client, StompSubscription } from "@stomp/stompjs";
+import { createSupportChatStompClient, parseStompJson } from "@/lib/supportChatSocket";
 import "./support-chat.css";
 
 type ConversationItem = {
@@ -76,8 +78,12 @@ export default function StaffSupportChatPage() {
   const [sending, setSending] = useState(false);
   const [savingWorkflow, setSavingWorkflow] = useState(false);
   const [error, setError] = useState("");
+  const [socketConnected, setSocketConnected] = useState(false);
 
   const endRef = useRef<HTMLDivElement | null>(null);
+  const clientRef = useRef<Client | null>(null);
+  const activeConversationSubscriptionRef = useRef<StompSubscription | null>(null);
+  const staffConversationSubscriptionRef = useRef<StompSubscription | null>(null);
   const token = getToken();
   const currentUser = getUser();
 
@@ -195,46 +201,111 @@ export default function StaffSupportChatPage() {
 
   useEffect(() => {
     if (!allowed) return;
-
     let canceled = false;
 
-    const refresh = async () => {
-      try {
-        await fetchConversations();
-      } catch (error: unknown) {
-        if (!canceled) {
-          setError(error instanceof Error ? error.message : "Failed to load conversations.");
-        }
+    void fetchConversations().catch((loadError: unknown) => {
+      if (!canceled) {
+        setError(loadError instanceof Error ? loadError.message : "Failed to load conversations.");
       }
-    };
-
-    void refresh();
-
-    const intervalId = window.setInterval(() => {
-      void fetchConversations().catch(() => {
-        // keep polling
-      });
-    }, 4000);
+    });
 
     return () => {
       canceled = true;
-      window.clearInterval(intervalId);
     };
   }, [allowed, fetchConversations]);
 
   useEffect(() => {
     if (!allowed || !activeConversationId) return;
-
     void fetchMessages(activeConversationId);
-
-    const intervalId = window.setInterval(() => {
-      void fetchMessages(activeConversationId).catch(() => {
-        // keep polling
-      });
-    }, 4000);
-
-    return () => window.clearInterval(intervalId);
   }, [allowed, activeConversationId, fetchMessages]);
+
+  useEffect(() => {
+    if (!allowed) return;
+
+    const client = createSupportChatStompClient({
+      token,
+      onConnect: () => {
+        setSocketConnected(true);
+        setError("");
+      },
+      onStompError: (socketError) => {
+        setError(`Realtime channel error: ${socketError}`);
+      },
+      onSocketError: () => {
+        setSocketConnected(false);
+      },
+    });
+
+    clientRef.current = client;
+    client.activate();
+
+    return () => {
+      activeConversationSubscriptionRef.current?.unsubscribe();
+      staffConversationSubscriptionRef.current?.unsubscribe();
+      activeConversationSubscriptionRef.current = null;
+      staffConversationSubscriptionRef.current = null;
+      setSocketConnected(false);
+      client.deactivate();
+      if (clientRef.current === client) {
+        clientRef.current = null;
+      }
+    };
+  }, [allowed, token]);
+
+  useEffect(() => {
+    const client = clientRef.current;
+    if (!client || !client.connected) return;
+
+    staffConversationSubscriptionRef.current?.unsubscribe();
+    staffConversationSubscriptionRef.current = client.subscribe("/topic/support-chat/staff/conversations", (frame) => {
+      const update = parseStompJson<ConversationItem>(frame);
+      if (!update?.conversationId) return;
+      setConversations((current) => {
+        const exists = current.some((item) => item.conversationId === update.conversationId);
+        if (!exists) {
+          return [update, ...current];
+        }
+        return current
+          .map((item) => (item.conversationId === update.conversationId ? { ...item, ...update } : item))
+          .sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
+      });
+    });
+
+    return () => {
+      staffConversationSubscriptionRef.current?.unsubscribe();
+      staffConversationSubscriptionRef.current = null;
+    };
+  }, [socketConnected]);
+
+  useEffect(() => {
+    const client = clientRef.current;
+    if (!client || !client.connected || !activeConversationId) return;
+
+    activeConversationSubscriptionRef.current?.unsubscribe();
+    activeConversationSubscriptionRef.current = client.subscribe(
+      `/topic/support-chat/conversations/${activeConversationId}`,
+      (frame) => {
+        const payload = parseStompJson<ConversationMessagesResponse>(frame);
+        if (!payload) return;
+        if (payload.conversation) {
+          setConversations((current) =>
+            current.map((item) =>
+              item.conversationId === payload.conversation!.conversationId ? { ...item, ...payload.conversation } : item
+            )
+          );
+          setInternalNoteDraft(payload.conversation.internalNote || "");
+        }
+        if (Array.isArray(payload.messages)) {
+          setMessages(payload.messages);
+        }
+      }
+    );
+
+    return () => {
+      activeConversationSubscriptionRef.current?.unsubscribe();
+      activeConversationSubscriptionRef.current = null;
+    };
+  }, [activeConversationId, socketConnected]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -255,6 +326,20 @@ export default function StaffSupportChatPage() {
     setSending(true);
 
     try {
+      const client = clientRef.current;
+      if (client && client.connected) {
+        client.publish({
+          destination: "/app/support-chat.send",
+          body: JSON.stringify({
+            conversationId: activeConversationId,
+            message: text,
+          }),
+        });
+        setDraft("");
+        setError("");
+        return;
+      }
+
       const response = await fetch(`/api/support-chat/conversations/${encodeURIComponent(activeConversationId)}/messages`, {
         method: "POST",
         headers: {
@@ -348,6 +433,7 @@ export default function StaffSupportChatPage() {
           <header>
             <h2>Support Queue</h2>
             <p>{conversations.length} active conversations</p>
+            <p>Realtime: {socketConnected ? "Connected" : "Connecting..."}</p>
           </header>
           <div className="staffConversationItems">
             {conversations.length === 0 ? <p className="staffEmpty">No conversations yet.</p> : null}

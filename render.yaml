@@ -40,8 +40,16 @@ services:
       # Set the same explicit value on both services in the Render dashboard.
       - key: INTERNAL_NOTIFY_TOKEN
         sync: false
+      # Use Resend by default on Render to avoid SMTP egress limits on free instances.
       - key: MAIL_PROVIDER
-        value: smtp
+        value: resend
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
+      - key: RESEND_FROM_NAME
+        value: Shop
+      # Optional SMTP fallback (typically requires paid Render instance for outbound SMTP ports).
       - key: SPRING_MAIL_HOST
         value: smtp.gmail.com
       - key: SPRING_MAIL_PORT

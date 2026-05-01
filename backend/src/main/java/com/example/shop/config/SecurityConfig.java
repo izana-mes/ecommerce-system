@@ -87,6 +87,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/internal/notifications/order-paid").permitAll()
                         .requestMatchers("/api/internal/notifications/coupon-issued").permitAll()
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()

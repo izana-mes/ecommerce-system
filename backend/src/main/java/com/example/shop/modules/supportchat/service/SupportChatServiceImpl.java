@@ -8,6 +8,7 @@ import com.example.shop.modules.supportchat.dto.SupportChatResponseDto;
 import com.example.shop.modules.supportchat.dto.UpdateConversationRequest;
 import com.example.shop.modules.supportchat.entity.SupportChatConversation;
 import com.example.shop.modules.supportchat.entity.SupportChatMessage;
+import com.example.shop.modules.supportchat.realtime.SupportChatRealtimePublisher;
 import com.example.shop.modules.supportchat.repository.SupportChatConversationRepository;
 import com.example.shop.modules.supportchat.repository.SupportChatMessageRepository;
 import com.example.shop.modules.user.entity.User;
@@ -31,6 +32,7 @@ public class SupportChatServiceImpl implements SupportChatService {
 
     private final SupportChatConversationRepository conversationRepository;
     private final SupportChatMessageRepository messageRepository;
+    private final SupportChatRealtimePublisher realtimePublisher;
 
     @Override
     @Transactional
@@ -99,11 +101,14 @@ public class SupportChatServiceImpl implements SupportChatService {
         List<ChatMessageDto> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId)
                 .stream().map(this::toDto).collect(Collectors.toList());
 
-        return SupportChatResponseDto.builder()
+        SupportChatResponseDto response = SupportChatResponseDto.builder()
                 .conversationId(conversationId)
                 .conversation(toSummaryDto(conv))
                 .messages(messages)
                 .build();
+        realtimePublisher.publishConversationSnapshot(response);
+        realtimePublisher.publishStaffConversationUpdate(response.getConversation());
+        return response;
     }
 
     @Override
@@ -148,11 +153,14 @@ public class SupportChatServiceImpl implements SupportChatService {
         List<ChatMessageDto> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId)
                 .stream().map(this::toDto).collect(Collectors.toList());
 
-        return SupportChatResponseDto.builder()
+        SupportChatResponseDto response = SupportChatResponseDto.builder()
                 .conversationId(conversationId)
                 .conversation(toSummaryDto(saved))
                 .messages(messages)
                 .build();
+        realtimePublisher.publishConversationSnapshot(response);
+        realtimePublisher.publishStaffConversationUpdate(response.getConversation());
+        return response;
     }
 
     private SupportChatConversation getOrCreateConversation(User user, String guestId) {

@@ -18,9 +18,10 @@ After the service is created, open the backend service and set these vars:
 - `FRONTEND_URL` = your main Vercel URL (e.g. `https://frontend-six-swart-65.vercel.app`)
 - `CORS_ALLOWED_ORIGINS` = **required if the browser address bar does not match `FRONTEND_URL`** (common with Vercel preview deployments). Use a comma-separated list with **no trailing slashes**, e.g. `https://your-main.vercel.app,https://frontend-xxx-your-team.vercel.app`
 - `APPLICATION_SERVER_URL` = your Render backend domain (must be **https**, e.g. `https://ecommerce-backend.onrender.com`). This enables `SameSite=None` on the auth cookie so order history and other authenticated API calls work from the Vercel origin.
-- `MAIL_PROVIDER=smtp`
-- `SPRING_MAIL_USERNAME`
-- `SPRING_MAIL_PASSWORD`
+- `MAIL_PROVIDER=resend`
+- `RESEND_API_KEY`
+- `RESEND_FROM_EMAIL`
+- `RESEND_FROM_NAME` (optional, example: `Shop`)
 - `SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID`
 - `SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET`
 - `SPRING_PROFILES_INCLUDE=oauth` (after Google client ID/secret are set)
@@ -34,12 +35,11 @@ After the service is created, open the backend service and set these vars:
 - `CHATBOT_AI_MODEL` — free model id to use, for example `google/gemma-3-4b-it:free`
 - `CHATBOT_AI_REFERER` — your frontend URL, useful for providers like OpenRouter
 
-If you prefer Resend instead of SMTP, set:
+If you prefer SMTP instead of Resend, set:
 
-- `MAIL_PROVIDER=resend`
-- `RESEND_API_KEY`
-- `RESEND_FROM_EMAIL`
-- `RESEND_FROM_NAME` (optional, example: `Shop`)
+- `MAIL_PROVIDER=smtp`
+- `SPRING_MAIL_USERNAME`
+- `SPRING_MAIL_PASSWORD`
 
 If you use Redis and RabbitMQ in production, also set:
 
