@@ -118,6 +118,19 @@ function formatActionType(value: string): string {
   return value.toLowerCase().replaceAll("_", " ");
 }
 
+function mapGeolocationError(error: GeolocationPositionError): string {
+  switch (error.code) {
+    case 1:
+      return "Location access was denied. Please allow location permission for attendance.";
+    case 2:
+      return "Location is unavailable right now. Please turn on GPS/location services and try again.";
+    case 3:
+      return "Location request timed out. Please move to an open area and try again.";
+    default:
+      return error.message ? `Location error: ${error.message}` : "Could not detect location.";
+  }
+}
+
 export default function StaffAttendancePage() {
   const router = useRouter();
   const [loadingAccess, setLoadingAccess] = useState(true);
@@ -307,22 +320,34 @@ export default function StaffAttendancePage() {
   }, [dynamicTodayTotalMinutes]);
 
   const captureAttendanceLocation = useCallback(async () => {
+    if (!window.isSecureContext) {
+      throw new Error("Location requires a secure context (HTTPS or localhost).");
+    }
     if (typeof window === "undefined" || !("geolocation" in navigator)) {
       throw new Error("This device does not support location detection.");
     }
 
-    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(resolve, (err) => {
-        let msg = "Could not detect location. Please allow location access.";
-        if (err.code === 1) msg = "Please allow location access to clock in.";
-        else if (err.message) msg = "Location error: " + err.message;
-        reject(new Error(msg));
-      }, {
-        enableHighAccuracy: true,
-        timeout: 15_000,
-        maximumAge: 0,
+    const readPosition = (enableHighAccuracy: boolean) =>
+      new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy,
+          timeout: 15_000,
+          maximumAge: 0,
+        });
       });
-    });
+
+    let position: GeolocationPosition;
+    try {
+      position = await readPosition(true);
+    } catch (error) {
+      const geoError = error as GeolocationPositionError;
+      // Retry once with lower accuracy to avoid high-accuracy timeouts on some devices.
+      if (geoError?.code === 3) {
+        position = await readPosition(false);
+      } else {
+        throw new Error(mapGeolocationError(geoError));
+      }
+    }
 
     const latitude = Number(position.coords.latitude);
     const longitude = Number(position.coords.longitude);
@@ -355,12 +380,7 @@ export default function StaffAttendancePage() {
   const runAction = async (action: AttendanceAction) => {
     setRunningAction(action);
     try {
-      let location = undefined;
-      try {
-        location = await captureAttendanceLocation();
-      } catch (locErr) {
-        console.warn("Location capture failed, continuing without location.", locErr);
-      }
+      const location = await captureAttendanceLocation();
       const response = await fetch("/api/attendance", {
         method: "POST",
         headers: {

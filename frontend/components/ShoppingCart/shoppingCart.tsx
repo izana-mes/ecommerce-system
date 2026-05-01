@@ -83,6 +83,19 @@ function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
+function mapGeolocationError(error: GeolocationPositionError): string {
+  switch (error.code) {
+    case 1:
+      return "Location access was denied. Please allow location permission and try again.";
+    case 2:
+      return "Location is unavailable right now. Please turn on location services and try again.";
+    case 3:
+      return "Location request timed out. Please move to an open area and try again.";
+    default:
+      return error.message ? `Location error: ${error.message}` : "Unable to read current location.";
+  }
+}
+
 export default function ShoppingCart() {
   const { t } = useLocale();
   const dispatch = useAppDispatch();
@@ -278,17 +291,33 @@ export default function ShoppingCart() {
   };
 
   const captureBrowserLocation = useCallback(async (): Promise<CapturedLocation> => {
+    if (!window.isSecureContext) {
+      throw new Error("Location requires HTTPS (or localhost in development).");
+    }
     if (typeof window === "undefined" || !("geolocation" in navigator)) {
       throw new Error("This device does not support location detection.");
     }
 
-    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 15_000,
-        maximumAge: 0,
+    const readPosition = (enableHighAccuracy: boolean) =>
+      new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy,
+          timeout: 15_000,
+          maximumAge: 0,
+        });
       });
-    });
+
+    let position: GeolocationPosition;
+    try {
+      position = await readPosition(true);
+    } catch (error) {
+      const geoError = error as GeolocationPositionError;
+      if (geoError?.code === 3) {
+        position = await readPosition(false);
+      } else {
+        throw new Error(mapGeolocationError(geoError));
+      }
+    }
 
     const latitude = Number(position.coords.latitude);
     const longitude = Number(position.coords.longitude);
