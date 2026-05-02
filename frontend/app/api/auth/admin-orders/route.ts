@@ -91,7 +91,7 @@ export async function GET(request: Request) {
     const dateTo = (searchParams.get("dateTo") || "").trim();
     const limit = Math.min(1000, Math.max(1, (page + 1) * size));
 
-    const response = await fetch(`${API_URL}/orders/history?limit=${limit}`, {
+    const response = await fetch(`${API_URL}/orders/fulfillment-queue?limit=${limit}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

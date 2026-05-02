@@ -44,7 +44,8 @@ public class AdminOrderController {
      * PATCH /api/v1/admin/orders/{id}
      * Updates the order_status and/or payment_status of a given order.
      * Admins may also PATCH only {@code carrier} / {@code trackingNumber} without changing statuses.
-     * Shippers may only advance eligible paid orders to {@code shipped} and may optionally set carrier / tracking fields.
+     * Shippers may only advance prepaid (payment {@code paid}) orders or Cash on Delivery orders awaiting collection
+     * to {@code shipped}, optionally setting carrier / tracking fields.
      */
     @PatchMapping("/orders/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SHIPPER')")
@@ -102,24 +103,23 @@ public class AdminOrderController {
                         .body(Map.of("error", "Shipper cannot update payment status"));
             }
             List<Map<String, Object>> snapshot = jdbcTemplate.queryForList(
-                    "SELECT order_status, payment_status FROM orders WHERE id = ?", orderId);
+                    "SELECT order_status, payment_status, payment_method FROM orders WHERE id = ?", orderId);
             if (snapshot.isEmpty()) {
                 return ResponseEntity.status(404)
                         .body(Map.of("error", "Order not found: " + orderId));
             }
-            String curOrderStatus = Objects.toString(snapshot.get(0).get("order_status"), "").trim().toLowerCase();
-            String curPaymentStatus = Objects.toString(snapshot.get(0).get("payment_status"), "").trim().toLowerCase();
+            String curOrderStatus = Objects.toString(snapshot.get(0).get("order_status"), "").trim().toLowerCase(Locale.ROOT);
+            String curPaymentStatus = Objects.toString(snapshot.get(0).get("payment_status"), "").trim().toLowerCase(Locale.ROOT);
+            String curPaymentMethod = Objects.toString(snapshot.get(0).get("payment_method"), "");
             if ("shipped".equals(curOrderStatus) || "completed".equals(curOrderStatus) || "cancelled".equals(curOrderStatus)) {
                 return ResponseEntity.status(409)
                         .body(Map.of("error", "Order can no longer be marked as shipped"));
             }
-            if (!"paid".equals(curPaymentStatus)) {
+            if (!shipperMayMarkShipped(curOrderStatus, curPaymentStatus, curPaymentMethod)) {
                 return ResponseEntity.status(403)
-                        .body(Map.of("error", "Shipper may only ship orders that are fully paid"));
-            }
-            if (!Set.of("paid", "processing").contains(curOrderStatus)) {
-                return ResponseEntity.status(403)
-                        .body(Map.of("error", "Shipper may only ship orders in 'paid' or 'processing' status"));
+                        .body(Map.of(
+                                "error",
+                                "Shipper may only ship prepaid (paid payment) orders, or Cash on Delivery orders awaiting pickup/collection"));
             }
         }
 
@@ -178,5 +178,24 @@ public class AdminOrderController {
             return ResponseEntity.internalServerError()
                     .body(Map.of("error", "Failed to update order: " + ex.getMessage()));
         }
+    }
+
+    /** Prepaid lanes or COD awaiting collection (checkout stores method as \"Cash on delivery\"). */
+    private static boolean shipperMayMarkShipped(String curOrderStatus, String curPaymentStatus, String paymentMethod) {
+        boolean paidLane = "paid".equals(curPaymentStatus) && Set.of("paid", "processing").contains(curOrderStatus);
+        boolean codLane = isCashOnDelivery(paymentMethod)
+                && Set.of("pending", "authorized").contains(curPaymentStatus)
+                && Set.of("pending", "processing").contains(curOrderStatus);
+        return paidLane || codLane;
+    }
+
+    private static boolean isCashOnDelivery(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return false;
+        }
+        String pm = raw.trim().toLowerCase(Locale.ROOT);
+        return "cod".equals(pm)
+                || pm.contains("cash on delivery")
+                || (pm.contains("cash") && pm.contains("deliver"));
     }
 }

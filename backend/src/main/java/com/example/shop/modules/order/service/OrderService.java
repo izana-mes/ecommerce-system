@@ -19,6 +19,12 @@ public interface OrderService {
 
     List<OrderHistoryItemDto> getMyOrders(User user, int limit);
 
+    /**
+     * Staff fulfillment view: admins/employees see the full recent order feed; pure shippers see a COD + paid-ready slice.
+     * Not used for customer purchase history.
+     */
+    List<OrderHistoryItemDto> getFulfillmentQueue(User user, int limit);
+
     /** Admin/staff-scoped: look up a single order by order number (no email restriction). */
     Optional<OrderHistoryItemDto> findOrderByNumberForAdmin(String orderNumber);
 

@@ -300,73 +300,8 @@ public class OrderServiceImpl implements OrderService {
         }
         int safeLimit = Math.min(Math.max(limit, 1), 100);
 
-        if (seesAllStaffOrders(user)) {
-            if (prefersShipperOrderQueue(user)) {
-                return jdbcTemplate.query(
-                        """
-                                SELECT o.id,
-                                       o.order_number,
-                                       MAX(o.tracking_secret) AS tracking_secret,
-                                       o.customer_email,
-                                       o.customer_first_name,
-                                       o.customer_last_name,
-                                       o.total_amount,
-                                       o.currency,
-                                       o.payment_method,
-                                       o.payment_status,
-                                       o.order_status,
-                                       o.created_at,
-                                       o.updated_at,
-                                       o.shipping_carrier,
-                                       o.shipping_tracking_public,
-                                       o.shipped_at,
-                                       COALESCE(SUM(oi.quantity), 0) AS item_count
-                                FROM orders o
-                                LEFT JOIN order_items oi ON oi.order_id = o.id
-                                WHERE (
-                                    (LOWER(o.payment_status) = 'paid'
-                                        AND LOWER(o.order_status) IN ('paid', 'processing'))
-                                    OR (
-                                        LOWER(o.order_status) = 'shipped'
-                                        AND COALESCE(o.shipped_at, o.updated_at) >= (CURRENT_TIMESTAMP - INTERVAL '7 days')
-                                    )
-                                )
-                                GROUP BY o.id
-                                ORDER BY o.updated_at DESC
-                                LIMIT ?
-                                """,
-                        (rs, rowNum) -> mapOrderHistoryRow(rs),
-                        safeLimit
-                );
-            }
-            return jdbcTemplate.query(
-                    """
-                            SELECT o.id,
-                                   o.order_number,
-                                   MAX(o.tracking_secret) AS tracking_secret,
-                                   o.customer_email,
-                                   o.customer_first_name,
-                                   o.customer_last_name,
-                                   o.total_amount,
-                                   o.currency,
-                                   o.payment_method,
-                                   o.payment_status,
-                                   o.order_status,
-                                   o.created_at,
-                                   o.updated_at,
-                                   o.shipping_carrier,
-                                   o.shipping_tracking_public,
-                                   o.shipped_at,
-                                   COALESCE(SUM(oi.quantity), 0) AS item_count
-                            FROM orders o
-                            LEFT JOIN order_items oi ON oi.order_id = o.id
-                            GROUP BY o.id
-                            ORDER BY o.created_at DESC
-                            LIMIT ?
-                    """,
-                    (rs, rowNum) -> mapOrderHistoryRow(rs),
-                    safeLimit
-            );
+        if (hasAdminOrEmployeeRole(user)) {
+            return queryRecentStaffWideOrderHistory(safeLimit);
         }
 
         return jdbcTemplate.query(
@@ -397,6 +332,59 @@ public class OrderServiceImpl implements OrderService {
                 """,
                 (rs, rowNum) -> mapOrderHistoryRow(rs),
                 user.getEmail(),
+                safeLimit
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderHistoryItemDto> getFulfillmentQueue(User user, int limit) {
+        if (user == null || !StringUtils.hasText(user.getEmail())) {
+            throw new BusinessException("Unauthorized", HttpStatus.UNAUTHORIZED);
+        }
+        if (!hasFulfillmentStaffRole(user)) {
+            throw new BusinessException("Forbidden", HttpStatus.FORBIDDEN);
+        }
+        int safeLimit = Math.min(Math.max(limit, 1), 100);
+        if (hasAdminOrEmployeeRole(user)) {
+            return queryRecentStaffWideOrderHistory(safeLimit);
+        }
+        return jdbcTemplate.query(
+                """
+                                SELECT o.id,
+                                       o.order_number,
+                                       MAX(o.tracking_secret) AS tracking_secret,
+                                       o.customer_email,
+                                       o.customer_first_name,
+                                       o.customer_last_name,
+                                       o.total_amount,
+                                       o.currency,
+                                       o.payment_method,
+                                       o.payment_status,
+                                       o.order_status,
+                                       o.created_at,
+                                       o.updated_at,
+                                       o.shipping_carrier,
+                                       o.shipping_tracking_public,
+                                       o.shipped_at,
+                                       COALESCE(SUM(oi.quantity), 0) AS item_count
+                                FROM orders o
+                                LEFT JOIN order_items oi ON oi.order_id = o.id
+                                WHERE (
+                                    (LOWER(o.payment_status) = 'paid'
+                                        AND LOWER(o.order_status) IN ('paid', 'processing'))
+                                    OR (
+                                        (LOWER(TRIM(o.payment_method)) LIKE '%cash%delivery%' OR LOWER(TRIM(o.payment_method)) = 'cod')
+                                        AND LOWER(o.payment_status) IN ('pending', 'authorized')
+                                        AND LOWER(o.order_status) IN ('pending', 'processing'))
+                                    OR (
+                                        LOWER(o.order_status) = 'shipped'
+                                        AND COALESCE(o.shipped_at, o.updated_at) >= (CURRENT_TIMESTAMP - INTERVAL '7 days')))
+                                GROUP BY o.id
+                                ORDER BY o.updated_at DESC
+                                LIMIT ?
+                                """,
+                (rs, rowNum) -> mapOrderHistoryRow(rs),
                 safeLimit
         );
     }
@@ -828,38 +816,55 @@ public class OrderServiceImpl implements OrderService {
         return safe(value).replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
-    private boolean seesAllStaffOrders(User user) {
-        if (user.getAuthorities() == null) {
+    private boolean hasFulfillmentStaffRole(User user) {
+        return hasAdminOrEmployeeRole(user) || hasRole(user, "ROLE_SHIPPER");
+    }
+
+    private boolean hasAdminOrEmployeeRole(User user) {
+        return hasRole(user, "ROLE_ADMIN") || hasRole(user, "ROLE_EMPLOYEE");
+    }
+
+    private boolean hasRole(User user, String expected) {
+        if (user == null || user.getAuthorities() == null) {
             return false;
         }
         for (var authority : user.getAuthorities()) {
-            String role = authority.getAuthority();
-            if ("ROLE_ADMIN".equals(role) || "ROLE_EMPLOYEE".equals(role) || "ROLE_SHIPPER".equals(role)) {
+            if (expected.equals(authority.getAuthority())) {
                 return true;
             }
         }
         return false;
     }
 
-    /**
-     * Pure shippers (no admin/employee hat) see a fulfillment-centric slice instead of the entire order stream.
-     */
-    private boolean prefersShipperOrderQueue(User user) {
-        if (user.getAuthorities() == null) {
-            return false;
-        }
-        boolean shipper = false;
-        boolean privilegedStaff = false;
-        for (var authority : user.getAuthorities()) {
-            String role = authority.getAuthority();
-            if ("ROLE_SHIPPER".equals(role)) {
-                shipper = true;
-            }
-            if ("ROLE_ADMIN".equals(role) || "ROLE_EMPLOYEE".equals(role)) {
-                privilegedStaff = true;
-            }
-        }
-        return shipper && !privilegedStaff;
+    private List<OrderHistoryItemDto> queryRecentStaffWideOrderHistory(int safeLimit) {
+        return jdbcTemplate.query(
+                """
+                        SELECT o.id,
+                               o.order_number,
+                               MAX(o.tracking_secret) AS tracking_secret,
+                               o.customer_email,
+                               o.customer_first_name,
+                               o.customer_last_name,
+                               o.total_amount,
+                               o.currency,
+                               o.payment_method,
+                               o.payment_status,
+                               o.order_status,
+                               o.created_at,
+                               o.updated_at,
+                               o.shipping_carrier,
+                               o.shipping_tracking_public,
+                               o.shipped_at,
+                               COALESCE(SUM(oi.quantity), 0) AS item_count
+                        FROM orders o
+                        LEFT JOIN order_items oi ON oi.order_id = o.id
+                        GROUP BY o.id
+                        ORDER BY o.created_at DESC
+                        LIMIT ?
+                """,
+                (rs, rowNum) -> mapOrderHistoryRow(rs),
+                safeLimit
+        );
     }
 
     private OrderHistoryItemDto mapOrderHistoryRow(ResultSet rs) throws SQLException {
@@ -891,9 +896,14 @@ public class OrderServiceImpl implements OrderService {
                 jdbcTemplate.queryForObject(
                         """
                                 SELECT COUNT(*) FROM orders
-                                WHERE LOWER(payment_status) = 'paid'
-                                    AND LOWER(order_status) IN ('paid', 'processing')
-                                    AND LOWER(order_status) <> 'cancelled'
+                                WHERE LOWER(order_status) NOT IN ('shipped', 'completed', 'cancelled')
+                                  AND (
+                                    (LOWER(payment_status) = 'paid' AND LOWER(order_status) IN ('paid', 'processing'))
+                                    OR (
+                                        (LOWER(TRIM(payment_method)) LIKE '%cash%delivery%' OR LOWER(TRIM(payment_method)) = 'cod')
+                                        AND LOWER(payment_status) IN ('pending', 'authorized')
+                                        AND LOWER(order_status) IN ('pending', 'processing'))
+                                  )
                                 """,
                         Long.class
                 )

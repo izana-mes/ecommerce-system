@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -40,6 +41,15 @@ public class OrderController {
             @RequestParam(value = "limit", required = false, defaultValue = "20") int limit
     ) {
         return ResponseEntity.ok(ApiResponse.success(orderService.getMyOrders(user, limit)));
+    }
+
+    @GetMapping("/fulfillment-queue")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE', 'SHIPPER')")
+    public ResponseEntity<ApiResponse<List<OrderHistoryItemDto>>> getFulfillmentQueue(
+            @AuthenticationPrincipal User user,
+            @RequestParam(value = "limit", required = false, defaultValue = "20") int limit
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(orderService.getFulfillmentQueue(user, limit)));
     }
 
     /**

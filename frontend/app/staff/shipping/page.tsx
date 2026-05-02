@@ -173,8 +173,8 @@ export default function StaffShippingPage() {
     <main className="shippingPage">
       <h1>Fulfillment queue</h1>
       <p className="shippingIntro">
-        Paid orders that are ready for dispatch appear first. Shippers only see their scoped queue; admins and employees
-        see full history from the same API.
+        Prepaid orders (payment confirmed) and Cash on Delivery orders awaiting dispatch appear in the queue. Pure
+        shippers see that scoped slice only; admins and employees see full order history in this view.
       </p>
       {error ? <p style={{ color: "#b91c1c" }}>{error}</p> : null}
       {loadingOrders ? <p className="muted">Loading orders…</p> : null}
