@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,7 +34,7 @@ public class AdminOrderController {
      * At least one of orderStatus or paymentStatus must be provided.
      */
     @PatchMapping("/orders/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SHIPPER')")
     public ResponseEntity<Map<String, Object>> updateOrderStatus(
             @PathVariable("id") long orderId,
             @RequestBody Map<String, String> body
@@ -53,6 +55,20 @@ public class AdminOrderController {
         if (StringUtils.hasText(newPaymentStatus) && !ALLOWED_PAYMENT_STATUSES.contains(newPaymentStatus)) {
             return ResponseEntity.badRequest()
                     .body(Map.of("error", "Invalid paymentStatus: " + newPaymentStatus));
+        }
+
+        // Check shipper permissions
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isShipper = auth.getAuthorities().stream().anyMatch(a -> "ROLE_SHIPPER".equals(a.getAuthority()));
+        if (isShipper) {
+            if (StringUtils.hasText(newOrderStatus) && !"shipped".equals(newOrderStatus)) {
+                return ResponseEntity.status(403)
+                        .body(Map.of("error", "Shipper can only set order status to 'shipped'"));
+            }
+            if (StringUtils.hasText(newPaymentStatus)) {
+                return ResponseEntity.status(403)
+                        .body(Map.of("error", "Shipper cannot update payment status"));
+            }
         }
 
         List<String> setClauses = new ArrayList<>();

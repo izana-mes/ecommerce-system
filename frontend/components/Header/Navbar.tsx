@@ -51,6 +51,7 @@ export default function Navbar() {
   const [hasUser, setHasUser] = useState(false);
   const [isAdminUser, setIsAdminUser] = useState(false);
   const [isStaffUser, setIsStaffUser] = useState(false);
+  const [isShipperUser, setIsShipperUser] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
@@ -104,17 +105,20 @@ export default function Navbar() {
       setHasUser(!!user);
       setIsAdminUser(user?.role === "admin");
       setIsStaffUser(user?.role === "employee");
+      setIsShipperUser(user?.role === "shipper");
       void fetchSearchHistory();
       void refreshCurrentUserFromServer().then((refreshed) => {
         if (!refreshed) {
           setHasUser(false);
           setIsAdminUser(false);
           setIsStaffUser(false);
+          setIsShipperUser(false);
           return;
         }
         setHasUser(true);
         setIsAdminUser(refreshed.role === "admin");
         setIsStaffUser(refreshed.role === "employee");
+        setIsShipperUser(refreshed.role === "shipper");
         void fetchSearchHistory();
       });
     };
@@ -266,15 +270,16 @@ export default function Navbar() {
   }, [menuMobileOpen, pathname]);
 
   const navLinks = useMemo(() => {
-    if (isAdminUser || isStaffUser) {
+    if (isAdminUser || isStaffUser || isShipperUser) {
       return [
         ...BASE_LINKS,
         ...STAFF_LINKS,
         ...(isAdminUser ? [{ href: "/admin", key: "nav_admin" as TranslationKey }] : []),
+        ...(isShipperUser ? [{ href: "/shipper", key: "nav_shipper" as TranslationKey }] : []),
       ];
     }
     return [...BASE_LINKS, ...CUSTOMER_LINKS];
-  }, [isAdminUser, isStaffUser]);
+  }, [isAdminUser, isStaffUser, isShipperUser]);
 
   const isCurrentLink = useCallback(
     (href: string) => {

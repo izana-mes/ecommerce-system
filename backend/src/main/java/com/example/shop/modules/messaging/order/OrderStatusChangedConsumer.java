@@ -5,6 +5,7 @@ import com.example.shop.config.ConditionalOnRabbitEnabled;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -16,6 +17,9 @@ import java.util.Map;
 public class OrderStatusChangedConsumer {
 
     private final EmailService emailService;
+
+    @Value("${application.bootstrap.admin.email}")
+    private String adminEmail;
 
     private static final Map<String, String> STATUS_LABELS = Map.of(
             "processing", "Being Processed",
@@ -76,6 +80,31 @@ public class OrderStatusChangedConsumer {
 
         emailService.sendEmail(event.getCustomerEmail(), subject, content);
         log.info("Order status change email sent to {} for order {}", event.getCustomerEmail(), event.getOrderNumber());
+
+        // Send notification to admin if order is shipped
+        if ("shipped".equals(newStatus)) {
+            String adminSubject = "Order Shipped - " + safe(event.getOrderNumber());
+            String adminContent = """
+                    <html>
+                      <body style="font-family:Arial,sans-serif;color:#111;max-width:600px;margin:0 auto;">
+                        <div style="background:linear-gradient(135deg,#1e3a5f,#2563eb);padding:24px;border-radius:12px 12px 0 0;">
+                          <h2 style="color:#fff;margin:0;">Order Shipped Notification</h2>
+                        </div>
+                        <div style="padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;">
+                          <p>Order <strong>%s</strong> has been shipped.</p>
+                          <p>Customer: %s (%s)</p>
+                          <p>Please monitor the delivery status.</p>
+                        </div>
+                      </body>
+                    </html>
+                    """.formatted(
+                    esc(event.getOrderNumber()),
+                    esc(safe(event.getCustomerName())),
+                    esc(event.getCustomerEmail())
+            );
+            emailService.sendEmail(adminEmail, adminSubject, adminContent);
+            log.info("Order shipped notification sent to admin for order {}", event.getOrderNumber());
+        }
     }
 
     private String getStatusMessage(String status) {
