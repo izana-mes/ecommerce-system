@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import styles from "./AuthRequiredModal.module.css";
 
@@ -17,12 +17,6 @@ export default function AuthRequiredModal({
   onLogin,
   message = "You need to log in before adding products to your cart.",
 }: AuthRequiredModalProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   useEffect(() => {
     if (!open) return;
 
@@ -42,7 +36,7 @@ export default function AuthRequiredModal({
     };
   }, [open, onClose]);
 
-  if (!open || !mounted) {
+  if (!open || typeof document === "undefined") {
     return null;
   }
 
@@ -79,4 +73,3 @@ export default function AuthRequiredModal({
     document.body
   );
 }
-

@@ -40,6 +40,18 @@ public class AdminOrderController {
         return s.isEmpty() ? null : s;
     }
 
+    private static boolean isTerminalOrderStatus(String value) {
+        return Set.of("shipped", "completed", "cancelled").contains(value);
+    }
+
+    private static String limit(String value, int maxLen) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.length() > maxLen ? trimmed.substring(0, maxLen) : trimmed;
+    }
+
     /**
      * PATCH /api/v1/admin/orders/{id}
      * Updates the order_status and/or payment_status of a given order.
@@ -48,7 +60,7 @@ public class AdminOrderController {
      * to {@code shipped}, optionally setting carrier / tracking fields.
      */
     @PatchMapping("/orders/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SHIPPER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE', 'SHIPPER')")
     public ResponseEntity<Map<String, Object>> updateOrderStatus(
             @PathVariable("id") long orderId,
             @RequestBody Map<String, Object> body
@@ -62,19 +74,25 @@ public class AdminOrderController {
                 && auth.isAuthenticated()
                 && auth.getAuthorities() != null
                 && auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        boolean isEmployee = auth != null
+                && auth.isAuthenticated()
+                && auth.getAuthorities() != null
+                && auth.getAuthorities().stream().anyMatch(a -> "ROLE_EMPLOYEE".equals(a.getAuthority()));
 
-        String newOrderStatus = str(body.get("orderStatus")).toLowerCase();
+        String newOrderStatus = str(body.get("orderStatus")).toLowerCase(Locale.ROOT);
         String newPaymentStatus = str(body.get("paymentStatus")).toLowerCase();
         boolean hasCarrierKey = body.containsKey("carrier");
         boolean hasTrackingKey = body.containsKey("trackingNumber");
+        String normalizedCarrier = hasCarrierKey ? limit(fulfillmentValue(body.get("carrier")), 80) : null;
+        String normalizedTracking = hasTrackingKey ? limit(fulfillmentValue(body.get("trackingNumber")), 120) : null;
 
         if (!StringUtils.hasText(newOrderStatus) && !StringUtils.hasText(newPaymentStatus)) {
-            boolean fulfillmentOnlyAllowed = isAdmin && !isShipper && (hasCarrierKey || hasTrackingKey);
+            boolean fulfillmentOnlyAllowed = (isAdmin || isEmployee) && !isShipper && (hasCarrierKey || hasTrackingKey);
             if (!fulfillmentOnlyAllowed) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("error",
                                 "At least one of orderStatus or paymentStatus must be provided, "
-                                        + "or admins may patch carrier/trackingNumber alone"));
+                                        + "or admins/employees may patch carrier/trackingNumber alone"));
             }
         }
 
@@ -88,38 +106,59 @@ public class AdminOrderController {
                     .body(Map.of("error", "Invalid paymentStatus: " + newPaymentStatus));
         }
 
-        if (isShipper) {
+        List<Map<String, Object>> snapshot = jdbcTemplate.queryForList(
+                "SELECT order_status, payment_status, payment_method, shipping_carrier, shipping_tracking_public FROM orders WHERE id = ?",
+                orderId
+        );
+        if (snapshot.isEmpty()) {
+            return ResponseEntity.status(404).body(Map.of("error", "Order not found: " + orderId));
+        }
+        String curOrderStatus = Objects.toString(snapshot.get(0).get("order_status"), "").trim().toLowerCase(Locale.ROOT);
+        String curPaymentStatus = Objects.toString(snapshot.get(0).get("payment_status"), "").trim().toLowerCase(Locale.ROOT);
+        String curPaymentMethod = Objects.toString(snapshot.get(0).get("payment_method"), "");
+        String curCarrier = limit(Objects.toString(snapshot.get(0).get("shipping_carrier"), ""), 80);
+        String curTracking = limit(Objects.toString(snapshot.get(0).get("shipping_tracking_public"), ""), 120);
+
+        if ("shipped".equals(newOrderStatus) && isTerminalOrderStatus(curOrderStatus)) {
+            return ResponseEntity.status(409)
+                    .body(Map.of("error", "Order can no longer be marked as shipped"));
+        }
+
+        if (StringUtils.hasText(normalizedTracking) && !StringUtils.hasText(normalizedCarrier) && !StringUtils.hasText(curCarrier)) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Carrier is required when trackingNumber is provided"));
+        }
+
+        if ("shipped".equals(newOrderStatus)) {
+            boolean hasAnyShipmentDetail = StringUtils.hasText(normalizedCarrier)
+                    || StringUtils.hasText(normalizedTracking)
+                    || StringUtils.hasText(curCarrier)
+                    || StringUtils.hasText(curTracking);
+            if (!hasAnyShipmentDetail) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Set carrier and/or trackingNumber before marking shipped"));
+            }
+        }
+
+        if (isShipper || isEmployee) {
             if (!StringUtils.hasText(newOrderStatus) && !StringUtils.hasText(newPaymentStatus)
                     && (hasCarrierKey || hasTrackingKey)) {
                 return ResponseEntity.status(403)
-                        .body(Map.of("error", "Shipper must set orderStatus to shipped when updating shipment details"));
+                        .body(Map.of("error", "Shipper/employee must set orderStatus to shipped when updating shipment details"));
             }
             if (StringUtils.hasText(newOrderStatus) && !"shipped".equals(newOrderStatus)) {
                 return ResponseEntity.status(403)
-                        .body(Map.of("error", "Shipper can only set order status to 'shipped'"));
+                        .body(Map.of("error", "Shipper/employee can only set order status to 'shipped'"));
             }
             if (StringUtils.hasText(newPaymentStatus)) {
                 return ResponseEntity.status(403)
-                        .body(Map.of("error", "Shipper cannot update payment status"));
-            }
-            List<Map<String, Object>> snapshot = jdbcTemplate.queryForList(
-                    "SELECT order_status, payment_status, payment_method FROM orders WHERE id = ?", orderId);
-            if (snapshot.isEmpty()) {
-                return ResponseEntity.status(404)
-                        .body(Map.of("error", "Order not found: " + orderId));
-            }
-            String curOrderStatus = Objects.toString(snapshot.get(0).get("order_status"), "").trim().toLowerCase(Locale.ROOT);
-            String curPaymentStatus = Objects.toString(snapshot.get(0).get("payment_status"), "").trim().toLowerCase(Locale.ROOT);
-            String curPaymentMethod = Objects.toString(snapshot.get(0).get("payment_method"), "");
-            if ("shipped".equals(curOrderStatus) || "completed".equals(curOrderStatus) || "cancelled".equals(curOrderStatus)) {
-                return ResponseEntity.status(409)
-                        .body(Map.of("error", "Order can no longer be marked as shipped"));
+                        .body(Map.of("error", "Shipper/employee cannot update payment status"));
             }
             if (!shipperMayMarkShipped(curOrderStatus, curPaymentStatus, curPaymentMethod)) {
                 return ResponseEntity.status(403)
                         .body(Map.of(
                                 "error",
-                                "Shipper may only ship prepaid (paid payment) orders, or Cash on Delivery orders awaiting pickup/collection"));
+                                "Shipper/employee may only ship prepaid (paid payment) orders, or Cash on Delivery orders awaiting pickup/collection"));
             }
         }
 
@@ -139,11 +178,11 @@ public class AdminOrderController {
         }
         if (hasCarrierKey) {
             setClauses.add("shipping_carrier = ?");
-            params.add(fulfillmentValue(body.get("carrier")));
+            params.add(normalizedCarrier);
         }
         if (hasTrackingKey) {
             setClauses.add("shipping_tracking_public = ?");
-            params.add(fulfillmentValue(body.get("trackingNumber")));
+            params.add(normalizedTracking);
         }
 
         setClauses.add("updated_at = CURRENT_TIMESTAMP");
@@ -167,11 +206,12 @@ public class AdminOrderController {
                 response.put("paymentStatus", newPaymentStatus);
             }
             if (hasCarrierKey) {
-                response.put("carrier", fulfillmentValue(body.get("carrier")));
+                response.put("carrier", normalizedCarrier);
             }
             if (hasTrackingKey) {
-                response.put("trackingNumber", fulfillmentValue(body.get("trackingNumber")));
+                response.put("trackingNumber", normalizedTracking);
             }
+            response.put("previousOrderStatus", curOrderStatus);
             return ResponseEntity.ok(response);
         } catch (Exception ex) {
             log.error("Failed to update order {}: {}", orderId, ex.getMessage());

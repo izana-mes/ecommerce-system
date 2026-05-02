@@ -815,6 +815,7 @@ export default function Shop() {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return sortedProducts.slice(start, start + ITEMS_PER_PAGE);
   }, [currentPage, sortedProducts]);
+  const hasSuccessfulSearch = !loading && !error && Boolean(searchQuery) && sortedProducts.length > 0;
 
   const visibleStart = sortedProducts.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1;
   const visibleEnd = Math.min(currentPage * ITEMS_PER_PAGE, sortedProducts.length);
@@ -906,11 +907,16 @@ export default function Shop() {
                   </p>
                 </div>
               )}
+              {hasSuccessfulSearch && (
+                <div className="shopSearchSuccess" role="status" aria-live="polite">
+                  Found {sortedProducts.length} products for "{searchQuery}"
+                </div>
+              )}
               <div className="shopDetailsProductsContainer">
                 {loading && (
                   <>
                     {Array.from({ length: ITEMS_PER_PAGE }, (_, index) => (
-                      <div className="sdProductSkeleton" key={`skeleton-${index}`} />
+                      <div className="sdProductSkeleton sdProductSkeletonIn" key={`skeleton-${index}`} />
                     ))}
                   </>
                 )}

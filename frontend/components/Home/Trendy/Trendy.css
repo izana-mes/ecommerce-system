@@ -86,11 +86,58 @@
   grid-gap: 40px;
 }
 
+.trendyLoadingState {
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  animation: trendyStateIn 0.35s ease both;
+}
+
+.trendyLoadingSpinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 3px solid rgba(17, 24, 39, 0.16);
+  border-top-color: rgba(17, 24, 39, 0.8);
+  animation: trendySpin 0.65s linear infinite;
+}
+
+.trendyLoadSuccess {
+  margin: 0 0 14px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(5, 150, 105, 0.35);
+  background: rgba(16, 185, 129, 0.1);
+  color: #065f46;
+  font-size: 13px;
+  animation: trendyStateIn 0.35s ease both;
+}
+
 .trendyProductContainer {
   position: relative;
   opacity: 0;
   transform: translateY(14px);
   animation: trendyCardIn 0.5s ease forwards;
+}
+
+@keyframes trendyStateIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes trendySpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .trendyProductContainer:nth-child(1) { animation-delay: 0.08s; }

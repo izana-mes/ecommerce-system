@@ -1,0 +1,103 @@
+.workspacePage {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 110px 16px 40px;
+  display: grid;
+  gap: 16px;
+}
+
+.workspaceHeader h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.workspaceHeader p {
+  margin: 8px 0 0;
+  color: #5b6270;
+}
+
+.workspaceCard {
+  border: 1px solid #d9dde5;
+  border-radius: 12px;
+  padding: 14px;
+  background: #fff;
+}
+
+.workspaceForm {
+  display: grid;
+  gap: 8px;
+}
+
+.workspaceForm input,
+.workspaceForm textarea,
+.workspaceCard select {
+  border: 1px solid #c8ced8;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.workspaceRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.workspaceRow h2 {
+  margin: 0;
+  margin-right: auto;
+}
+
+.workspaceList {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.workspaceItem {
+  border: 1px solid #e6e9ef;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.workspaceItem p {
+  margin: 6px 0 0;
+  color: #5b6270;
+}
+
+.workspaceActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.workspaceCard button {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #1f6feb;
+  color: #fff;
+  cursor: pointer;
+}
+
+.workspaceCard button:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.workspaceError {
+  color: #b42318;
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .workspaceItem {
+    flex-direction: column;
+  }
+
+  .workspaceRow {
+    flex-wrap: wrap;
+  }
+}

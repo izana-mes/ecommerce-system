@@ -11,6 +11,7 @@ type OrderRow = {
   customer_email: string;
   order_status: string;
   payment_status: string;
+  payment_method?: string | null;
   total_amount: number;
   currency: string;
   item_count: number;
@@ -36,6 +37,32 @@ function normalizeStatus(s: string): string {
   return String(s || "").trim().toLowerCase();
 }
 
+function isCodMethod(paymentMethod?: string | null): boolean {
+  const value = String(paymentMethod || "").trim().toLowerCase();
+  return value === "cod" || value.includes("cash on delivery") || (value.includes("cash") && value.includes("deliver"));
+}
+
+function canShipOrder(order: OrderRow): boolean {
+  const os = normalizeStatus(order.order_status);
+  const ps = normalizeStatus(order.payment_status);
+  const prepaidLane = ps === "paid" && (os === "paid" || os === "processing");
+  const codLane = isCodMethod(order.payment_method) && (ps === "pending" || ps === "authorized") && (os === "pending" || os === "processing");
+  return prepaidLane || codLane;
+}
+
+function formatDateTime(value?: string | null): string {
+  if (!value) return "—";
+  const ts = Date.parse(value);
+  if (Number.isNaN(ts)) return value;
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(ts);
+}
+
 export default function StaffShippingPage() {
   const router = useRouter();
   const token = getToken();
@@ -48,6 +75,8 @@ export default function StaffShippingPage() {
 
   const [carrierById, setCarrierById] = useState<Record<number, string>>({});
   const [trackingById, setTrackingById] = useState<Record<number, string>>({});
+  const [query, setQuery] = useState("");
+  const [view, setView] = useState<"ready" | "shipped" | "attention" | "all">("ready");
 
   useEffect(() => {
     const run = async () => {
@@ -120,6 +149,9 @@ export default function StaffShippingPage() {
     try {
       const carrier = (carrierById[order.id] ?? order.shipping_carrier ?? "").trim();
       const trackingNumber = (trackingById[order.id] ?? order.shipping_tracking_public ?? "").trim();
+      if (!carrier && !trackingNumber) {
+        throw new Error("Provide carrier and/or tracking number before marking shipped");
+      }
 
       const body: Record<string, unknown> = {
         orderId: order.id,
@@ -152,6 +184,28 @@ export default function StaffShippingPage() {
     return null;
   }
 
+  const filteredOrders = orders.filter((o) => {
+    const ready = canShipOrder(o);
+    const shipped = normalizeStatus(o.order_status) === "shipped" || normalizeStatus(o.order_status) === "completed";
+    const statusMatch =
+      view === "all" ? true : view === "ready" ? ready : view === "shipped" ? shipped : !ready && !shipped;
+    if (!statusMatch) return false;
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      String(o.order_number).toLowerCase().includes(q) ||
+      String(o.customer_email).toLowerCase().includes(q) ||
+      String(o.shipping_tracking_public || "").toLowerCase().includes(q) ||
+      String(o.shipping_carrier || "").toLowerCase().includes(q)
+    );
+  });
+  const readyCount = orders.filter((o) => canShipOrder(o)).length;
+  const shippedCount = orders.filter((o) => {
+    const os = normalizeStatus(o.order_status);
+    return os === "shipped" || os === "completed";
+  }).length;
+  const attentionCount = Math.max(0, orders.length - readyCount - shippedCount);
+
   if (loadingAccess) {
     return (
       <main className="shippingPage">
@@ -176,6 +230,36 @@ export default function StaffShippingPage() {
         Prepaid orders (payment confirmed) and Cash on Delivery orders awaiting dispatch appear in the queue. Pure
         shippers see that scoped slice only; admins and employees see full order history in this view.
       </p>
+      <section className="shippingStats">
+        <div className="statCard">
+          <strong>{readyCount}</strong>
+          <span>Ready to ship</span>
+        </div>
+        <div className="statCard">
+          <strong>{shippedCount}</strong>
+          <span>Shipped / completed</span>
+        </div>
+        <div className="statCard">
+          <strong>{attentionCount}</strong>
+          <span>Needs attention</span>
+        </div>
+      </section>
+      <section className="shippingToolbar">
+        <input
+          type="search"
+          value={query}
+          onChange={(ev) => setQuery(ev.target.value)}
+          placeholder="Search order #, email, tracking, carrier"
+          aria-label="Search shipping queue"
+        />
+        <div className="shippingTabs" role="tablist" aria-label="Queue view">
+          {(["ready", "shipped", "attention", "all"] as const).map((tab) => (
+            <button key={tab} type="button" className={view === tab ? "active" : ""} onClick={() => setView(tab)}>
+              {tab}
+            </button>
+          ))}
+        </div>
+      </section>
       {error ? <p style={{ color: "#b91c1c" }}>{error}</p> : null}
       {loadingOrders ? <p className="muted">Loading orders…</p> : null}
 
@@ -191,18 +275,16 @@ export default function StaffShippingPage() {
             </tr>
           </thead>
           <tbody>
-            {orders.length === 0 && !loadingOrders ? (
+            {filteredOrders.length === 0 && !loadingOrders ? (
               <tr>
                 <td colSpan={5} className="muted">
-                  No orders in this view.
+                  No orders match this view.
                 </td>
               </tr>
             ) : (
-              orders.map((o) => {
+              filteredOrders.map((o) => {
                 const os = normalizeStatus(o.order_status);
-                const ps = normalizeStatus(o.payment_status);
-                const paidOk = ps === "paid";
-                const canShipHere = paidOk && (os === "paid" || os === "processing");
+                const canShipHere = canShipOrder(o);
                 const isShipped = os === "shipped" || os === "completed";
                 return (
                   <tr key={o.id}>
@@ -256,7 +338,7 @@ export default function StaffShippingPage() {
                           {o.shipped_at ? (
                             <>
                               <br />
-                              Shipped: {o.shipped_at}
+                              Shipped: {formatDateTime(o.shipped_at)}
                             </>
                           ) : null}
                         </div>

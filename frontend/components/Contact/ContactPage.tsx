@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import "./ContactPage.css";
@@ -11,21 +11,18 @@ const ContactPage: React.FC = () => {
   const [name, setName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [message, setMessage] = useState<string>("");
-
-  useEffect(() => {
+  const prefilledMessage = useMemo(() => {
     const order = (searchParams.get("order") || "").trim();
-    if (!order) return;
-    setMessage((prev) => {
-      if (prev.trim()) return prev;
-      return `${t("contact_prefill_order")}${order}:\n\n`;
-    });
+    if (!order) return "";
+    return `${t("contact_prefill_order")}${order}:\n\n`;
   }, [searchParams, t]);
+  const displayMessage = message || prefilledMessage;
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     alert(
-      `Thank You ${name} for Contacting Us. We will Get Back to You Soon.\n\nYour Mail Id - ${email}.\nYour Message is - ${message}`
+      `Thank You ${name} for Contacting Us. We will Get Back to You Soon.\n\nYour Mail Id - ${email}.\nYour Message is - ${displayMessage}`
     );
 
     setName("");
@@ -108,7 +105,7 @@ const ContactPage: React.FC = () => {
             <textarea
               rows={10}
               placeholder={t("contact_placeholder_message")}
-              value={message}
+              value={displayMessage}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                 setMessage(e.target.value)
               }

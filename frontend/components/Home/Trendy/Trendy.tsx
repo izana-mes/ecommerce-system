@@ -37,6 +37,7 @@ export default function Trendy() {
   const [selectedProduct, setSelectedProduct] = useState<DataStore | null>(null);
   const [buyNowProductId, setBuyNowProductId] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [showLoadSuccess, setShowLoadSuccess] = useState(false);
 
   const cartItems = useAppSelector((state: RootState) => state.cart.itemsById);
   const handleCartClick = (product: DataStore) => {
@@ -181,6 +182,15 @@ export default function Trendy() {
     setIsClient(true);
   }, []);
 
+  useEffect(() => {
+    if (loading || error || products.length === 0) {
+      return;
+    }
+    setShowLoadSuccess(true);
+    const timeout = window.setTimeout(() => setShowLoadSuccess(false), 1800);
+    return () => window.clearTimeout(timeout);
+  }, [loading, error, products.length]);
+
   const handleBuyNow = async (product: DataStore) => {
     if (!isAuthenticated()) {
       setAuthAction("cart");
@@ -285,7 +295,8 @@ export default function Trendy() {
           </div>
           <div className="trendyTabContent">
             {loading && (
-              <div style={{ textAlign: "center", padding: "40px" }}>
+              <div className="trendyLoadingState">
+                <div className="trendyLoadingSpinner" />
                 <p>{t("home_loading_products")}</p>
               </div>
             )}
@@ -296,6 +307,7 @@ export default function Trendy() {
                 <p>{error}</p>
               </div>
             )}
+            {showLoadSuccess && <p className="trendyLoadSuccess">Products loaded successfully</p>}
             {!loading && !error && activeTab === "tab1" && (
               <div className="trendyMainContainer">
                 {products.slice(0, 8).map((product: DataStore) => (
