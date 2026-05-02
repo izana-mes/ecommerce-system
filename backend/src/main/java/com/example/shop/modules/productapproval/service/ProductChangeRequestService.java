@@ -193,7 +193,7 @@ public class ProductChangeRequestService {
                             }
                     );
                     if (payload != null) {
-                        payload.forEach(this::stripSupplierPin);
+                        payload.forEach(ProductChangeRequestService::stripSupplierPin);
                     }
                     productService.saveAllProducts(payload);
                 }
