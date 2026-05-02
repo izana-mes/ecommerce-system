@@ -22,6 +22,10 @@ public class OrderTrackingDto {
     private String deliveryLocationLabel;
     private BigDecimal deliveryLocationAccuracyMeters;
 
+    private String shippingCarrier;
+    private String shippingTrackingPublic;
+    private LocalDateTime shippedAt;
+
     @Builder.Default
     private List<OrderTrackingLineDto> items = new ArrayList<>();
 }

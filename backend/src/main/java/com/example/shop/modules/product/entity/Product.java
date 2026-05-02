@@ -6,6 +6,8 @@ import java.time.LocalDateTime;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.UUID;
+
 @Entity
 @Table(name = "products")
 @Getter
@@ -47,6 +49,9 @@ public class Product {
     @Builder.Default
     @Column(name = "active", nullable = false, columnDefinition = "boolean default true")
     private Boolean active = true;
+
+    @Column(name = "supplier_user_id")
+    private UUID supplierUserId;
 
 
     @CreatedDate

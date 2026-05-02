@@ -206,6 +206,9 @@ public class UserService {
         } else if ("ROLE_SUPPLIER".equals(normalizedRole)) {
             Role supplierRole = findOrCreateSystemRole("ROLE_SUPPLIER");
             nextRoles.add(supplierRole);
+        } else if ("ROLE_SHIPPER".equals(normalizedRole)) {
+            Role shipperRole = findOrCreateSystemRole("ROLE_SHIPPER");
+            nextRoles.add(shipperRole);
         }
 
         user.setRoles(nextRoles);

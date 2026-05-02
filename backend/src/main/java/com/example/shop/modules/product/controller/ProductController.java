@@ -61,6 +61,12 @@ public class ProductController {
         return ResponseEntity.ok(productService.searchSuggestions(query, limit));
     }
 
+    @GetMapping("/supplier/mine")
+    @PreAuthorize("hasRole('SUPPLIER')")
+    public ResponseEntity<List<ProductDto>> listSupplierOwnedProducts(@AuthenticationPrincipal User actor) {
+        return ResponseEntity.ok(productService.listProductsOwnedBySupplier(actor.getId()));
+    }
+
     @DeleteMapping("/search-history")
     @PreAuthorize("isFullyAuthenticated()")
     public ResponseEntity<Void> clearSearchHistory(@AuthenticationPrincipal User user) {

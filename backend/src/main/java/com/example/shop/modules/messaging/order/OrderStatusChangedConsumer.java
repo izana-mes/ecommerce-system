@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.Map;
 
@@ -82,7 +83,7 @@ public class OrderStatusChangedConsumer {
         log.info("Order status change email sent to {} for order {}", event.getCustomerEmail(), event.getOrderNumber());
 
         // Send notification to admin if order is shipped
-        if ("shipped".equals(newStatus)) {
+        if ("shipped".equals(newStatus) && StringUtils.hasText(adminEmail)) {
             String adminSubject = "Order Shipped - " + safe(event.getOrderNumber());
             String adminContent = """
                     <html>

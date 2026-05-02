@@ -29,6 +29,8 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -225,12 +227,18 @@ public class OrderServiceImpl implements OrderService {
                        o.order_number,
                        MAX(o.tracking_secret) AS tracking_secret,
                        o.customer_email,
+                       o.customer_first_name,
+                       o.customer_last_name,
                        o.total_amount,
                        o.currency,
                        o.payment_method,
                        o.payment_status,
                        o.order_status,
                        o.created_at,
+                       o.updated_at,
+                       o.shipping_carrier,
+                       o.shipping_tracking_public,
+                       o.shipped_at,
                        COALESCE(SUM(oi.quantity), 0) AS item_count
                 FROM orders o
                 LEFT JOIN order_items oi ON oi.order_id = o.id
@@ -239,18 +247,7 @@ public class OrderServiceImpl implements OrderService {
                 ORDER BY o.created_at DESC
                 LIMIT 1
                 """,
-                (rs, rowNum) -> OrderHistoryItemDto.builder()
-                        .id(rs.getLong("id"))
-                        .orderNumber(rs.getString("order_number"))
-                        .trackingSecret(rs.getString("tracking_secret"))
-                        .totalAmount(rs.getBigDecimal("total_amount"))
-                        .currency(rs.getString("currency"))
-                        .paymentMethod(rs.getString("payment_method"))
-                        .paymentStatus(rs.getString("payment_status"))
-                        .orderStatus(rs.getString("order_status"))
-                        .itemCount(rs.getInt("item_count"))
-                        .createdAt(toLocalDateTime(rs.getTimestamp("created_at")))
-                        .build(),
+                (rs, rowNum) -> mapOrderHistoryRow(rs),
                 orderNumber.toUpperCase()
         );
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
@@ -269,12 +266,18 @@ public class OrderServiceImpl implements OrderService {
                        o.order_number,
                        MAX(o.tracking_secret) AS tracking_secret,
                        o.customer_email,
+                       o.customer_first_name,
+                       o.customer_last_name,
                        o.total_amount,
                        o.currency,
                        o.payment_method,
                        o.payment_status,
                        o.order_status,
                        o.created_at,
+                       o.updated_at,
+                       o.shipping_carrier,
+                       o.shipping_tracking_public,
+                       o.shipped_at,
                        COALESCE(SUM(oi.quantity), 0) AS item_count
                 FROM orders o
                 LEFT JOIN order_items oi ON oi.order_id = o.id
@@ -283,18 +286,7 @@ public class OrderServiceImpl implements OrderService {
                 ORDER BY o.created_at DESC
                 LIMIT ?
                 """,
-                (rs, rowNum) -> OrderHistoryItemDto.builder()
-                        .id(rs.getLong("id"))
-                        .orderNumber(rs.getString("order_number"))
-                        .trackingSecret(rs.getString("tracking_secret"))
-                        .totalAmount(rs.getBigDecimal("total_amount"))
-                        .currency(rs.getString("currency"))
-                        .paymentMethod(rs.getString("payment_method"))
-                        .paymentStatus(rs.getString("payment_status"))
-                        .orderStatus(rs.getString("order_status"))
-                        .itemCount(rs.getInt("item_count"))
-                        .createdAt(toLocalDateTime(rs.getTimestamp("created_at")))
-                        .build(),
+                (rs, rowNum) -> mapOrderHistoryRow(rs),
                 email,
                 safeLimit
         );
@@ -308,17 +300,93 @@ public class OrderServiceImpl implements OrderService {
         }
         int safeLimit = Math.min(Math.max(limit, 1), 100);
 
+        if (seesAllStaffOrders(user)) {
+            if (prefersShipperOrderQueue(user)) {
+                return jdbcTemplate.query(
+                        """
+                                SELECT o.id,
+                                       o.order_number,
+                                       MAX(o.tracking_secret) AS tracking_secret,
+                                       o.customer_email,
+                                       o.customer_first_name,
+                                       o.customer_last_name,
+                                       o.total_amount,
+                                       o.currency,
+                                       o.payment_method,
+                                       o.payment_status,
+                                       o.order_status,
+                                       o.created_at,
+                                       o.updated_at,
+                                       o.shipping_carrier,
+                                       o.shipping_tracking_public,
+                                       o.shipped_at,
+                                       COALESCE(SUM(oi.quantity), 0) AS item_count
+                                FROM orders o
+                                LEFT JOIN order_items oi ON oi.order_id = o.id
+                                WHERE (
+                                    (LOWER(o.payment_status) = 'paid'
+                                        AND LOWER(o.order_status) IN ('paid', 'processing'))
+                                    OR (
+                                        LOWER(o.order_status) = 'shipped'
+                                        AND COALESCE(o.shipped_at, o.updated_at) >= (CURRENT_TIMESTAMP - INTERVAL '7 days')
+                                    )
+                                )
+                                GROUP BY o.id
+                                ORDER BY o.updated_at DESC
+                                LIMIT ?
+                                """,
+                        (rs, rowNum) -> mapOrderHistoryRow(rs),
+                        safeLimit
+                );
+            }
+            return jdbcTemplate.query(
+                    """
+                            SELECT o.id,
+                                   o.order_number,
+                                   MAX(o.tracking_secret) AS tracking_secret,
+                                   o.customer_email,
+                                   o.customer_first_name,
+                                   o.customer_last_name,
+                                   o.total_amount,
+                                   o.currency,
+                                   o.payment_method,
+                                   o.payment_status,
+                                   o.order_status,
+                                   o.created_at,
+                                   o.updated_at,
+                                   o.shipping_carrier,
+                                   o.shipping_tracking_public,
+                                   o.shipped_at,
+                                   COALESCE(SUM(oi.quantity), 0) AS item_count
+                            FROM orders o
+                            LEFT JOIN order_items oi ON oi.order_id = o.id
+                            GROUP BY o.id
+                            ORDER BY o.created_at DESC
+                            LIMIT ?
+                    """,
+                    (rs, rowNum) -> mapOrderHistoryRow(rs),
+                    safeLimit
+            );
+        }
+
         return jdbcTemplate.query(
                 """
                         SELECT o.id,
                                o.order_number,
                                MAX(o.tracking_secret) AS tracking_secret,
+                               o.customer_email,
+                               o.customer_first_name,
+                               o.customer_last_name,
                                o.total_amount,
                                o.currency,
                                o.payment_method,
                                o.payment_status,
                                o.order_status,
                                o.created_at,
+                               o.updated_at,
+                               o.shipping_carrier,
+                               o.shipping_tracking_public,
+                               o.shipped_at,
                                COALESCE(SUM(oi.quantity), 0) AS item_count
                         FROM orders o
                         LEFT JOIN order_items oi ON oi.order_id = o.id
@@ -327,18 +395,7 @@ public class OrderServiceImpl implements OrderService {
                         ORDER BY o.created_at DESC
                         LIMIT ?
                 """,
-                (rs, rowNum) -> OrderHistoryItemDto.builder()
-                        .id(rs.getLong("id"))
-                        .orderNumber(rs.getString("order_number"))
-                        .trackingSecret(rs.getString("tracking_secret"))
-                        .totalAmount(rs.getBigDecimal("total_amount"))
-                        .currency(rs.getString("currency"))
-                        .paymentMethod(rs.getString("payment_method"))
-                        .paymentStatus(rs.getString("payment_status"))
-                        .orderStatus(rs.getString("order_status"))
-                        .itemCount(rs.getInt("item_count"))
-                        .createdAt(toLocalDateTime(rs.getTimestamp("created_at")))
-                        .build(),
+                (rs, rowNum) -> mapOrderHistoryRow(rs),
                 user.getEmail(),
                 safeLimit
         );
@@ -389,7 +446,8 @@ public class OrderServiceImpl implements OrderService {
                         SELECT order_number, order_status, payment_status, created_at,
                                shipping_city, shipping_country,
                                delivery_latitude, delivery_longitude, delivery_location_label,
-                               delivery_location_accuracy_meters
+                               delivery_location_accuracy_meters,
+                               shipping_carrier, shipping_tracking_public, shipped_at
                         FROM orders WHERE id = ?
                         """,
                 (rs, rowNum) -> OrderTrackingDto.builder()
@@ -403,6 +461,9 @@ public class OrderServiceImpl implements OrderService {
                         .deliveryLongitude(rs.getBigDecimal("delivery_longitude"))
                         .deliveryLocationLabel(rs.getString("delivery_location_label"))
                         .deliveryLocationAccuracyMeters(rs.getBigDecimal("delivery_location_accuracy_meters"))
+                        .shippingCarrier(rs.getString("shipping_carrier"))
+                        .shippingTrackingPublic(rs.getString("shipping_tracking_public"))
+                        .shippedAt(toLocalDateTime(rs.getTimestamp("shipped_at")))
                         .build(),
                 orderId
         );
@@ -765,6 +826,103 @@ public class OrderServiceImpl implements OrderService {
 
     private String escapeJson(String value) {
         return safe(value).replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private boolean seesAllStaffOrders(User user) {
+        if (user.getAuthorities() == null) {
+            return false;
+        }
+        for (var authority : user.getAuthorities()) {
+            String role = authority.getAuthority();
+            if ("ROLE_ADMIN".equals(role) || "ROLE_EMPLOYEE".equals(role) || "ROLE_SHIPPER".equals(role)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Pure shippers (no admin/employee hat) see a fulfillment-centric slice instead of the entire order stream.
+     */
+    private boolean prefersShipperOrderQueue(User user) {
+        if (user.getAuthorities() == null) {
+            return false;
+        }
+        boolean shipper = false;
+        boolean privilegedStaff = false;
+        for (var authority : user.getAuthorities()) {
+            String role = authority.getAuthority();
+            if ("ROLE_SHIPPER".equals(role)) {
+                shipper = true;
+            }
+            if ("ROLE_ADMIN".equals(role) || "ROLE_EMPLOYEE".equals(role)) {
+                privilegedStaff = true;
+            }
+        }
+        return shipper && !privilegedStaff;
+    }
+
+    private OrderHistoryItemDto mapOrderHistoryRow(ResultSet rs) throws SQLException {
+        return OrderHistoryItemDto.builder()
+                .id(rs.getLong("id"))
+                .orderNumber(rs.getString("order_number"))
+                .trackingSecret(rs.getString("tracking_secret"))
+                .customerEmail(rs.getString("customer_email"))
+                .customerFirstName(rs.getString("customer_first_name"))
+                .customerLastName(rs.getString("customer_last_name"))
+                .totalAmount(rs.getBigDecimal("total_amount"))
+                .currency(rs.getString("currency"))
+                .paymentMethod(rs.getString("payment_method"))
+                .paymentStatus(rs.getString("payment_status"))
+                .orderStatus(rs.getString("order_status"))
+                .itemCount(rs.getInt("item_count"))
+                .createdAt(toLocalDateTime(rs.getTimestamp("created_at")))
+                .updatedAt(toLocalDateTime(rs.getTimestamp("updated_at")))
+                .shippingCarrier(rs.getString("shipping_carrier"))
+                .shippingTrackingPublic(rs.getString("shipping_tracking_public"))
+                .shippedAt(toLocalDateTime(rs.getTimestamp("shipped_at")))
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> fulfillmentInsightsForStaff() {
+        Long readyToShip = Optional.ofNullable(
+                jdbcTemplate.queryForObject(
+                        """
+                                SELECT COUNT(*) FROM orders
+                                WHERE LOWER(payment_status) = 'paid'
+                                    AND LOWER(order_status) IN ('paid', 'processing')
+                                    AND LOWER(order_status) <> 'cancelled'
+                                """,
+                        Long.class
+                )
+        ).orElse(0L);
+
+        Long shippedLast7Days = Optional.ofNullable(
+                jdbcTemplate.queryForObject(
+                        """
+                                SELECT COUNT(*) FROM orders
+                                WHERE LOWER(order_status) = 'shipped'
+                                    AND COALESCE(shipped_at, updated_at)
+                                        >= CURRENT_TIMESTAMP - INTERVAL '7 days'
+                                """,
+                        Long.class
+                )
+        ).orElse(0L);
+
+        Long pendingCheckout = Optional.ofNullable(
+                jdbcTemplate.queryForObject(
+                        "SELECT COUNT(*) FROM orders WHERE LOWER(order_status) = 'pending'",
+                        Long.class
+                )
+        ).orElse(0L);
+
+        return Map.of(
+                "readyToShip", readyToShip,
+                "shippedLast7Days", shippedLast7Days,
+                "pendingCheckoutOrders", pendingCheckout
+        );
     }
 
     private LocalDateTime toLocalDateTime(Timestamp timestamp) {

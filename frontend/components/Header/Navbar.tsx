@@ -39,6 +39,7 @@ const STAFF_LINKS = [
   { href: "/staff/attendance", key: "nav_attendance" as TranslationKey },
   { href: "/staff/chatbot", key: "nav_assistant" as TranslationKey },
   { href: "/staff/support-chat", key: "nav_inbox" as TranslationKey },
+  { href: "/staff/shipping", key: "nav_fulfillment" as TranslationKey },
 ];
 
 export default function Navbar() {
@@ -275,7 +276,6 @@ export default function Navbar() {
         ...BASE_LINKS,
         ...STAFF_LINKS,
         ...(isAdminUser ? [{ href: "/admin", key: "nav_admin" as TranslationKey }] : []),
-        ...(isShipperUser ? [{ href: "/shipper", key: "nav_shipper" as TranslationKey }] : []),
       ];
     }
     return [...BASE_LINKS, ...CUSTOMER_LINKS];

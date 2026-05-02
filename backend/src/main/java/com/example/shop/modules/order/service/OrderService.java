@@ -7,6 +7,7 @@ import com.example.shop.modules.order.dto.OrderTrackingDto;
 import com.example.shop.modules.user.entity.User;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface OrderService {
@@ -27,4 +28,9 @@ public interface OrderService {
     Optional<OrderTrackingDto> getOrderTrackingBySecret(String trackingSecret);
 
     Optional<OrderTrackingDto> getOrderTrackingByNumberForCustomer(String orderNumber, User user);
+
+    /**
+     * Counts useful for ops dashboards (employees / admins). Shippers do not receive payment-sensitive splits here.
+     */
+    Map<String, Long> fulfillmentInsightsForStaff();
 }

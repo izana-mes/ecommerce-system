@@ -629,13 +629,17 @@ function summarizeAuditDetails(details: Record<string, unknown> | null | undefin
   return fallback.length > 0 ? fallback.join(" • ") : "Structured metadata available";
 }
 
-function resolveAdminUserRole(user: { role?: string; roles?: string[] }): "user" | "employee" | "supplier" | "admin" {
+function resolveAdminUserRole(
+  user: { role?: string; roles?: string[] }
+): "user" | "employee" | "supplier" | "admin" | "shipper" {
   if ((user.role || "").toLowerCase() === "admin") return "admin";
   if ((user.role || "").toLowerCase() === "employee") return "employee";
   if ((user.role || "").toLowerCase() === "supplier") return "supplier";
+  if ((user.role || "").toLowerCase() === "shipper") return "shipper";
   if (Array.isArray(user.roles) && user.roles.some((role) => role.toUpperCase() === "ROLE_ADMIN")) return "admin";
   if (Array.isArray(user.roles) && user.roles.some((role) => role.toUpperCase() === "ROLE_EMPLOYEE")) return "employee";
   if (Array.isArray(user.roles) && user.roles.some((role) => role.toUpperCase() === "ROLE_SUPPLIER")) return "supplier";
+  if (Array.isArray(user.roles) && user.roles.some((role) => role.toUpperCase() === "ROLE_SHIPPER")) return "shipper";
   return "user";
 }
 
@@ -714,6 +718,11 @@ export default function AdminPage() {
   const [dashboardDays, setDashboardDays] = useState(7);
   const [dashboardRecentLimit, setDashboardRecentLimit] = useState(8);
   const [dashboardLowStockThreshold, setDashboardLowStockThreshold] = useState(5);
+  const [fulfillmentInsights, setFulfillmentInsights] = useState<{
+    readyToShip: number;
+    shippedLast7Days: number;
+    pendingCheckoutOrders: number;
+  } | null>(null);
 
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -1113,6 +1122,33 @@ export default function AdminPage() {
       setLoadingDashboard(false);
     }
   }, [dashboardDays, dashboardLowStockThreshold, dashboardRecentLimit, router, token]);
+
+  const fetchFulfillmentInsights = useCallback(async () => {
+    if (!token) return;
+    try {
+      const response = await fetch("/api/auth/staff-order-insights", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.data) {
+        setFulfillmentInsights(null);
+        return;
+      }
+      const d = payload.data as Record<string, unknown>;
+      setFulfillmentInsights({
+        readyToShip: Number(d.readyToShip ?? 0) || 0,
+        shippedLast7Days: Number(d.shippedLast7Days ?? 0) || 0,
+        pendingCheckoutOrders: Number(d.pendingCheckoutOrders ?? 0) || 0,
+      });
+    } catch {
+      setFulfillmentInsights(null);
+    }
+  }, [token]);
 
   const fetchUsers = useCallback(
     async (targetPage: number) => {
@@ -1891,6 +1927,7 @@ export default function AdminPage() {
 
     if (activeTab === "overview") {
       void fetchDashboard();
+      void fetchFulfillmentInsights();
     } else if (activeTab === "requests") {
       void Promise.all([fetchProductRequests(), fetchSupplierRequests()]);
     } else if (activeTab === "users") {
@@ -1921,6 +1958,7 @@ export default function AdminPage() {
     fetchAuditEvents,
     fetchAttendance,
     fetchDashboard,
+    fetchFulfillmentInsights,
     fetchInventoryHealth,
     fetchNotes,
     fetchOrders,
@@ -1947,18 +1985,33 @@ export default function AdminPage() {
 
     const interval = activeTab === "queues" || activeTab === "health" ? 30000 : 60000;
     const timer = window.setInterval(() => {
-      if (activeTab === "overview") void fetchDashboard();
-      else if (activeTab === "orders") void fetchOrders(orderPage);
+      if (activeTab === "overview") {
+        void fetchDashboard();
+        void fetchFulfillmentInsights();
+      } else if (activeTab === "orders") void fetchOrders(orderPage);
       else if (activeTab === "attendance") void fetchAttendance();
       else if (activeTab === "queues") void fetchQueues();
       else if (activeTab === "health") void fetchSystemHealth();
     }, interval);
 
     return () => window.clearInterval(timer);
-  }, [activeTab, fetchAttendance, fetchDashboard, fetchOrders, fetchQueues, fetchSystemHealth, orderPage]);
+  }, [
+    activeTab,
+    fetchAttendance,
+    fetchDashboard,
+    fetchFulfillmentInsights,
+    fetchOrders,
+    fetchQueues,
+    fetchSystemHealth,
+    orderPage,
+  ]);
 
   const handleRefreshActiveTab = useCallback(async () => {
-    if (activeTab === "overview") { await fetchDashboard(); return; }
+    if (activeTab === "overview") {
+      await fetchDashboard();
+      await fetchFulfillmentInsights();
+      return;
+    }
     if (activeTab === "requests") { await Promise.all([fetchProductRequests(), fetchSupplierRequests()]); return; }
     if (activeTab === "users") { await fetchUsers(userPage); return; }
     if (activeTab === "orders") { await fetchOrders(orderPage); return; }
@@ -1977,6 +2030,7 @@ export default function AdminPage() {
     fetchAuditEvents,
     fetchAttendance,
     fetchDashboard,
+    fetchFulfillmentInsights,
     fetchInventoryHealth,
     fetchNotes,
     fetchOrders,
@@ -2036,7 +2090,10 @@ export default function AdminPage() {
     }
   };
 
-  const handleUpdateUserRole = async (user: AdminUser, nextRole: "user" | "employee" | "supplier" | "admin") => {
+  const handleUpdateUserRole = async (
+    user: AdminUser,
+    nextRole: "user" | "employee" | "supplier" | "admin" | "shipper"
+  ) => {
     if (!token) {
       router.replace("/login");
       return;
@@ -2076,7 +2133,9 @@ export default function AdminPage() {
                       ? ["ROLE_USER", "ROLE_SUPPLIER"]
                     : nextRole === "employee"
                       ? ["ROLE_USER", "ROLE_EMPLOYEE"]
-                      : ["ROLE_USER"],
+                      : nextRole === "shipper"
+                        ? ["ROLE_USER", "ROLE_SHIPPER"]
+                        : ["ROLE_USER"],
               }
             : item
         )
@@ -3195,6 +3254,21 @@ export default function AdminPage() {
                     <h3>{dashboard.totalWishlistItems}</h3>
                     <span>{dashboard.uniqueWishlistUsers} users with wishlist activity</span>
                   </div>
+                  <div className="overviewCard">
+                    <p>Ready to dispatch</p>
+                    <h3>{fulfillmentInsights?.readyToShip ?? "—"}</h3>
+                    <span>Paid orders queued for fulfillment</span>
+                  </div>
+                  <div className="overviewCard">
+                    <p>Shipped (7 days)</p>
+                    <h3>{fulfillmentInsights?.shippedLast7Days ?? "—"}</h3>
+                    <span>Recent completions out the door</span>
+                  </div>
+                  <div className="overviewCard">
+                    <p>Checkout pending</p>
+                    <h3>{fulfillmentInsights?.pendingCheckoutOrders ?? "—"}</h3>
+                    <span>Orders still in customer checkout state</span>
+                  </div>
                 </div>
 
                 <div className="overviewSections">
@@ -3743,13 +3817,19 @@ export default function AdminPage() {
                                   onChange={(event) =>
                                     void handleUpdateUserRole(
                                       user,
-                                      event.target.value as "user" | "employee" | "supplier" | "admin"
+                                      event.target.value as
+                                        | "user"
+                                        | "employee"
+                                        | "supplier"
+                                        | "shipper"
+                                        | "admin"
                                     )
                                   }
                                 >
                                   <option value="user">User</option>
                                   <option value="employee">Employee</option>
                                   <option value="supplier">Supplier</option>
+                                  <option value="shipper">Shipper</option>
                                   <option value="admin">Admin</option>
                                 </select>
                               </td>

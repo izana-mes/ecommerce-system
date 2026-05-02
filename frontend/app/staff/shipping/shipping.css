@@ -1,0 +1,94 @@
+.shippingPage {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  font-family: system-ui, sans-serif;
+}
+
+.shippingPage h1 {
+  font-size: 1.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.shippingIntro {
+  color: #555;
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+
+.shippingTableWrap {
+  overflow-x: auto;
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+}
+
+.shippingTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.shippingTable th,
+.shippingTable td {
+  padding: 0.55rem 0.65rem;
+  text-align: left;
+  border-bottom: 1px solid #f0f0f2;
+  vertical-align: top;
+}
+
+.shippingTable th {
+  background: #fafafa;
+  font-weight: 600;
+}
+
+.shipForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 180px;
+}
+
+.shipForm input {
+  padding: 0.35rem 0.45rem;
+  border: 1px solid #d4d4d8;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.shipForm button {
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  border: none;
+  background: #18181b;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.shipForm button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: #f4f4f5;
+}
+
+.badgeReady {
+  background: #ecfdf3;
+  color: #166534;
+}
+
+.badgeShipped {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.muted {
+  color: #71717a;
+  font-size: 0.8rem;
+}

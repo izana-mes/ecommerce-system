@@ -38,13 +38,15 @@ const LoginSignUp = () => {
     error instanceof Error ? error.message : fallback;
   const resolveRole = (
     profile: { role?: string; roles?: string[] } | null | undefined
-  ): "user" | "admin" | "employee" | "supplier" => {
+  ): "user" | "admin" | "employee" | "supplier" | "shipper" => {
     if (profile?.role === "admin") return "admin";
     if (profile?.role === "employee") return "employee";
     if (profile?.role === "supplier") return "supplier";
+    if (profile?.role === "shipper") return "shipper";
     if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_ADMIN")) return "admin";
     if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_EMPLOYEE")) return "employee";
     if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_SUPPLIER")) return "supplier";
+    if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_SHIPPER")) return "shipper";
 
     return "user";
   };
@@ -117,7 +119,7 @@ const LoginSignUp = () => {
 
       let resolvedUser = {
         email: loginEmail,
-        role: "user" as "user" | "admin" | "employee" | "supplier",
+        role: "user" as "user" | "admin" | "employee" | "supplier" | "shipper",
         firstName: undefined as string | undefined,
         lastName: undefined as string | undefined,
         id: undefined as string | number | undefined,

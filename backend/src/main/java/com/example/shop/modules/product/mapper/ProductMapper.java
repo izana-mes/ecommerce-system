@@ -14,6 +14,7 @@ public interface ProductMapper {
     ProductDto toDto(Product entity);
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "supplierUserId", ignore = true)
     Product toEntity(ProductDto dto);
 
     default List<String> map(String value) {

@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -135,6 +136,9 @@ public class ProductServiceImpl implements ProductService {
 
         Product entity = productMapper.toEntity(productDto);
         applyInventoryDefaults(entity, productDto);
+        if (productDto.getSupplierUserId() != null) {
+            entity.setSupplierUserId(productDto.getSupplierUserId());
+        }
         Product saved = productRepository.save(entity);
         return productMapper.toDto(saved);
     }
@@ -192,9 +196,42 @@ public class ProductServiceImpl implements ProductService {
         existing.setProductReviews(dto.getProductReviews());
         existing.setSizes(productMapper.map(dto.getSizes()));
         applyInventoryDefaults(existing, dto);
+        if (dto.getSupplierUserId() != null) {
+            existing.setSupplierUserId(dto.getSupplierUserId());
+        }
 
         Product saved = productRepository.save(existing);
         return productMapper.toDto(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductDto> listProductsOwnedBySupplier(UUID supplierUserId) {
+        if (supplierUserId == null) {
+            return List.of();
+        }
+        return productRepository.findBySupplierUserIdOrderByIdAsc(supplierUserId)
+                .stream()
+                .map(productMapper::toDto)
+                .toList();
+    }
+
+    @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_ALL, allEntries = true),
+            @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SEARCH, allEntries = true),
+            @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SUGGEST, allEntries = true),
+            @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_INVENTORY_HEALTH, allEntries = true),
+            @CacheEvict(cacheNames = RedisCacheConfig.ADMIN_DASHBOARD, allEntries = true)
+    })
+    public void assignSupplierToProduct(String productId, UUID supplierUserId) {
+        if (!StringUtils.hasText(productId) || supplierUserId == null) {
+            return;
+        }
+        Product existing = productRepository.findByProductID(productId)
+                .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productId));
+        existing.setSupplierUserId(supplierUserId);
+        productRepository.save(existing);
     }
 
     @Override

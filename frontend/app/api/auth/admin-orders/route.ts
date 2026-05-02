@@ -62,6 +62,18 @@ function normalizeOrder(item: BackendOrder) {
     item_count: Number(item.item_count ?? item.itemCount ?? 0),
     created_at: String(item.created_at ?? item.createdAt ?? new Date().toISOString()),
     updated_at: String(item.updated_at ?? item.updatedAt ?? new Date().toISOString()),
+    shipping_carrier:
+      item.shipping_carrier != null || item.shippingCarrier != null
+        ? String(item.shipping_carrier ?? item.shippingCarrier ?? "").trim() || null
+        : null,
+    shipping_tracking_public:
+      item.shipping_tracking_public != null || item.shippingTrackingPublic != null
+        ? String(item.shipping_tracking_public ?? item.shippingTrackingPublic ?? "").trim() || null
+        : null,
+    shipped_at:
+      item.shipped_at != null || item.shippedAt != null
+        ? String(item.shipped_at ?? item.shippedAt ?? "").trim() || null
+        : null,
   };
 }
 
@@ -158,7 +170,13 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
 
-    const { orderId, orderStatus, paymentStatus } = body as Record<string, unknown>;
+    const {
+      orderId,
+      orderStatus,
+      paymentStatus,
+      carrier,
+      trackingNumber,
+    } = body as Record<string, unknown>;
 
     if (!orderId || typeof orderId !== "number" || !Number.isFinite(orderId) || orderId <= 0) {
       return NextResponse.json({ error: "Missing or invalid orderId" }, { status: 400 });
@@ -167,10 +185,16 @@ export async function PATCH(request: Request) {
     const patchBody: Record<string, string> = {};
     if (orderStatus && typeof orderStatus === "string") patchBody.orderStatus = orderStatus;
     if (paymentStatus && typeof paymentStatus === "string") patchBody.paymentStatus = paymentStatus;
+    if ("carrier" in body && carrier !== undefined && (typeof carrier === "string" || carrier === null)) {
+      patchBody.carrier = typeof carrier === "string" ? carrier : "";
+    }
+    if ("trackingNumber" in body && trackingNumber !== undefined && (typeof trackingNumber === "string" || trackingNumber === null)) {
+      patchBody.trackingNumber = typeof trackingNumber === "string" ? trackingNumber : "";
+    }
 
     if (Object.keys(patchBody).length === 0) {
       return NextResponse.json(
-        { error: "At least one of orderStatus or paymentStatus must be provided" },
+        { error: "At least one of orderStatus, paymentStatus, carrier, or trackingNumber must be provided" },
         { status: 400 }
       );
     }

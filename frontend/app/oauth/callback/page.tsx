@@ -10,11 +10,15 @@ import { fetchWishlistAsync } from "@/store/wishListSlice";
 
 function resolveRole(
   profile: { role?: string; roles?: string[] } | null | undefined
-): "user" | "admin" | "employee" {
+): "user" | "admin" | "employee" | "supplier" | "shipper" {
   if (profile?.role === "admin") return "admin";
   if (profile?.role === "employee") return "employee";
+  if (profile?.role === "supplier") return "supplier";
+  if (profile?.role === "shipper") return "shipper";
   if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_ADMIN")) return "admin";
   if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_EMPLOYEE")) return "employee";
+  if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_SUPPLIER")) return "supplier";
+  if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_SHIPPER")) return "shipper";
 
   return "user";
 }

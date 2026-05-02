@@ -12,6 +12,10 @@ public class OrderHistoryItemDto {
     private Long id;
     private String orderNumber;
     private String trackingSecret;
+    /** Populated for staff-scoped listings and admin lookups; optional for legacy customer-only rows */
+    private String customerEmail;
+    private String customerFirstName;
+    private String customerLastName;
     private BigDecimal totalAmount;
     private String currency;
     private String paymentMethod;
@@ -19,4 +23,8 @@ public class OrderHistoryItemDto {
     private String orderStatus;
     private int itemCount;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private String shippingCarrier;
+    private String shippingTrackingPublic;
+    private LocalDateTime shippedAt;
 }

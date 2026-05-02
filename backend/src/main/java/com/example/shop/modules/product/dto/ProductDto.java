@@ -1,9 +1,11 @@
 package com.example.shop.modules.product.dto;
 
 import lombok.Data;
+
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 public class ProductDto implements Serializable {
@@ -20,4 +22,5 @@ public class ProductDto implements Serializable {
     private List<String> sizes;
     private Integer stockQuantity;
     private Boolean active;
+    private UUID supplierUserId;
 }

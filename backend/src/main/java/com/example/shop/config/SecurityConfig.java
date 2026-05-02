@@ -92,6 +92,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/internal/notifications/coupon-issued").permitAll()
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/products/supplier/mine").hasRole("SUPPLIER")
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/products/stock/validate-reserve").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/products/stock/release").permitAll()

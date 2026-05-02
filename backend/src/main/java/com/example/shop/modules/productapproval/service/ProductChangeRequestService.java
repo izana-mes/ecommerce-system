@@ -11,7 +11,9 @@ import com.example.shop.modules.productapproval.entity.ProductChangeAction;
 import com.example.shop.modules.productapproval.entity.ProductChangeRequest;
 import com.example.shop.modules.productapproval.entity.ProductChangeRequestStatus;
 import com.example.shop.modules.productapproval.repository.ProductChangeRequestRepository;
+import com.example.shop.modules.role.entity.Role;
 import com.example.shop.modules.user.entity.User;
+import com.example.shop.modules.user.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,6 +39,7 @@ import java.util.stream.Collectors;
 public class ProductChangeRequestService {
 
     private final ProductChangeRequestRepository productChangeRequestRepository;
+    private final UserRepository userRepository;
     private final ProductService productService;
     private final ObjectMapper objectMapper;
     private final AdminAuditLogger adminAuditLogger;
@@ -170,10 +173,16 @@ public class ProductChangeRequestService {
             switch (request.getActionType()) {
                 case CREATE -> {
                     ProductDto payload = objectMapper.readValue(request.getRequestPayload(), ProductDto.class);
+                    stripSupplierPin(payload);
                     productService.createProduct(payload);
+                    UUID supplierAssigneeId = resolveSupplierAssignee(request);
+                    if (supplierAssigneeId != null && StringUtils.hasText(payload.getProductID())) {
+                        productService.assignSupplierToProduct(payload.getProductID(), supplierAssigneeId);
+                    }
                 }
                 case UPDATE -> {
                     ProductDto payload = objectMapper.readValue(request.getRequestPayload(), ProductDto.class);
+                    stripSupplierPin(payload);
                     productService.updateProduct(request.getTargetProductId(), payload);
                 }
                 case DELETE -> productService.deleteProduct(request.getTargetProductId());
@@ -183,12 +192,36 @@ public class ProductChangeRequestService {
                             new TypeReference<>() {
                             }
                     );
+                    if (payload != null) {
+                        payload.forEach(this::stripSupplierPin);
+                    }
                     productService.saveAllProducts(payload);
                 }
             }
         } catch (JsonProcessingException ex) {
             throw new BusinessException("Invalid request payload", HttpStatus.BAD_REQUEST);
         }
+    }
+
+    private static void stripSupplierPin(ProductDto dto) {
+        if (dto != null) {
+            dto.setSupplierUserId(null);
+        }
+    }
+
+    private UUID resolveSupplierAssignee(ProductChangeRequest request) {
+        User ref = request.getRequestedBy();
+        if (ref == null || ref.getId() == null) {
+            return null;
+        }
+        User loaded = userRepository.findById(ref.getId()).orElse(null);
+        if (loaded == null || loaded.getRoles() == null) {
+            return null;
+        }
+        boolean supplier = loaded.getRoles().stream()
+                .map(Role::getName)
+                .anyMatch("ROLE_SUPPLIER"::equals);
+        return supplier ? loaded.getId() : null;
     }
 
     private String toJson(Object payload) {

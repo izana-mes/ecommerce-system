@@ -38,6 +38,7 @@ public class UserSummaryResponse {
                 ? "admin"
                 : roles.stream().anyMatch("ROLE_EMPLOYEE"::equalsIgnoreCase) ? "employee"
                 : roles.stream().anyMatch("ROLE_SUPPLIER"::equalsIgnoreCase) ? "supplier"
+                : roles.stream().anyMatch("ROLE_SHIPPER"::equalsIgnoreCase) ? "shipper"
                 : "user";
 
         return UserSummaryResponse.builder()
