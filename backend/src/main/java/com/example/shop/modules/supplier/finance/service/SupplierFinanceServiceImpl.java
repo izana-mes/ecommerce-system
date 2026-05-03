@@ -34,7 +34,7 @@ public class SupplierFinanceServiceImpl implements SupplierFinanceService {
     // ── Public API ────────────────────────────────────────────────────────────
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public SupplierBalanceDto getBalance(UUID supplierUserId) {
         SupplierBalance balance = getOrCreateBalance(supplierUserId);
         return toBalanceDto(balance);

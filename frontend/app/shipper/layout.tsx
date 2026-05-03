@@ -8,18 +8,31 @@ import { getUser, logout, logoutServerSession, subscribeToAuthChanges } from "@/
 import {
   MdDashboard,
   MdLocationOn,
-  MdBarChart,
   MdWarning,
   MdLocalShipping,
   MdLogout,
   MdPerson,
+  MdMail,
 } from "react-icons/md";
 
-const NAV_ITEMS = [
+type ShipperNavItem = {
+  label: string;
+  icon: React.ReactNode;
+  href: string;
+  /** Visually emphasize (e.g. inbox for customer/admin messages). */
+  highlight?: boolean;
+};
+
+const NAV_ITEMS: ShipperNavItem[] = [
   { label: "Overview", icon: <MdDashboard />, href: "/shipper/dashboard" },
+  {
+    label: "Inbox",
+    icon: <MdMail />,
+    href: "/staff/support-chat",
+    highlight: true,
+  },
   { label: "My Orders", icon: <MdLocalShipping />, href: "/shipper/orders" },
   { label: "Live Tracking", icon: <MdLocationOn />, href: "/shipper/tracking" },
-  { label: "Performance", icon: <MdBarChart />, href: "/shipper/performance" },
   { label: "Issues & Help", icon: <MdWarning />, href: "/shipper/issues" },
 ];
 
@@ -77,12 +90,15 @@ export default function ShipperLayout({ children }: { children: React.ReactNode 
             const active =
               item.href === "/shipper/dashboard"
                 ? pathname === "/shipper/dashboard" || pathname === "/shipper"
-                : pathname.startsWith(item.href);
+                : item.href === "/staff/support-chat"
+                  ? pathname.startsWith("/staff/support-chat")
+                  : pathname.startsWith(item.href);
+            const extra = item.highlight ? " sh-nav-link--inbox" : "";
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`sh-nav-link${active ? " active" : ""}`}
+                className={`sh-nav-link${extra}${active ? " active" : ""}`}
               >
                 <span className="sh-nav-link-icon">{item.icon}</span>
                 {item.label}

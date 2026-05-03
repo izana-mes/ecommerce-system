@@ -5,6 +5,24 @@ import { usePathname, useRouter } from "next/navigation";
 import { CSSProperties, useEffect, useState } from "react";
 import { getUser, isAuthenticated, subscribeToAuthChanges } from "@/lib/auth";
 
+const STAFF_NAV = [
+  { name: "Dashboard", path: "/staff" },
+  { name: "Orders", path: "/staff/orders" },
+  { name: "Shippers", path: "/staff/shippers" },
+  { name: "Issues", path: "/staff/issues" },
+  { name: "SLA Monitoring", path: "/staff/sla" },
+];
+
+/** Shippers may open /staff/support-chat for inbox only — hide other staff tools. */
+const SHIPPER_STAFF_NAV = [
+  { name: "Delivery hub", path: "/shipper/dashboard" },
+  { name: "Inbox", path: "/staff/support-chat" },
+];
+
+function isStaffAreaRole(role: string | undefined): boolean {
+  return role === "admin" || role === "employee" || role === "shipper";
+}
+
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -14,36 +32,42 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
     const checkAuth = () => {
       const auth = isAuthenticated();
       const user = getUser();
-      if (!auth || (user?.role !== "admin" && user?.role !== "employee")) {
+      if (!auth || !isStaffAreaRole(user?.role)) {
         router.push("/login?redirect=/staff");
-      } else {
-        setIsAuthLoading(false);
+        return;
       }
+      setIsAuthLoading(false);
     };
-    
+
     checkAuth();
     return subscribeToAuthChanges(checkAuth);
   }, [router]);
 
   if (isAuthLoading) return <div style={{ padding: 40, textAlign: "center" }}>Loading...</div>;
 
-  const navItems = [
-    { name: "Dashboard", path: "/staff" },
-    { name: "Orders", path: "/staff/orders" },
-    { name: "Shippers", path: "/staff/shippers" },
-    { name: "Issues", path: "/staff/issues" },
-    { name: "SLA Monitoring", path: "/staff/sla" },
-  ];
+  const user = getUser();
+  const isShipper = user?.role === "shipper";
+  const navItems = isShipper ? SHIPPER_STAFF_NAV : STAFF_NAV;
+  const portalTitle = isShipper ? "Shipper" : "Staff Portal";
+  const portalSubtitle = isShipper ? "Messages" : null;
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#f6f7fb" }}>
       <aside style={{ width: 250, background: "#101828", color: "#fff", padding: "24px 0", flexShrink: 0 }}>
         <div style={{ padding: "0 24px", marginBottom: 32 }}>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>Staff Portal</h2>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>{portalTitle}</h2>
+          {portalSubtitle ? (
+            <p style={{ margin: "6px 0 0", fontSize: 12, color: "#9ca3af" }}>{portalSubtitle}</p>
+          ) : null}
         </div>
         <nav style={{ display: "grid", gap: 4, padding: "0 12px" }}>
           {navItems.map((item) => {
-            const active = item.path === "/staff" ? pathname === "/staff" : pathname.startsWith(item.path);
+            const active =
+              item.path === "/staff"
+                ? pathname === "/staff"
+                : item.path === "/shipper/dashboard"
+                  ? pathname === "/shipper/dashboard" || pathname === "/shipper"
+                  : pathname.startsWith(item.path);
             const style: CSSProperties = {
               display: "block",
               padding: "10px 14px",

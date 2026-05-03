@@ -135,6 +135,22 @@
   padding-left: 11px;
 }
 
+.sh-nav-link.sh-nav-link--inbox {
+  color: #e2e8f0;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.sh-nav-link.sh-nav-link--inbox:hover {
+  background: rgba(59, 130, 246, 0.18);
+  color: #fff;
+}
+
+.sh-nav-link.sh-nav-link--inbox.active {
+  border-color: rgba(96, 165, 250, 0.55);
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.28) 0%, rgba(59, 130, 246, 0.1) 100%);
+}
+
 .sh-nav-link-icon {
   font-size: 18px;
   flex-shrink: 0;

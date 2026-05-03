@@ -15,6 +15,7 @@ export type TranslationKey =
   | "nav_assistant"
   | "nav_inbox"
   | "nav_attendance"
+  | "nav_expenses"
   | "search_placeholder"
   | "search_aria"
   | "account_aria"
@@ -345,6 +346,7 @@ export const translations: Record<Locale, Dictionary> = {
     nav_assistant: "ASSISTANT",
     nav_inbox: "INBOX",
     nav_attendance: "ATTENDANCE",
+    nav_expenses: "EXPENSES",
     search_placeholder: "Search products",
     search_aria: "Search products",
     account_aria: "Account",
@@ -672,6 +674,7 @@ export const translations: Record<Locale, Dictionary> = {
     nav_assistant: "アシスタント",
     nav_inbox: "受信箱",
     nav_attendance: "勤怠",
+    nav_expenses: "支出管理",
     search_placeholder: "商品を検索",
     search_aria: "商品を検索",
     account_aria: "アカウント",

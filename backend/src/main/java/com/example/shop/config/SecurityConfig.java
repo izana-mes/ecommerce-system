@@ -109,7 +109,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/support-chat/messages").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/support-chat/messages").permitAll()
                         .requestMatchers("/api/v1/supplier/**").authenticated()
-                        .requestMatchers("/api/v1/staff/**").hasAnyRole("ADMIN", "EMPLOYEE")
+                        .requestMatchers("/api/v1/staff/**").hasAnyRole("ADMIN", "STAFF", "EMPLOYEE")
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

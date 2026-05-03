@@ -548,6 +548,12 @@ export default function ProfilePage() {
                 <Link href="/orders">{t("profile_view_history")}</Link>
               </span>
             </div>
+            <div className="profileField">
+              <span className="profileLabel">Spending</span>
+              <span className="profileValue">
+                <Link href="/expenses">Expense management</Link>
+              </span>
+            </div>
             {!isAdmin && !isSupplier && !isShipper ? (
               <div className="profileField">
                 <span className="profileLabel">Dashboard</span>

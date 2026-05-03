@@ -199,6 +199,7 @@ export default function UserDashboardPage() {
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <Link href="/shop" style={primaryLinkStyle}>Shop now</Link>
             <Link href="/orders" style={secondaryLinkStyle}>Order history</Link>
+            <Link href="/expenses" style={secondaryLinkStyle}>Expense management</Link>
             <Link href="/wishlist" style={secondaryLinkStyle}>Wishlist</Link>
             <Link href="/profile" style={secondaryLinkStyle}>Account settings</Link>
           </div>

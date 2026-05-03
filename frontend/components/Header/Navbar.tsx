@@ -42,6 +42,13 @@ const STAFF_LINKS = [
   { href: "/staff/shipping", key: "nav_fulfillment" as TranslationKey },
 ];
 
+/** Shippers only need site home, inbox (user/admin messages), and the delivery portal — not staff tools or shop chrome. */
+const SHIPPER_NAV_LINKS = [
+  { href: "/", key: "nav_home" as TranslationKey },
+  { href: "/staff/support-chat", key: "nav_inbox" as TranslationKey },
+  { href: "/shipper/dashboard", key: "nav_shipper" as TranslationKey },
+];
+
 export default function Navbar() {
   const { locale, setLocale, t } = useLocale();
   const router = useRouter();
@@ -53,6 +60,7 @@ export default function Navbar() {
   const [isAdminUser, setIsAdminUser] = useState(false);
   const [isStaffUser, setIsStaffUser] = useState(false);
   const [isShipperUser, setIsShipperUser] = useState(false);
+  const [isSupplierUser, setIsSupplierUser] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
@@ -107,6 +115,7 @@ export default function Navbar() {
       setIsAdminUser(user?.role === "admin");
       setIsStaffUser(user?.role === "employee");
       setIsShipperUser(user?.role === "shipper");
+      setIsSupplierUser(user?.role === "supplier");
       void fetchSearchHistory();
       void refreshCurrentUserFromServer().then((refreshed) => {
         if (!refreshed) {
@@ -114,12 +123,14 @@ export default function Navbar() {
           setIsAdminUser(false);
           setIsStaffUser(false);
           setIsShipperUser(false);
+          setIsSupplierUser(false);
           return;
         }
         setHasUser(true);
         setIsAdminUser(refreshed.role === "admin");
         setIsStaffUser(refreshed.role === "employee");
         setIsShipperUser(refreshed.role === "shipper");
+        setIsSupplierUser(refreshed.role === "supplier");
         void fetchSearchHistory();
       });
     };
@@ -270,7 +281,12 @@ export default function Navbar() {
     };
   }, [menuMobileOpen, pathname]);
 
+  const isPureShipper = isShipperUser && !isAdminUser && !isStaffUser;
+
   const navLinks = useMemo(() => {
+    if (isPureShipper) {
+      return [...SHIPPER_NAV_LINKS];
+    }
     if (isAdminUser || isStaffUser || isShipperUser) {
       return [
         ...BASE_LINKS,
@@ -278,12 +294,21 @@ export default function Navbar() {
         ...(isAdminUser ? [{ href: "/admin", key: "nav_admin" as TranslationKey }] : []),
       ];
     }
-    return [...BASE_LINKS, ...CUSTOMER_LINKS];
-  }, [isAdminUser, isStaffUser, isShipperUser]);
+    const isRetailCustomer =
+      hasUser && !isAdminUser && !isStaffUser && !isShipperUser && !isSupplierUser;
+    return [
+      ...BASE_LINKS,
+      ...(isRetailCustomer ? [{ href: "/expenses", key: "nav_expenses" as TranslationKey }] : []),
+      ...CUSTOMER_LINKS,
+    ];
+  }, [hasUser, isAdminUser, isStaffUser, isShipperUser, isSupplierUser, isPureShipper]);
 
   const isCurrentLink = useCallback(
     (href: string) => {
       if (href === "/") return pathname === "/";
+      if (href === "/shipper/dashboard") {
+        return pathname === "/shipper/dashboard" || pathname === "/shipper";
+      }
       return pathname.startsWith(href);
     },
     [pathname]
@@ -401,70 +426,76 @@ export default function Navbar() {
               <option value="ja">日本語</option>
             </select>
           </label>
-          <div
-            className="navSearchWrap"
-            onBlur={() => setTimeout(() => setShowHistory(false), 120)}
-          >
-            <form className="navSearchForm" onSubmit={handleSearch}>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                onFocus={() => {
-                  setShowHistory(true);
-                  void fetchSearchHistory();
-                }}
-                placeholder={t("search_placeholder")}
-                aria-label={t("search_aria")}
-              />
-              <button type="submit" aria-label={t("search_aria")}>
-                <FiSearch size={18} />
-              </button>
-            </form>
-            {dropdownSuggestions.length > 0 && (
-              <div className="searchHistoryDropdown">
-                {dropdownSuggestions.map((item) => (
-                  <button
-                    type="button"
-                    key={item}
-                    className="searchHistoryItem"
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      void handleSelectHistory(item);
-                    }}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {!isPureShipper ? (
+            <div
+              className="navSearchWrap"
+              onBlur={() => setTimeout(() => setShowHistory(false), 120)}
+            >
+              <form className="navSearchForm" onSubmit={handleSearch}>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  onFocus={() => {
+                    setShowHistory(true);
+                    void fetchSearchHistory();
+                  }}
+                  placeholder={t("search_placeholder")}
+                  aria-label={t("search_aria")}
+                />
+                <button type="submit" aria-label={t("search_aria")}>
+                  <FiSearch size={18} />
+                </button>
+              </form>
+              {dropdownSuggestions.length > 0 && (
+                <div className="searchHistoryDropdown">
+                  {dropdownSuggestions.map((item) => (
+                    <button
+                      type="button"
+                      key={item}
+                      className="searchHistoryItem"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        void handleSelectHistory(item);
+                      }}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : null}
           <span>
             <Link href={hasUser ? "/profile" : "/login"} aria-label={t("account_aria")}>
               <FaRegUser size={22} onClick={scrollToTop} />
             </Link>
           </span>
-          <span>
-            <Link href="/cart" aria-label={t("cart_aria")}>
-              <Badge
-                badgeContent={Object.values(cartItems).reduce((sum, item) => {
-                  return sum + (item.quantity ?? 0);
-                }, 0)}
-                color="primary"
-                anchorOrigin={{
-                  vertical: "bottom",
-                  horizontal: "right",
-                }}
-              >
-                <RiShoppingBagLine size={22} onClick={scrollToTop} />
-              </Badge>
-            </Link>
-          </span>
-          <span>
-            <Link href={"/wishlist"} aria-label={t("wishlist_aria")}>
-              <FiHeart size={22} onClick={scrollToTop} />
-            </Link>
-          </span>
+          {!isPureShipper ? (
+            <>
+              <span>
+                <Link href="/cart" aria-label={t("cart_aria")}>
+                  <Badge
+                    badgeContent={Object.values(cartItems).reduce((sum, item) => {
+                      return sum + (item.quantity ?? 0);
+                    }, 0)}
+                    color="primary"
+                    anchorOrigin={{
+                      vertical: "bottom",
+                      horizontal: "right",
+                    }}
+                  >
+                    <RiShoppingBagLine size={22} onClick={scrollToTop} />
+                  </Badge>
+                </Link>
+              </span>
+              <span>
+                <Link href={"/wishlist"} aria-label={t("wishlist_aria")}>
+                  <FiHeart size={22} onClick={scrollToTop} />
+                </Link>
+              </span>
+            </>
+          ) : null}
         </div>
       </nav>
 
