@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const status = (searchParams.get("status") || "").trim();
     const query = status ? `?status=${encodeURIComponent(status)}` : "";
-    const response = await fetch(`${API_URL}/shipper/incidents${query}`, {
+    const response = await fetch(`${API_URL}/v1/shipper/incidents${query}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   try {
     const authHeader = getAuthHeader(request);
     const body = await request.json();
-    const response = await fetch(`${API_URL}/shipper/incidents`, {
+    const response = await fetch(`${API_URL}/v1/shipper/incidents`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

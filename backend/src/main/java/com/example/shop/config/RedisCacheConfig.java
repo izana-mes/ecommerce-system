@@ -24,6 +24,7 @@ public class RedisCacheConfig {
     public static final String PRODUCTS_SUGGEST = "products:suggest";
     public static final String PRODUCTS_INVENTORY_HEALTH = "products:inventory-health";
     public static final String ADMIN_DASHBOARD = "admin:dashboard";
+    public static final String STAFF_DASHBOARD = "staff:dashboard";
 
     @Value("${application.cache.ttl.products-all-seconds:300}")
     private long productsAllTtlSeconds;
@@ -40,6 +41,9 @@ public class RedisCacheConfig {
     @Value("${application.cache.ttl.admin-dashboard-seconds:30}")
     private long adminDashboardTtlSeconds;
 
+    @Value("${application.cache.ttl.staff-dashboard-seconds:30}")
+    private long staffDashboardTtlSeconds;
+
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
         RedisCacheConfiguration base = RedisCacheConfiguration.defaultCacheConfig()
@@ -51,6 +55,7 @@ public class RedisCacheConfig {
         perCacheConfig.put(PRODUCTS_SUGGEST, base.entryTtl(Duration.ofSeconds(normalizeTtl(productsSuggestTtlSeconds))));
         perCacheConfig.put(PRODUCTS_INVENTORY_HEALTH, base.entryTtl(Duration.ofSeconds(normalizeTtl(productsInventoryHealthTtlSeconds))));
         perCacheConfig.put(ADMIN_DASHBOARD, base.entryTtl(Duration.ofSeconds(normalizeTtl(adminDashboardTtlSeconds))));
+        perCacheConfig.put(STAFF_DASHBOARD, base.entryTtl(Duration.ofSeconds(normalizeTtl(staffDashboardTtlSeconds))));
 
         return RedisCacheManager.builder(redisConnectionFactory)
                 .cacheDefaults(base)

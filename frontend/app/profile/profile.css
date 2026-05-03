@@ -437,4 +437,162 @@
   .profileMiniSectionHeader {
     flex-direction: column;
   }
+
+  .profileMetricsRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* User Dashboard Enhancements */
+.profileDashboardHeader {
+  margin-bottom: 24px;
+}
+.profileDashboardHeader h2 {
+  margin: 0 0 8px;
+}
+.profileDashboardHeader p {
+  margin: 0;
+  color: var(--muted-text);
+  font-size: 15px;
+}
+
+.profileMetricsRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.profileMetricCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(244,247,251,0.6));
+  border: 1px solid rgba(16, 24, 40, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+  transition: transform 0.2s;
+}
+
+.profileMetricCard.profileChatPromoCard:hover {
+  cursor: pointer;
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, rgba(238, 242, 255, 0.9), rgba(224, 231, 255, 0.6));
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.profileMetricIcon {
+  font-size: 28px;
+  background: rgba(255,255,255,0.7);
+  padding: 10px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.profileAiGlow {
+  background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+  border-radius: 12px;
+}
+
+.profileMetricCard strong {
+  display: block;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.profileMetricCard span {
+  display: block;
+  font-size: 13px;
+  color: var(--muted-text);
+  margin-top: 4px;
+}
+
+.profileWishlistPreview {
+  margin-bottom: 32px;
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(16, 24, 40, 0.08);
+}
+
+.profileWishlistHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.profileWishlistHeader h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.profileWishlistGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.profileWishlistItem {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(16, 24, 40, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+}
+
+.profileWishlistInfo h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profileWishlistInfo p {
+  margin: 0;
+  color: var(--muted-text);
+  font-size: 13.5px;
+}
+
+.profileSmallBtn {
+  font-size: 12px;
+  padding: 6px 12px;
+  display: inline-block;
+  text-align: center;
+}
+
+.profileSupplierNotice {
+  padding: 16px;
+  background: rgba(255, 244, 219, 0.3);
+  border: 1px solid rgba(138, 90, 0, 0.15);
+  border-radius: 12px;
+}
+.profileSupplierNotice h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+.profileSupplierNotice p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.profileSupplierMiniForm h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+.profileSubtitle {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--muted-text);
+}
+.profileSupplierFormGrid {
+  display: grid;
+  gap: 10px;
 }

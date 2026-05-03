@@ -73,6 +73,8 @@ services:
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
       MOMO_IPN_URL: ${MOMO_IPN_URL:-http://localhost:8080/api/payments/momo/ipn}
       CHATBOT_AI_REFERER: ${CHATBOT_AI_REFERER:-http://localhost:3000}
+      MCP_SERVICE_TOKEN: ${MCP_SERVICE_TOKEN}
+      MCP_SERVER_URL: http://mcp-server:3100
     ports:
       - "8080:8080"
     depends_on:
@@ -89,6 +91,7 @@ services:
       args:
         NEXT_PUBLIC_API_URL: http://localhost:8080/api
         NEXT_PUBLIC_BACKEND_URL: http://localhost:8080
+        BACKEND_URL: http://backend:8080
     restart: unless-stopped
     env_file:
       - ./.env
@@ -116,6 +119,24 @@ services:
         condition: service_started
       postgres:
         condition: service_healthy
+
+  mcp-server:
+    build: ./mcp-server
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      PORT: 3100
+      BACKEND_URL: http://backend:8080
+      MCP_SERVICE_TOKEN: ${MCP_SERVICE_TOKEN}
+      CHATBOT_AI_BASE_URL: ${CHATBOT_AI_BASE_URL:-https://openrouter.ai/api/v1}
+      CHATBOT_AI_API_KEY: ${CHATBOT_AI_API_KEY}
+      CHATBOT_AI_MODEL: ${CHATBOT_AI_MODEL:-google/gemma-3-4b-it:free}
+    ports:
+      - "3100:3100"
+    depends_on:
+      backend:
+        condition: service_started
 
 volumes:
   postgres_data:

@@ -1,0 +1,25 @@
+{
+  "name": "ecommerce-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server for ecommerce AI chatbot — proxies LLM tool calls to the Spring Boot backend",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "axios": "^1.7.7",
+    "express": "^4.21.1",
+    "express-rate-limit": "^7.4.1",
+    "winston": "^3.15.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.8.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  }
+}

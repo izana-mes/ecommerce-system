@@ -1,0 +1,44 @@
+package com.example.shop.modules.staff.dto;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+public record StaffOrderDto(
+        Long id,
+        String orderNumber,
+        String customerEmail,
+        String customerFirstName,
+        String customerLastName,
+        String customerPhone,
+        String shippingAddressLine1,
+        String shippingAddressLine2,
+        String shippingCity,
+        String shippingState,
+        String shippingPostalCode,
+        String shippingCountry,
+        BigDecimal subtotal,
+        BigDecimal shippingFee,
+        BigDecimal vat,
+        BigDecimal discountAmount,
+        BigDecimal totalAmount,
+        String currency,
+        String paymentMethod,
+        String paymentStatus,
+        String orderStatus,
+        String shippingCarrier,
+        String shippingTrackingPublic,
+        String shipperUserId,
+        String shipperEmail,
+        String shipperFirstName,
+        String shipperLastName,
+        LocalDateTime expectedDeliveryAt,
+        LocalDateTime pickedUpAt,
+        LocalDateTime deliveredAt,
+        LocalDateTime failedAt,
+        Boolean deliverySuccess,
+        String failureReason,
+        LocalDateTime shippedAt,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt,
+        int itemCount
+) {}

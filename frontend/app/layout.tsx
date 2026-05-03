@@ -6,6 +6,7 @@ import GlobalScrollReveal from "@/components/GlobalScrollReveal";
 import GlobalFloatingBanners from "@/components/GlobalFloatingBanners";
 import PageTransition from "@/components/PageTransition";
 import FloatingChatButtons from "@/components/Common/FloatingChatButtons";
+import ChatbotWidget from "@/components/Chatbot/ChatbotWidget";
 import { Toaster } from "react-hot-toast";
 import Script from "next/script";
 import LocaleProvider from "@/components/providers/LocaleProvider";
@@ -56,6 +57,7 @@ export default function RootLayout({
               <PageTransition>{children}</PageTransition>
             </main>
             <FloatingChatButtons />
+            <ChatbotWidget />
             <Footer />
             <Toaster />
           </LocaleProvider>

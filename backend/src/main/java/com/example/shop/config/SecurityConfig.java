@@ -5,6 +5,7 @@ import com.example.shop.common.web.RequestObservabilityFilter;
 import com.example.shop.modules.auth.security.JwtAuthenticationFilter;
 import com.example.shop.modules.auth.oauth.OAuth2AuthenticationSuccessHandler;
 import com.example.shop.modules.auth.oauth.OAuth2CookieAuthorizationRequestRepository;
+import com.example.shop.modules.chatbot.security.McpServiceTokenFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -76,6 +77,7 @@ public class SecurityConfig {
     private final ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider;
     private final RateLimitFilter rateLimitFilter;
     private final RequestObservabilityFilter requestObservabilityFilter;
+    private final McpServiceTokenFilter mcpServiceTokenFilter;
 
     @Value("${application.cors.allowed-origins:http://localhost:3000}")
     private String corsAllowedOrigins;
@@ -103,8 +105,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/payments/momo/ipn").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/deals/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/chatbot/customer/ask").permitAll()
+                        .requestMatchers("/api/chatbot/tools/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/support-chat/messages").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/support-chat/messages").permitAll()
+                        .requestMatchers("/api/v1/supplier/**").authenticated()
+                        .requestMatchers("/api/v1/staff/**").hasAnyRole("ADMIN", "EMPLOYEE")
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -112,6 +117,7 @@ public class SecurityConfig {
                 .addFilterBefore(rateLimitFilter, org.springframework.security.web.authentication.logout.LogoutFilter.class)
                 .addFilterBefore(requestObservabilityFilter, org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(mcpServiceTokenFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((req, res, ex) -> writeError(res, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
                         .accessDeniedHandler((req, res, ex) -> writeError(res, HttpServletResponse.SC_FORBIDDEN, "Access denied")));

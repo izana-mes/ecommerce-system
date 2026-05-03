@@ -78,7 +78,8 @@ public class ChatbotService {
                 normalized,
                 deterministicAnswer,
                 context,
-                recentMessages
+                recentMessages,
+                currentUserEmail   // passed to AI client for tool-call email injection
         );
 
         String finalAnswer = aiAnswer

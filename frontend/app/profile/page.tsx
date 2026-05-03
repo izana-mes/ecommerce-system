@@ -13,7 +13,7 @@ import {
   subscribeToAuthChanges,
   User,
 } from "@/lib/auth";
-import { useAppDispatch } from "@/store";
+import { useAppDispatch, useAppSelector } from "@/store";
 import { clearCart } from "@/store/cartSlice";
 import { clearWishList } from "@/store/wishListSlice";
 import toast from "react-hot-toast";
@@ -155,6 +155,9 @@ export default function ProfilePage() {
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
 
+  // Redux Wishlist
+  const wishListItems = useAppSelector((state) => Object.values(state.wishList.itemsById));
+  
   useEffect(() => {
     const syncUser = () => {
       const currentUser = getUser();
@@ -596,249 +599,317 @@ export default function ProfilePage() {
           ) : null}
         </div>
 
-        <section className="profileCard profileSupplierCard">
-          <div className="profileSupplierHeader">
-            <div>
-              <h2>{isAdmin ? "Supplier accounts" : isSupplier ? "Supplier account" : "Supplier access"}</h2>
-              <p>
-                {isAdmin
-                  ? "Monitor products that are still waiting for approval and review recent account purchases."
-                  : isSupplier
-                  ? "Track product submissions that are still waiting for admin approval."
-                  : "Request permission to submit products for admin review."}
-              </p>
+        {!isAdmin && !isSupplier ? (
+          <section className="profileCard profileDashboardMain">
+            <div className="profileDashboardHeader">
+              <h2>Welcome back, {user.firstName || 'User'}!</h2>
+              <p>Here is an overview of your shopping account.</p>
             </div>
-            {!isSupplier && !isAdmin && supplierRequestStatus ? (
-              <span className={`profileSupplierStatus profileSupplierStatus${supplierRequestStatus.toLowerCase()}`}>
-                {supplierRequestStatus.toLowerCase()}
-              </span>
-            ) : null}
-          </div>
 
-          {isAdmin ? (
-            <div className="profileSupplierSummary">
-              <div className="profileSupplierMetrics">
-                <div className="profileMetric">
-                  <strong>{adminProductRequests.length}</strong>
-                  <span>Products under approval</span>
-                </div>
-                <div className="profileMetric">
-                  <strong>{adminSupplierRequests.length}</strong>
-                  <span>Suppliers in queue</span>
+            <div className="profileMetricsRow">
+              <div className="profileMetricCard">
+                <span className="profileMetricIcon">📦</span>
+                <div>
+                  <strong>{recentOrders.length}</strong>
+                  <span>Recent Orders</span>
                 </div>
               </div>
-
-              <div className="profilePendingList">
-                {adminQueueLoading ? <p>Loading approval queue...</p> : null}
-                {!adminQueueLoading &&
-                adminSupplierRequests.length === 0 &&
-                adminProductRequests.length === 0 ? (
-                  <p>No supplier access or product submissions are currently waiting for approval.</p>
-                ) : null}
-                {!adminQueueLoading
-                  ? adminSupplierRequests.slice(0, 2).map((request) => {
-                      return (
-                        <article key={request.id} className="profilePendingItem">
-                          <div className="profilePendingItemHeader">
-                            <div>
-                              <h3>{request.businessName || request.requestedByEmail || "Supplier access request"}</h3>
-                              <p>{request.requestedByEmail || "Unknown applicant"} · supplier access request</p>
-                            </div>
-                            <span className="profileSupplierStatus profileSupplierStatuspending">pending</span>
-                          </div>
-                          <div className="profilePendingMeta">
-                            <span>
-                              Submitted {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : "recently"}
-                            </span>
-                            {request.contactPhone ? <span>{request.contactPhone}</span> : null}
-                          </div>
-                        </article>
-                      );
-                    })
-                  : null}
-                {!adminQueueLoading
-                  ? adminProductRequests.slice(0, 4).map((request) => {
-                      const payload = parseSupplierProductPayload(request.requestPayload);
-                      const productLabel = payload?.productName || request.targetProductId || "New product submission";
-                      const productId = payload?.productID || request.targetProductId;
-                      return (
-                        <article key={request.id} className="profilePendingItem">
-                          <div className="profilePendingItemHeader">
-                            <div>
-                              <h3>{productLabel}</h3>
-                              <p>
-                                {request.requestedByEmail || "Unknown supplier"}
-                                {" · "}
-                                {request.actionType.toLowerCase()} request
-                                {productId ? ` · ${productId}` : ""}
-                              </p>
-                            </div>
-                            <span className="profileSupplierStatus profileSupplierStatuspending">pending</span>
-                          </div>
-                          <div className="profilePendingMeta">
-                            <span>
-                              Submitted {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : "recently"}
-                            </span>
-                            {typeof payload?.productPrice === "number" ? (
-                              <span>{formatMoney(payload.productPrice, "USD")}</span>
-                            ) : null}
-                            {typeof payload?.stockQuantity === "number" ? (
-                              <span>Stock {payload.stockQuantity}</span>
-                            ) : null}
-                          </div>
-                        </article>
-                      );
-                    })
-                  : null}
+              <div className="profileMetricCard">
+                <span className="profileMetricIcon">❤️</span>
+                <div>
+                  <strong>{wishListItems.length}</strong>
+                  <span>Wishlist Items</span>
+                </div>
               </div>
-
-              <div className="profileMiniSection">
-                <div className="profileMiniSectionHeader">
+              {supplierRequest ? (
+                <div className="profileMetricCard">
+                  <span className="profileMetricIcon">📝</span>
                   <div>
-                    <h3>Purchase history</h3>
-                    <p>Your latest account orders.</p>
+                    <strong>{supplierRequest.status.toLowerCase()}</strong>
+                    <span>Supplier Applied</span>
                   </div>
-                  <Link href="/orders" className="profileSecondaryButton profileLinkButton">
+                </div>
+              ) : (
+                <div 
+                  className="profileMetricCard profileChatPromoCard" 
+                  onClick={() => document.getElementById('chatbot-toggle-btn')?.click()}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <span className="profileMetricIcon profileAiGlow">✨</span>
+                  <div>
+                    <strong>Ask AI</strong>
+                    <span>Shopping Help</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {wishListItems.length > 0 ? (
+              <div className="profileWishlistPreview">
+                <div className="profileWishlistHeader">
+                  <h3>Your Wishlist</h3>
+                  <Link href="/wishlist" className="profileLinkButton profileSecondaryButton">
                     View all
                   </Link>
                 </div>
-                {ordersLoading ? <p className="profileHistoryEmpty">Loading purchase history...</p> : null}
-                {!ordersLoading && recentOrders.length === 0 ? (
-                  <p className="profileHistoryEmpty">No purchases yet.</p>
-                ) : null}
-                {!ordersLoading && recentOrders.length > 0 ? (
-                  <div className="profileMiniHistoryList">
-                    {recentOrders.slice(0, 2).map((order) => (
-                      <article key={order.id} className="profileMiniHistoryItem">
-                        <div className="profileHistoryTopRow">
-                          <strong>{order.order_number}</strong>
-                          <span>{new Date(order.created_at).toLocaleDateString()}</span>
-                        </div>
-                        <div className="profileHistoryMeta">
-                          <span>{order.order_status}</span>
-                          <span>{formatMoney(order.total_amount, order.currency)}</span>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                ) : null}
+                <div className="profileWishlistGrid">
+                  {wishListItems.slice(0, 3).map((item) => (
+                    <article key={item.productID} className="profileWishlistItem">
+                      <div className="profileWishlistInfo">
+                        <h4>{item.productName}</h4>
+                        <p>{formatMoney(item.productPrice, "USD")}</p>
+                      </div>
+                      <Link href={`/shop/${item.productID}`} className="profilePrimaryButton profileSmallBtn">
+                        View Item
+                      </Link>
+                    </article>
+                  ))}
+                </div>
               </div>
+            ) : null}
 
-              <Link href="/admin" className="profilePrimaryButton profileLinkButton">
-                Open review queue
-              </Link>
+            {supplierRequest ? (
+              <div className="profileSupplierNotice">
+                <h3>Supplier Access Status</h3>
+                <p>
+                  Latest request: <strong className={`profileSupplierStatus profileSupplierStatus${supplierRequest.status.toLowerCase()}`}>{supplierRequest.status.toLowerCase()}</strong>
+                  {supplierRequest.createdAt ? ` on ${new Date(supplierRequest.createdAt).toLocaleDateString()}` : ""}
+                </p>
+                {supplierRequest.businessName ? <p>Business: {supplierRequest.businessName}</p> : null}
+                {supplierRequest.note ? <p>Request note: {supplierRequest.note}</p> : null}
+                {supplierRequest.reviewerNote ? <p>Admin note: {supplierRequest.reviewerNote}</p> : null}
+              </div>
+            ) : canRequestSupplierAccess ? (
+              <div className="profileSupplierMiniForm">
+                <h3>Want to become a Supplier?</h3>
+                <p className="profileSubtitle">Request access to sell your own products on our platform.</p>
+                <div className="profileSupplierFormGrid">
+                  <input
+                    className="profileTextInput"
+                    type="text"
+                    placeholder="Business name"
+                    value={supplierBusinessName}
+                    onChange={(event) => setSupplierBusinessName(event.target.value)}
+                  />
+                  <input
+                    className="profileTextInput"
+                    type="url"
+                    placeholder="Website or catalog URL"
+                    value={supplierWebsiteUrl}
+                    onChange={(event) => setSupplierWebsiteUrl(event.target.value)}
+                  />
+                  <input
+                    className="profileTextInput"
+                    type="text"
+                    placeholder="Contact phone"
+                    value={supplierContactPhone}
+                    onChange={(event) => setSupplierContactPhone(event.target.value)}
+                  />
+                  <textarea
+                    className="profileTextarea"
+                    placeholder="Tell the admin what products you want to list"
+                    value={supplierRequestNote}
+                    onChange={(event) => setSupplierRequestNote(event.target.value)}
+                    rows={3}
+                  />
+                  <button
+                    type="button"
+                    className="profilePrimaryButton"
+                    onClick={() => void handleSubmitSupplierRequest()}
+                    disabled={supplierRequestSubmitting || supplierRequestLoading}
+                  >
+                    {supplierRequestSubmitting ? "Submitting..." : "Apply"}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </section>
+        ) : (
+          <section className="profileCard profileSupplierCard">
+            <div className="profileSupplierHeader">
+              <div>
+                <h2>{isAdmin ? "Supplier accounts" : "Supplier account"}</h2>
+                <p>
+                  {isAdmin
+                    ? "Monitor products that are still waiting for approval and review recent account purchases."
+                    : "Track product submissions that are still waiting for admin approval."}
+                </p>
+              </div>
             </div>
-          ) : null}
 
-          {isSupplier ? (
-            <div className="profileSupplierSummary">
-              <div className="profileSupplierMetrics">
-                <div className="profileMetric">
-                  <strong>{pendingSupplierProducts.length}</strong>
-                  <span>Awaiting approval</span>
+            {isAdmin ? (
+              <div className="profileSupplierSummary">
+                <div className="profileSupplierMetrics">
+                  <div className="profileMetric">
+                    <strong>{adminProductRequests.length}</strong>
+                    <span>Products under approval</span>
+                  </div>
+                  <div className="profileMetric">
+                    <strong>{adminSupplierRequests.length}</strong>
+                    <span>Suppliers in queue</span>
+                  </div>
                 </div>
-                <div className="profileMetric">
-                  <strong>{approvedSupplierProducts}</strong>
-                  <span>Approved</span>
-                </div>
-              </div>
-              <div className="profilePendingList">
-                {supplierProductsLoading ? <p>Loading product submissions...</p> : null}
-                {!supplierProductsLoading && pendingSupplierProducts.length === 0 ? (
-                  <p>No products are currently waiting for approval.</p>
-                ) : null}
-                {!supplierProductsLoading
-                  ? pendingSupplierProducts.slice(0, 4).map((request) => {
-                      const payload = parseSupplierProductPayload(request.requestPayload);
-                      const productLabel = payload?.productName || request.targetProductId || "New product submission";
-                      const productId = payload?.productID || request.targetProductId;
-                      return (
-                        <article key={request.id} className="profilePendingItem">
-                          <div className="profilePendingItemHeader">
-                            <div>
-                              <h3>{productLabel}</h3>
-                              <p>
-                                {request.actionType.toLowerCase()} request
-                                {productId ? ` · ${productId}` : ""}
-                              </p>
+
+                <div className="profilePendingList">
+                  {adminQueueLoading ? <p>Loading approval queue...</p> : null}
+                  {!adminQueueLoading &&
+                  adminSupplierRequests.length === 0 &&
+                  adminProductRequests.length === 0 ? (
+                    <p>No supplier access or product submissions are currently waiting for approval.</p>
+                  ) : null}
+                  {!adminQueueLoading
+                    ? adminSupplierRequests.slice(0, 2).map((request) => {
+                        return (
+                          <article key={request.id} className="profilePendingItem">
+                            <div className="profilePendingItemHeader">
+                              <div>
+                                <h3>{request.businessName || request.requestedByEmail || "Supplier access request"}</h3>
+                                <p>{request.requestedByEmail || "Unknown applicant"} · supplier access request</p>
+                              </div>
+                              <span className="profileSupplierStatus profileSupplierStatuspending">pending</span>
                             </div>
-                            <span className="profileSupplierStatus profileSupplierStatuspending">pending</span>
+                            <div className="profilePendingMeta">
+                              <span>
+                                Submitted {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : "recently"}
+                              </span>
+                              {request.contactPhone ? <span>{request.contactPhone}</span> : null}
+                            </div>
+                          </article>
+                        );
+                      })
+                    : null}
+                  {!adminQueueLoading
+                    ? adminProductRequests.slice(0, 4).map((request) => {
+                        const payload = parseSupplierProductPayload(request.requestPayload);
+                        const productLabel = payload?.productName || request.targetProductId || "New product submission";
+                        const productId = payload?.productID || request.targetProductId;
+                        return (
+                          <article key={request.id} className="profilePendingItem">
+                            <div className="profilePendingItemHeader">
+                              <div>
+                                <h3>{productLabel}</h3>
+                                <p>
+                                  {request.requestedByEmail || "Unknown supplier"}
+                                  {" · "}
+                                  {request.actionType.toLowerCase()} request
+                                  {productId ? ` · ${productId}` : ""}
+                                </p>
+                              </div>
+                              <span className="profileSupplierStatus profileSupplierStatuspending">pending</span>
+                            </div>
+                            <div className="profilePendingMeta">
+                              <span>
+                                Submitted {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : "recently"}
+                              </span>
+                              {typeof payload?.productPrice === "number" ? (
+                                <span>{formatMoney(payload.productPrice, "USD")}</span>
+                              ) : null}
+                              {typeof payload?.stockQuantity === "number" ? (
+                                <span>Stock {payload.stockQuantity}</span>
+                              ) : null}
+                            </div>
+                          </article>
+                        );
+                      })
+                    : null}
+                </div>
+
+                <div className="profileMiniSection">
+                  <div className="profileMiniSectionHeader">
+                    <div>
+                      <h3>Purchase history</h3>
+                      <p>Your latest account orders.</p>
+                    </div>
+                    <Link href="/orders" className="profileSecondaryButton profileLinkButton">
+                      View all
+                    </Link>
+                  </div>
+                  {ordersLoading ? <p className="profileHistoryEmpty">Loading purchase history...</p> : null}
+                  {!ordersLoading && recentOrders.length === 0 ? (
+                    <p className="profileHistoryEmpty">No purchases yet.</p>
+                  ) : null}
+                  {!ordersLoading && recentOrders.length > 0 ? (
+                    <div className="profileMiniHistoryList">
+                      {recentOrders.slice(0, 2).map((order) => (
+                        <article key={order.id} className="profileMiniHistoryItem">
+                          <div className="profileHistoryTopRow">
+                            <strong>{order.order_number}</strong>
+                            <span>{new Date(order.created_at).toLocaleDateString()}</span>
                           </div>
-                          <div className="profilePendingMeta">
-                            <span>
-                              Submitted {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : "recently"}
-                            </span>
-                            {typeof payload?.productPrice === "number" ? (
-                              <span>{formatMoney(payload.productPrice, "USD")}</span>
-                            ) : null}
-                            {typeof payload?.stockQuantity === "number" ? (
-                              <span>Stock {payload.stockQuantity}</span>
-                            ) : null}
+                          <div className="profileHistoryMeta">
+                            <span>{order.order_status}</span>
+                            <span>{formatMoney(order.total_amount, order.currency)}</span>
                           </div>
                         </article>
-                      );
-                    })
-                  : null}
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+
+                <Link href="/admin" className="profilePrimaryButton profileLinkButton">
+                  Open review queue
+                </Link>
               </div>
-              <Link href="/supplier" className="profilePrimaryButton profileLinkButton">
-                Manage product submissions
-              </Link>
-            </div>
-          ) : null}
+            ) : null}
 
-          {!isSupplier && !isAdmin && supplierRequest ? (
-            <div className="profileSupplierSummary">
-              <p>
-                Latest request: <strong>{supplierRequest.status.toLowerCase()}</strong>
-                {supplierRequest.createdAt ? ` on ${new Date(supplierRequest.createdAt).toLocaleDateString()}` : ""}
-              </p>
-              {supplierRequest.businessName ? <p>Business: {supplierRequest.businessName}</p> : null}
-              {supplierRequest.note ? <p>Request note: {supplierRequest.note}</p> : null}
-              {supplierRequest.reviewerNote ? <p>Admin note: {supplierRequest.reviewerNote}</p> : null}
-            </div>
-          ) : null}
-
-          {!isSupplier && !isAdmin && canRequestSupplierAccess ? (
-            <div className="profileSupplierForm">
-              <input
-                className="profileTextInput"
-                type="text"
-                placeholder="Business name"
-                value={supplierBusinessName}
-                onChange={(event) => setSupplierBusinessName(event.target.value)}
-              />
-              <input
-                className="profileTextInput"
-                type="url"
-                placeholder="Website or catalog URL"
-                value={supplierWebsiteUrl}
-                onChange={(event) => setSupplierWebsiteUrl(event.target.value)}
-              />
-              <input
-                className="profileTextInput"
-                type="text"
-                placeholder="Contact phone"
-                value={supplierContactPhone}
-                onChange={(event) => setSupplierContactPhone(event.target.value)}
-              />
-              <textarea
-                className="profileTextarea"
-                placeholder="Tell the admin what products you want to list"
-                value={supplierRequestNote}
-                onChange={(event) => setSupplierRequestNote(event.target.value)}
-                rows={4}
-              />
-              <button
-                type="button"
-                className="profilePrimaryButton"
-                onClick={() => void handleSubmitSupplierRequest()}
-                disabled={supplierRequestSubmitting || supplierRequestLoading}
-              >
-                {supplierRequestSubmitting ? "Submitting..." : "Request supplier access"}
-              </button>
-            </div>
-          ) : null}
-        </section>
+            {isSupplier ? (
+              <div className="profileSupplierSummary">
+                <div className="profileSupplierMetrics">
+                  <div className="profileMetric">
+                    <strong>{pendingSupplierProducts.length}</strong>
+                    <span>Awaiting approval</span>
+                  </div>
+                  <div className="profileMetric">
+                    <strong>{approvedSupplierProducts}</strong>
+                    <span>Approved</span>
+                  </div>
+                </div>
+                <div className="profilePendingList">
+                  {supplierProductsLoading ? <p>Loading product submissions...</p> : null}
+                  {!supplierProductsLoading && pendingSupplierProducts.length === 0 ? (
+                    <p>No products are currently waiting for approval.</p>
+                  ) : null}
+                  {!supplierProductsLoading
+                    ? pendingSupplierProducts.slice(0, 4).map((request) => {
+                        const payload = parseSupplierProductPayload(request.requestPayload);
+                        const productLabel = payload?.productName || request.targetProductId || "New product submission";
+                        const productId = payload?.productID || request.targetProductId;
+                        return (
+                          <article key={request.id} className="profilePendingItem">
+                            <div className="profilePendingItemHeader">
+                              <div>
+                                <h3>{productLabel}</h3>
+                                <p>
+                                  {request.actionType.toLowerCase()} request
+                                  {productId ? ` · ${productId}` : ""}
+                                </p>
+                              </div>
+                              <span className="profileSupplierStatus profileSupplierStatuspending">pending</span>
+                            </div>
+                            <div className="profilePendingMeta">
+                              <span>
+                                Submitted {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : "recently"}
+                              </span>
+                              {typeof payload?.productPrice === "number" ? (
+                                <span>{formatMoney(payload.productPrice, "USD")}</span>
+                              ) : null}
+                              {typeof payload?.stockQuantity === "number" ? (
+                                <span>Stock {payload.stockQuantity}</span>
+                              ) : null}
+                            </div>
+                          </article>
+                        );
+                      })
+                    : null}
+                </div>
+                <Link href="/supplier" className="profilePrimaryButton profileLinkButton">
+                  Manage product submissions
+                </Link>
+              </div>
+            ) : null}
+          </section>
+        )}
 
         <section className="profileCard profileCouponsCard">
           <div className="profileCouponsHeader">
