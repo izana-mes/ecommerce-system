@@ -2,6 +2,8 @@ package com.example.shop.modules.payment.service;
 
 import com.example.shop.modules.coupon.service.CouponService;
 import com.example.shop.modules.messaging.notification.OrderPaidEmailMessagePublisher;
+import com.example.shop.modules.messaging.order.OrderStatusChangedEvent;
+import com.example.shop.modules.messaging.order.OrderStatusChangedPublisher;
 import com.example.shop.modules.notification.dto.OrderPaidEmailRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -33,6 +35,7 @@ public class MomoPaymentServiceImpl implements MomoPaymentService {
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
     private final OrderPaidEmailMessagePublisher orderPaidEmailMessagePublisher;
+    private final OrderStatusChangedPublisher orderStatusChangedPublisher;
     private final CouponService couponService;
 
     @Value("${application.payment.momo.secret-key:}")
@@ -167,6 +170,7 @@ public class MomoPaymentServiceImpl implements MomoPaymentService {
             couponService.redeemCouponForPaidOrder(order.id());
             sendPaidNotification(order.id());
         }
+        publishStatusChangedEvent(order, orderStatus, paymentStatus);
         
         log.info("Momo IPN: successfully processed order {} with status {}", orderIdStr, paymentStatus);
     }
@@ -177,7 +181,7 @@ public class MomoPaymentServiceImpl implements MomoPaymentService {
                         SELECT o.id, o.order_number, o.customer_email, o.customer_first_name, o.customer_last_name,
                                o.customer_phone, o.shipping_address_line1, o.shipping_address_line2, o.shipping_city,
                                o.shipping_state, o.shipping_postal_code, o.shipping_country, o.notes, o.subtotal,
-                               o.shipping_fee, o.vat, o.total_amount, o.currency, o.payment_method, o.payment_status,
+                               o.shipping_fee, o.vat, o.total_amount, o.currency, o.payment_method, o.order_status, o.payment_status,
                                p.metadata AS payment_metadata
                         FROM orders o
                         LEFT JOIN payments p ON p.order_id = o.id
@@ -198,13 +202,13 @@ public class MomoPaymentServiceImpl implements MomoPaymentService {
                 rs.getString("shipping_state"), rs.getString("shipping_postal_code"), rs.getString("shipping_country"),
                 rs.getString("notes"), rs.getBigDecimal("subtotal"), rs.getBigDecimal("shipping_fee"),
                 rs.getBigDecimal("vat"), rs.getBigDecimal("total_amount"), rs.getString("currency"),
-                rs.getString("payment_method"), rs.getString("payment_status"), rs.getString("payment_metadata")
+                rs.getString("payment_method"), rs.getString("order_status"), rs.getString("payment_status"), rs.getString("payment_metadata")
         );
     }
 
     private void sendPaidNotification(Long orderId) {
         OrderSnapshot order = jdbcTemplate.query(
-                "SELECT o.id, o.order_number, o.customer_email, o.customer_first_name, o.customer_last_name, o.customer_phone, o.shipping_address_line1, o.shipping_address_line2, o.shipping_city, o.shipping_state, o.shipping_postal_code, o.shipping_country, o.notes, o.subtotal, o.shipping_fee, o.vat, o.total_amount, o.currency, o.payment_method, o.payment_status, p.metadata AS payment_metadata FROM orders o LEFT JOIN payments p ON p.order_id = o.id WHERE o.id = ? LIMIT 1",
+                "SELECT o.id, o.order_number, o.customer_email, o.customer_first_name, o.customer_last_name, o.customer_phone, o.shipping_address_line1, o.shipping_address_line2, o.shipping_city, o.shipping_state, o.shipping_postal_code, o.shipping_country, o.notes, o.subtotal, o.shipping_fee, o.vat, o.total_amount, o.currency, o.payment_method, o.order_status, o.payment_status, p.metadata AS payment_metadata FROM orders o LEFT JOIN payments p ON p.order_id = o.id WHERE o.id = ? LIMIT 1",
                 this::mapOrderSnapshot,
                 orderId
         ).stream().findFirst().orElse(null);
@@ -306,8 +310,26 @@ public class MomoPaymentServiceImpl implements MomoPaymentService {
             String customerPhone, String shippingAddressLine1, String shippingAddressLine2, String shippingCity,
             String shippingState, String shippingPostalCode, String shippingCountry, String notes, BigDecimal subtotal,
             BigDecimal shippingFee, BigDecimal vat, BigDecimal totalAmount, String currency, String paymentMethod,
-            String paymentStatus, String paymentMetadata
+            String orderStatus, String paymentStatus, String paymentMetadata
     ) {}
+
+    private void publishStatusChangedEvent(OrderSnapshot order, String newOrderStatus, String newPaymentStatus) {
+        try {
+            String customerName = (safeString(order.customerFirstName()).trim() + " " + safeString(order.customerLastName()).trim()).trim();
+            orderStatusChangedPublisher.publish(OrderStatusChangedEvent.builder()
+                    .orderId(order.id())
+                    .orderNumber(order.orderNumber())
+                    .customerEmail(order.customerEmail())
+                    .customerName(customerName)
+                    .oldStatus(order.orderStatus())
+                    .newStatus(newOrderStatus)
+                    .oldPaymentStatus(order.paymentStatus())
+                    .newPaymentStatus(newPaymentStatus)
+                    .build());
+        } catch (Exception ex) {
+            log.warn("Failed to publish MoMo status changed event for order {}: {}", order.orderNumber(), ex.getMessage());
+        }
+    }
 
     public OrderPaidEmailRequest buildOrderPaidEmailRequest(Map<String, Object> payload) {
        // Currently not returning anything, notification is sent synchronously in IPN processing.

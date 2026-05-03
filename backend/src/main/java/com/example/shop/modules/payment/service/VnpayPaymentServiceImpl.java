@@ -2,6 +2,8 @@ package com.example.shop.modules.payment.service;
 
 import com.example.shop.modules.coupon.service.CouponService;
 import com.example.shop.modules.messaging.notification.OrderPaidEmailMessagePublisher;
+import com.example.shop.modules.messaging.order.OrderStatusChangedEvent;
+import com.example.shop.modules.messaging.order.OrderStatusChangedPublisher;
 import com.example.shop.modules.messaging.payment.PaymentIpnMessagePublisher;
 import com.example.shop.modules.messaging.payment.VnpayIpnMessage;
 import com.example.shop.modules.notification.dto.OrderPaidEmailRequest;
@@ -38,6 +40,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
     private final ObjectMapper objectMapper;
     private final PaymentIpnMessagePublisher paymentIpnMessagePublisher;
     private final OrderPaidEmailMessagePublisher orderPaidEmailMessagePublisher;
+    private final OrderStatusChangedPublisher orderStatusChangedPublisher;
     private final CouponService couponService;
 
     @Value("${application.payment.vnpay.hash-secret:}")
@@ -181,12 +184,30 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
 
         if (paid) {
             log.info("VNPAY payment successful for order {}", order.id());
-            couponService.redeemCouponForPaidOrder(order.id());
+            try {
+                couponService.redeemCouponForPaidOrder(order.id());
+            } catch (Exception ex) {
+                log.error("VNPAY post-payment coupon redeem failed for order {}", order.id(), ex);
+            }
             log.info("Sending payment success notification for order {}", order.id());
-            sendPaidNotification(order.id());
+            try {
+                sendPaidNotification(order.id());
+            } catch (Exception ex) {
+                log.error("VNPAY post-payment notification failed for order {}", order.id(), ex);
+            }
+            try {
+                publishStatusChangedEvent(order, orderStatus, paymentStatus);
+            } catch (Exception ex) {
+                log.error("VNPAY status-change event publish failed for order {}", order.id(), ex);
+            }
         } else {
-            log.warn("VNPAY payment failed or pending for order {}: responseCode={}, transactionStatus={}", 
+            log.warn("VNPAY payment failed or pending for order {}: responseCode={}, transactionStatus={}",
                     order.id(), responseCode, transactionStatus);
+            try {
+                publishStatusChangedEvent(order, orderStatus, paymentStatus);
+            } catch (Exception ex) {
+                log.error("VNPAY status-change event publish failed for order {}", order.id(), ex);
+            }
         }
 
         return new VnpayIpnResponse("00", "Confirm Success");
@@ -214,6 +235,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
                                o.total_amount,
                                o.currency,
                                o.payment_method,
+                               o.order_status,
                                o.payment_status,
                                p.metadata AS payment_metadata
                         FROM orders o
@@ -248,6 +270,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
                 rs.getBigDecimal("total_amount"),
                 rs.getString("currency"),
                 rs.getString("payment_method"),
+                rs.getString("order_status"),
                 rs.getString("payment_status"),
                 rs.getString("payment_metadata")
         );
@@ -275,6 +298,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
                                o.total_amount,
                                o.currency,
                                o.payment_method,
+                               o.order_status,
                                o.payment_status,
                                p.metadata AS payment_metadata
                         FROM orders o
@@ -395,7 +419,6 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
 
     private String percentEncode(String value) {
         return java.net.URLEncoder.encode(safe(value), StandardCharsets.UTF_8)
-                .replace("+", "%20")
                 .replace("*", "%2A")
                 .replace("%7E", "~");
     }
@@ -436,9 +459,28 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
             BigDecimal totalAmount,
             String currency,
             String paymentMethod,
+            String orderStatus,
             String paymentStatus,
             String paymentMetadata
     ) {
+    }
+
+    private void publishStatusChangedEvent(OrderSnapshot order, String newOrderStatus, String newPaymentStatus) {
+        try {
+            String customerName = (safe(order.customerFirstName()) + " " + safe(order.customerLastName())).trim();
+            orderStatusChangedPublisher.publish(OrderStatusChangedEvent.builder()
+                    .orderId(order.id())
+                    .orderNumber(order.orderNumber())
+                    .customerEmail(order.customerEmail())
+                    .customerName(customerName)
+                    .oldStatus(order.orderStatus())
+                    .newStatus(newOrderStatus)
+                    .oldPaymentStatus(order.paymentStatus())
+                    .newPaymentStatus(newPaymentStatus)
+                    .build());
+        } catch (Exception ex) {
+            log.warn("Failed to publish VNPAY status changed event for order {}: {}", order.orderNumber(), ex.getMessage());
+        }
     }
 
     @Override

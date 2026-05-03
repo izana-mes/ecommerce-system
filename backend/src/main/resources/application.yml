@@ -173,6 +173,10 @@ application:
       audit-event: ${MESSAGING_ROUTING_KEY_AUDIT_EVENT:audit.event}
   inventory:
     low-stock-threshold: ${LOW_STOCK_THRESHOLD:5}
+  fulfillment:
+    delivery-reminder:
+      enabled: ${FULFILLMENT_DELIVERY_REMINDER_ENABLED:true}
+      cron: ${FULFILLMENT_DELIVERY_REMINDER_CRON:0 */30 * * * *}
   attendance:
     monitor:
       enabled: ${ATTENDANCE_MONITOR_ENABLED:true}

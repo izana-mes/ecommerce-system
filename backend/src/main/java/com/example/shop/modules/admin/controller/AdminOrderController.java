@@ -1,5 +1,7 @@
 package com.example.shop.modules.admin.controller;
 
+import com.example.shop.modules.messaging.order.OrderStatusChangedEvent;
+import com.example.shop.modules.messaging.order.OrderStatusChangedPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,7 @@ import java.util.*;
 public class AdminOrderController {
 
     private final JdbcTemplate jdbcTemplate;
+    private final OrderStatusChangedPublisher orderStatusChangedPublisher;
 
     private static final Set<String> ALLOWED_ORDER_STATUSES = Set.of(
             "pending", "processing", "paid", "shipped", "completed", "cancelled"
@@ -212,6 +215,8 @@ public class AdminOrderController {
                 response.put("trackingNumber", normalizedTracking);
             }
             response.put("previousOrderStatus", curOrderStatus);
+
+            publishStatusChangedEvent(orderId, curOrderStatus, curPaymentStatus, newOrderStatus, newPaymentStatus);
             return ResponseEntity.ok(response);
         } catch (Exception ex) {
             log.error("Failed to update order {}: {}", orderId, ex.getMessage());
@@ -237,5 +242,38 @@ public class AdminOrderController {
         return "cod".equals(pm)
                 || pm.contains("cash on delivery")
                 || (pm.contains("cash") && pm.contains("deliver"));
+    }
+
+    private void publishStatusChangedEvent(long orderId,
+                                           String oldOrderStatus,
+                                           String oldPaymentStatus,
+                                           String requestedOrderStatus,
+                                           String requestedPaymentStatus) {
+        try {
+            Map<String, Object> row = jdbcTemplate.queryForMap(
+                    """
+                    SELECT order_number, customer_email, customer_first_name, customer_last_name, order_status, payment_status
+                    FROM orders
+                    WHERE id = ?
+                    """,
+                    orderId
+            );
+            String firstName = str(row.get("customer_first_name"));
+            String lastName = str(row.get("customer_last_name"));
+            String customerName = (firstName + " " + lastName).trim();
+
+            orderStatusChangedPublisher.publish(OrderStatusChangedEvent.builder()
+                    .orderId(orderId)
+                    .orderNumber(str(row.get("order_number")))
+                    .customerEmail(str(row.get("customer_email")))
+                    .customerName(customerName)
+                    .oldStatus(oldOrderStatus)
+                    .newStatus(StringUtils.hasText(requestedOrderStatus) ? requestedOrderStatus : str(row.get("order_status")))
+                    .oldPaymentStatus(oldPaymentStatus)
+                    .newPaymentStatus(StringUtils.hasText(requestedPaymentStatus) ? requestedPaymentStatus : str(row.get("payment_status")))
+                    .build());
+        } catch (Exception ex) {
+            log.warn("Failed to publish order status changed event for order {}: {}", orderId, ex.getMessage());
+        }
     }
 }

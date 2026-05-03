@@ -2,6 +2,7 @@ package com.example.shop.modules.messaging.order;
 
 import com.example.shop.common.mail.EmailService;
 import com.example.shop.config.ConditionalOnRabbitEnabled;
+import com.example.shop.modules.order.service.FulfillmentNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -18,6 +19,7 @@ import java.util.Map;
 public class OrderStatusChangedConsumer {
 
     private final EmailService emailService;
+    private final FulfillmentNotificationService fulfillmentNotificationService;
 
     @Value("${application.bootstrap.admin.email}")
     private String adminEmail;
@@ -81,6 +83,19 @@ public class OrderStatusChangedConsumer {
 
         emailService.sendEmail(event.getCustomerEmail(), subject, content);
         log.info("Order status change email sent to {} for order {}", event.getCustomerEmail(), event.getOrderNumber());
+
+        String oldPayment = safe(event.getOldPaymentStatus()).toLowerCase();
+        String newPayment = safe(event.getNewPaymentStatus()).toLowerCase();
+        String oldStatus = safe(event.getOldStatus()).toLowerCase();
+        boolean turnedPaid = ("paid".equals(newPayment) && !"paid".equals(oldPayment))
+                || ("paid".equals(newStatus) && !"paid".equals(oldStatus));
+        if (turnedPaid) {
+            fulfillmentNotificationService.notifyShippersOrderPaid(
+                    event.getOrderId(),
+                    event.getOrderNumber(),
+                    event.getCustomerEmail()
+            );
+        }
 
         // Send notification to admin if order is shipped
         if ("shipped".equals(newStatus) && StringUtils.hasText(adminEmail)) {
