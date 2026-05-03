@@ -43,6 +43,16 @@ public class ShipperFeatureController {
         return ResponseEntity.ok(ApiResponse.success(shipperRealtimeService.getOrderTracking(orderId)));
     }
 
+    @GetMapping("/orders")
+    @PreAuthorize("hasRole('SHIPPER')")
+    public ResponseEntity<ApiResponse<List<ShipperDtos.AssignedOrderItem>>> listMyOrders(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "true") boolean activeOnly,
+            @RequestParam(required = false) Integer limit
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(shipperRealtimeService.listMyAssignedOrders(user, activeOnly, limit)));
+    }
+
     @PostMapping("/orders/{orderId}/status")
     @PreAuthorize("hasRole('SHIPPER')")
     public ResponseEntity<ApiResponse<Void>> updateOrderStatus(

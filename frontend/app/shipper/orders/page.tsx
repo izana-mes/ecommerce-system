@@ -17,6 +17,17 @@ interface OrderItem {
   shipperUserId: string | null;
 }
 
+interface AssignedOrderItem {
+  orderId: number;
+  orderNumber: string;
+  orderStatus: string;
+  shipperUserId: string | null;
+  expectedDeliveryAt: string | null;
+  pickedUpAt: string | null;
+  deliveredAt: string | null;
+  failedAt: string | null;
+}
+
 const STATUS_BADGE: Record<string, string> = {
   processing: "sh-badge-blue",
   completed: "sh-badge-green",
@@ -26,6 +37,8 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export default function ShipperOrdersPage() {
+  const [assignedOrders, setAssignedOrders] = useState<AssignedOrderItem[]>([]);
+  const [loadingAssigned, setLoadingAssigned] = useState(false);
   const [orderIdSearch, setOrderIdSearch] = useState("");
   const [order, setOrder] = useState<OrderItem | null>(null);
   const [loading, setLoading] = useState(false);
@@ -56,6 +69,25 @@ export default function ShipperOrdersPage() {
     }
   }, []);
 
+  const fetchAssignedOrders = useCallback(async () => {
+    const token = getToken();
+    if (!token) return;
+    setLoadingAssigned(true);
+    try {
+      const res = await fetch(`/api/v1/shipper/orders?activeOnly=true&limit=50`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Failed to load assigned orders");
+      setAssignedOrders(Array.isArray(data?.data) ? data.data : []);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+      setAssignedOrders([]);
+    } finally {
+      setLoadingAssigned(false);
+    }
+  }, []);
+
   const updateStatus = async () => {
     const token = getToken();
     if (!token || !order) return;
@@ -76,6 +108,7 @@ export default function ShipperOrdersPage() {
       if (!res.ok) throw new Error(data?.message || "Failed to update status");
       toast.success(`✅ Status updated to ${statusValue}`);
       await fetchOrder(String(order.orderId));
+      await fetchAssignedOrders();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
     } finally {
@@ -97,6 +130,10 @@ export default function ShipperOrdersPage() {
     return <MdWarning style={{ color: "#fcd34d" }} />;
   };
 
+  useEffect(() => {
+    void fetchAssignedOrders();
+  }, [fetchAssignedOrders]);
+
   return (
     <>
       <div className="sh-topbar">
@@ -108,6 +145,64 @@ export default function ShipperOrdersPage() {
 
       <div className="sh-content">
         <div className="sh-section-gap">
+
+          {/* ── Assigned orders ── */}
+          <div className="sh-card">
+            <div className="sh-card-header">
+              <div>
+                <h2 className="sh-card-title">My Assigned Orders</h2>
+                <p className="sh-card-subtitle">Orders assigned to you by admin/staff</p>
+              </div>
+              <button
+                className="sh-btn sh-btn-secondary"
+                onClick={() => void fetchAssignedOrders()}
+                disabled={loadingAssigned}
+                title="Refresh"
+              >
+                <MdRefresh />
+              </button>
+            </div>
+
+            {loadingAssigned ? (
+              <div style={{ padding: "10px 0", color: "#64748b", fontSize: 13 }}>Loading…</div>
+            ) : assignedOrders.length === 0 ? (
+              <div style={{ padding: "10px 0", color: "#64748b", fontSize: 13 }}>
+                No orders assigned to you yet.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {assignedOrders.map((o) => (
+                  <button
+                    key={o.orderId}
+                    className="sh-btn sh-btn-secondary"
+                    style={{
+                      justifyContent: "space-between",
+                      width: "100%",
+                      padding: "12px 14px",
+                      borderRadius: 12,
+                      textAlign: "left",
+                    }}
+                    onClick={() => {
+                      setOrderIdSearch(String(o.orderId));
+                      void fetchOrder(String(o.orderId));
+                    }}
+                  >
+                    <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      <span style={{ fontWeight: 700, color: "#f1f5f9" }}>
+                        {o.orderNumber} <span style={{ color: "#64748b", fontWeight: 600 }}>#{o.orderId}</span>
+                      </span>
+                      <span style={{ fontSize: 12, color: "#64748b" }}>
+                        Expected: {fmt(o.expectedDeliveryAt)}
+                      </span>
+                    </span>
+                    <span className={`sh-badge ${STATUS_BADGE[o.orderStatus] ?? "sh-badge-gray"}`}>
+                      {o.orderStatus}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* ── Search ── */}
           <div className="sh-card">

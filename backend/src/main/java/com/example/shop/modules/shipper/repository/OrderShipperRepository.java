@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -45,4 +46,24 @@ public interface OrderShipperRepository extends JpaRepository<OrderShipperView, 
                                @Param("lng") BigDecimal lng,
                                @Param("accuracy") BigDecimal accuracy,
                                @Param("capturedAt") Long capturedAt);
+
+    @Query(value = """
+            SELECT
+                o.id AS orderId,
+                o.order_number AS orderNumber,
+                o.order_status AS orderStatus,
+                o.shipper_user_id AS shipperUserId,
+                o.expected_delivery_at AS expectedDeliveryAt,
+                o.picked_up_at AS pickedUpAt,
+                o.delivered_at AS deliveredAt,
+                o.failed_at AS failedAt
+            FROM orders o
+            WHERE o.shipper_user_id = :shipperUserId
+              AND (:activeOnly = false OR o.order_status NOT IN ('completed', 'cancelled'))
+            ORDER BY COALESCE(o.picked_up_at, o.updated_at) DESC, o.id DESC
+            LIMIT :limitRows
+            """, nativeQuery = true)
+    List<ShipperOrderListProjection> listAssignedOrders(@Param("shipperUserId") UUID shipperUserId,
+                                                       @Param("activeOnly") boolean activeOnly,
+                                                       @Param("limitRows") int limitRows);
 }

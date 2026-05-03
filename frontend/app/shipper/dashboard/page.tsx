@@ -14,7 +14,6 @@ import {
   MdAssignment,
 } from "react-icons/md";
 import { getToken, getUser } from "@/lib/auth";
-import toast from "react-hot-toast";
 
 interface PerformanceStats {
   completedDeliveries: number;
@@ -31,6 +30,17 @@ interface OrderTracking {
   expectedDeliveryAt: string | null;
   pickedUpAt: string | null;
   deliveredAt: string | null;
+}
+
+interface AssignedOrderItem {
+  orderId: number;
+  orderNumber: string;
+  orderStatus: string;
+  shipperUserId: string | null;
+  expectedDeliveryAt: string | null;
+  pickedUpAt: string | null;
+  deliveredAt: string | null;
+  failedAt: string | null;
 }
 
 function StatCard({
@@ -86,15 +96,42 @@ export default function ShipperDashboardPage() {
     }
   }, [shipperUserId]);
 
+  const fetchActiveOrder = useCallback(async () => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const res = await fetch(`/api/v1/shipper/orders?activeOnly=true&limit=1`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) return;
+      const first: AssignedOrderItem | undefined = Array.isArray(data?.data) ? data.data[0] : undefined;
+      if (!first) {
+        setActiveOrder(null);
+        return;
+      }
+      setActiveOrder({
+        orderId: first.orderId,
+        orderNumber: first.orderNumber,
+        orderStatus: first.orderStatus,
+        expectedDeliveryAt: first.expectedDeliveryAt,
+        pickedUpAt: first.pickedUpAt,
+        deliveredAt: first.deliveredAt,
+      });
+    } catch {
+      /* silent */
+    }
+  }, []);
+
   const load = useCallback(async () => {
     if (!user) {
       router.replace("/login?returnTo=/shipper/dashboard");
       return;
     }
     setLoading(true);
-    await fetchStats();
+    await Promise.all([fetchStats(), fetchActiveOrder()]);
     setLoading(false);
-  }, [user, router, fetchStats]);
+  }, [user, router, fetchStats, fetchActiveOrder]);
 
   useEffect(() => {
     void load();

@@ -114,6 +114,24 @@ public class ShipperRealtimeService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public List<ShipperDtos.AssignedOrderItem> listMyAssignedOrders(User user, boolean activeOnly, Integer limit) {
+        UUID shipperUserId = requireShipperUserId(user);
+        int limitEffective = limit == null ? 50 : Math.max(1, Math.min(200, limit));
+        return orderShipperRepository.listAssignedOrders(shipperUserId, activeOnly, limitEffective).stream()
+                .map(row -> ShipperDtos.AssignedOrderItem.builder()
+                        .orderId(row.getOrderId())
+                        .orderNumber(row.getOrderNumber())
+                        .orderStatus(row.getOrderStatus())
+                        .shipperUserId(row.getShipperUserId())
+                        .expectedDeliveryAt(row.getExpectedDeliveryAt())
+                        .pickedUpAt(row.getPickedUpAt())
+                        .deliveredAt(row.getDeliveredAt())
+                        .failedAt(row.getFailedAt())
+                        .build())
+                .toList();
+    }
+
     @Transactional
     public void updateOrderStatus(User user, long orderId, ShipperDtos.StatusUpdateRequest req) {
         UUID shipperUserId = requireShipperUserId(user);

@@ -59,6 +59,19 @@ public final class ShipperDtos {
     }
 
     @Data
+    @Builder
+    public static class AssignedOrderItem {
+        private Long orderId;
+        private String orderNumber;
+        private String orderStatus;
+        private UUID shipperUserId;
+        private LocalDateTime expectedDeliveryAt;
+        private LocalDateTime pickedUpAt;
+        private LocalDateTime deliveredAt;
+        private LocalDateTime failedAt;
+    }
+
+    @Data
     public static class StatusUpdateRequest {
         private String status;
         private LocalDateTime expectedDeliveryAt;
