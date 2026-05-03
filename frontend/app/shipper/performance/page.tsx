@@ -66,9 +66,15 @@ export default function ShipperPerformancePage() {
     if (!token || !shipperUserId) return;
     setLoading(true);
     try {
+      // Spring @DateTimeFormat(ISO.DATE_TIME) expects e.g. 2026-04-04T03:23:00 (not a space separator).
+      const toIsoParam = (v: string) => {
+        const t = v.trim();
+        if (t.length === 16) return `${t}:00`; // datetime-local: yyyy-MM-ddTHH:mm
+        return t;
+      };
       const params = new URLSearchParams({
-        from: from.replace("T", " ") + ":00",
-        to: to.replace("T", " ") + ":00",
+        from: toIsoParam(from),
+        to: toIsoParam(to),
       });
       const res = await fetch(
         `/api/v1/shipper/shippers/${shipperUserId}/performance?${params}`,

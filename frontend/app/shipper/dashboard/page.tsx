@@ -85,8 +85,12 @@ export default function ShipperDashboardPage() {
     try {
       const from = new Date();
       from.setDate(from.getDate() - 30);
+      const params = new URLSearchParams({
+        from: from.toISOString().slice(0, 19),
+        to: new Date().toISOString().slice(0, 19),
+      });
       const res = await fetch(
-        `/api/v1/shipper/shippers/${shipperUserId}/performance?from=${from.toISOString().split(".")[0]}&to=${new Date().toISOString().split(".")[0]}`,
+        `/api/v1/shipper/shippers/${shipperUserId}/performance?${params.toString()}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
