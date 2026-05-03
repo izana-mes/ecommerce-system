@@ -22,7 +22,7 @@ public class StaffFulfillmentInsightsController {
      * Light-weight dashboard metrics for admin / CS employees (supplier and shipper roles excluded).
      */
     @GetMapping("/order-insights")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'EMPLOYEE')")
     public ResponseEntity<ApiResponse<Map<String, Long>>> orderInsights() {
         return ResponseEntity.ok(ApiResponse.success(orderService.fulfillmentInsightsForStaff()));
     }

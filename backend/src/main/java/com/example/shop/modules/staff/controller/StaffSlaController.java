@@ -21,7 +21,7 @@ public class StaffSlaController {
      * Returns all orders that are past their expected_delivery_at and not yet delivered.
      */
     @GetMapping("/late")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'EMPLOYEE')")
     public ResponseEntity<List<SlaOrderDto>> getLateOrders() {
         return ResponseEntity.ok(slaService.getLateOrders());
     }
@@ -31,7 +31,7 @@ public class StaffSlaController {
      * Returns orders whose delivery deadline falls within the next N minutes.
      */
     @GetMapping("/near-late")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'EMPLOYEE')")
     public ResponseEntity<List<SlaOrderDto>> getNearLateOrders(
             @RequestParam(defaultValue = "30") int thresholdMinutes
     ) {

@@ -102,7 +102,7 @@ public class ShipperIncidentController {
     }
 
     @PatchMapping("/{id}/resolve")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'EMPLOYEE')")
     public ResponseEntity<Map<String, Object>> resolveIncident(@PathVariable("id") long id) {
         String actor = currentActor();
         int updated = jdbcTemplate.update(

@@ -27,7 +27,7 @@ public class StaffOrderController {
      * View all orders with filtering by status, paymentStatus, dateFrom, dateTo, shipperUserId, supplierProductId.
      */
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'EMPLOYEE')")
     public ResponseEntity<StaffOrderPageDto> listOrders(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String paymentStatus,

@@ -23,7 +23,7 @@ public class StaffIssueController {
      * List all shipper issues and help requests (optionally filter by status).
      */
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'EMPLOYEE')")
     public ResponseEntity<List<IssueDto>> listIssues(
             @RequestParam(required = false) String status
     ) {
@@ -35,7 +35,7 @@ public class StaffIssueController {
      * Respond to a shipper_issue_log entry (optionally mark as resolved).
      */
     @PostMapping("/logs/{id}/respond")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'EMPLOYEE')")
     public ResponseEntity<IssueDto> respondToIssueLog(
             @PathVariable Long id,
             @RequestBody RespondIssueRequest request,
@@ -49,7 +49,7 @@ public class StaffIssueController {
      * Respond to a shipper_help_request entry (optionally mark as resolved).
      */
     @PostMapping("/help/{id}/respond")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'EMPLOYEE')")
     public ResponseEntity<IssueDto> respondToHelpRequest(
             @PathVariable Long id,
             @RequestBody RespondIssueRequest request,

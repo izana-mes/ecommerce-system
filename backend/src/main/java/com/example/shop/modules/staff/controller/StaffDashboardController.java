@@ -23,7 +23,7 @@ public class StaffDashboardController {
      * and 7-day revenue trend.
      */
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'EMPLOYEE')")
     public ResponseEntity<StaffDashboardDto> getDashboard() {
         return ResponseEntity.ok(staffDashboardService.getDashboard());
     }

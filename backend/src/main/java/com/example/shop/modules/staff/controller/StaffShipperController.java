@@ -29,7 +29,7 @@ public class StaffShipperController {
      * List all active shippers with their current active order count.
      */
     @GetMapping("/shippers")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'EMPLOYEE')")
     public ResponseEntity<List<ShipperDto>> listShippers() {
         return ResponseEntity.ok(shipperService.listShippers());
     }
@@ -39,7 +39,7 @@ public class StaffShipperController {
      * Assign or reassign a shipper to an order.
      */
     @PostMapping("/orders/{id}/assign-shipper")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'EMPLOYEE')")
     public ResponseEntity<ApiResponse<String>> assignShipper(
             @PathVariable Long id,
             @RequestBody @Valid AssignShipperRequest request,
@@ -61,7 +61,7 @@ public class StaffShipperController {
      * Fetch the current (latest) GPS location of a shipper.
      */
     @GetMapping("/shippers/{shipperUserId}/location")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'EMPLOYEE')")
     public ResponseEntity<ShipperLocationDto> getShipperLocation(
             @PathVariable String shipperUserId
     ) {
