@@ -40,7 +40,7 @@ public class ShipperServiceImpl implements ShipperService {
                        ) AS active_order_count
                 FROM users u
                 INNER JOIN user_roles ur ON ur.users_id = u.users_id
-                INNER JOIN roles r ON r.roles_id = ur.roles_id AND r.name = 'ROLE_SHIPPER'
+                INNER JOIN roles r ON r.roles_id = ur.roles_id AND r.roles_name = 'ROLE_SHIPPER'
                 LEFT JOIN orders o ON o.shipper_user_id = u.users_id
                 WHERE u.is_active = true
                 GROUP BY u.users_id, u.email, u.first_name, u.last_name
@@ -75,7 +75,7 @@ public class ShipperServiceImpl implements ShipperService {
                 """
                 SELECT COUNT(*) FROM users u
                 INNER JOIN user_roles ur ON ur.users_id = u.users_id
-                INNER JOIN roles r ON r.roles_id = ur.roles_id AND r.name = 'ROLE_SHIPPER'
+                INNER JOIN roles r ON r.roles_id = ur.roles_id AND r.roles_name = 'ROLE_SHIPPER'
                 WHERE u.users_id = ? AND u.is_active = true
                 """,
                 Long.class, shipperUserId

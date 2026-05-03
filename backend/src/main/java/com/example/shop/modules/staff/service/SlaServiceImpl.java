@@ -3,12 +3,14 @@ package com.example.shop.modules.staff.service;
 import com.example.shop.modules.staff.dto.SlaOrderDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -25,11 +27,16 @@ public class SlaServiceImpl implements SlaService {
     @Transactional(readOnly = true)
     public List<SlaOrderDto> getLateOrders() {
         LocalDateTime now = LocalDateTime.now();
-        return jdbcTemplate.query(
-                buildSlaQuery("o.expected_delivery_at < ?"),
-                (rs, rowNum) -> mapSlaRow(rs, now),
-                Timestamp.valueOf(now)
-        );
+        try {
+            return jdbcTemplate.query(
+                    buildSlaQuery("o.expected_delivery_at < ?"),
+                    (rs, rowNum) -> mapSlaRow(rs, now),
+                    Timestamp.valueOf(now)
+            );
+        } catch (DataAccessException ex) {
+            log.warn("Late SLA query failed: {}", ex.getMessage());
+            return Collections.emptyList();
+        }
     }
 
     @Override
@@ -38,12 +45,17 @@ public class SlaServiceImpl implements SlaService {
         int safeMinutes = Math.max(1, Math.min(thresholdMinutes, 1440));
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime threshold = now.plusMinutes(safeMinutes);
-        return jdbcTemplate.query(
-                buildSlaQuery("o.expected_delivery_at >= ? AND o.expected_delivery_at <= ?"),
-                (rs, rowNum) -> mapSlaRow(rs, now),
-                Timestamp.valueOf(now),
-                Timestamp.valueOf(threshold)
-        );
+        try {
+            return jdbcTemplate.query(
+                    buildSlaQuery("o.expected_delivery_at >= ? AND o.expected_delivery_at <= ?"),
+                    (rs, rowNum) -> mapSlaRow(rs, now),
+                    Timestamp.valueOf(now),
+                    Timestamp.valueOf(threshold)
+            );
+        } catch (DataAccessException ex) {
+            log.warn("Near-late SLA query failed: {}", ex.getMessage());
+            return Collections.emptyList();
+        }
     }
 
     private String buildSlaQuery(String deadlineCondition) {

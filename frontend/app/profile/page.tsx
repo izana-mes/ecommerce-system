@@ -518,6 +518,7 @@ export default function ProfilePage() {
   const canRequestSupplierAccess = user.role === "user" && supplierRequestStatus !== "PENDING";
   const isSupplier = user.role === "supplier";
   const isAdmin = user.role === "admin";
+  const isShipper = user.role === "shipper";
 
   return (
     <div className="profilePage">
@@ -547,11 +548,27 @@ export default function ProfilePage() {
                 <Link href="/orders">{t("profile_view_history")}</Link>
               </span>
             </div>
+            {!isAdmin && !isSupplier && !isShipper ? (
+              <div className="profileField">
+                <span className="profileLabel">Dashboard</span>
+                <span className="profileValue">
+                  <Link href="/dashboard">Open dashboard</Link>
+                </span>
+              </div>
+            ) : null}
             {isSupplier ? (
               <div className="profileField">
-                <span className="profileLabel">Supplier portal</span>
+                <span className="profileLabel">Supplier dashboard</span>
                 <span className="profileValue">
-                  <Link href="/supplier">Open portal</Link>
+                  <Link href="/supplier/dashboard">Open dashboard</Link>
+                </span>
+              </div>
+            ) : null}
+            {isShipper ? (
+              <div className="profileField">
+                <span className="profileLabel">Shipper dashboard</span>
+                <span className="profileValue">
+                  <Link href="/shipper/dashboard">Open dashboard</Link>
                 </span>
               </div>
             ) : null}
@@ -599,7 +616,7 @@ export default function ProfilePage() {
           ) : null}
         </div>
 
-        {!isAdmin && !isSupplier ? (
+        {!isAdmin && !isSupplier && !isShipper ? (
           <section className="profileCard profileDashboardMain">
             <div className="profileDashboardHeader">
               <h2>Welcome back, {user.firstName || 'User'}!</h2>
@@ -903,8 +920,31 @@ export default function ProfilePage() {
                       })
                     : null}
                 </div>
-                <Link href="/supplier" className="profilePrimaryButton profileLinkButton">
-                  Manage product submissions
+                <Link href="/supplier/dashboard" className="profilePrimaryButton profileLinkButton">
+                  Open supplier dashboard
+                </Link>
+              </div>
+            ) : null}
+            {isShipper ? (
+              <div className="profileSupplierSummary">
+                <div className="profileSupplierHeader">
+                  <div>
+                    <h2>Shipper dashboard</h2>
+                    <p>Track deliveries, performance metrics, and active routes in one place.</p>
+                  </div>
+                </div>
+                <div className="profileSupplierMetrics">
+                  <div className="profileMetric">
+                    <strong>Overview</strong>
+                    <span>Daily delivery status</span>
+                  </div>
+                  <div className="profileMetric">
+                    <strong>Performance</strong>
+                    <span>Success and timing metrics</span>
+                  </div>
+                </div>
+                <Link href="/shipper/dashboard" className="profilePrimaryButton profileLinkButton">
+                  Open shipper dashboard
                 </Link>
               </div>
             ) : null}
