@@ -227,8 +227,8 @@ export default function StaffShippingPage() {
     <main className="shippingPage">
       <h1>Fulfillment queue</h1>
       <p className="shippingIntro">
-        Prepaid orders (payment confirmed) and Cash on Delivery orders awaiting dispatch appear in the queue. Pure
-        shippers see that scoped slice only; admins and employees see full order history in this view.
+        Track the full fulfillment queue here, including ready-to-ship, shipped/completed, and orders that need
+        attention.
       </p>
       <section className="shippingStats">
         <div className="statCard">

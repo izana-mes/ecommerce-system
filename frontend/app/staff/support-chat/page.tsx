@@ -23,7 +23,7 @@ type ConversationItem = {
 type SupportMessage = {
   messageId: string;
   conversationId: string;
-  senderRole: "customer" | "employee" | "admin";
+  senderRole: "customer" | "employee" | "admin" | "shipper";
   senderEmail: string | null;
   body: string;
   createdAt: string;
@@ -120,9 +120,11 @@ export default function StaffSupportChatPage() {
         const allowedRole =
           role === "admin" ||
           role === "employee" ||
+          role === "shipper" ||
           roles.includes("ROLE_ADMIN") ||
           roles.includes("ROLE_EMPLOYEE") ||
-          roles.includes("ROLE_STAFF");
+          roles.includes("ROLE_STAFF") ||
+          roles.includes("ROLE_SHIPPER");
 
         setAllowed(allowedRole);
       } catch {
@@ -420,7 +422,7 @@ export default function StaffSupportChatPage() {
       <section className="staffSupportChatPage">
         <div className="staffSupportChatCard">
           <h1>Support Inbox</h1>
-          <p>You need employee or admin permissions to access this page.</p>
+          <p>You need employee, shipper, or admin permissions to access this page.</p>
         </div>
       </section>
     );
@@ -551,7 +553,10 @@ export default function StaffSupportChatPage() {
             ) : null}
 
             {messages.map((message) => {
-              const isTeam = message.senderRole === "employee" || message.senderRole === "admin";
+              const isTeam =
+                message.senderRole === "employee" ||
+                message.senderRole === "admin" ||
+                message.senderRole === "shipper";
               return (
                 <article key={message.messageId} className={`staffThreadBubble ${isTeam ? "team" : "customer"}`}>
                   <p>{message.body}</p>

@@ -370,16 +370,7 @@ public class OrderServiceImpl implements OrderService {
                                        COALESCE(SUM(oi.quantity), 0) AS item_count
                                 FROM orders o
                                 LEFT JOIN order_items oi ON oi.order_id = o.id
-                                WHERE (
-                                    (LOWER(o.payment_status) = 'paid'
-                                        AND LOWER(o.order_status) IN ('paid', 'processing'))
-                                    OR (
-                                        (LOWER(TRIM(o.payment_method)) LIKE '%cash%delivery%' OR LOWER(TRIM(o.payment_method)) = 'cod')
-                                        AND LOWER(o.payment_status) IN ('pending', 'authorized')
-                                        AND LOWER(o.order_status) IN ('pending', 'processing'))
-                                    OR (
-                                        LOWER(o.order_status) = 'shipped'
-                                        AND COALESCE(o.shipped_at, o.updated_at) >= (CURRENT_TIMESTAMP - INTERVAL '7 days')))
+                                WHERE LOWER(o.order_status) <> 'cancelled'
                                 GROUP BY o.id
                                 ORDER BY o.updated_at DESC
                                 LIMIT ?

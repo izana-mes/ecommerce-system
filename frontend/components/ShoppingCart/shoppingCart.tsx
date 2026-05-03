@@ -82,6 +82,16 @@ type AppliedCoupon = {
   discountValue: number;
   discountAmount: number;
 };
+type AddressSuggestion = {
+  displayName: string;
+  latitude: number;
+  longitude: number;
+  streetAddress1: string;
+  streetAddress2: string;
+  city: string;
+  postalCode: string;
+  country: string;
+};
 
 function normalizeAuthorizationHeader(token: string | null): string | null {
   if (!token) return null;
@@ -144,6 +154,9 @@ export default function ShoppingCart() {
   const [checkoutErrors, setCheckoutErrors] = useState<CheckoutErrorFields>({});
   const [checkoutLocation, setCheckoutLocation] = useState<CapturedLocation | null>(null);
   const [locationLoading, setLocationLoading] = useState(false);
+  const [addressQuery, setAddressQuery] = useState("");
+  const [addressSearching, setAddressSearching] = useState(false);
+  const [addressResults, setAddressResults] = useState<AddressSuggestion[]>([]);
   const [couponCode, setCouponCode] = useState("");
   const [couponApplying, setCouponApplying] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
@@ -409,6 +422,64 @@ export default function ShoppingCart() {
       setLocationLoading(false);
     }
   }, [captureBrowserLocation]);
+
+  const handleSearchAddress = useCallback(async () => {
+    const query = addressQuery.trim();
+    if (query.length < 3) {
+      toast.error("Please type at least 3 characters to search address");
+      return;
+    }
+    setAddressSearching(true);
+    try {
+      const response = await fetch(
+        `/api/location/search?q=${encodeURIComponent(query)}&limit=5`,
+        { cache: "no-store" }
+      );
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.error || "Address search failed");
+      }
+      const rows = Array.isArray(payload?.results) ? (payload.results as AddressSuggestion[]) : [];
+      setAddressResults(rows);
+      if (rows.length === 0) {
+        toast.error("No address results found");
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Address search failed";
+      toast.error(message);
+      setAddressResults([]);
+    } finally {
+      setAddressSearching(false);
+    }
+  }, [addressQuery]);
+
+  const handleSelectAddress = useCallback((result: AddressSuggestion) => {
+    setCheckoutForm((prev) => ({
+      ...prev,
+      country: result.country || prev.country,
+      streetAddress1: result.streetAddress1 || prev.streetAddress1,
+      streetAddress2: result.streetAddress2 || prev.streetAddress2,
+      city: result.city || prev.city,
+      postalCode: result.postalCode || prev.postalCode,
+    }));
+    setCheckoutErrors((prev) => ({
+      ...prev,
+      streetAddress1: undefined,
+      city: undefined,
+      postalCode: undefined,
+      country: undefined,
+    }));
+    setCheckoutLocation({
+      latitude: result.latitude,
+      longitude: result.longitude,
+      accuracyMeters: null,
+      label: result.displayName || result.streetAddress1,
+      capturedAt: Date.now(),
+    });
+    setAddressResults([]);
+    setAddressQuery(result.displayName || result.streetAddress1);
+    toast.success("Address selected");
+  }, []);
 
   const handlePlaceOrder = async () => {
     if (checkoutItems.length === 0 || isPlacingOrder) return;
@@ -1061,6 +1132,38 @@ export default function ShoppingCart() {
                       </p>
                       {checkoutLocation ? (
                         <p className="checkoutDeliveryCapturedNote">{t("checkout_delivery_captured")}</p>
+                      ) : null}
+                    </div>
+                    <div className="checkoutAddressLookup">
+                      <div className="checkoutAddressLookupRow">
+                        <input
+                          type="text"
+                          placeholder="Search address (if not using current location)"
+                          value={addressQuery}
+                          onChange={(event) => setAddressQuery(event.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className="checkoutAddressSearchButton"
+                          onClick={() => void handleSearchAddress()}
+                          disabled={addressSearching}
+                        >
+                          {addressSearching ? "Searching..." : "Search"}
+                        </button>
+                      </div>
+                      {addressResults.length > 0 ? (
+                        <div className="checkoutAddressResults" role="listbox" aria-label="Address results">
+                          {addressResults.map((result, index) => (
+                            <button
+                              key={`${result.latitude}-${result.longitude}-${index}`}
+                              type="button"
+                              className="checkoutAddressResultItem"
+                              onClick={() => handleSelectAddress(result)}
+                            >
+                              {result.displayName}
+                            </button>
+                          ))}
+                        </div>
                       ) : null}
                     </div>
                     <select

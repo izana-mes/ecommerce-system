@@ -9,7 +9,7 @@ import "./support-chat.css";
 type SupportMessage = {
   messageId: string;
   conversationId: string;
-  senderRole: "customer" | "employee" | "admin";
+  senderRole: "customer" | "employee" | "admin" | "shipper";
   senderEmail: string | null;
   body: string;
   createdAt: string;

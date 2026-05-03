@@ -194,7 +194,8 @@ public class SupportChatServiceImpl implements SupportChatService {
         if (opt.isEmpty()) return false;
 
         SupportChatConversation conv = opt.get();
-        if (getSenderRole(user).equals("employee") || getSenderRole(user).equals("admin")) return true;
+        String actorRole = getSenderRole(user);
+        if ("employee".equals(actorRole) || "admin".equals(actorRole) || "shipper".equals(actorRole)) return true;
 
         if (user != null && conv.getCustomerUserId() != null && conv.getCustomerUserId().equals(user.getId().toString())) return true;
         if (user != null && conv.getCustomerEmail() != null && conv.getCustomerEmail().equalsIgnoreCase(user.getEmail())) return true;
@@ -211,13 +212,14 @@ public class SupportChatServiceImpl implements SupportChatService {
                 .map(a -> a.getAuthority().toLowerCase())
                 .collect(Collectors.joining(","));
         if (r.contains("admin")) return "admin";
+        if (r.contains("shipper")) return "shipper";
         if (r.contains("staff") || r.contains("employee")) return "employee";
         return "customer";
     }
 
     private void requireStaffAccess(User user) {
         String role = getSenderRole(user);
-        if (!"employee".equals(role) && !"admin".equals(role)) {
+        if (!"employee".equals(role) && !"admin".equals(role) && !"shipper".equals(role)) {
             throw new BusinessException("Access denied", HttpStatus.FORBIDDEN);
         }
     }

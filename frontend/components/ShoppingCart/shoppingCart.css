@@ -403,6 +403,62 @@
   color: var(--muted-text);
 }
 
+.checkoutAddressLookup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.checkoutAddressLookupRow {
+  display: flex;
+  gap: 10px;
+}
+
+.checkoutAddressLookupRow input {
+  flex: 1;
+}
+
+.checkoutAddressSearchButton {
+  min-width: 120px;
+  height: 52px;
+  border: 1px solid var(--foreground);
+  background: var(--foreground);
+  color: var(--background);
+  padding: 0 18px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.checkoutAddressSearchButton:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.checkoutAddressResults {
+  border: 1px solid var(--border-soft);
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.checkoutAddressResultItem {
+  text-align: left;
+  border: none;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface-1);
+  color: var(--foreground);
+  padding: 10px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.checkoutAddressResultItem:hover {
+  background: color-mix(in srgb, var(--surface-1) 88%, var(--foreground) 12%);
+}
+
 .checkoutDetailsForm input {
   height: 52px;
   padding: 0px 20px;
