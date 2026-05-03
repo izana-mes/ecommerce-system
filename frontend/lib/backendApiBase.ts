@@ -11,3 +11,12 @@ export function backendApiBaseUrl(): string {
     "http://localhost:8080/api";
   return raw.replace(/\/+$/, "");
 }
+
+/** Browser-facing Spring origin without `/api` (SockJS, OAuth, etc.). */
+export function publicBackendOriginUrl(): string {
+  const direct = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
+  if (direct) return direct.replace(/\/+$/, "");
+  const api = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (api) return api.replace(/\/+$/, "").replace(/\/api$/, "");
+  return "http://localhost:8080";
+}

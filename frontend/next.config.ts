@@ -8,11 +8,16 @@ const nextConfig: NextConfig = {
     root: path.join(__dirname),
   },
   async rewrites() {
+    const backend = process.env.BACKEND_URL || "http://localhost:8080";
     return [
       {
-        source: '/api/v1/staff/:path*',
-        destination: `${process.env.BACKEND_URL || 'http://localhost:8080'}/api/v1/staff/:path*`
-      }
+        source: "/api/v1/staff/:path*",
+        destination: `${backend}/api/v1/staff/:path*`,
+      },
+      {
+        source: "/api/v1/shipper/:path*",
+        destination: `${backend}/api/v1/shipper/:path*`,
+      },
     ];
   }
 };

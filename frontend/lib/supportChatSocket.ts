@@ -2,18 +2,7 @@
 
 import { Client, IMessage } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
-
-function resolveBackendOrigin(): string {
-  const backend = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
-  if (backend) {
-    return backend.replace(/\/+$/, "");
-  }
-  const apiBase = process.env.NEXT_PUBLIC_API_URL?.trim();
-  if (apiBase) {
-    return apiBase.replace(/\/+$/, "").replace(/\/api$/, "");
-  }
-  return "http://localhost:8080";
-}
+import { publicBackendOriginUrl } from "@/lib/backendApiBase";
 
 export function createSupportChatStompClient(options: {
   token?: string | null;
@@ -21,7 +10,7 @@ export function createSupportChatStompClient(options: {
   onStompError?: (error: string) => void;
   onSocketError?: () => void;
 }): Client {
-  const origin = resolveBackendOrigin();
+  const origin = publicBackendOriginUrl();
   const wsEndpoint = `${origin}/ws`;
 
   const connectHeaders: Record<string, string> = {};

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MdWarning, MdSend, MdRefresh, MdHelpOutline } from "react-icons/md";
 import { getToken, getUser } from "@/lib/auth";
+import { publicBackendOriginUrl } from "@/lib/backendApiBase";
 import { Client, IMessage } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import toast from "react-hot-toast";
@@ -71,7 +72,7 @@ export default function ShipperIssuesPage() {
     if (!token) return;
 
     const client = new Client({
-      webSocketFactory: () => new SockJS("/ws") as WebSocket,
+      webSocketFactory: () => new SockJS(`${publicBackendOriginUrl()}/ws`) as WebSocket,
       connectHeaders: { Authorization: `Bearer ${token}` },
       reconnectDelay: 5000,
       onConnect: () => {
