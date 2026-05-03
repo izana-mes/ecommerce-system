@@ -300,10 +300,6 @@ public class OrderServiceImpl implements OrderService {
         }
         int safeLimit = Math.min(Math.max(limit, 1), 100);
 
-        if (hasAdminOrEmployeeRole(user)) {
-            return queryRecentStaffWideOrderHistory(safeLimit);
-        }
-
         return jdbcTemplate.query(
                 """
                         SELECT o.id,
