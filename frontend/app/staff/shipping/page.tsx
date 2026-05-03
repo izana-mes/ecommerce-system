@@ -20,6 +20,18 @@ type OrderRow = {
   shipped_at?: string | null;
 };
 
+type ShipperIncident = {
+  id: number;
+  order_id: number;
+  order_number: string;
+  customer_email: string;
+  incident_type: "DELIVERY_DELAY" | "QUALITY_COMPLAINT" | "DAMAGED_PACKAGE" | "FAILED_ATTEMPT" | "OTHER";
+  severity: "LOW" | "MEDIUM" | "HIGH";
+  status: "OPEN" | "RESOLVED";
+  details: string | null;
+  created_at: string;
+};
+
 function canAccessShipping(profile: { role?: string; roles?: string[] } | null): boolean {
   const r = String(profile?.role || "").toLowerCase();
   const roles = Array.isArray(profile?.roles) ? profile.roles.map((x) => String(x).toUpperCase()) : [];
@@ -77,6 +89,10 @@ export default function StaffShippingPage() {
   const [trackingById, setTrackingById] = useState<Record<number, string>>({});
   const [query, setQuery] = useState("");
   const [view, setView] = useState<"ready" | "shipped" | "attention" | "all">("ready");
+  const [incidents, setIncidents] = useState<ShipperIncident[]>([]);
+  const [incidentTypeById, setIncidentTypeById] = useState<Record<number, ShipperIncident["incident_type"]>>({});
+  const [incidentSeverityById, setIncidentSeverityById] = useState<Record<number, ShipperIncident["severity"]>>({});
+  const [incidentDetailsById, setIncidentDetailsById] = useState<Record<number, string>>({});
 
   useEffect(() => {
     const run = async () => {
@@ -135,12 +151,32 @@ export default function StaffShippingPage() {
     }
   }, [allowed, token]);
 
+  const fetchIncidents = useCallback(async () => {
+    if (!token || !allowed) return;
+    try {
+      const response = await fetch("/api/auth/shipper-incidents?status=OPEN", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(payload?.error || payload?.message || "Could not load incidents");
+      setIncidents(Array.isArray(payload) ? (payload as ShipperIncident[]) : []);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Could not load incidents");
+    }
+  }, [allowed, token]);
+
   useEffect(() => {
     if (!allowed) return;
     void fetchOrders();
+    void fetchIncidents();
     const t = window.setInterval(() => void fetchOrders(), 45_000);
     return () => window.clearInterval(t);
-  }, [allowed, fetchOrders]);
+  }, [allowed, fetchIncidents, fetchOrders]);
 
   const markShipped = async (order: OrderRow, event: FormEvent) => {
     event.preventDefault();
@@ -180,6 +216,41 @@ export default function StaffShippingPage() {
     }
   };
 
+  const submitIncident = async (order: OrderRow, event: FormEvent) => {
+    event.preventDefault();
+    if (!token) return;
+    setPendingId(order.id);
+    try {
+      const incidentType = incidentTypeById[order.id] || "DELIVERY_DELAY";
+      const severity = incidentSeverityById[order.id] || "MEDIUM";
+      const details = (incidentDetailsById[order.id] || "").trim();
+      if (!details) throw new Error("Please enter issue details");
+
+      const response = await fetch("/api/auth/shipper-incidents", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          orderId: order.id,
+          incidentType,
+          severity,
+          details,
+        }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(payload?.error || payload?.message || "Failed to submit incident");
+
+      setIncidentDetailsById((prev) => ({ ...prev, [order.id]: "" }));
+      await fetchIncidents();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to submit incident");
+    } finally {
+      setPendingId(null);
+    }
+  };
+
   if (!token) {
     return null;
   }
@@ -205,6 +276,11 @@ export default function StaffShippingPage() {
     return os === "shipped" || os === "completed";
   }).length;
   const attentionCount = Math.max(0, orders.length - readyCount - shippedCount);
+  const openIncidentCount = incidents.filter((item) => item.status === "OPEN").length;
+  const incidentCountByOrder = incidents.reduce<Record<number, number>>((acc, item) => {
+    acc[item.order_id] = (acc[item.order_id] || 0) + 1;
+    return acc;
+  }, {});
 
   if (loadingAccess) {
     return (
@@ -242,6 +318,10 @@ export default function StaffShippingPage() {
         <div className="statCard">
           <strong>{attentionCount}</strong>
           <span>Needs attention</span>
+        </div>
+        <div className="statCard">
+          <strong>{openIncidentCount}</strong>
+          <span>Open delivery incidents</span>
         </div>
       </section>
       <section className="shippingToolbar">
@@ -304,6 +384,9 @@ export default function StaffShippingPage() {
                       {o.currency} {Number(o.total_amount).toFixed(2)}
                     </td>
                     <td>
+                      {incidentCountByOrder[o.id] ? (
+                        <div className="incidentPill">{incidentCountByOrder[o.id]} open incident(s)</div>
+                      ) : null}
                       {canShipHere ? (
                         <form className="shipForm" onSubmit={(ev) => void markShipped(o, ev)}>
                           <input
@@ -343,6 +426,47 @@ export default function StaffShippingPage() {
                           ) : null}
                         </div>
                       )}
+                      <form className="incidentForm" onSubmit={(ev) => void submitIncident(o, ev)}>
+                        <select
+                          value={incidentTypeById[o.id] || "DELIVERY_DELAY"}
+                          onChange={(ev) =>
+                            setIncidentTypeById((prev) => ({
+                              ...prev,
+                              [o.id]: ev.target.value as ShipperIncident["incident_type"],
+                            }))
+                          }
+                        >
+                          <option value="DELIVERY_DELAY">Delivery delay</option>
+                          <option value="QUALITY_COMPLAINT">Quality complaint</option>
+                          <option value="DAMAGED_PACKAGE">Damaged package</option>
+                          <option value="FAILED_ATTEMPT">Failed attempt</option>
+                          <option value="OTHER">Other</option>
+                        </select>
+                        <select
+                          value={incidentSeverityById[o.id] || "MEDIUM"}
+                          onChange={(ev) =>
+                            setIncidentSeverityById((prev) => ({
+                              ...prev,
+                              [o.id]: ev.target.value as ShipperIncident["severity"],
+                            }))
+                          }
+                        >
+                          <option value="LOW">Low</option>
+                          <option value="MEDIUM">Medium</option>
+                          <option value="HIGH">High</option>
+                        </select>
+                        <input
+                          type="text"
+                          placeholder="Report delay or quality issue"
+                          value={incidentDetailsById[o.id] ?? ""}
+                          onChange={(ev) =>
+                            setIncidentDetailsById((prev) => ({ ...prev, [o.id]: ev.target.value }))
+                          }
+                        />
+                        <button type="submit" disabled={pendingId === o.id}>
+                          {pendingId === o.id ? "Saving…" : "Report issue"}
+                        </button>
+                      </form>
                     </td>
                   </tr>
                 );

@@ -18,7 +18,7 @@
 
 .shippingStats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.65rem;
   margin-bottom: 0.85rem;
 }
@@ -130,6 +130,49 @@
 .shipForm button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.incidentForm {
+  margin-top: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 180px;
+}
+
+.incidentForm select,
+.incidentForm input {
+  padding: 0.35rem 0.45rem;
+  border: 1px solid #d4d4d8;
+  border-radius: 4px;
+  font-size: 0.82rem;
+}
+
+.incidentForm button {
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  border: none;
+  background: #7c2d12;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.incidentForm button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.incidentPill {
+  display: inline-block;
+  margin-bottom: 0.4rem;
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
 }
 
 .badge {

@@ -87,6 +87,21 @@ type AdminOrder = {
   created_at: string;
 };
 
+type ShipperIncident = {
+  id: number;
+  order_id: number;
+  order_number: string;
+  customer_email: string;
+  incident_type: "DELIVERY_DELAY" | "QUALITY_COMPLAINT" | "DAMAGED_PACKAGE" | "FAILED_ATTEMPT" | "OTHER";
+  severity: "LOW" | "MEDIUM" | "HIGH";
+  status: "OPEN" | "RESOLVED";
+  details: string | null;
+  created_by: string;
+  resolved_by: string | null;
+  created_at: string;
+  resolved_at: string | null;
+};
+
 type PagedOrders = {
   content?: AdminOrder[];
   totalPages?: number;
@@ -764,6 +779,10 @@ export default function AdminPage() {
   const [orderDateTo, setOrderDateTo] = useState("");
   const [orderProcessingId, setOrderProcessingId] = useState<number | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
+  const [shipperIncidents, setShipperIncidents] = useState<ShipperIncident[]>([]);
+  const [loadingShipperIncidents, setLoadingShipperIncidents] = useState(false);
+  const [shipperIncidentError, setShipperIncidentError] = useState<string | null>(null);
+  const [incidentProcessingId, setIncidentProcessingId] = useState<number | null>(null);
 
   const [reviews, setReviews] = useState<AdminReview[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
@@ -1147,6 +1166,29 @@ export default function AdminPage() {
       });
     } catch {
       setFulfillmentInsights(null);
+    }
+  }, [token]);
+
+  const fetchShipperIncidents = useCallback(async () => {
+    if (!token) return;
+    setLoadingShipperIncidents(true);
+    setShipperIncidentError(null);
+    try {
+      const response = await fetch("/api/auth/shipper-incidents", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(payload?.error || payload?.message || "Failed to load shipper incidents");
+      setShipperIncidents(Array.isArray(payload) ? (payload as ShipperIncident[]) : []);
+    } catch (err) {
+      setShipperIncidentError(err instanceof Error ? err.message : "Failed to load shipper incidents");
+    } finally {
+      setLoadingShipperIncidents(false);
     }
   }, [token]);
 
@@ -1928,6 +1970,7 @@ export default function AdminPage() {
     if (activeTab === "overview") {
       void fetchDashboard();
       void fetchFulfillmentInsights();
+      void fetchShipperIncidents();
     } else if (activeTab === "requests") {
       void Promise.all([fetchProductRequests(), fetchSupplierRequests()]);
     } else if (activeTab === "users") {
@@ -1959,6 +2002,7 @@ export default function AdminPage() {
     fetchAttendance,
     fetchDashboard,
     fetchFulfillmentInsights,
+    fetchShipperIncidents,
     fetchInventoryHealth,
     fetchNotes,
     fetchOrders,
@@ -1988,6 +2032,7 @@ export default function AdminPage() {
       if (activeTab === "overview") {
         void fetchDashboard();
         void fetchFulfillmentInsights();
+        void fetchShipperIncidents();
       } else if (activeTab === "orders") void fetchOrders(orderPage);
       else if (activeTab === "attendance") void fetchAttendance();
       else if (activeTab === "queues") void fetchQueues();
@@ -2000,6 +2045,7 @@ export default function AdminPage() {
     fetchAttendance,
     fetchDashboard,
     fetchFulfillmentInsights,
+    fetchShipperIncidents,
     fetchOrders,
     fetchQueues,
     fetchSystemHealth,
@@ -2010,6 +2056,7 @@ export default function AdminPage() {
     if (activeTab === "overview") {
       await fetchDashboard();
       await fetchFulfillmentInsights();
+      await fetchShipperIncidents();
       return;
     }
     if (activeTab === "requests") { await Promise.all([fetchProductRequests(), fetchSupplierRequests()]); return; }
@@ -2031,6 +2078,7 @@ export default function AdminPage() {
     fetchAttendance,
     fetchDashboard,
     fetchFulfillmentInsights,
+    fetchShipperIncidents,
     fetchInventoryHealth,
     fetchNotes,
     fetchOrders,
@@ -2776,13 +2824,47 @@ export default function AdminPage() {
 
   const alerts = useMemo(() => {
     const list: string[] = [];
+    const openIncidents = shipperIncidents.filter((item) => item.status === "OPEN").length;
+    const highIncidents = shipperIncidents.filter((item) => item.status === "OPEN" && item.severity === "HIGH").length;
     if (dashboard.pendingOrders > 15) list.push("High pending-order queue detected. Prioritize fulfillment.");
     if (dashboard.lowStockProducts > 10) list.push("Low-stock risk is elevated. Trigger restock workflow.");
     if (failedPayments > 0) list.push(`${failedPayments} failed payment(s) in recent orders.`);
     if (refundedPayments > 0) list.push(`${refundedPayments} refunded payment(s) in recent orders.`);
+    if (openIncidents > 0) list.push(`${openIncidents} open shipper incident(s) require follow-up.`);
+    if (highIncidents > 0) list.push(`${highIncidents} high-severity delivery issue(s) need immediate response.`);
     if (list.length === 0) list.push("No urgent operational alerts.");
     return list;
-  }, [dashboard.lowStockProducts, dashboard.pendingOrders, failedPayments, refundedPayments]);
+  }, [dashboard.lowStockProducts, dashboard.pendingOrders, failedPayments, refundedPayments, shipperIncidents]);
+
+  const openShipperIncidents = useMemo(
+    () => shipperIncidents.filter((item) => item.status === "OPEN"),
+    [shipperIncidents]
+  );
+  const delayedOpenIncidents = useMemo(
+    () => openShipperIncidents.filter((item) => item.incident_type === "DELIVERY_DELAY"),
+    [openShipperIncidents]
+  );
+
+  const handleResolveIncident = async (incidentId: number) => {
+    if (!token) return;
+    setIncidentProcessingId(incidentId);
+    try {
+      const response = await fetch(`/api/auth/shipper-incidents/${incidentId}/resolve`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(payload?.error || payload?.message || "Failed to resolve incident");
+      await fetchShipperIncidents();
+      toast.success("Incident resolved", { duration: 2000, style: { backgroundColor: "#07bc0c", color: "#fff" } });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to resolve incident", {
+        style: { backgroundColor: "#fb0404", color: "#fff" },
+      });
+    } finally {
+      setIncidentProcessingId(null);
+    }
+  };
 
   // ── Audit Handlers ──
   const handleAuditFilterSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -3383,6 +3465,64 @@ export default function AdminPage() {
                         <li key={alert}>{alert}</li>
                       ))}
                     </ul>
+                  </div>
+                  <div className="overviewSection">
+                    <h3>Shipper Management</h3>
+                    <div className="insightGrid">
+                      <div className="insightCard">
+                        <p>Open incidents</p>
+                        <h4>{openShipperIncidents.length}</h4>
+                      </div>
+                      <div className="insightCard">
+                        <p>Delivery delays</p>
+                        <h4>{delayedOpenIncidents.length}</h4>
+                      </div>
+                      <div className="insightCard">
+                        <p>High severity</p>
+                        <h4>{openShipperIncidents.filter((item) => item.severity === "HIGH").length}</h4>
+                      </div>
+                    </div>
+                    {loadingShipperIncidents ? <p className="adminStatus">Loading incidents...</p> : null}
+                    {shipperIncidentError ? <p className="adminStatus adminStatusError">{shipperIncidentError}</p> : null}
+                    {!loadingShipperIncidents && !shipperIncidentError ? (
+                      <table className="adminTable compactTable">
+                        <thead>
+                          <tr>
+                            <th>Order</th>
+                            <th>Type</th>
+                            <th>Severity</th>
+                            <th>Details</th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {openShipperIncidents.slice(0, 6).map((incident) => (
+                            <tr key={incident.id}>
+                              <td>{incident.order_number || incident.order_id}</td>
+                              <td>{formatLabel(incident.incident_type)}</td>
+                              <td>{incident.severity}</td>
+                              <td>{incident.details || "-"}</td>
+                              <td>
+                                <button
+                                  className="pageButton"
+                                  disabled={incidentProcessingId === incident.id}
+                                  onClick={() => void handleResolveIncident(incident.id)}
+                                >
+                                  {incidentProcessingId === incident.id ? "Resolving..." : "Resolve"}
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {openShipperIncidents.length === 0 ? (
+                            <tr>
+                              <td colSpan={5} className="adminEmpty">
+                                No open delivery incidents.
+                              </td>
+                            </tr>
+                          ) : null}
+                        </tbody>
+                      </table>
+                    ) : null}
                   </div>
                   <div className="overviewSection">
                     <h3>Quick Actions</h3>
