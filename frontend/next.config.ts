@@ -8,7 +8,11 @@ const nextConfig: NextConfig = {
     root: path.join(__dirname),
   },
   async rewrites() {
-    const backend = process.env.BACKEND_URL || "http://localhost:8080";
+    const isProd = process.env.NODE_ENV === "production";
+    const backend =
+      process.env.BACKEND_URL ||
+      (isProd ? process.env.NEXT_PUBLIC_BACKEND_URL : undefined) ||
+      "http://localhost:8080";
     return [
       {
         source: "/api/v1/staff/:path*",
