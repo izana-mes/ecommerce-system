@@ -31,7 +31,8 @@ public class UserExpense {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
 
-    @Column(nullable = false, length = 3, columnDefinition = "char(3)")
+    @org.hibernate.annotations.JdbcTypeCode(java.sql.Types.CHAR)
+    @Column(nullable = false, length = 3)
     @Builder.Default
     private String currency = "USD";
 
