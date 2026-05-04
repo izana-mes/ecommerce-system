@@ -19,5 +19,13 @@ public interface ShipperOrderListProjection {
     LocalDateTime getDeliveredAt();
 
     LocalDateTime getFailedAt();
+
+    String getCustomerFirstName();
+
+    String getCustomerLastName();
+
+    String getCustomerPhone();
+
+    String getShippingAddressLine1();
 }
 

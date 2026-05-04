@@ -97,11 +97,18 @@ public class ShipperRealtimeService {
         OrderShipperView order = orderShipperRepository.findById(orderId)
                 .orElseThrow(() -> new BusinessException("Order not found", HttpStatus.NOT_FOUND));
 
+        String firstName = order.getCustomerFirstName() == null ? "" : order.getCustomerFirstName().trim();
+        String lastName = order.getCustomerLastName() == null ? "" : order.getCustomerLastName().trim();
+        String customerName = (firstName + " " + lastName).trim();
+
         return ShipperDtos.OrderTrackingResponse.builder()
                 .orderId(order.getId())
                 .orderNumber(order.getOrderNumber())
                 .orderStatus(order.getOrderStatus())
                 .shipperUserId(order.getShipperUserId())
+                .customerName(customerName)
+                .customerPhone(order.getCustomerPhone())
+                .shippingAddress(order.getShippingAddressLine1())
                 .deliveryLatitude(order.getDeliveryLatitude())
                 .deliveryLongitude(order.getDeliveryLongitude())
                 .deliveryLocationAccuracyMeters(order.getDeliveryLocationAccuracyMeters())
@@ -119,16 +126,25 @@ public class ShipperRealtimeService {
         UUID shipperUserId = requireShipperUserId(user);
         int limitEffective = limit == null ? 50 : Math.max(1, Math.min(200, limit));
         return orderShipperRepository.listAssignedOrders(shipperUserId, activeOnly, limitEffective).stream()
-                .map(row -> ShipperDtos.AssignedOrderItem.builder()
+                .map(row -> {
+                    String firstName = row.getCustomerFirstName() == null ? "" : row.getCustomerFirstName().trim();
+                    String lastName = row.getCustomerLastName() == null ? "" : row.getCustomerLastName().trim();
+                    String customerName = (firstName + " " + lastName).trim();
+                    
+                    return ShipperDtos.AssignedOrderItem.builder()
                         .orderId(row.getOrderId())
                         .orderNumber(row.getOrderNumber())
                         .orderStatus(row.getOrderStatus())
                         .shipperUserId(row.getShipperUserId())
+                        .customerName(customerName)
+                        .customerPhone(row.getCustomerPhone())
+                        .shippingAddress(row.getShippingAddressLine1())
                         .expectedDeliveryAt(row.getExpectedDeliveryAt())
                         .pickedUpAt(row.getPickedUpAt())
                         .deliveredAt(row.getDeliveredAt())
                         .failedAt(row.getFailedAt())
-                        .build())
+                        .build();
+                })
                 .toList();
     }
 

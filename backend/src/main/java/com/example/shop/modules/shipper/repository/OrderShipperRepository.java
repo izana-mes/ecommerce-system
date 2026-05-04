@@ -56,7 +56,11 @@ public interface OrderShipperRepository extends JpaRepository<OrderShipperView, 
                 o.expected_delivery_at AS expectedDeliveryAt,
                 o.picked_up_at AS pickedUpAt,
                 o.delivered_at AS deliveredAt,
-                o.failed_at AS failedAt
+                o.failed_at AS failedAt,
+                o.customer_first_name AS customerFirstName,
+                o.customer_last_name AS customerLastName,
+                o.customer_phone AS customerPhone,
+                o.shipping_address_line1 AS shippingAddressLine1
             FROM orders o
             WHERE o.shipper_user_id = :shipperUserId
               AND (:activeOnly = false OR o.order_status NOT IN ('completed', 'cancelled'))

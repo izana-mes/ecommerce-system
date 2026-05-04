@@ -15,6 +15,9 @@ interface OrderItem {
   failedAt: string | null;
   failureReason: string | null;
   shipperUserId: string | null;
+  customerName?: string;
+  customerPhone?: string;
+  shippingAddress?: string;
 }
 
 interface AssignedOrderItem {
@@ -26,6 +29,8 @@ interface AssignedOrderItem {
   pickedUpAt: string | null;
   deliveredAt: string | null;
   failedAt: string | null;
+  customerName?: string;
+  customerPhone?: string;
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -191,6 +196,11 @@ export default function ShipperOrdersPage() {
                       <span style={{ fontWeight: 700, color: "#f1f5f9" }}>
                         {o.orderNumber} <span style={{ color: "#64748b", fontWeight: 600 }}>#{o.orderId}</span>
                       </span>
+                      {o.customerName && (
+                        <span style={{ fontSize: 13, color: "#cbd5e1", marginTop: 2, marginBottom: 2 }}>
+                          👤 {o.customerName} {o.customerPhone && <span style={{color: "#94a3b8"}}>({o.customerPhone})</span>}
+                        </span>
+                      )}
                       <span style={{ fontSize: 12, color: "#64748b" }}>
                         Expected: {fmt(o.expectedDeliveryAt)}
                       </span>
@@ -261,6 +271,9 @@ export default function ShipperOrdersPage() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                   {[
                     { label: "Order #", value: order.orderNumber },
+                    { label: "Customer", value: order.customerName || "—" },
+                    { label: "Phone", value: order.customerPhone || "—" },
+                    { label: "Address", value: order.shippingAddress || "—" },
                     { label: "Status", value: order.orderStatus },
                     { label: "Picked Up At", value: fmt(order.pickedUpAt) },
                     { label: "Expected By", value: fmt(order.expectedDeliveryAt) },

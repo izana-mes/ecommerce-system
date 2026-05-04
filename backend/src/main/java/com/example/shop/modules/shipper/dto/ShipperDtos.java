@@ -47,6 +47,9 @@ public final class ShipperDtos {
         private String orderNumber;
         private String orderStatus;
         private UUID shipperUserId;
+        private String customerName;
+        private String customerPhone;
+        private String shippingAddress;
         private BigDecimal deliveryLatitude;
         private BigDecimal deliveryLongitude;
         private BigDecimal deliveryLocationAccuracyMeters;
@@ -65,6 +68,9 @@ public final class ShipperDtos {
         private String orderNumber;
         private String orderStatus;
         private UUID shipperUserId;
+        private String customerName;
+        private String customerPhone;
+        private String shippingAddress;
         private LocalDateTime expectedDeliveryAt;
         private LocalDateTime pickedUpAt;
         private LocalDateTime deliveredAt;

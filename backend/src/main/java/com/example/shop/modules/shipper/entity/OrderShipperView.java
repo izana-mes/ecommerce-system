@@ -56,4 +56,16 @@ public class OrderShipperView {
 
     @Column(name = "failure_reason")
     private String failureReason;
+
+    @Column(name = "customer_first_name")
+    private String customerFirstName;
+
+    @Column(name = "customer_last_name")
+    private String customerLastName;
+
+    @Column(name = "customer_phone")
+    private String customerPhone;
+
+    @Column(name = "shipping_address_line1")
+    private String shippingAddressLine1;
 }

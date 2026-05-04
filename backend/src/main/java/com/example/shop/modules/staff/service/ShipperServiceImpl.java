@@ -1,5 +1,8 @@
 package com.example.shop.modules.staff.service;
 
+import com.example.shop.modules.messaging.email.EmailMessage;
+import com.example.shop.modules.messaging.email.EmailMessagePublisher;
+import com.example.shop.common.mail.EmailTemplateService;
 import com.example.shop.common.exception.BusinessException;
 import com.example.shop.modules.staff.dto.ShipperDto;
 import com.example.shop.modules.staff.dto.ShipperLocationDto;
@@ -26,6 +29,8 @@ public class ShipperServiceImpl implements ShipperService {
 
     private final JdbcTemplate jdbcTemplate;
     private final SimpMessagingTemplate messagingTemplate;
+    private final EmailMessagePublisher emailMessagePublisher;
+    private final EmailTemplateService emailTemplateService;
 
     @Override
     @Transactional(readOnly = true)
@@ -70,19 +75,26 @@ public class ShipperServiceImpl implements ShipperService {
         String orderNumber = (String) order.get("order_number");
         String prevStatus = (String) order.get("order_status");
 
-        // Validate shipper exists and has ROLE_SHIPPER
-        Long shipperCount = jdbcTemplate.queryForObject(
+        // Validate shipper exists and has ROLE_SHIPPER, and retrieve email and name
+        List<Map<String, Object>> shipperRows = jdbcTemplate.queryForList(
                 """
-                SELECT COUNT(*) FROM users u
+                SELECT u.email, u.first_name, u.last_name FROM users u
                 INNER JOIN user_roles ur ON ur.users_id = u.users_id
                 INNER JOIN roles r ON r.roles_id = ur.roles_id AND r.roles_name = 'ROLE_SHIPPER'
                 WHERE u.users_id = ? AND u.is_active = true
                 """,
-                Long.class, shipperUserId
+                shipperUserId
         );
-        if (shipperCount == null || shipperCount == 0) {
+        if (shipperRows.isEmpty()) {
             throw new BusinessException("Active shipper not found: " + shipperUserId, HttpStatus.NOT_FOUND);
         }
+        Map<String, Object> shipperInfo = shipperRows.get(0);
+        String shipperEmail = (String) shipperInfo.get("email");
+        String firstName = (String) shipperInfo.get("first_name");
+        String lastName = (String) shipperInfo.get("last_name");
+        String shipperName = (StringUtils.hasText(firstName) ? firstName.trim() : "") + 
+                             (StringUtils.hasText(lastName) ? " " + lastName.trim() : "");
+        shipperName = shipperName.trim();
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime expectedDelivery = null;
@@ -121,6 +133,22 @@ public class ShipperServiceImpl implements ShipperService {
             messagingTemplate.convertAndSend("/topic/staff/orders", event);
         } catch (Exception ex) {
             log.warn("Failed to broadcast shipper assignment for order {}: {}", orderId, ex.getMessage());
+        }
+
+        // Send email notification to shipper
+        if (StringUtils.hasText(shipperEmail)) {
+            try {
+                String emailContent = emailTemplateService.generateShipperAssignmentEmail(shipperName, orderNumber, expectedDeliveryAt);
+                EmailMessage message = EmailMessage.builder()
+                        .to(shipperEmail)
+                        .subject("New Order Assignment: " + orderNumber)
+                        .content(emailContent)
+                        .emailType(EmailMessage.EmailType.GENERIC)
+                        .build();
+                emailMessagePublisher.publish(message);
+            } catch (Exception ex) {
+                log.error("Failed to send order assignment email to shipper {}", shipperEmail, ex);
+            }
         }
     }
 

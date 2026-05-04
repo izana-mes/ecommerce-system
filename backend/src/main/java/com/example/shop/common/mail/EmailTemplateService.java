@@ -269,6 +269,29 @@ public class EmailTemplateService {
         );
     }
 
+    public String generateShipperAssignmentEmail(
+            String shipperName,
+            String orderNumber,
+            String expectedDeliveryDate
+    ) {
+        return String.format(
+                """
+                        <html>
+                            <body style="font-family: Arial, sans-serif; color: #111;">
+                                <h2>Hello %s,</h2>
+                                <p>You have been assigned to deliver a new order.</p>
+                                <p><strong>Order Number:</strong> %s</p>
+                                %s
+                                <p>Please review the details in your shipper dashboard.</p>
+                            </body>
+                        </html>
+                        """,
+                escapeHtml(shipperName == null || shipperName.isBlank() ? "there" : shipperName),
+                escapeHtml(orderNumber == null ? "Unknown" : orderNumber),
+                expectedDeliveryDate != null && !expectedDeliveryDate.isBlank() ? "<p><strong>Expected Delivery Date:</strong> " + escapeHtml(expectedDeliveryDate) + "</p>" : ""
+        );
+    }
+
     private String escapeHtml(String value) {
         return (value == null ? "" : value)
                 .replace("&", "&amp;")
