@@ -52,14 +52,16 @@ public class SellerInventoryServiceImpl implements SellerInventoryService {
         return toDto(product, threshold);
     }
 
+    /**
+     * Uses a DB-level filter ({@link ProductRepository#findLowStockBySeller}) instead of
+     * loading all products and filtering in-memory — avoids a full-scan for large catalogs.
+     */
     @Override
     @Transactional(readOnly = true)
     public List<InventoryItemDto> getLowStockAlerts(UUID sellerUserId, int threshold) {
         int safeThreshold = Math.max(1, threshold);
-        return productRepository.findBySellerUserIdOrderByIdAsc(sellerUserId)
+        return productRepository.findLowStockBySeller(sellerUserId, safeThreshold)
                 .stream()
-                .filter(p -> Boolean.TRUE.equals(p.getActive())
-                        && stockOf(p) <= safeThreshold)
                 .map(p -> toDto(p, safeThreshold))
                 .toList();
     }
@@ -82,4 +84,3 @@ public class SellerInventoryServiceImpl implements SellerInventoryService {
         return product.getStockQuantity() == null ? 0 : product.getStockQuantity();
     }
 }
-

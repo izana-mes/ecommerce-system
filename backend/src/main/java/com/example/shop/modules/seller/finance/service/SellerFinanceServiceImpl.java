@@ -10,10 +10,12 @@ import com.example.shop.modules.seller.finance.repository.SellerTransactionRepos
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -43,11 +45,44 @@ public class SellerFinanceServiceImpl implements SellerFinanceService {
     @Override
     @Transactional(readOnly = true)
     public TransactionPageDto getTransactions(UUID sellerUserId, int page, int size) {
+        return getTransactions(sellerUserId, page, size, null);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>When {@code type} is provided, delegates to the type-filtered repository
+     * method to avoid fetching all rows and filtering in memory.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public TransactionPageDto getTransactions(UUID sellerUserId, int page, int size, String type) {
         int safePage = Math.max(0, page);
         int safeSize = Math.max(1, Math.min(size, 100));
+        PageRequest pageable = PageRequest.of(safePage, safeSize);
 
-        Page<SellerTransaction> resultPage = transactionRepository
-                .findBySellerUserIdOrderByCreatedAtDesc(sellerUserId, PageRequest.of(safePage, safeSize));
+        Page<SellerTransaction> resultPage;
+
+        if (StringUtils.hasText(type)) {
+            SellerTransaction.TransactionType txType;
+            try {
+                txType = SellerTransaction.TransactionType.valueOf(type.trim().toUpperCase());
+            } catch (IllegalArgumentException ex) {
+                // Unknown type — return empty page rather than 500
+                return TransactionPageDto.builder()
+                        .content(List.of())
+                        .page(safePage)
+                        .size(safeSize)
+                        .totalElements(0)
+                        .totalPages(0)
+                        .build();
+            }
+            resultPage = transactionRepository
+                    .findBySellerUserIdAndTypeOrderByCreatedAtDesc(sellerUserId, txType, pageable);
+        } else {
+            resultPage = transactionRepository
+                    .findBySellerUserIdOrderByCreatedAtDesc(sellerUserId, pageable);
+        }
 
         List<SellerTransactionDto> content = resultPage.getContent().stream()
                 .map(this::toTransactionDto)
@@ -75,7 +110,6 @@ public class SellerFinanceServiceImpl implements SellerFinanceService {
                 .setScale(2, RoundingMode.HALF_UP);
         BigDecimal net = grossAmount.subtract(commission).setScale(2, RoundingMode.HALF_UP);
 
-        // Persist transaction
         SellerTransaction tx = SellerTransaction.builder()
                 .sellerUserId(sellerUserId)
                 .orderNumber(orderNumber)
@@ -88,7 +122,6 @@ public class SellerFinanceServiceImpl implements SellerFinanceService {
                 .build();
         transactionRepository.save(tx);
 
-        // Credit commission transaction (separate row for transparency)
         SellerTransaction commissionTx = SellerTransaction.builder()
                 .sellerUserId(sellerUserId)
                 .orderNumber(orderNumber)
@@ -103,7 +136,6 @@ public class SellerFinanceServiceImpl implements SellerFinanceService {
                 .build();
         transactionRepository.save(commissionTx);
 
-        // Update balance
         SellerBalance balance = getOrCreateBalance(sellerUserId);
         balance.setAvailableBalance(
                 balance.getAvailableBalance().add(net).setScale(2, RoundingMode.HALF_UP));
@@ -137,7 +169,7 @@ public class SellerFinanceServiceImpl implements SellerFinanceService {
         transactionRepository.save(tx);
 
         SellerBalance balance = getOrCreateBalance(sellerUserId);
-        BigDecimal deduct = safeAmount.min(balance.getAvailableBalance()); // don't go negative
+        BigDecimal deduct = safeAmount.min(balance.getAvailableBalance());
         balance.setAvailableBalance(
                 balance.getAvailableBalance().subtract(deduct).setScale(2, RoundingMode.HALF_UP));
         balanceRepository.save(balance);
@@ -148,19 +180,33 @@ public class SellerFinanceServiceImpl implements SellerFinanceService {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /**
-     * Fetches the existing balance row or creates a fresh zero-balance if it doesn't exist yet.
-     * Called inside @Transactional methods so the new row is committed atomically.
+     * Gets or creates the seller balance row, handling the race condition where two
+     * concurrent requests for a brand-new seller both try to INSERT and hit the
+     * UNIQUE constraint on {@code seller_user_id}.
+     *
+     * <p>Strategy: attempt a normal find-or-save, and if a
+     * {@link DataIntegrityViolationException} is thrown (duplicate key), re-fetch
+     * the row that the concurrent thread already committed.
      */
-    private SellerBalance getOrCreateBalance(UUID sellerUserId) {
+    @Transactional
+    protected SellerBalance getOrCreateBalance(UUID sellerUserId) {
         return balanceRepository.findBySellerUserId(sellerUserId).orElseGet(() -> {
-            SellerBalance fresh = SellerBalance.builder()
-                    .sellerUserId(sellerUserId)
-                    .availableBalance(BigDecimal.ZERO)
-                    .pendingBalance(BigDecimal.ZERO)
-                    .totalEarned(BigDecimal.ZERO)
-                    .currency("USD")
-                    .build();
-            return balanceRepository.save(fresh);
+            try {
+                SellerBalance fresh = SellerBalance.builder()
+                        .sellerUserId(sellerUserId)
+                        .availableBalance(BigDecimal.ZERO)
+                        .pendingBalance(BigDecimal.ZERO)
+                        .totalEarned(BigDecimal.ZERO)
+                        .currency("USD")
+                        .build();
+                return balanceRepository.saveAndFlush(fresh);
+            } catch (DataIntegrityViolationException ex) {
+                // Another concurrent request already inserted — re-fetch the committed row.
+                log.debug("Race condition on seller_balance insert for seller {}; re-fetching.", sellerUserId);
+                return balanceRepository.findBySellerUserId(sellerUserId)
+                        .orElseThrow(() -> new IllegalStateException(
+                                "Could not create or load balance for seller " + sellerUserId, ex));
+            }
         });
     }
 
@@ -191,4 +237,3 @@ public class SellerFinanceServiceImpl implements SellerFinanceService {
         return value == null ? BigDecimal.ZERO : value;
     }
 }
-

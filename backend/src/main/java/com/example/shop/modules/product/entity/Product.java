@@ -1,6 +1,8 @@
 package com.example.shop.modules.product.entity;
+
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import jakarta.persistence.*;
@@ -9,12 +11,16 @@ import lombok.*;
 import java.util.UUID;
 
 @Entity
-@Table(name = "products")
+@Table(name = "products", indexes = {
+        @Index(name = "idx_products_seller_user_id", columnList = "seller_user_id"),
+        @Index(name = "idx_products_supplier_user_id", columnList = "supplier_user_id")
+})
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 public class Product {
 
     @Id
@@ -50,9 +56,16 @@ public class Product {
     @Column(name = "active", nullable = false, columnDefinition = "boolean default true")
     private Boolean active = true;
 
+    /** Legacy supplier association (supplier portal). */
     @Column(name = "supplier_user_id")
     private UUID supplierUserId;
 
+    /**
+     * Seller association — the user who owns this product in the seller portal.
+     * Maps to the {@code seller_user_id} column added alongside the seller feature.
+     */
+    @Column(name = "seller_user_id")
+    private UUID sellerUserId;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)

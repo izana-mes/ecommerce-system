@@ -12,7 +12,7 @@ public interface SellerAccessRequestRepository extends JpaRepository<SellerAcces
 
     List<SellerAccessRequest> findAllByOrderByCreatedAtDesc();
 
-    List<SellerAccessRequest> findAllByStatusOrderByCreatedAtAsc(SellerAccessRequestStatus status);
+    List<SellerAccessRequest> findAllByStatusOrderByCreatedAtDesc(SellerAccessRequestStatus status);
 
     Optional<SellerAccessRequest> findFirstByRequestedByIdOrderByCreatedAtDesc(UUID requestedById);
 

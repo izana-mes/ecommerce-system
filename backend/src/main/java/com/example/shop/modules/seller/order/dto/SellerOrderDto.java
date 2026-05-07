@@ -17,4 +17,8 @@ public class SellerOrderDto {
     private String orderStatus;
     private String paymentStatus;
     private LocalDateTime createdAt;
+    /** Customer display name (first + last name stored on the order). */
+    private String customerName;
+    /** Shipping address as stored on the order at time of placement. */
+    private String shippingAddress;
 }

@@ -15,6 +15,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * REST controller for seller-scoped order queries.
+ *
+ * <p>All endpoints require the {@code SELLER} role. Results are automatically
+ * scoped to products owned by the authenticated seller.
+ */
 @RestController
 @RequestMapping("/api/v1/seller/orders")
 @RequiredArgsConstructor
@@ -22,12 +28,24 @@ public class SellerOrderController {
 
     private final SellerOrderService sellerOrderService;
 
+    /**
+     * GET /api/v1/seller/orders
+     *
+     * <p>Returns orders containing the seller's products, newest first.
+     *
+     * @param limit  max rows (default 100, capped at 500)
+     * @param status optional filter – e.g. {@code PENDING}, {@code DELIVERED},
+     *               {@code SHIPPED}. Case-insensitive. Omit to return all statuses.
+     */
     @GetMapping
     @PreAuthorize("hasRole('SELLER')")
     public ResponseEntity<ApiResponse<List<SellerOrderDto>>> getSellerOrders(
             @AuthenticationPrincipal User user,
-            @RequestParam(defaultValue = "100") int limit
+            @RequestParam(defaultValue = "100") int limit,
+            @RequestParam(required = false) String status
     ) {
-        return ResponseEntity.ok(ApiResponse.success(sellerOrderService.listOrdersForSeller(user.getId(), limit)));
+        List<SellerOrderDto> orders = sellerOrderService.listOrdersForSeller(
+                user.getId(), limit, status);
+        return ResponseEntity.ok(ApiResponse.success(orders));
     }
 }

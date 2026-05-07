@@ -9,6 +9,13 @@ import java.util.UUID;
 
 public interface SellerTransactionRepository extends JpaRepository<SellerTransaction, Long> {
 
+    /** All transactions for a seller, newest first — used by the paginated history endpoint. */
     Page<SellerTransaction> findBySellerUserIdOrderByCreatedAtDesc(UUID sellerUserId, Pageable pageable);
-}
 
+    /** Transactions for a seller filtered by type, newest first — e.g. show only ORDER_INCOME or REFUND. */
+    Page<SellerTransaction> findBySellerUserIdAndTypeOrderByCreatedAtDesc(
+            UUID sellerUserId,
+            SellerTransaction.TransactionType type,
+            Pageable pageable
+    );
+}

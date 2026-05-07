@@ -10,7 +10,16 @@ public interface SellerFinanceService {
 
     SellerBalanceDto getBalance(UUID sellerUserId);
 
+    /**
+     * Paginated transaction history, all types.
+     */
     TransactionPageDto getTransactions(UUID sellerUserId, int page, int size);
+
+    /**
+     * Paginated transaction history filtered by type string (case-insensitive).
+     * Pass {@code null} or blank to return all types.
+     */
+    TransactionPageDto getTransactions(UUID sellerUserId, int page, int size, String type);
 
     /**
      * Record income from an order line item. Calculates commission and credits net amount.
@@ -22,4 +31,3 @@ public interface SellerFinanceService {
      */
     void recordRefund(UUID sellerUserId, String orderNumber, BigDecimal amount);
 }
-

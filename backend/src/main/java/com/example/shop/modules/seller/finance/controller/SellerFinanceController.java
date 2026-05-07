@@ -77,9 +77,10 @@ public class SellerFinanceController {
     public ResponseEntity<ApiResponse<TransactionPageDto>> getTransactions(
             @AuthenticationPrincipal User user,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String type
     ) {
-        TransactionPageDto transactions = financeService.getTransactions(user.getId(), page, size);
+        TransactionPageDto transactions = financeService.getTransactions(user.getId(), page, size, type);
         return ResponseEntity.ok(ApiResponse.success(transactions));
     }
 }

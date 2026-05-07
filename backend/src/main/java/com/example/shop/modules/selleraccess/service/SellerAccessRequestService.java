@@ -92,7 +92,7 @@ public class SellerAccessRequestService {
         if (!StringUtils.hasText(status)) {
             requests = sellerAccessRequestRepository.findAllByOrderByCreatedAtDesc();
         } else {
-            requests = sellerAccessRequestRepository.findAllByStatusOrderByCreatedAtAsc(parseStatus(status));
+            requests = sellerAccessRequestRepository.findAllByStatusOrderByCreatedAtDesc(parseStatus(status));
         }
         return requests.stream().map(SellerAccessRequestResponseDto::fromEntity).toList();
     }

@@ -8,7 +8,13 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "seller_transactions")
+@Table(
+    name = "seller_transactions",
+    indexes = {
+        @Index(name = "idx_seller_transactions_seller_user_id", columnList = "seller_user_id"),
+        @Index(name = "idx_seller_transactions_seller_created", columnList = "seller_user_id, created_at")
+    }
+)
 @Getter
 @Setter
 @Builder
@@ -61,4 +67,3 @@ public class SellerTransaction {
         this.createdAt = LocalDateTime.now();
     }
 }
-
