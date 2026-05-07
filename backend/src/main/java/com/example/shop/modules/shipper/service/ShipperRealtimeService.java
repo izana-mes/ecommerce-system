@@ -188,6 +188,9 @@ public class ShipperRealtimeService {
                 .note(limit(req.getNote(), 1000))
                 .changedBy(safeUserLabel(user))
                 .build());
+
+        // Broadcast the status change over STOMP so the frontend refreshes instantly.
+        broadcastOrderStatus(orderId, order.getOrderNumber(), order.getOrderStatus(), status, shipperUserId);
     }
 
     @Transactional(readOnly = true)
@@ -310,6 +313,22 @@ public class ShipperRealtimeService {
             messagingTemplate.convertAndSend("/topic/orders/" + payload.getOrderId() + "/tracking", payload);
         }
         messagingTemplate.convertAndSend("/topic/shippers/" + payload.getShipperUserId() + "/tracking", payload);
+    }
+
+    private void broadcastOrderStatus(long orderId, String orderNumber, String newOrderStatus,
+                                       String shipperAction, UUID shipperUserId) {
+        ShipperDtos.OrderStatusEvent event = ShipperDtos.OrderStatusEvent.builder()
+                .orderId(orderId)
+                .orderNumber(orderNumber)
+                .newOrderStatus(newOrderStatus)
+                .shipperAction(shipperAction)
+                .shipperUserId(shipperUserId)
+                .changedAt(LocalDateTime.now())
+                .build();
+        // Per-shipper topic: consumed by the shipper's own dashboard/orders pages.
+        messagingTemplate.convertAndSend("/topic/shipper/" + shipperUserId + "/orders", event);
+        // Per-order topic: future-proofed for admin/customer tracking views.
+        messagingTemplate.convertAndSend("/topic/orders/" + orderId + "/status", event);
     }
 
     private static LocalDateTime toRecordedAt(Long timestampEpochMs) {

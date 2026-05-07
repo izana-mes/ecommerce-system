@@ -140,4 +140,18 @@ public final class ShipperDtos {
     public static class IssueListResponse {
         private List<IssueResponse> items;
     }
+
+    /** Broadcast payload sent over STOMP when a shipper updates an order's delivery status. */
+    @Data
+    @Builder
+    public static class OrderStatusEvent {
+        private Long orderId;
+        private String orderNumber;
+        /** Normalized order status stored in DB (e.g. "processing", "completed", "cancelled"). */
+        private String newOrderStatus;
+        /** Raw shipper action that caused the change (e.g. "PICKED_UP", "DELIVERED", "FAILED"). */
+        private String shipperAction;
+        private UUID shipperUserId;
+        private LocalDateTime changedAt;
+    }
 }

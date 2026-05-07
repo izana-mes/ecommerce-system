@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { MdRefresh, MdCheckCircle, MdWarning, MdCancel, MdSearch } from "react-icons/md";
-import { getToken } from "@/lib/auth";
+import { getToken, getUser } from "@/lib/auth";
 import toast from "react-hot-toast";
+import { useShipperSocket } from "@/hooks/useShipperSocket";
 
 interface OrderItem {
   orderId: number;
@@ -42,6 +43,9 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export default function ShipperOrdersPage() {
+  const user = getUser();
+  const shipperUserId = user?.id as string | undefined;
+
   const [assignedOrders, setAssignedOrders] = useState<AssignedOrderItem[]>([]);
   const [loadingAssigned, setLoadingAssigned] = useState(false);
   const [orderIdSearch, setOrderIdSearch] = useState("");
@@ -112,6 +116,7 @@ export default function ShipperOrdersPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed to update status");
       toast.success(`✅ Status updated to ${statusValue}`);
+      // The WS event will trigger a refresh, but also do it immediately for snappy UX
       await fetchOrder(String(order.orderId));
       await fetchAssignedOrders();
     } catch (e) {
@@ -135,9 +140,15 @@ export default function ShipperOrdersPage() {
     return <MdWarning style={{ color: "#fcd34d" }} />;
   };
 
-  useEffect(() => {
+  useEffect(() => { void fetchAssignedOrders(); }, [fetchAssignedOrders]);
+
+  // ── Real-time: refresh assigned list; also refresh the viewed order if it matches ──
+  const { connected } = useShipperSocket(shipperUserId, (event) => {
     void fetchAssignedOrders();
-  }, [fetchAssignedOrders]);
+    if (order && order.orderId === event.orderId) {
+      void fetchOrder(String(event.orderId));
+    }
+  });
 
   return (
     <>
@@ -145,6 +156,17 @@ export default function ShipperOrdersPage() {
         <div className="sh-topbar-title">
           <h1>Order Management</h1>
           <p>Look up orders and update delivery status</p>
+        </div>
+        <div className="sh-topbar-actions">
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span
+              className={connected ? "sh-live-dot" : undefined}
+              style={!connected ? { width: 8, height: 8, borderRadius: "50%", background: "#ef4444", display: "inline-block" } : {}}
+            />
+            <span style={{ fontSize: 12, color: connected ? "#34d399" : "#f87171" }}>
+              {connected ? "Live" : "Offline"}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -180,13 +202,7 @@ export default function ShipperOrdersPage() {
                   <button
                     key={o.orderId}
                     className="sh-btn sh-btn-secondary"
-                    style={{
-                      justifyContent: "space-between",
-                      width: "100%",
-                      padding: "12px 14px",
-                      borderRadius: 12,
-                      textAlign: "left",
-                    }}
+                    style={{ justifyContent: "space-between", width: "100%", padding: "12px 14px", borderRadius: 12, textAlign: "left" }}
                     onClick={() => {
                       setOrderIdSearch(String(o.orderId));
                       void fetchOrder(String(o.orderId));
@@ -198,7 +214,7 @@ export default function ShipperOrdersPage() {
                       </span>
                       {o.customerName && (
                         <span style={{ fontSize: 13, color: "#cbd5e1", marginTop: 2, marginBottom: 2 }}>
-                          👤 {o.customerName} {o.customerPhone && <span style={{color: "#94a3b8"}}>({o.customerPhone})</span>}
+                          👤 {o.customerName} {o.customerPhone && <span style={{ color: "#94a3b8" }}>({o.customerPhone})</span>}
                         </span>
                       )}
                       <span style={{ fontSize: 12, color: "#64748b" }}>
@@ -283,13 +299,7 @@ export default function ShipperOrdersPage() {
                   ].map((row) => (
                     <div
                       key={row.label}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        padding: "11px 0",
-                        borderBottom: "1px solid rgba(255,255,255,0.04)",
-                        gap: 12,
-                      }}
+                      style={{ display: "flex", justifyContent: "space-between", padding: "11px 0", borderBottom: "1px solid rgba(255,255,255,0.04)", gap: 12 }}
                     >
                       <span style={{ fontSize: 13, color: "#64748b", flexShrink: 0 }}>{row.label}</span>
                       <span style={{ fontSize: 13, fontWeight: 600, color: "#f1f5f9", textAlign: "right" }}>
@@ -299,22 +309,14 @@ export default function ShipperOrdersPage() {
                   ))}
                 </div>
 
-                {/* SLA indicator */}
                 {order.expectedDeliveryAt && !order.deliveredAt && !order.failedAt && (
                   <div
                     style={{
                       marginTop: 16,
                       padding: "10px 14px",
                       borderRadius: 10,
-                      background:
-                        new Date(order.expectedDeliveryAt) > new Date()
-                          ? "rgba(16,185,129,0.08)"
-                          : "rgba(239,68,68,0.08)",
-                      border: `1px solid ${
-                        new Date(order.expectedDeliveryAt) > new Date()
-                          ? "rgba(16,185,129,0.2)"
-                          : "rgba(239,68,68,0.2)"
-                      }`,
+                      background: new Date(order.expectedDeliveryAt) > new Date() ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
+                      border: `1px solid ${new Date(order.expectedDeliveryAt) > new Date() ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)"}`,
                       fontSize: 13,
                       color: "#f1f5f9",
                     }}
@@ -338,11 +340,7 @@ export default function ShipperOrdersPage() {
                 <div className="sh-section-gap">
                   <div className="sh-form-group">
                     <label className="sh-label">New Status *</label>
-                    <select
-                      className="sh-select"
-                      value={statusValue}
-                      onChange={(e) => setStatusValue(e.target.value)}
-                    >
+                    <select className="sh-select" value={statusValue} onChange={(e) => setStatusValue(e.target.value)}>
                       <option value="PICKED_UP">📦 Picked Up</option>
                       <option value="DELIVERED">✅ Delivered</option>
                       <option value="FAILED">❌ Failed</option>
@@ -404,12 +402,8 @@ export default function ShipperOrdersPage() {
             </div>
           )}
 
-          {/* Empty state */}
           {!order && !loading && (
-            <div
-              className="sh-card"
-              style={{ textAlign: "center", padding: "48px 16px", color: "#475569" }}
-            >
+            <div className="sh-card" style={{ textAlign: "center", padding: "48px 16px", color: "#475569" }}>
               <div style={{ fontSize: 48, marginBottom: 16 }}>📦</div>
               <p>Search for an order above to load its tracking info and update the delivery status.</p>
             </div>
