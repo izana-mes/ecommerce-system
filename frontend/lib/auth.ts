@@ -4,7 +4,7 @@ export interface User {
   id?: number | string;
   username?: string;
   email: string;
-  role: "user" | "admin" | "employee" | "supplier" | "shipper";
+  role: "user" | "admin" | "employee" | "supplier" | "seller" | "shipper";
   firstName?: string;
   lastName?: string;
 }
@@ -49,7 +49,7 @@ function setStoredUser(user: User): void {
 
 async function resolveRoleFromServer(
   token: string
-): Promise<"user" | "admin" | "employee" | "supplier" | "shipper"> {
+): Promise<"user" | "admin" | "employee" | "supplier" | "seller" | "shipper"> {
   try {
     const meResponse = await fetch("/api/auth/me", {
       method: "GET",
@@ -64,10 +64,12 @@ async function resolveRoleFromServer(
     if (profile?.role === "admin") return "admin";
     if (profile?.role === "employee") return "employee";
     if (profile?.role === "supplier") return "supplier";
+    if (profile?.role === "seller") return "seller";
     if (profile?.role === "shipper") return "shipper";
     if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_ADMIN")) return "admin";
     if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_EMPLOYEE")) return "employee";
     if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_SUPPLIER")) return "supplier";
+    if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_SELLER")) return "seller";
     if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_SHIPPER")) return "shipper";
   } catch {
     // If profile lookup fails, keep default user role.

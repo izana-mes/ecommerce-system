@@ -204,6 +204,75 @@ public class EmailTemplateService {
         );
     }
 
+    public String generateSellerAccessReviewEmail(
+            String name,
+            boolean approved,
+            String businessName,
+            String reviewerNote
+    ) {
+        String decision = approved ? "approved" : "rejected";
+        String title = approved ? "Your seller access request has been approved" : "Your seller access request has been rejected";
+        String summary = approved
+                ? "You can now access seller features and manage your seller website listings."
+                : "Your request was not approved at this time.";
+        String noteSection = String.format(
+                "<p><strong>Admin note:</strong> %s</p>",
+                escapeHtml(reviewerNote == null || reviewerNote.isBlank() ? "No additional note was provided." : reviewerNote)
+        );
+
+        return String.format(
+                """
+                        <html>
+                            <body style="font-family: Arial, sans-serif; color: #111;">
+                                <h2>Hello %s,</h2>
+                                <p>%s</p>
+                                <p>Your request to become a seller for <strong>%s</strong> has been <strong>%s</strong>.</p>
+                                <p>%s</p>
+                                %s
+                            </body>
+                        </html>
+                        """,
+                escapeHtml(name == null || name.isBlank() ? "there" : name),
+                escapeHtml(title),
+                escapeHtml(businessName == null || businessName.isBlank() ? "your business" : businessName),
+                escapeHtml(decision),
+                escapeHtml(summary),
+                noteSection
+        );
+    }
+
+    public String generateSellerAccessSubmissionEmail(
+            String requesterName,
+            String requesterEmail,
+            String businessName,
+            String websiteUrl,
+            String contactPhone,
+            String requestNote
+    ) {
+        return String.format(
+                """
+                        <html>
+                            <body style="font-family: Arial, sans-serif; color: #111;">
+                                <h2>New seller access request</h2>
+                                <p>A user has requested seller access and is waiting for admin review.</p>
+                                <p><strong>Applicant:</strong> %s</p>
+                                <p><strong>Email:</strong> %s</p>
+                                <p><strong>Business name:</strong> %s</p>
+                                <p><strong>Website:</strong> %s</p>
+                                <p><strong>Contact phone:</strong> %s</p>
+                                <p><strong>Request note:</strong> %s</p>
+                            </body>
+                        </html>
+                        """,
+                escapeHtml(requesterName == null || requesterName.isBlank() ? "Unknown user" : requesterName),
+                escapeHtml(requesterEmail == null || requesterEmail.isBlank() ? "Not provided" : requesterEmail),
+                escapeHtml(businessName == null || businessName.isBlank() ? "Not provided" : businessName),
+                escapeHtml(websiteUrl == null || websiteUrl.isBlank() ? "Not provided" : websiteUrl),
+                escapeHtml(contactPhone == null || contactPhone.isBlank() ? "Not provided" : contactPhone),
+                escapeHtml(requestNote == null || requestNote.isBlank() ? "No note provided." : requestNote)
+        );
+    }
+
     public String generateProductChangeReviewEmail(
             String name,
             boolean approved,

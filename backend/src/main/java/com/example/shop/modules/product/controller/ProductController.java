@@ -67,6 +67,12 @@ public class ProductController {
         return ResponseEntity.ok(productService.listProductsOwnedBySupplier(actor.getId()));
     }
 
+    @GetMapping("/seller/mine")
+    @PreAuthorize("hasRole('SELLER')")
+    public ResponseEntity<List<ProductDto>> listSellerOwnedProducts(@AuthenticationPrincipal User actor) {
+        return ResponseEntity.ok(productService.listProductsOwnedBySupplier(actor.getId()));
+    }
+
     @DeleteMapping("/search-history")
     @PreAuthorize("isFullyAuthenticated()")
     public ResponseEntity<Void> clearSearchHistory(@AuthenticationPrincipal User user) {
@@ -75,12 +81,12 @@ public class ProductController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE', 'SUPPLIER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE', 'SUPPLIER', 'SELLER')")
     public ResponseEntity<?> addProducts(
             @RequestBody List<ProductDto> products,
             @AuthenticationPrincipal User actor
     ) {
-        if (hasRole(actor, "ROLE_EMPLOYEE") || hasRole(actor, "ROLE_SUPPLIER")) {
+        if (hasRole(actor, "ROLE_EMPLOYEE") || hasRole(actor, "ROLE_SUPPLIER") || hasRole(actor, "ROLE_SELLER")) {
             ProductChangeRequestResponseDto request = productChangeRequestService.requestBulkUpsert(products, actor);
             return ResponseEntity.accepted().body(Map.of(
                     "message", "Bulk product change request submitted for admin approval",
@@ -125,12 +131,12 @@ public class ProductController {
     }
 
     @PostMapping("/single")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE', 'SUPPLIER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE', 'SUPPLIER', 'SELLER')")
     public ResponseEntity<?> addProduct(
             @RequestBody ProductDto product,
             @AuthenticationPrincipal User actor
     ) {
-        if (hasRole(actor, "ROLE_EMPLOYEE") || hasRole(actor, "ROLE_SUPPLIER")) {
+        if (hasRole(actor, "ROLE_EMPLOYEE") || hasRole(actor, "ROLE_SUPPLIER") || hasRole(actor, "ROLE_SELLER")) {
             ProductChangeRequestResponseDto request = productChangeRequestService.requestCreate(product, actor);
             return ResponseEntity.accepted().body(Map.of(
                     "message", "Product create request submitted for admin approval",
@@ -147,13 +153,13 @@ public class ProductController {
     }
 
     @PutMapping("/{productID}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE', 'SUPPLIER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE', 'SUPPLIER', 'SELLER')")
     public ResponseEntity<?> updateProduct(
             @PathVariable("productID") String productID,
             @RequestBody ProductDto product,
             @AuthenticationPrincipal User actor
     ) {
-        if (hasRole(actor, "ROLE_EMPLOYEE") || hasRole(actor, "ROLE_SUPPLIER")) {
+        if (hasRole(actor, "ROLE_EMPLOYEE") || hasRole(actor, "ROLE_SUPPLIER") || hasRole(actor, "ROLE_SELLER")) {
             ProductChangeRequestResponseDto request = productChangeRequestService.requestUpdate(productID, product, actor);
             return ResponseEntity.accepted().body(Map.of(
                     "message", "Product update request submitted for admin approval",
@@ -170,12 +176,12 @@ public class ProductController {
     }
 
     @DeleteMapping("/{productID}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE', 'SUPPLIER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE', 'SUPPLIER', 'SELLER')")
     public ResponseEntity<?> deleteProduct(
             @PathVariable("productID") String productID,
             @AuthenticationPrincipal User actor
     ) {
-        if (hasRole(actor, "ROLE_EMPLOYEE") || hasRole(actor, "ROLE_SUPPLIER")) {
+        if (hasRole(actor, "ROLE_EMPLOYEE") || hasRole(actor, "ROLE_SUPPLIER") || hasRole(actor, "ROLE_SELLER")) {
             ProductChangeRequestResponseDto request = productChangeRequestService.requestDelete(productID, actor);
             return ResponseEntity.accepted().body(Map.of(
                     "message", "Product delete request submitted for admin approval",
@@ -200,7 +206,7 @@ public class ProductController {
     }
 
     @GetMapping("/change-requests/mine")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE', 'SUPPLIER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE', 'SUPPLIER', 'SELLER')")
     public ResponseEntity<List<ProductChangeRequestResponseDto>> listMyChangeRequests(
             @AuthenticationPrincipal User actor
     ) {

@@ -34,6 +34,7 @@ public class AuthMeController {
                 ? "admin"
                 : roles.stream().anyMatch("ROLE_EMPLOYEE"::equalsIgnoreCase) ? "employee"
                 : roles.stream().anyMatch("ROLE_SUPPLIER"::equalsIgnoreCase) ? "supplier"
+                : roles.stream().anyMatch("ROLE_SELLER"::equalsIgnoreCase) ? "seller"
                 : roles.stream().anyMatch("ROLE_SHIPPER"::equalsIgnoreCase) ? "shipper"
                 : "user";
         Map<String, Object> data = new HashMap<>();
