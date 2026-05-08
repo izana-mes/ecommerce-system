@@ -4,6 +4,19 @@
   gap: 20px;
 }
 
+.clearFiltersButton {
+  align-self: flex-start;
+  border: 1px solid var(--border-soft);
+  background: transparent;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.clearFiltersButton:hover {
+  background: var(--surface-2);
+}
+
 .categoryItem {
   box-shadow: white;
   border: none;
@@ -15,10 +28,15 @@
   text-transform: uppercase;
 }
 
-.filterCategories p {
+.filterCategoryItem {
   font-size: 14px;
   padding-bottom: 10px;
   cursor: pointer;
+}
+
+.filterCategoryItem.selected {
+  font-weight: 700;
+  color: var(--primary);
 }
 
 /* Filter Color */

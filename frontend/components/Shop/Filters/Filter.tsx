@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import "./Filter.css";
 
 import Accordion from "@mui/material/Accordion";
@@ -16,48 +16,89 @@ interface Brand {
   count: number;
 }
 
-const Filter: React.FC = () => {
-  const [value, setValue] = useState<[number, number]>([20, 69]);
+export interface ShopFiltersState {
+  categories: string[];
+  colors: string[];
+  sizes: string[];
+  brands: string[];
+  priceRange: [number, number];
+}
 
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+interface FilterProps {
+  filters: ShopFiltersState;
+  onChange: (next: ShopFiltersState) => void;
+  availableCategories?: string[];
+  availableSizes?: string[];
+  brandsData?: Brand[];
+  minPrice?: number;
+  maxPrice?: number;
+}
+
+const Filter: React.FC<FilterProps> = ({
+  filters,
+  onChange,
+  availableCategories,
+  availableSizes,
+  brandsData: brandsDataProp,
+  minPrice = 0,
+  maxPrice = 300,
+}) => {
   const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const [brandsData] = useState<Brand[]>([
-    { name: "Adidas", count: 2 },
-    { name: "Balmain", count: 7 },
-    { name: "Balenciaga", count: 10 },
-    { name: "Burberry", count: 39 },
-    { name: "Kenzo", count: 95 },
-    { name: "Givenchy", count: 1092 },
-    { name: "Zara", count: 48 },
-  ]);
+  const brandsData = useMemo<Brand[]>(
+    () =>
+      brandsDataProp ?? [
+        { name: "Adidas", count: 2 },
+        { name: "Balmain", count: 7 },
+        { name: "Balenciaga", count: 10 },
+        { name: "Burberry", count: 39 },
+        { name: "Kenzo", count: 95 },
+        { name: "Givenchy", count: 1092 },
+        { name: "Zara", count: 48 },
+      ],
+    [brandsDataProp]
+  );
 
   const handleColorChange = (color: string) => {
-    setSelectedColors((prev) =>
-      prev.includes(color)
-        ? prev.filter((c) => c !== color)
-        : [...prev, color]
-    );
+    const nextColors = filters.colors.includes(color)
+      ? filters.colors.filter((c) => c !== color)
+      : [...filters.colors, color];
+    onChange({ ...filters, colors: nextColors });
+  };
+
+  const handleCategoryChange = (category: string) => {
+    const nextCategories = filters.categories.includes(category)
+      ? filters.categories.filter((c) => c !== category)
+      : [...filters.categories, category];
+    onChange({ ...filters, categories: nextCategories });
+  };
+
+  const handleBrandChange = (brandName: string) => {
+    const nextBrands = filters.brands.includes(brandName)
+      ? filters.brands.filter((b) => b !== brandName)
+      : [...filters.brands, brandName];
+    onChange({ ...filters, brands: nextBrands });
   };
 
   const handleSizeChange = (size: string) => {
-    setSelectedSizes((prev) =>
-      prev.includes(size)
-        ? prev.filter((s) => s !== size)
-        : [...prev, size]
-    );
+    const nextSizes = filters.sizes.includes(size)
+      ? filters.sizes.filter((s) => s !== size)
+      : [...filters.sizes, size];
+    onChange({ ...filters, sizes: nextSizes });
   };
 
-  const handleChange = (_: Event, newValue: number | number[]) => {
-    setValue(newValue as [number, number]);
+  const handlePriceChange = (_: Event, newValue: number | number[]) => {
+    onChange({
+      ...filters,
+      priceRange: newValue as [number, number],
+    });
   };
 
   const filteredBrands = brandsData.filter((brand) =>
     brand.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filterCategories: string[] = [
+  const filterCategories: string[] = availableCategories ?? [
     "Dresses",
     "Shorts",
     "Sweatshirts",
@@ -83,23 +124,55 @@ const Filter: React.FC = () => {
     "#BFDCC4",
   ];
 
-  const filterSizes: string[] = ["XS", "S", "M", "L", "XL", "XXL"];
+  const filterSizes: string[] = availableSizes ?? ["XS", "S", "M", "L", "XL", "XXL"];
+
+  const sliderMin = Math.min(minPrice, maxPrice);
+  const sliderMax = Math.max(minPrice, maxPrice);
+  const normalizedPriceRange: [number, number] = [
+    Math.max(sliderMin, filters.priceRange[0]),
+    Math.min(sliderMax, filters.priceRange[1]),
+  ];
+
+  if (normalizedPriceRange[0] > normalizedPriceRange[1]) {
+    normalizedPriceRange[0] = sliderMin;
+    normalizedPriceRange[1] = sliderMax;
+  }
+
+  const clearFilters = () => {
+    onChange({
+      categories: [],
+      colors: [],
+      sizes: [],
+      brands: [],
+      priceRange: [sliderMin, sliderMax],
+    });
+  };
 
   return (
     <div className="filterSection">
-      {/* CATEGORY */}
+      <button type="button" className="clearFiltersButton" onClick={clearFilters}>
+        Clear filters
+      </button>
+
       <Accordion defaultExpanded disableGutters elevation={0}>
         <AccordionSummary expandIcon={<IoIosArrowDown size={20} />}>
           <h5 className="filterHeading">Product Categories</h5>
         </AccordionSummary>
         <AccordionDetails>
           {filterCategories.map((category, i) => (
-            <p key={i}>{category}</p>
+            <p
+              key={i}
+              className={`filterCategoryItem ${
+                filters.categories.includes(category) ? "selected" : ""
+              }`}
+              onClick={() => handleCategoryChange(category)}
+            >
+              {category}
+            </p>
           ))}
         </AccordionDetails>
       </Accordion>
 
-      {/* COLOR */}
       <Accordion defaultExpanded disableGutters elevation={0}>
         <AccordionSummary expandIcon={<IoIosArrowDown size={20} />}>
           <h5 className="filterHeading">Color</h5>
@@ -109,9 +182,7 @@ const Filter: React.FC = () => {
             {filterColors.map((color, i) => (
               <button
                 key={i}
-                className={`colorButton ${
-                  selectedColors.includes(color) ? "selected" : ""
-                }`}
+                className={`colorButton ${filters.colors.includes(color) ? "selected" : ""}`}
                 style={{ backgroundColor: color }}
                 onClick={() => handleColorChange(color)}
               />
@@ -120,7 +191,6 @@ const Filter: React.FC = () => {
         </AccordionDetails>
       </Accordion>
 
-      {/* SIZE */}
       <Accordion defaultExpanded disableGutters elevation={0}>
         <AccordionSummary expandIcon={<IoIosArrowDown size={20} />}>
           <h5 className="filterHeading">Sizes</h5>
@@ -130,9 +200,7 @@ const Filter: React.FC = () => {
             {filterSizes.map((size, i) => (
               <button
                 key={i}
-                className={`sizeButton ${
-                  selectedSizes.includes(size) ? "selected" : ""
-                }`}
+                className={`sizeButton ${filters.sizes.includes(size) ? "selected" : ""}`}
                 onClick={() => handleSizeChange(size)}
               >
                 {size}
@@ -142,7 +210,6 @@ const Filter: React.FC = () => {
         </AccordionDetails>
       </Accordion>
 
-      {/* BRAND */}
       <Accordion defaultExpanded disableGutters elevation={0}>
         <AccordionSummary expandIcon={<IoIosArrowDown size={20} />}>
           <h5 className="filterHeading">Brands</h5>
@@ -154,9 +221,7 @@ const Filter: React.FC = () => {
               type="text"
               placeholder="Search"
               value={searchTerm}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setSearchTerm(e.target.value)
-              }
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
             />
           </div>
 
@@ -164,7 +229,12 @@ const Filter: React.FC = () => {
             {filteredBrands.length > 0 ? (
               filteredBrands.map((brand, i) => (
                 <div className="brandItem" key={i}>
-                  <input type="checkbox" id={`brand-${i}`} />
+                  <input
+                    type="checkbox"
+                    id={`brand-${i}`}
+                    checked={filters.brands.includes(brand.name)}
+                    onChange={() => handleBrandChange(brand.name)}
+                  />
                   <label htmlFor={`brand-${i}`}>{brand.name}</label>
                   <span>{brand.count}</span>
                 </div>
@@ -176,22 +246,23 @@ const Filter: React.FC = () => {
         </AccordionDetails>
       </Accordion>
 
-      {/* PRICE */}
       <Accordion defaultExpanded disableGutters elevation={0}>
         <AccordionSummary expandIcon={<IoIosArrowDown size={20} />}>
           <h5 className="filterHeading">Price</h5>
         </AccordionSummary>
         <AccordionDetails>
           <Slider
-            value={value}
-            onChange={handleChange}
+            min={sliderMin}
+            max={sliderMax}
+            value={normalizedPriceRange}
+            onChange={handlePriceChange}
             valueLabelDisplay="auto"
             valueLabelFormat={(v) => `$${v}`}
           />
 
           <div className="filterSliderPrice">
-            <p>Min: ${value[0]}</p>
-            <p>Max: ${value[1]}</p>
+            <p>Min: ${normalizedPriceRange[0]}</p>
+            <p>Max: ${normalizedPriceRange[1]}</p>
           </div>
         </AccordionDetails>
       </Accordion>
