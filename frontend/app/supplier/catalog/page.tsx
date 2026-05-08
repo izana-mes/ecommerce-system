@@ -7,6 +7,7 @@ import { getToken, getUser } from "@/lib/auth";
 type Row = {
   productID?: string;
   productName?: string;
+  category?: string;
   stockQuantity?: number;
   active?: boolean;
 };
@@ -105,7 +106,7 @@ export default function SupplierCatalogPage() {
           <li key={r.productID || `sku-${idx}`} style={{ marginBottom: "0.35rem" }}>
             <strong>{r.productID}</strong> — {r.productName}{" "}
             <span style={{ color: "#666" }}>
-              (stock {r.stockQuantity ?? 0}, {r.active ? "active" : "inactive"})
+              ({r.category || "Uncategorized"}, stock {r.stockQuantity ?? 0}, {r.active ? "active" : "inactive"})
             </span>
           </li>
         ))}

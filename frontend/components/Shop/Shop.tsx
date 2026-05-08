@@ -98,6 +98,25 @@ function extractReviewNumber(value: string | undefined): number {
   return numberMatch ? Number(numberMatch[0]) : 0;
 }
 
+function getPriceChangeInfo(product: DataStore) {
+  const oldPrice = Number(product.oldPrice ?? 0);
+  const newPrice = Number(product.productPrice ?? 0);
+  if (!Number.isFinite(oldPrice) || !Number.isFinite(newPrice) || oldPrice <= 0 || newPrice <= 0) {
+    return null;
+  }
+  const delta = ((newPrice - oldPrice) / oldPrice) * 100;
+  if (!Number.isFinite(delta) || Math.abs(delta) < 0.01) {
+    return null;
+  }
+  return {
+    oldPrice,
+    newPrice,
+    delta,
+    label: `${delta > 0 ? "+" : ""}${Math.round(delta)}%`,
+    className: delta > 0 ? "priceChangeBadgeUp" : "priceChangeBadgeDown",
+  };
+}
+
 function resolveReviewInteractionActorKey(): string {
   const user = getUser();
   if (!user) {
@@ -125,6 +144,8 @@ export default function Shop() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchQuery = (searchParams.get("q") ?? "").trim();
+  const categoryParam = (searchParams.get("category") ?? "").trim();
+  const categoryQuery = categoryParam.toLowerCase();
   const focusProductId = (searchParams.get("focus") ?? "").trim();
   const { products, loading, error } = useProducts(searchQuery);
 
@@ -764,7 +785,10 @@ export default function Shop() {
   };
 
   const sortedProducts = useMemo(() => {
-    const items = [...products];
+    const categoryFiltered = categoryQuery
+      ? products.filter((item) => String(item.category ?? "").trim().toLowerCase() === categoryQuery)
+      : products;
+    const items = [...categoryFiltered];
     switch (sortBy) {
       case "a-z":
         return items.sort((a, b) => a.productName.localeCompare(b.productName));
@@ -787,7 +811,7 @@ export default function Shop() {
       default:
         return items;
     }
-  }, [products, sortBy]);
+  }, [categoryQuery, products, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(sortedProducts.length / ITEMS_PER_PAGE));
 
@@ -822,8 +846,8 @@ export default function Shop() {
   const paginationNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
   const modalFocusHref = selectedProduct
     ? searchQuery
-      ? `/shop?q=${encodeURIComponent(searchQuery)}&focus=${encodeURIComponent(selectedProduct.productID)}`
-      : `/shop?focus=${encodeURIComponent(selectedProduct.productID)}`
+      ? `/shop?q=${encodeURIComponent(searchQuery)}${categoryQuery ? `&category=${encodeURIComponent(categoryParam)}` : ""}&focus=${encodeURIComponent(selectedProduct.productID)}`
+      : `/shop?${categoryQuery ? `category=${encodeURIComponent(categoryParam)}&` : ""}focus=${encodeURIComponent(selectedProduct.productID)}`
     : "/shop";
 
   useEffect(() => {
@@ -945,13 +969,15 @@ export default function Shop() {
                     const isBuyNowBusy = buyNowProductId === product.productID;
                     const reviewCount = getReviewCount(product.productID);
                     const averageRating = getAverageRating(product.productID);
+                    const priceChange = getPriceChangeInfo(product);
                     const focusHref = searchQuery
-                      ? `/shop?q=${encodeURIComponent(searchQuery)}&focus=${encodeURIComponent(product.productID)}`
-                      : `/shop?focus=${encodeURIComponent(product.productID)}`;
+                      ? `/shop?q=${encodeURIComponent(searchQuery)}${categoryQuery ? `&category=${encodeURIComponent(categoryParam)}` : ""}&focus=${encodeURIComponent(product.productID)}`
+                      : `/shop?${categoryQuery ? `category=${encodeURIComponent(categoryParam)}&` : ""}focus=${encodeURIComponent(product.productID)}`;
                     return (
                     <div className="sdProductContainer" key={product.productID} id={`product-${product.productID}`}>
                       <div className="sdProductImages">
                         {isOutOfStock && <span className="sdStockBadge">{t("shop_out_of_stock")}</span>}
+                        {priceChange && <span className={`priceChangeBadge ${priceChange.className}`}>{priceChange.label}</span>}
                         <button
                           type="button"
                           className="sdProductPreviewButton"
@@ -994,7 +1020,7 @@ export default function Shop() {
 
                       <div className="sdProductInfo">
                         <div className="sdProductCategoryWishlist">
-                          <p>{t("shop_category_dresses")}</p>
+                          <p>{product.category || "Uncategorized"}</p>
                           <FiHeart
                             onClick={() =>
                               handleWishlistClick({
@@ -1018,7 +1044,14 @@ export default function Shop() {
                             <h5>{product.productName}</h5>
                           </Link>
 
-                          <p>${product.productPrice}</p>
+                          {priceChange ? (
+                            <p className="priceChangeText">
+                              <span className="priceOld">${priceChange.oldPrice}</span>
+                              <span className="priceNew">${priceChange.newPrice}</span>
+                            </p>
+                          ) : (
+                            <p>${product.productPrice}</p>
+                          )}
                           <button
                             type="button"
                             className="sdBuyNowButton"

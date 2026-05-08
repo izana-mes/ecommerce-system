@@ -31,6 +31,8 @@ public interface ProductService {
 
     List<ProductDto> listProductsOwnedBySupplier(UUID supplierUserId);
 
+    List<ProductDto> listProductsOwnedBySeller(UUID sellerUserId);
+
     /**
      * After admin approval of a supplier-originated product create, attaches catalog ownership for supplier APIs.
      */

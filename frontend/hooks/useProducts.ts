@@ -13,6 +13,11 @@ const normalizeProducts = (items: DataStore[]): DataStore[] =>
       : [],
     stockQuantity: Math.max(0, Number(product?.stockQuantity ?? 25)),
     active: product?.active !== false,
+    category: String(product?.category ?? "").trim() || "Uncategorized",
+    oldPrice:
+      Number.isFinite(Number(product?.oldPrice)) && Number(product?.oldPrice) > 0
+        ? Number(product.oldPrice)
+        : undefined,
   }));
 
 const getFallbackProducts = (q: string): DataStore[] => {

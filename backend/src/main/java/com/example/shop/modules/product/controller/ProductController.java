@@ -70,7 +70,7 @@ public class ProductController {
     @GetMapping("/seller/mine")
     @PreAuthorize("hasRole('SELLER')")
     public ResponseEntity<List<ProductDto>> listSellerOwnedProducts(@AuthenticationPrincipal User actor) {
-        return ResponseEntity.ok(productService.listProductsOwnedBySupplier(actor.getId()));
+        return ResponseEntity.ok(productService.listProductsOwnedBySeller(actor.getId()));
     }
 
     @DeleteMapping("/search-history")

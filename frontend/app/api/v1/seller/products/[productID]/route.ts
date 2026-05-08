@@ -1,0 +1,61 @@
+import { NextResponse } from "next/server";
+import { backendApiBaseUrl } from "@/lib/backendApiBase";
+
+const API_URL = backendApiBaseUrl();
+
+function getAuthHeader(request: Request) {
+  return request.headers.get("authorization") || request.headers.get("Authorization");
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+export async function PUT(request: Request, context: { params: Promise<{ productID: string }> }) {
+  try {
+    const authHeader = getAuthHeader(request);
+    const { productID } = await context.params;
+    const body = await request.json();
+
+    const response = await fetch(`${API_URL}/v1/seller/products/${encodeURIComponent(productID)}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...(authHeader ? { Authorization: authHeader } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
+  } catch (error: unknown) {
+    return NextResponse.json(
+      { error: "Failed to update seller product", details: getErrorMessage(error) },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request, context: { params: Promise<{ productID: string }> }) {
+  try {
+    const authHeader = getAuthHeader(request);
+    const { productID } = await context.params;
+
+    const response = await fetch(`${API_URL}/v1/seller/products/${encodeURIComponent(productID)}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        ...(authHeader ? { Authorization: authHeader } : {}),
+      },
+    });
+
+    const data = await response.json().catch(() => ({}));
+    return NextResponse.json(data, { status: response.status });
+  } catch (error: unknown) {
+    return NextResponse.json(
+      { error: "Failed to delete seller product", details: getErrorMessage(error) },
+      { status: 500 }
+    );
+  }
+}
+

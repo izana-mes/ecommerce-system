@@ -27,6 +27,24 @@ import { FiHeart } from "react-icons/fi";
 import { FaStar, FaCartPlus } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 
+function getPriceChangeInfo(product: DataStore) {
+  const oldPrice = Number(product.oldPrice ?? 0);
+  const newPrice = Number(product.productPrice ?? 0);
+  if (!Number.isFinite(oldPrice) || !Number.isFinite(newPrice) || oldPrice <= 0 || newPrice <= 0) {
+    return null;
+  }
+  const delta = ((newPrice - oldPrice) / oldPrice) * 100;
+  if (!Number.isFinite(delta) || Math.abs(delta) < 0.01) {
+    return null;
+  }
+  return {
+    oldPrice,
+    newPrice,
+    label: `${delta > 0 ? "+" : ""}${Math.round(delta)}%`,
+    className: delta > 0 ? "priceChangeBadgeUp" : "priceChangeBadgeDown",
+  };
+}
+
 export default function Trendy() {
   const { t } = useLocale();
   const dispatch = useAppDispatch();
@@ -310,12 +328,14 @@ export default function Trendy() {
             {showLoadSuccess && <p className="trendyLoadSuccess">Products loaded successfully</p>}
             {!loading && !error && activeTab === "tab1" && (
               <div className="trendyMainContainer">
-                {products.slice(0, 8).map((product: DataStore) => (
-                  <div
+                {products.slice(0, 8).map((product: DataStore) => {
+                  const priceChange = getPriceChangeInfo(product);
+                  return (<div
                     className="trendyProductContainer"
                     key={product.productID}
                   >
                     <div className="trendyProductImages">
+                      {priceChange && <span className={`priceChangeBadge ${priceChange.className}`}>{priceChange.label}</span>}
                       <button
                         type="button"
                         className="trendyProductPreviewButton"
@@ -366,7 +386,14 @@ export default function Trendy() {
                         </Link>
                       </div>
 
-                      <p>$ {product.productPrice}</p>
+                      {priceChange ? (
+                        <p className="priceChangeText">
+                          <span className="priceOld">$ {priceChange.oldPrice}</span>
+                          <span className="priceNew">$ {priceChange.newPrice}</span>
+                        </p>
+                      ) : (
+                        <p>$ {product.productPrice}</p>
+                      )}
                       <button
                         type="button"
                         className="trendyBuyNowButton"
@@ -386,8 +413,8 @@ export default function Trendy() {
                         <p>{product.productReviews}</p>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  </div>);
+                })}
               </div>
             )}
 
@@ -396,12 +423,14 @@ export default function Trendy() {
                 {products
                   .slice(0, 8)
                   .reverse()
-                  .map((product: DataStore) => (
-                    <div
+                  .map((product: DataStore) => {
+                    const priceChange = getPriceChangeInfo(product);
+                    return (<div
                       className="trendyProductContainer"
                       key={product.productID}
                     >
                       <div className="trendyProductImages">
+                        {priceChange && <span className={`priceChangeBadge ${priceChange.className}`}>{priceChange.label}</span>}
                         <button
                           type="button"
                           className="trendyProductPreviewButton"
@@ -452,7 +481,14 @@ export default function Trendy() {
                           </Link>
                         </div>
 
-                        <p>$ {product.productPrice}</p>
+                        {priceChange ? (
+                          <p className="priceChangeText">
+                            <span className="priceOld">$ {priceChange.oldPrice}</span>
+                            <span className="priceNew">$ {priceChange.newPrice}</span>
+                          </p>
+                        ) : (
+                          <p>$ {product.productPrice}</p>
+                        )}
                         <button
                           type="button"
                           className="trendyBuyNowButton"
@@ -472,8 +508,8 @@ export default function Trendy() {
                           <p>{product.productReviews}</p>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    </div>);
+                  })}
               </div>
             )}
 
@@ -482,12 +518,14 @@ export default function Trendy() {
                 {products
                   .slice(0, 8)
                   .sort(sortByPrice)
-                  .map((product: DataStore) => (
-                    <div
+                  .map((product: DataStore) => {
+                    const priceChange = getPriceChangeInfo(product);
+                    return (<div
                       className="trendyProductContainer"
                       key={product.productID}
                     >
                       <div className="trendyProductImages">
+                        {priceChange && <span className={`priceChangeBadge ${priceChange.className}`}>{priceChange.label}</span>}
                         <button
                           type="button"
                           className="trendyProductPreviewButton"
@@ -538,7 +576,14 @@ export default function Trendy() {
                           </Link>
                         </div>
 
-                        <p>$ {product.productPrice}</p>
+                        {priceChange ? (
+                          <p className="priceChangeText">
+                            <span className="priceOld">$ {priceChange.oldPrice}</span>
+                            <span className="priceNew">$ {priceChange.newPrice}</span>
+                          </p>
+                        ) : (
+                          <p>$ {product.productPrice}</p>
+                        )}
                         <button
                           type="button"
                           className="trendyBuyNowButton"
@@ -558,8 +603,8 @@ export default function Trendy() {
                           <p>{product.productReviews}</p>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    </div>);
+                  })}
               </div>
             )}
 
@@ -568,12 +613,14 @@ export default function Trendy() {
                 {products
                   .slice(0, 8)
                   .sort(sortByReviews)
-                  .map((product: DataStore) => (
-                    <div
+                  .map((product: DataStore) => {
+                    const priceChange = getPriceChangeInfo(product);
+                    return (<div
                       className="trendyProductContainer"
                       key={product.productID}
                     >
                       <div className="trendyProductImages">
+                        {priceChange && <span className={`priceChangeBadge ${priceChange.className}`}>{priceChange.label}</span>}
                         <button
                           type="button"
                           className="trendyProductPreviewButton"
@@ -624,7 +671,14 @@ export default function Trendy() {
                           </Link>
                         </div>
 
-                        <p>$ {product.productPrice}</p>
+                        {priceChange ? (
+                          <p className="priceChangeText">
+                            <span className="priceOld">$ {priceChange.oldPrice}</span>
+                            <span className="priceNew">$ {priceChange.newPrice}</span>
+                          </p>
+                        ) : (
+                          <p>$ {product.productPrice}</p>
+                        )}
                         <button
                           type="button"
                           className="trendyBuyNowButton"
@@ -644,8 +698,8 @@ export default function Trendy() {
                           <p>{product.productReviews}</p>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    </div>);
+                  })}
               </div>
             )}
           </div>

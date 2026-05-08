@@ -36,6 +36,24 @@ import { isAuthenticated } from "@/lib/auth";
 import AuthRequiredModal from "@/components/Common/AuthRequiredModal";
 import { useState } from "react";
 
+function getPriceChangeInfo(product: DataStore) {
+  const oldPrice = Number(product.oldPrice ?? 0);
+  const newPrice = Number(product.productPrice ?? 0);
+  if (!Number.isFinite(oldPrice) || !Number.isFinite(newPrice) || oldPrice <= 0 || newPrice <= 0) {
+    return null;
+  }
+  const delta = ((newPrice - oldPrice) / oldPrice) * 100;
+  if (!Number.isFinite(delta) || Math.abs(delta) < 0.01) {
+    return null;
+  }
+  return {
+    oldPrice,
+    newPrice,
+    label: `${delta > 0 ? "+" : ""}${Math.round(delta)}%`,
+    className: delta > 0 ? "priceChangeBadgeUp" : "priceChangeBadgeDown",
+  };
+}
+
 export default function LimitedEdition() {
   const { t } = useLocale();
   const dispatch = useAppDispatch();
@@ -236,10 +254,12 @@ export default function LimitedEdition() {
             }}
           >
             {products.slice(8, 13).map((product: DataStore) => {
+              const priceChange = getPriceChangeInfo(product);
               return (
                 <SwiperSlide key={product.productID}>
                   <div className="lpContainer">
                     <div className="lpImageContainer">
+                      {priceChange && <span className={`priceChangeBadge ${priceChange.className}`}>{priceChange.label}</span>}
                       <Link href="/" onClick={scrollToTop}>
                         <img
                           src={product.frontImg}
@@ -274,7 +294,14 @@ export default function LimitedEdition() {
                           <h5>{product.productName}</h5>
                         </Link>
                       </div>
-                      <p>$ {product.productPrice}</p>
+                      {priceChange ? (
+                        <p className="priceChangeText">
+                          <span className="priceOld">$ {priceChange.oldPrice}</span>
+                          <span className="priceNew">$ {priceChange.newPrice}</span>
+                        </p>
+                      ) : (
+                        <p>$ {product.productPrice}</p>
+                      )}
                       <div className="productRatingReviews">
                         <div className="productRatingStar">
                           <FaStar color="#FEC78A" size={10}></FaStar>

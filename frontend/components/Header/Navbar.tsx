@@ -70,6 +70,7 @@ export default function Navbar() {
   const [isNavHidden, setIsNavHidden] = useState(false);
   const [isOverHomeBanner, setIsOverHomeBanner] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [shopCategories, setShopCategories] = useState<string[]>([]);
   const lastScrollY = useRef(0);
   const navRef = useRef<HTMLElement | null>(null);
 
@@ -138,6 +139,43 @@ export default function Navbar() {
     syncAuthState();
     return subscribeToAuthChanges(syncAuthState);
   }, [fetchSearchHistory]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/products", { method: "GET", cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) {
+          return [];
+        }
+        const data = await response.json().catch(() => []);
+        return Array.isArray(data) ? data : [];
+      })
+      .then((products: Array<{ category?: string }>) => {
+        if (cancelled) {
+          return;
+        }
+        const categories = Array.from(
+          new Set(
+            products
+              .map((item) => String(item?.category ?? "").trim())
+              .filter(Boolean)
+          )
+        );
+        setShopCategories(
+          categories.length > 0
+            ? categories.sort((a, b) => a.localeCompare(b))
+            : ["Jackets", "Tops", "Dresses", "Shorts", "Knitwear"]
+        );
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setShopCategories(["Jackets", "Tops", "Dresses", "Shorts", "Knitwear"]);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const query = searchTerm.trim();
@@ -391,7 +429,7 @@ export default function Navbar() {
         <div className={`linkContainer ${menuMobileOpen ? "linkContainerOpen" : ""}`}>
           <ul>
             {navLinks.map((link) => (
-              <li key={link.href}>
+              <li key={link.href} className={link.href === "/shop" ? "shopNavItem" : ""}>
                 <Link
                   href={link.href}
                   onClick={() => {
@@ -402,6 +440,22 @@ export default function Navbar() {
                 >
                   {t(link.key)}
                 </Link>
+                {link.href === "/shop" && shopCategories.length > 0 ? (
+                  <div className="shopCategoryDropdown">
+                    {shopCategories.map((category) => (
+                      <Link
+                        key={category}
+                        href={`/shop?category=${encodeURIComponent(category)}`}
+                        onClick={() => {
+                          scrollToTop();
+                          closeMobileMenu();
+                        }}
+                      >
+                        {category}
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
               </li>
             ))}
           </ul>

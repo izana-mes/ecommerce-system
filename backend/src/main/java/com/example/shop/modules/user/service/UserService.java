@@ -209,6 +209,9 @@ public class UserService {
         } else if ("ROLE_SHIPPER".equals(normalizedRole)) {
             Role shipperRole = findOrCreateSystemRole("ROLE_SHIPPER");
             nextRoles.add(shipperRole);
+        } else if ("ROLE_SELLER".equals(normalizedRole)) {
+            Role sellerRole = findOrCreateSystemRole("ROLE_SELLER");
+            nextRoles.add(sellerRole);
         }
 
         user.setRoles(nextRoles);
@@ -234,6 +237,8 @@ public class UserService {
             normalized = "ROLE_SUPPLIER";
         } else if ("SHIPPER".equals(normalized)) {
             normalized = "ROLE_SHIPPER";
+        } else if ("SELLER".equals(normalized)) {
+            normalized = "ROLE_SELLER";
         } else if ("USER".equals(normalized)) {
             normalized = "ROLE_USER";
         }
@@ -242,8 +247,9 @@ public class UserService {
                 && !"ROLE_ADMIN".equals(normalized)
                 && !"ROLE_EMPLOYEE".equals(normalized)
                 && !"ROLE_SUPPLIER".equals(normalized)
-                && !"ROLE_SHIPPER".equals(normalized)) {
-            throw new BusinessException("Unsupported role. Allowed values: user, employee, supplier, shipper, admin", HttpStatus.BAD_REQUEST);
+                && !"ROLE_SHIPPER".equals(normalized)
+                && !"ROLE_SELLER".equals(normalized)) {
+            throw new BusinessException("Unsupported role. Allowed values: user, employee, supplier, shipper, seller, admin", HttpStatus.BAD_REQUEST);
         }
         return normalized;
     }

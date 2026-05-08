@@ -33,7 +33,8 @@ public class SellerOrderServiceImpl implements SellerOrderService {
      * <ul>
      *   <li>JOIN is now on {@code products.seller_user_id} (not the old
      *       {@code supplier_user_id} which caused an always-empty result set).</li>
-     *   <li>Added {@code o.customer_name} and {@code o.shipping_address}.</li>
+     *   <li>Adds computed aliases {@code customer_name} and {@code shipping_address}
+     *       from normalized order columns.</li>
      *   <li>Added optional ORDER-STATUS filter.</li>
      * </ul>
      */
@@ -52,12 +53,19 @@ public class SellerOrderServiceImpl implements SellerOrderService {
                     o.order_status,
                     o.payment_status,
                     o.created_at,
-                    o.customer_name,
-                    o.shipping_address
+                    TRIM(CONCAT(COALESCE(o.customer_first_name, ''), ' ', COALESCE(o.customer_last_name, ''))) AS customer_name,
+                    TRIM(CONCAT_WS(', ',
+                        NULLIF(o.shipping_address_line1, ''),
+                        NULLIF(o.shipping_address_line2, ''),
+                        NULLIF(o.shipping_city, ''),
+                        NULLIF(o.shipping_state, ''),
+                        NULLIF(o.shipping_postal_code, ''),
+                        NULLIF(o.shipping_country, '')
+                    )) AS shipping_address
                 FROM order_items oi
                 INNER JOIN orders o ON o.id = oi.order_id
                 INNER JOIN products p ON p.product_id = oi.product_id
-                WHERE p.seller_user_id = ?::uuid
+                WHERE p.seller_user_id = ?
                 """);
 
         List<Object> params = new ArrayList<>();

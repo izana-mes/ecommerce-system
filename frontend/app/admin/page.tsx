@@ -59,6 +59,7 @@ type Product = {
   productName: string;
   productPrice: number;
   productReviews: string;
+  category: string;
   sizes: string[];
   stockQuantity: number;
   active: boolean;
@@ -478,6 +479,7 @@ const INITIAL_PRODUCT_FORM: Product = {
   productName: "",
   productPrice: 0,
   productReviews: "",
+  category: "",
   sizes: ["S", "M", "L"],
   stockQuantity: 25,
   active: true,
@@ -646,15 +648,17 @@ function summarizeAuditDetails(details: Record<string, unknown> | null | undefin
 
 function resolveAdminUserRole(
   user: { role?: string; roles?: string[] }
-): "user" | "employee" | "supplier" | "admin" | "shipper" {
+): "user" | "employee" | "supplier" | "admin" | "shipper" | "seller" {
   if ((user.role || "").toLowerCase() === "admin") return "admin";
   if ((user.role || "").toLowerCase() === "employee") return "employee";
   if ((user.role || "").toLowerCase() === "supplier") return "supplier";
   if ((user.role || "").toLowerCase() === "shipper") return "shipper";
+  if ((user.role || "").toLowerCase() === "seller") return "seller";
   if (Array.isArray(user.roles) && user.roles.some((role) => role.toUpperCase() === "ROLE_ADMIN")) return "admin";
   if (Array.isArray(user.roles) && user.roles.some((role) => role.toUpperCase() === "ROLE_EMPLOYEE")) return "employee";
   if (Array.isArray(user.roles) && user.roles.some((role) => role.toUpperCase() === "ROLE_SUPPLIER")) return "supplier";
   if (Array.isArray(user.roles) && user.roles.some((role) => role.toUpperCase() === "ROLE_SHIPPER")) return "shipper";
+  if (Array.isArray(user.roles) && user.roles.some((role) => role.toUpperCase() === "ROLE_SELLER")) return "seller";
   return "user";
 }
 
@@ -1341,6 +1345,7 @@ export default function AdminPage() {
                       .map((size: unknown) => String(size ?? "").trim())
                       .filter(Boolean)
                   : [],
+                category: String(item?.category ?? "").trim() || "Uncategorized",
                 stockQuantity: Math.max(0, Number(item?.stockQuantity ?? 25)),
                 active: item?.active !== false,
               }))
@@ -2140,7 +2145,7 @@ export default function AdminPage() {
 
   const handleUpdateUserRole = async (
     user: AdminUser,
-    nextRole: "user" | "employee" | "supplier" | "admin" | "shipper"
+    nextRole: "user" | "employee" | "supplier" | "admin" | "shipper" | "seller"
   ) => {
     if (!token) {
       router.replace("/login");
@@ -2183,6 +2188,8 @@ export default function AdminPage() {
                       ? ["ROLE_USER", "ROLE_EMPLOYEE"]
                       : nextRole === "shipper"
                         ? ["ROLE_USER", "ROLE_SHIPPER"]
+                        : nextRole === "seller"
+                          ? ["ROLE_USER", "ROLE_SELLER"]
                         : ["ROLE_USER"],
               }
             : item
@@ -2362,8 +2369,8 @@ export default function AdminPage() {
       return;
     }
 
-    if (!productForm.productID.trim() || !productForm.productName.trim()) {
-      toast.error("Product ID and Product Name are required", {
+    if (!productForm.productID.trim() || !productForm.productName.trim() || !productForm.category.trim()) {
+      toast.error("Product ID, Product Name, and Category are required", {
         style: { backgroundColor: "#fb0404", color: "#fff" },
       });
       return;
@@ -2953,8 +2960,8 @@ export default function AdminPage() {
       });
       const data = await response.json();
       const items = (Array.isArray(data) ? data : []) as Product[];
-      const headers = ["Product ID", "Name", "Price", "Stock", "Active", "Reviews"];
-      const rows = items.map((p) => [p.productID, p.productName, p.productPrice, p.stockQuantity, p.active, p.productReviews].map(escapeCsv).join(","));
+      const headers = ["Product ID", "Name", "Category", "Price", "Stock", "Active", "Reviews"];
+      const rows = items.map((p) => [p.productID, p.productName, p.category ?? "", p.productPrice, p.stockQuantity, p.active, p.productReviews].map(escapeCsv).join(","));
       triggerCsvDownload(`products_export_${new Date().toISOString().slice(0, 10)}.csv`, [headers.join(","), ...rows].join("\n"));
       setExportStatus("Products exported successfully!");
       toast.success("Products CSV downloaded", { duration: 2000, style: { backgroundColor: "#07bc0c", color: "#fff" } });
@@ -3962,6 +3969,7 @@ export default function AdminPage() {
                                         | "employee"
                                         | "supplier"
                                         | "shipper"
+                                        | "seller"
                                         | "admin"
                                     )
                                   }
@@ -3969,6 +3977,7 @@ export default function AdminPage() {
                                   <option value="user">User</option>
                                   <option value="employee">Employee</option>
                                   <option value="supplier">Supplier</option>
+                                  <option value="seller">Seller</option>
                                   <option value="shipper">Shipper</option>
                                   <option value="admin">Admin</option>
                                 </select>
@@ -4761,6 +4770,12 @@ export default function AdminPage() {
                 />
                 <input
                   className="productInput"
+                  placeholder="Category"
+                  value={productForm.category}
+                  onChange={(event) => onProductInputChange("category", event.target.value)}
+                />
+                <input
+                  className="productInput"
                   placeholder="Front Image URL"
                   value={productForm.frontImg}
                   onChange={(event) => onProductInputChange("frontImg", event.target.value)}
@@ -4881,6 +4896,7 @@ export default function AdminPage() {
                     <tr>
                       <th>Product ID</th>
                       <th>Name</th>
+                      <th>Category</th>
                       <th>Price</th>
                       <th>Reviews</th>
                       <th>Sizes</th>
@@ -4892,7 +4908,7 @@ export default function AdminPage() {
                   <tbody>
                     {products.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="adminEmpty">
+                        <td colSpan={9} className="adminEmpty">
                           No products found.
                         </td>
                       </tr>
@@ -4903,6 +4919,7 @@ export default function AdminPage() {
                           <tr key={product.productID}>
                             <td>{product.productID}</td>
                             <td>{product.productName}</td>
+                            <td>{product.category || "Uncategorized"}</td>
                             <td>${product.productPrice}</td>
                             <td>{product.productReviews || "-"}</td>
                             <td>{product.sizes.length > 0 ? product.sizes.join(", ") : "-"}</td>

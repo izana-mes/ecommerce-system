@@ -18,7 +18,9 @@ public class ProductDto implements Serializable {
     private String backImg;
     private String productName;
     private Double productPrice;
+    private Double oldPrice;
     private String productReviews;
+    private String category;
     private List<String> sizes;
     private Integer stockQuantity;
     private Boolean active;

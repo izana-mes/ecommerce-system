@@ -517,6 +517,7 @@ export default function ProfilePage() {
   const supplierRequestStatus = supplierRequest?.status || null;
   const canRequestSupplierAccess = user.role === "user" && supplierRequestStatus !== "PENDING";
   const isSupplier = user.role === "supplier";
+  const isSeller = user.role === "seller";
   const isAdmin = user.role === "admin";
   const isShipper = user.role === "shipper";
 
@@ -567,6 +568,14 @@ export default function ProfilePage() {
                 <span className="profileLabel">Supplier dashboard</span>
                 <span className="profileValue">
                   <Link href="/supplier/dashboard">Open dashboard</Link>
+                </span>
+              </div>
+            ) : null}
+            {isSeller ? (
+              <div className="profileField">
+                <span className="profileLabel">Seller dashboard</span>
+                <span className="profileValue">
+                  <Link href="/seller/dashboard">Open dashboard</Link>
                 </span>
               </div>
             ) : null}

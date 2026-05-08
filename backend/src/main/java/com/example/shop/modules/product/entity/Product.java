@@ -42,8 +42,14 @@ public class Product {
     @Column(name = "product_price", nullable = false)
     private Double productPrice;
 
+    @Column(name = "old_price")
+    private Double oldPrice;
+
     @Column(name = "product_reviews", columnDefinition = "TEXT")
     private String productReviews;
+
+    @Column(name = "category", nullable = false, length = 80)
+    private String category;
 
     @Column(name = "sizes", columnDefinition = "TEXT")
     private String sizes;

@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 type ProductFormState = {
   productID: string;
   productName: string;
+  category: string;
   productPrice: string;
   productReviews: string;
   frontImg: string;
@@ -20,6 +21,7 @@ type ProductFormState = {
 type SellerCatalogProduct = {
   productID: string;
   productName: string;
+  category?: string | null;
   productPrice?: number | null;
   productReviews?: string | null;
   frontImg?: string | null;
@@ -27,33 +29,9 @@ type SellerCatalogProduct = {
   stockQuantity?: number | null;
   sizes?: string[] | null;
   active?: boolean | null;
-};
-
-type ProductRequestPayload = {
-  productID?: string;
-  productName?: string;
-  productPrice?: number | null;
-  productReviews?: string | null;
-  frontImg?: string | null;
-  backImg?: string | null;
-  stockQuantity?: number | null;
-  sizes?: string[] | null;
-  active?: boolean | null;
-};
-
-type ProductChangeRequest = {
-  id: string;
-  actionType: "CREATE" | "UPDATE" | "DELETE" | "BULK_UPSERT";
-  targetProductId?: string | null;
-  requestPayload?: string | null;
-  status: "PENDING" | "APPROVED" | "REJECTED";
-  reviewerNote?: string | null;
-  createdAt?: string | null;
-  reviewedAt?: string | null;
 };
 
 type FormMode = "create" | "update";
-type RequestStatusFilter = "ALL" | "PENDING" | "APPROVED" | "REJECTED";
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -67,6 +45,7 @@ function fileToDataUrl(file: File): Promise<string> {
 const INITIAL_FORM: ProductFormState = {
   productID: "",
   productName: "",
+  category: "",
   productPrice: "",
   productReviews: "",
   frontImg: "",
@@ -76,10 +55,11 @@ const INITIAL_FORM: ProductFormState = {
   active: true,
 };
 
-function normalizeFormState(source?: ProductRequestPayload | SellerCatalogProduct | null): ProductFormState {
+function normalizeFormState(source?: SellerCatalogProduct | null): ProductFormState {
   return {
     productID: String(source?.productID || ""),
     productName: String(source?.productName || ""),
+    category: String(source?.category || ""),
     productPrice: source?.productPrice === null || source?.productPrice === undefined ? "" : String(source.productPrice),
     productReviews: String(source?.productReviews || ""),
     frontImg: String(source?.frontImg || ""),
@@ -91,24 +71,10 @@ function normalizeFormState(source?: ProductRequestPayload | SellerCatalogProduc
   };
 }
 
-function parseRequestPayload(request: ProductChangeRequest): ProductRequestPayload | null {
-  if (!request.requestPayload) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(request.requestPayload) as ProductRequestPayload | ProductRequestPayload[];
-    return Array.isArray(parsed) ? parsed[0] || null : parsed;
-  } catch {
-    return null;
-  }
-}
-
 export default function SellerPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [requestsLoading, setRequestsLoading] = useState(false);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [deleteSubmittingId, setDeleteSubmittingId] = useState<string | null>(null);
   const [uploadingFront, setUploadingFront] = useState(false);
@@ -116,9 +82,7 @@ export default function SellerPage() {
   const [form, setForm] = useState<ProductFormState>(INITIAL_FORM);
   const [formMode, setFormMode] = useState<FormMode>("create");
   const [catalogQuery, setCatalogQuery] = useState("");
-  const [historyFilter, setHistoryFilter] = useState<RequestStatusFilter>("ALL");
   const [catalog, setCatalog] = useState<SellerCatalogProduct[]>([]);
-  const [requests, setRequests] = useState<ProductChangeRequest[]>([]);
 
   const syncUser = useCallback(async () => {
     const currentUser = getUser();
@@ -135,33 +99,6 @@ export default function SellerPage() {
     setLoading(false);
   }, [router]);
 
-  const fetchRequests = useCallback(async () => {
-    const token = getToken();
-    if (!token) return;
-
-    setRequestsLoading(true);
-    try {
-      const response = await fetch("/api/products/change-requests/mine", {
-        method: "GET",
-        cache: "no-store",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data?.message || data?.error || "Failed to fetch requests");
-      }
-      setRequests(Array.isArray(data) ? data : []);
-    } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : "Failed to fetch requests");
-      setRequests([]);
-    } finally {
-      setRequestsLoading(false);
-    }
-  }, []);
-
   const fetchCatalog = useCallback(async (query?: string) => {
     const token = getToken();
     if (!token) return;
@@ -170,8 +107,8 @@ export default function SellerPage() {
     try {
       const search = (query ?? catalogQuery).trim();
       const endpoint = search
-        ? `/api/auth/admin-products?q=${encodeURIComponent(search)}`
-        : "/api/auth/admin-products";
+        ? `/api/v1/seller/products?q=${encodeURIComponent(search)}`
+        : "/api/v1/seller/products";
       const response = await fetch(endpoint, {
         method: "GET",
         cache: "no-store",
@@ -180,11 +117,12 @@ export default function SellerPage() {
           Authorization: `Bearer ${token}`,
         },
       });
-      const data = await response.json();
+      const payload = await response.json();
       if (!response.ok) {
-        throw new Error(data?.message || data?.error || "Failed to fetch catalog");
+        throw new Error(payload?.message || payload?.error || "Failed to fetch catalog");
       }
-      setCatalog(Array.isArray(data) ? data : []);
+      const items = payload?.data;
+      setCatalog(Array.isArray(items) ? items : []);
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : "Failed to fetch catalog");
       setCatalog([]);
@@ -202,25 +140,9 @@ export default function SellerPage() {
 
   useEffect(() => {
     if (!loading) {
-      void fetchRequests();
       void fetchCatalog("");
     }
-  }, [fetchCatalog, fetchRequests, loading]);
-
-  const pendingCount = useMemo(
-    () => requests.filter((item) => item.status === "PENDING").length,
-    [requests]
-  );
-
-  const filteredRequests = useMemo(() => {
-    if (historyFilter === "ALL") return requests;
-    return requests.filter((item) => item.status === historyFilter);
-  }, [historyFilter, requests]);
-
-  const latestRejectedRequest = useMemo(
-    () => requests.find((item) => item.status === "REJECTED" && item.actionType !== "BULK_UPSERT") || null,
-    [requests]
-  );
+  }, [fetchCatalog, loading]);
 
   const handleChange = (field: keyof ProductFormState, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -231,10 +153,7 @@ export default function SellerPage() {
     setFormMode("create");
   };
 
-  const loadIntoComposer = (
-    source: SellerCatalogProduct | ProductRequestPayload | null | undefined,
-    mode: FormMode
-  ) => {
+  const loadIntoComposer = (source: SellerCatalogProduct | null | undefined, mode: FormMode) => {
     setForm(normalizeFormState(source));
     setFormMode(mode);
   };
@@ -268,7 +187,7 @@ export default function SellerPage() {
     }
   };
 
-  const submitProductRequest = async () => {
+  const submitProduct = async () => {
     const token = getToken();
     if (!token) {
       router.replace("/login?returnTo=/seller");
@@ -277,16 +196,23 @@ export default function SellerPage() {
 
     setSaving(true);
     try {
+      const productID = form.productID.trim();
       const method = formMode === "create" ? "POST" : "PUT";
-      const response = await fetch("/api/auth/admin-products", {
-        method,
+      const endpoint =
+        formMode === "create"
+          ? "/api/v1/seller/products"
+          : `/api/v1/seller/products/${encodeURIComponent(productID)}`;
+
+      const response = await fetch(endpoint, {
+        method: method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          productID: form.productID.trim(),
+          productID,
           productName: form.productName.trim(),
+          category: form.category.trim(),
           productPrice: Number(form.productPrice),
           productReviews: form.productReviews.trim(),
           frontImg: form.frontImg.trim(),
@@ -299,34 +225,34 @@ export default function SellerPage() {
           active: form.active,
         }),
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(
           data?.message ||
             data?.error ||
-            `Failed to ${formMode === "create" ? "submit" : "update"} product`
+            `Failed to ${formMode === "create" ? "create" : "update"} product`
         );
       }
       toast.success(
         data?.message ||
           (formMode === "create"
-            ? "Product submission sent for admin approval"
-            : "Product update request sent for admin approval")
+          ? "Product created"
+          : "Product updated")
       );
       resetComposer();
-      await Promise.all([fetchRequests(), fetchCatalog(catalogQuery)]);
+      await fetchCatalog(catalogQuery);
     } catch (error: unknown) {
       toast.error(
         error instanceof Error
           ? error.message
-          : `Failed to ${formMode === "create" ? "submit" : "update"} product`
+          : `Failed to ${formMode === "create" ? "create" : "update"} product`
       );
     } finally {
       setSaving(false);
     }
   };
 
-  const submitDeleteRequest = async (productID: string) => {
+  const deleteProduct = async (productID: string) => {
     const token = getToken();
     if (!token) {
       router.replace("/login?returnTo=/seller");
@@ -335,22 +261,21 @@ export default function SellerPage() {
 
     setDeleteSubmittingId(productID);
     try {
-      const response = await fetch("/api/auth/admin-products", {
+      const response = await fetch(`/api/v1/seller/products/${encodeURIComponent(productID)}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ productID }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(data?.message || data?.error || "Failed to submit delete request");
+        throw new Error(data?.message || data?.error || "Failed to delete product");
       }
-      toast.success(data?.message || `Delete request submitted for ${productID}`);
-      await fetchRequests();
+      toast.success(data?.message || `Deleted ${productID}`);
+      await fetchCatalog(catalogQuery);
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : "Failed to submit delete request");
+      toast.error(error instanceof Error ? error.message : "Failed to delete product");
     } finally {
       setDeleteSubmittingId(null);
     }
@@ -366,20 +291,12 @@ export default function SellerPage() {
         <section style={panelStyle}>
           <h1 style={{ margin: 0, fontSize: 32 }}>Seller workspace</h1>
           <p style={{ marginTop: 10, color: "#475467" }}>
-            Submit new products, propose catalog updates, and track approval outcomes in one place.
+            Create and manage your own product catalog.
           </p>
           <div style={summaryGridStyle}>
             <article style={summaryCardStyle}>
-              <strong style={summaryValueStyle}>{pendingCount}</strong>
-              <span style={summaryLabelStyle}>Pending requests</span>
-            </article>
-            <article style={summaryCardStyle}>
               <strong style={summaryValueStyle}>{catalog.length}</strong>
-              <span style={summaryLabelStyle}>Catalog items loaded</span>
-            </article>
-            <article style={summaryCardStyle}>
-              <strong style={summaryValueStyle}>{latestRejectedRequest ? "1" : "0"}</strong>
-              <span style={summaryLabelStyle}>Rejected request ready to revise</span>
+              <span style={summaryLabelStyle}>Products in your catalog</span>
             </article>
           </div>
         </section>
@@ -391,9 +308,7 @@ export default function SellerPage() {
                 {formMode === "create" ? "Submit a new product" : `Submit an update for ${form.productID || "selected product"}`}
               </h2>
               <p style={sectionSubtleTextStyle}>
-                {formMode === "create"
-                  ? "Create a new product listing proposal."
-                  : "Loaded from catalog or request history. Your changes will go through approval."}
+                {formMode === "create" ? "Add a new product to your catalog." : "Edit one of your existing products."}
               </p>
             </div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -402,23 +317,15 @@ export default function SellerPage() {
                 onClick={resetComposer}
                 style={secondaryButtonStyle}
               >
-                New submission
+                New product
               </button>
-              {latestRejectedRequest ? (
-                <button
-                  type="button"
-                  onClick={() => loadIntoComposer(parseRequestPayload(latestRejectedRequest), latestRejectedRequest.actionType === "CREATE" ? "create" : "update")}
-                  style={secondaryButtonStyle}
-                >
-                  Revise latest rejection
-                </button>
-              ) : null}
             </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
             <input value={form.productID} onChange={(event) => handleChange("productID", event.target.value)} placeholder="Product ID" style={inputStyle} />
             <input value={form.productName} onChange={(event) => handleChange("productName", event.target.value)} placeholder="Product name" style={inputStyle} />
+            <input value={form.category} onChange={(event) => handleChange("category", event.target.value)} placeholder="Category" style={inputStyle} />
             <input value={form.productPrice} onChange={(event) => handleChange("productPrice", event.target.value)} placeholder="Price" type="number" min="0" step="0.01" style={inputStyle} />
             <input value={form.stockQuantity} onChange={(event) => handleChange("stockQuantity", event.target.value)} placeholder="Stock quantity" type="number" min="0" style={inputStyle} />
             <input value={form.frontImg} onChange={(event) => handleChange("frontImg", event.target.value)} placeholder="Front image URL or data" style={inputStyle} />
@@ -481,17 +388,17 @@ export default function SellerPage() {
           <div style={{ marginTop: 18, display: "flex", gap: 12, flexWrap: "wrap" }}>
             <button
               type="button"
-              onClick={() => void submitProductRequest()}
+              onClick={() => void submitProduct()}
               disabled={saving}
               style={primaryButtonStyle}
             >
               {saving
                 ? formMode === "create"
-                  ? "Submitting..."
-                  : "Sending update..."
+                  ? "Creating..."
+                  : "Saving..."
                 : formMode === "create"
-                  ? "Submit for approval"
-                  : "Submit update request"}
+                  ? "Create product"
+                  : "Save changes"}
             </button>
             {formMode === "update" ? (
               <button type="button" onClick={resetComposer} style={secondaryButtonStyle}>
@@ -506,7 +413,7 @@ export default function SellerPage() {
             <div>
               <h2 style={{ margin: 0 }}>Catalog workspace</h2>
               <p style={sectionSubtleTextStyle}>
-                Search the current catalog, load a product into the composer, or submit a delete request.
+                Search your products, load one into the editor, or delete it.
               </p>
             </div>
             <button
@@ -548,6 +455,7 @@ export default function SellerPage() {
               <thead>
                 <tr>
                   <th style={cellHead}>Product</th>
+                  <th style={cellHead}>Category</th>
                   <th style={cellHead}>Price</th>
                   <th style={cellHead}>Stock</th>
                   <th style={cellHead}>Status</th>
@@ -557,7 +465,7 @@ export default function SellerPage() {
               <tbody>
                 {catalog.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={cellEmpty}>
+                    <td colSpan={6} style={cellEmpty}>
                       {catalogLoading ? "Loading catalog..." : "No products found."}
                     </td>
                   </tr>
@@ -569,6 +477,9 @@ export default function SellerPage() {
                           <strong>{product.productName || product.productID}</strong>
                           <span style={mutedTextStyle}>{product.productID}</span>
                         </div>
+                      </td>
+                      <td style={cellBody}>
+                        {product.category || "Uncategorized"}
                       </td>
                       <td style={cellBody}>
                         {typeof product.productPrice === "number" ? product.productPrice.toLocaleString() : "-"}
@@ -584,103 +495,20 @@ export default function SellerPage() {
                             onClick={() => loadIntoComposer(product, "update")}
                             style={tableActionButtonStyle}
                           >
-                            Edit request
+                            Edit
                           </button>
                           <button
                             type="button"
-                            onClick={() => void submitDeleteRequest(product.productID)}
+                            onClick={() => void deleteProduct(product.productID)}
                             disabled={deleteSubmittingId === product.productID}
                             style={dangerButtonStyle}
                           >
-                            {deleteSubmittingId === product.productID ? "Sending..." : "Delete request"}
+                            {deleteSubmittingId === product.productID ? "Deleting..." : "Delete"}
                           </button>
                         </div>
                       </td>
                     </tr>
                   ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section style={panelStyle}>
-          <div style={sectionHeaderStyle}>
-            <div>
-              <h2 style={{ margin: 0 }}>Submission history</h2>
-              <p style={sectionSubtleTextStyle}>
-                Track decisions, inspect rejection notes, and reload previous payloads for revision.
-              </p>
-            </div>
-            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-              <select
-                value={historyFilter}
-                onChange={(event) => setHistoryFilter(event.target.value as RequestStatusFilter)}
-                style={selectStyle}
-              >
-                <option value="ALL">All statuses</option>
-                <option value="PENDING">Pending</option>
-                <option value="APPROVED">Approved</option>
-                <option value="REJECTED">Rejected</option>
-              </select>
-              <button
-                type="button"
-                onClick={() => void fetchRequests()}
-                disabled={requestsLoading}
-                style={secondaryButtonStyle}
-              >
-                {requestsLoading ? "Refreshing..." : "Refresh"}
-              </button>
-            </div>
-          </div>
-          <div style={{ overflowX: "auto", marginTop: 18 }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr>
-                  <th style={cellHead}>Action</th>
-                  <th style={cellHead}>Product</th>
-                  <th style={cellHead}>Status</th>
-                  <th style={cellHead}>Created</th>
-                  <th style={cellHead}>Reviewed</th>
-                  <th style={cellHead}>Admin note</th>
-                  <th style={cellHead}>Next step</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRequests.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} style={cellEmpty}>No submissions in this view.</td>
-                  </tr>
-                ) : (
-                  filteredRequests.map((item) => {
-                    const payload = parseRequestPayload(item);
-                    const canReload = item.actionType !== "BULK_UPSERT" && item.actionType !== "DELETE";
-                    return (
-                      <tr key={item.id}>
-                        <td style={cellBody}>{item.actionType}</td>
-                        <td style={cellBody}>
-                          {item.targetProductId || payload?.productID || payload?.productName || "-"}
-                        </td>
-                        <td style={cellBody}>{item.status}</td>
-                        <td style={cellBody}>{item.createdAt ? new Date(item.createdAt).toLocaleString() : "-"}</td>
-                        <td style={cellBody}>{item.reviewedAt ? new Date(item.reviewedAt).toLocaleString() : "-"}</td>
-                        <td style={cellBody}>{item.reviewerNote || "-"}</td>
-                        <td style={cellBody}>
-                          {canReload ? (
-                            <button
-                              type="button"
-                              onClick={() => loadIntoComposer(payload, item.actionType === "CREATE" ? "create" : "update")}
-                              style={tableActionButtonStyle}
-                            >
-                              {item.status === "REJECTED" ? "Revise" : "Reload"}
-                            </button>
-                          ) : (
-                            <span style={mutedTextStyle}>View only</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
                 )}
               </tbody>
             </table>
@@ -853,4 +681,3 @@ const mutedTextStyle: CSSProperties = {
   color: "#667085",
   fontSize: 13,
 };
-

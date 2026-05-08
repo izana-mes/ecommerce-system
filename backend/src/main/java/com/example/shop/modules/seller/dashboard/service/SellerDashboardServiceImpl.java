@@ -69,7 +69,7 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
                     FROM orders o
                     INNER JOIN order_items oi ON oi.order_id = o.id
                     INNER JOIN products p ON p.product_id = oi.product_id
-                    WHERE p.seller_user_id = ?::uuid
+                    WHERE p.seller_user_id = ?
                     """,
                     Long.class, sellerId);
             return val == null ? 0L : val;
@@ -87,7 +87,7 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
                     FROM orders o
                     INNER JOIN order_items oi ON oi.order_id = o.id
                     INNER JOIN products p ON p.product_id = oi.product_id
-                    WHERE p.seller_user_id = ?::uuid
+                    WHERE p.seller_user_id = ?
                       AND LOWER(o.order_status) = 'cancelled'
                     """,
                     Long.class, sellerId);
@@ -106,7 +106,7 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
                     FROM order_items oi
                     INNER JOIN orders o ON o.id = oi.order_id
                     INNER JOIN products p ON p.product_id = oi.product_id
-                    WHERE p.seller_user_id = ?::uuid
+                    WHERE p.seller_user_id = ?
                       AND o.payment_status IN ('paid', 'authorized')
                     """,
                     BigDecimal.class, sellerId);
@@ -120,7 +120,7 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
     private long countSellerProducts(String sellerId) {
         try {
             Long val = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM products WHERE seller_user_id = ?::uuid",
+                    "SELECT COUNT(*) FROM products WHERE seller_user_id = ?",
                     Long.class, sellerId);
             return val == null ? 0L : val;
         } catch (DataAccessException e) {
@@ -134,7 +134,7 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
             Long val = jdbcTemplate.queryForObject(
                     """
                     SELECT COUNT(*) FROM products
-                    WHERE seller_user_id = ?::uuid
+                    WHERE seller_user_id = ?
                       AND active = true
                       AND COALESCE(stock_quantity, 0) <= ?
                     """,
@@ -157,7 +157,7 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
                     FROM order_items oi
                     INNER JOIN orders o ON o.id = oi.order_id
                     INNER JOIN products p ON p.product_id = oi.product_id
-                    WHERE p.seller_user_id = ?::uuid
+                    WHERE p.seller_user_id = ?
                       AND o.payment_status IN ('paid', 'authorized')
                       AND DATE(o.created_at) >= CURRENT_DATE - (? - 1)
                     GROUP BY DATE(o.created_at)
@@ -188,7 +188,7 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
                     FROM order_items oi
                     INNER JOIN orders o ON o.id = oi.order_id
                     INNER JOIN products p ON p.product_id = oi.product_id
-                    WHERE p.seller_user_id = ?::uuid
+                    WHERE p.seller_user_id = ?
                       AND LOWER(o.order_status) <> 'cancelled'
                     GROUP BY oi.product_id
                     ORDER BY sold_qty DESC, oi.product_id ASC
@@ -218,4 +218,3 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
         return Math.round(value * 100.0) / 100.0;
     }
 }
-

@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 public class ProductServiceImpl implements ProductService {
 
     private static final int DEFAULT_STOCK_QUANTITY = 25;
+    private static final String DEFAULT_CATEGORY = "Uncategorized";
 
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
@@ -136,6 +137,7 @@ public class ProductServiceImpl implements ProductService {
 
         Product entity = productMapper.toEntity(productDto);
         applyInventoryDefaults(entity, productDto);
+        entity.setCategory(normalizeCategory(productDto.getCategory()));
         if (productDto.getSupplierUserId() != null) {
             entity.setSupplierUserId(productDto.getSupplierUserId());
         }
@@ -155,11 +157,17 @@ public class ProductServiceImpl implements ProductService {
         List<Product> entities = products.stream()
                 .map(dto -> productRepository.findByProductID(dto.getProductID())
                         .map(existing -> {
+                            if (dto.getProductPrice() != null
+                                    && existing.getProductPrice() != null
+                                    && Double.compare(existing.getProductPrice(), dto.getProductPrice()) != 0) {
+                                existing.setOldPrice(existing.getProductPrice());
+                            }
                             existing.setFrontImg(dto.getFrontImg());
                             existing.setBackImg(dto.getBackImg());
                             existing.setProductName(dto.getProductName());
                             existing.setProductPrice(dto.getProductPrice());
                             existing.setProductReviews(dto.getProductReviews());
+                            existing.setCategory(normalizeCategory(dto.getCategory()));
                             existing.setSizes(productMapper.map(dto.getSizes()));
                             applyInventoryDefaults(existing, dto);
                             return existing;
@@ -167,6 +175,7 @@ public class ProductServiceImpl implements ProductService {
                         .orElseGet(() -> {
                             Product entity = productMapper.toEntity(dto);
                             applyInventoryDefaults(entity, dto);
+                            entity.setCategory(normalizeCategory(dto.getCategory()));
                             return entity;
                         }))
                 .toList();
@@ -189,11 +198,17 @@ public class ProductServiceImpl implements ProductService {
         Product existing = productRepository.findByProductID(productID)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productID));
 
+        if (dto.getProductPrice() != null
+                && existing.getProductPrice() != null
+                && Double.compare(existing.getProductPrice(), dto.getProductPrice()) != 0) {
+            existing.setOldPrice(existing.getProductPrice());
+        }
         existing.setFrontImg(dto.getFrontImg());
         existing.setBackImg(dto.getBackImg());
         existing.setProductName(dto.getProductName());
         existing.setProductPrice(dto.getProductPrice());
         existing.setProductReviews(dto.getProductReviews());
+        existing.setCategory(normalizeCategory(dto.getCategory()));
         existing.setSizes(productMapper.map(dto.getSizes()));
         applyInventoryDefaults(existing, dto);
         if (dto.getSupplierUserId() != null) {
@@ -211,6 +226,18 @@ public class ProductServiceImpl implements ProductService {
             return List.of();
         }
         return productRepository.findBySupplierUserIdOrderByIdAsc(supplierUserId)
+                .stream()
+                .map(productMapper::toDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductDto> listProductsOwnedBySeller(UUID sellerUserId) {
+        if (sellerUserId == null) {
+            return List.of();
+        }
+        return productRepository.findBySellerUserIdOrderByIdAsc(sellerUserId)
                 .stream()
                 .map(productMapper::toDto)
                 .toList();
@@ -450,7 +477,9 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private boolean matchesAllTokens(Product product, List<String> tokens) {
-        String searchable = normalizeForSearch(product.getProductName()) + " " + normalizeForSearch(product.getProductID());
+        String searchable = normalizeForSearch(product.getProductName())
+                + " " + normalizeForSearch(product.getProductID())
+                + " " + normalizeForSearch(product.getCategory());
         for (String token : tokens) {
             if (!searchable.contains(token)) {
                 return false;
@@ -467,5 +496,12 @@ public class ProductServiceImpl implements ProductService {
                 .toLowerCase(Locale.ROOT)
                 .replaceAll("[^a-z0-9]+", " ")
                 .trim();
+    }
+
+    private String normalizeCategory(String category) {
+        if (!StringUtils.hasText(category)) {
+            return DEFAULT_CATEGORY;
+        }
+        return category.trim();
     }
 }

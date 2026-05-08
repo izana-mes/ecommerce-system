@@ -69,7 +69,7 @@ public class SupplierDashboardServiceImpl implements SupplierDashboardService {
                     FROM orders o
                     INNER JOIN order_items oi ON oi.order_id = o.id
                     INNER JOIN products p ON p.product_id = oi.product_id
-                    WHERE p.supplier_user_id = ?::uuid
+                    WHERE p.supplier_user_id = ?
                     """,
                     Long.class, supplierId);
             return val == null ? 0L : val;
@@ -87,7 +87,7 @@ public class SupplierDashboardServiceImpl implements SupplierDashboardService {
                     FROM orders o
                     INNER JOIN order_items oi ON oi.order_id = o.id
                     INNER JOIN products p ON p.product_id = oi.product_id
-                    WHERE p.supplier_user_id = ?::uuid
+                    WHERE p.supplier_user_id = ?
                       AND LOWER(o.order_status) = 'cancelled'
                     """,
                     Long.class, supplierId);
@@ -106,7 +106,7 @@ public class SupplierDashboardServiceImpl implements SupplierDashboardService {
                     FROM order_items oi
                     INNER JOIN orders o ON o.id = oi.order_id
                     INNER JOIN products p ON p.product_id = oi.product_id
-                    WHERE p.supplier_user_id = ?::uuid
+                    WHERE p.supplier_user_id = ?
                       AND o.payment_status IN ('paid', 'authorized')
                     """,
                     BigDecimal.class, supplierId);
@@ -120,7 +120,7 @@ public class SupplierDashboardServiceImpl implements SupplierDashboardService {
     private long countSupplierProducts(String supplierId) {
         try {
             Long val = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM products WHERE supplier_user_id = ?::uuid",
+                    "SELECT COUNT(*) FROM products WHERE supplier_user_id = ?",
                     Long.class, supplierId);
             return val == null ? 0L : val;
         } catch (DataAccessException e) {
@@ -134,7 +134,7 @@ public class SupplierDashboardServiceImpl implements SupplierDashboardService {
             Long val = jdbcTemplate.queryForObject(
                     """
                     SELECT COUNT(*) FROM products
-                    WHERE supplier_user_id = ?::uuid
+                    WHERE supplier_user_id = ?
                       AND active = true
                       AND COALESCE(stock_quantity, 0) <= ?
                     """,
@@ -157,7 +157,7 @@ public class SupplierDashboardServiceImpl implements SupplierDashboardService {
                     FROM order_items oi
                     INNER JOIN orders o ON o.id = oi.order_id
                     INNER JOIN products p ON p.product_id = oi.product_id
-                    WHERE p.supplier_user_id = ?::uuid
+                    WHERE p.supplier_user_id = ?
                       AND o.payment_status IN ('paid', 'authorized')
                       AND DATE(o.created_at) >= CURRENT_DATE - (? - 1)
                     GROUP BY DATE(o.created_at)
@@ -188,7 +188,7 @@ public class SupplierDashboardServiceImpl implements SupplierDashboardService {
                     FROM order_items oi
                     INNER JOIN orders o ON o.id = oi.order_id
                     INNER JOIN products p ON p.product_id = oi.product_id
-                    WHERE p.supplier_user_id = ?::uuid
+                    WHERE p.supplier_user_id = ?
                       AND LOWER(o.order_status) <> 'cancelled'
                     GROUP BY oi.product_id
                     ORDER BY sold_qty DESC, oi.product_id ASC
