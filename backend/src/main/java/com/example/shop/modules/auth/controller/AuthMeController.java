@@ -42,6 +42,7 @@ public class AuthMeController {
         data.put("email", user.getEmail());
         data.put("firstName", user.getFirstName());
         data.put("lastName", user.getLastName());
+        data.put("loyaltyPoints", user.getLoyaltyPoints() == null ? 0L : user.getLoyaltyPoints());
         data.put("roles", roles);
         data.put("role", normalizedRole);
         return ResponseEntity.ok(ApiResponse.success(data));

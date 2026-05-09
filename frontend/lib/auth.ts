@@ -7,6 +7,7 @@ export interface User {
   role: "user" | "admin" | "employee" | "supplier" | "seller" | "shipper";
   firstName?: string;
   lastName?: string;
+  loyaltyPoints?: number;
 }
 
 const AUTH_STATE_EVENT = "auth-state-changed";
@@ -110,6 +111,7 @@ export async function refreshCurrentUserFromServer(): Promise<User | null> {
       role,
       firstName: profile.firstName ?? existingUser.firstName,
       lastName: profile.lastName ?? existingUser.lastName,
+      loyaltyPoints: Number(profile.loyaltyPoints ?? existingUser.loyaltyPoints ?? 0),
     };
 
     const unchanged =
@@ -117,7 +119,8 @@ export async function refreshCurrentUserFromServer(): Promise<User | null> {
       existingUser.role === nextUser.role &&
       existingUser.firstName === nextUser.firstName &&
       existingUser.lastName === nextUser.lastName &&
-      existingUser.id === nextUser.id;
+      existingUser.id === nextUser.id &&
+      Number(existingUser.loyaltyPoints ?? 0) === Number(nextUser.loyaltyPoints ?? 0);
 
     if (!unchanged) {
       setStoredUser(nextUser);

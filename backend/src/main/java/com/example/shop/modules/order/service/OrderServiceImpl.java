@@ -15,6 +15,7 @@ import com.example.shop.modules.order.dto.OrderTrackingLineDto;
 import com.example.shop.modules.product.entity.Product;
 import com.example.shop.modules.product.repository.ProductRepository;
 import com.example.shop.modules.user.entity.User;
+import com.example.shop.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,12 +47,17 @@ public class OrderServiceImpl implements OrderService {
 
     private final ProductRepository productRepository;
     private final CartItemRepository cartItemRepository;
+    private final UserRepository userRepository;
     private final JdbcTemplate jdbcTemplate;
     private final OrderCreatedEventPublisher orderCreatedEventPublisher;
     private final LowStockAlertPublisher lowStockAlertPublisher;
 
     @Value("${application.inventory.low-stock-threshold:5}")
     private int lowStockThreshold;
+
+    private static final int POINTS_PER_USD_DISCOUNT = 100;
+    private static final BigDecimal MAX_POINTS_DISCOUNT_RATE = new BigDecimal("0.25");
+    private static final BigDecimal EARNING_RATE = new BigDecimal("0.05");
 
     @Override
     public OrderCreateResponse createOrder(OrderCreateRequest request, User user) {
@@ -111,8 +117,14 @@ public class OrderServiceImpl implements OrderService {
         if (discountAmount.compareTo(maxAllowedDiscount) > 0) {
             discountAmount = maxAllowedDiscount;
         }
-        BigDecimal totalAmount = subtotal.add(shippingFee).add(vat).subtract(discountAmount).max(BigDecimal.ZERO)
+        BigDecimal prePointsTotal = subtotal.add(shippingFee).add(vat).subtract(discountAmount).max(BigDecimal.ZERO)
                 .setScale(2, RoundingMode.HALF_UP);
+        LoyaltyRedemption redemption = computeLoyaltyRedemption(request, user, prePointsTotal);
+        BigDecimal totalAmount = prePointsTotal.subtract(redemption.discountAmount()).max(BigDecimal.ZERO)
+                .setScale(2, RoundingMode.HALF_UP);
+        int pointsEarned = totalAmount.multiply(EARNING_RATE)
+                .setScale(0, RoundingMode.FLOOR)
+                .intValue();
 
         String currency = safe(request.getCurrency()).isBlank() ? "USD" : safe(request.getCurrency()).toUpperCase(Locale.ROOT);
         if (currency.length() > 3) {
@@ -124,6 +136,7 @@ public class OrderServiceImpl implements OrderService {
 
         InsertOrderResult inserted = insertOrder(
                 request,
+                user,
                 effectiveEmail,
                 orderNumber,
                 trackingSecret,
@@ -131,6 +144,9 @@ public class OrderServiceImpl implements OrderService {
                 shippingFee,
                 vat,
                 discountAmount,
+                redemption.pointsRedeemed(),
+                redemption.discountAmount(),
+                pointsEarned,
                 totalAmount,
                 currency
         );
@@ -160,6 +176,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         clearPurchasedCartItems(user, orderLines);
+        long remainingPoints = applyLoyaltyChanges(user, redemption.pointsRedeemed(), pointsEarned);
 
         // Publish order created event for async notification
         try {
@@ -210,6 +227,10 @@ public class OrderServiceImpl implements OrderService {
                 .totalAmount(totalAmount)
                 .currency(currency)
                 .couponCode(nullable(request.getCouponCode()))
+                .pointsRedeemed(redemption.pointsRedeemed())
+                .pointsDiscountAmount(redemption.discountAmount())
+                .pointsEarned(pointsEarned)
+                .remainingPoints(remainingPoints)
                 .paymentStatus("pending")
                 .orderStatus("pending")
                 .build();
@@ -581,6 +602,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private InsertOrderResult insertOrder(OrderCreateRequest request,
+                                          User user,
                                           String effectiveEmail,
                                           String orderNumber,
                                           String trackingSecret,
@@ -588,6 +610,9 @@ public class OrderServiceImpl implements OrderService {
                                           BigDecimal shippingFee,
                                           BigDecimal vat,
                                           BigDecimal discountAmount,
+                                          int pointsRedeemed,
+                                          BigDecimal pointsDiscountAmount,
+                                          int pointsEarned,
                                           BigDecimal totalAmount,
                                           String currency) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -620,6 +645,9 @@ public class OrderServiceImpl implements OrderService {
                                 shipping_fee,
                                 vat,
                                 discount_amount,
+                                points_redeemed,
+                                points_discount_amount,
+                                points_earned,
                                 total_amount,
                                 currency,
                                 coupon_code,
@@ -629,47 +657,55 @@ public class OrderServiceImpl implements OrderService {
                                 order_status,
                                 created_at,
                                 updated_at
-                            ) VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending', ?, ?)
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending', ?, ?)
                             """,
                     new String[]{"id"}
             );
             ps.setString(1, orderNumber);
             ps.setString(2, trackingSecret);
-            ps.setString(3, effectiveEmail);
-            ps.setString(4, nullable(request.getCustomerFirstName()));
-            ps.setString(5, nullable(request.getCustomerLastName()));
-            ps.setString(6, nullable(request.getCustomerPhone()));
-            ps.setString(7, nullable(request.getShippingAddressLine1()));
-            ps.setString(8, nullable(request.getShippingAddressLine2()));
-            ps.setString(9, nullable(request.getShippingCity()));
-            ps.setString(10, nullable(request.getShippingState()));
-            ps.setString(11, nullable(request.getShippingPostalCode()));
-            ps.setString(12, nullable(request.getShippingCountry()));
-            ps.setObject(13, request.getDeliveryLatitude());
-            ps.setObject(14, request.getDeliveryLongitude());
-            ps.setString(15, nullable(request.getDeliveryLocationLabel()));
-            ps.setObject(16, request.getDeliveryLocationAccuracyMeters());
+            if (user == null || user.getId() == null) {
+                ps.setNull(3, java.sql.Types.OTHER);
+            } else {
+                ps.setObject(3, user.getId());
+            }
+            ps.setString(4, effectiveEmail);
+            ps.setString(5, nullable(request.getCustomerFirstName()));
+            ps.setString(6, nullable(request.getCustomerLastName()));
+            ps.setString(7, nullable(request.getCustomerPhone()));
+            ps.setString(8, nullable(request.getShippingAddressLine1()));
+            ps.setString(9, nullable(request.getShippingAddressLine2()));
+            ps.setString(10, nullable(request.getShippingCity()));
+            ps.setString(11, nullable(request.getShippingState()));
+            ps.setString(12, nullable(request.getShippingPostalCode()));
+            ps.setString(13, nullable(request.getShippingCountry()));
+            ps.setObject(14, request.getDeliveryLatitude());
+            ps.setObject(15, request.getDeliveryLongitude());
+            ps.setString(16, nullable(request.getDeliveryLocationLabel()));
+            ps.setObject(17, request.getDeliveryLocationAccuracyMeters());
             if (request.getDeliveryLocationCapturedAt() == null) {
-                ps.setNull(17, java.sql.Types.BIGINT);
+                ps.setNull(18, java.sql.Types.BIGINT);
             } else {
-                ps.setLong(17, request.getDeliveryLocationCapturedAt());
+                ps.setLong(18, request.getDeliveryLocationCapturedAt());
             }
-            ps.setString(18, nullable(request.getNotes()));
-            ps.setBigDecimal(19, subtotal);
-            ps.setBigDecimal(20, shippingFee);
-            ps.setBigDecimal(21, vat);
-            ps.setBigDecimal(22, discountAmount);
-            ps.setBigDecimal(23, totalAmount);
-            ps.setString(24, currency);
-            ps.setString(25, nullable(request.getCouponCode()));
+            ps.setString(19, nullable(request.getNotes()));
+            ps.setBigDecimal(20, subtotal);
+            ps.setBigDecimal(21, shippingFee);
+            ps.setBigDecimal(22, vat);
+            ps.setBigDecimal(23, discountAmount);
+            ps.setInt(24, pointsRedeemed);
+            ps.setBigDecimal(25, pointsDiscountAmount);
+            ps.setInt(26, pointsEarned);
+            ps.setBigDecimal(27, totalAmount);
+            ps.setString(28, currency);
+            ps.setString(29, nullable(request.getCouponCode()));
             if (request.getCouponAssignmentId() == null) {
-                ps.setNull(26, java.sql.Types.BIGINT);
+                ps.setNull(30, java.sql.Types.BIGINT);
             } else {
-                ps.setLong(26, request.getCouponAssignmentId());
+                ps.setLong(30, request.getCouponAssignmentId());
             }
-            ps.setString(27, safe(request.getPaymentMethod()));
-            ps.setTimestamp(28, Timestamp.valueOf(now));
-            ps.setTimestamp(29, Timestamp.valueOf(now));
+            ps.setString(31, safe(request.getPaymentMethod()));
+            ps.setTimestamp(32, Timestamp.valueOf(now));
+            ps.setTimestamp(33, Timestamp.valueOf(now));
             return ps;
         }, keyHolder);
 
@@ -780,6 +816,69 @@ public class OrderServiceImpl implements OrderService {
 
     private BigDecimal money(double value) {
         return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private LoyaltyRedemption computeLoyaltyRedemption(OrderCreateRequest request, User user, BigDecimal prePointsTotal) {
+        long requestedPoints = request.getPointsToRedeem() == null ? 0L : Math.max(0L, request.getPointsToRedeem());
+        if (requestedPoints == 0L) {
+            return new LoyaltyRedemption(0, BigDecimal.ZERO);
+        }
+        if (user == null || user.getId() == null) {
+            throw new BusinessException("Sign in to redeem points", HttpStatus.BAD_REQUEST);
+        }
+
+        long availablePoints = Optional.ofNullable(
+                jdbcTemplate.queryForObject("SELECT loyalty_points FROM users WHERE users_id = ?", Long.class, user.getId())
+        ).orElse(0L);
+        if (availablePoints <= 0L) {
+            throw new BusinessException("No loyalty points available", HttpStatus.CONFLICT);
+        }
+
+        long maxRedeemableByRate = prePointsTotal
+                .multiply(MAX_POINTS_DISCOUNT_RATE)
+                .multiply(BigDecimal.valueOf(POINTS_PER_USD_DISCOUNT))
+                .setScale(0, RoundingMode.FLOOR)
+                .longValue();
+        if (maxRedeemableByRate <= 0L) {
+            throw new BusinessException("This order is too small for points redemption", HttpStatus.CONFLICT);
+        }
+
+        long effectivePoints = Math.min(requestedPoints, Math.min(availablePoints, maxRedeemableByRate));
+        BigDecimal pointsDiscount = BigDecimal.valueOf(effectivePoints)
+                .divide(BigDecimal.valueOf(POINTS_PER_USD_DISCOUNT), 2, RoundingMode.DOWN);
+        return new LoyaltyRedemption(Math.toIntExact(effectivePoints), pointsDiscount);
+    }
+
+    private long applyLoyaltyChanges(User user, int pointsRedeemed, int pointsEarned) {
+        if (user == null || user.getId() == null || (pointsRedeemed <= 0 && pointsEarned <= 0)) {
+            return user != null && user.getLoyaltyPoints() != null ? user.getLoyaltyPoints() : 0L;
+        }
+
+        if (pointsRedeemed > 0) {
+            int updated = jdbcTemplate.update(
+                    "UPDATE users SET loyalty_points = loyalty_points - ?, updated_at = ? WHERE users_id = ? AND loyalty_points >= ?",
+                    pointsRedeemed,
+                    Timestamp.valueOf(LocalDateTime.now()),
+                    user.getId(),
+                    pointsRedeemed
+            );
+            if (updated == 0) {
+                throw new BusinessException("Not enough loyalty points to redeem", HttpStatus.CONFLICT);
+            }
+        }
+
+        if (pointsEarned > 0) {
+            jdbcTemplate.update(
+                    "UPDATE users SET loyalty_points = loyalty_points + ?, updated_at = ? WHERE users_id = ?",
+                    pointsEarned,
+                    Timestamp.valueOf(LocalDateTime.now()),
+                    user.getId()
+            );
+        }
+
+        User refreshed = userRepository.findById(user.getId())
+                .orElseThrow(() -> new BusinessException("User not found", HttpStatus.NOT_FOUND));
+        return refreshed.getLoyaltyPoints() == null ? 0L : refreshed.getLoyaltyPoints();
     }
 
     private String normalizeEmail(String value) {
@@ -930,5 +1029,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private record OrderLine(Product product, int quantity, BigDecimal unitPrice, BigDecimal lineTotal) {
+    }
+
+    private record LoyaltyRedemption(int pointsRedeemed, BigDecimal discountAmount) {
     }
 }

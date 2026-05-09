@@ -10,4 +10,10 @@ import java.util.UUID;
 public interface SupplierTransactionRepository extends JpaRepository<SupplierTransaction, Long> {
 
     Page<SupplierTransaction> findBySupplierUserIdOrderByCreatedAtDesc(UUID supplierUserId, Pageable pageable);
+
+    Page<SupplierTransaction> findBySupplierUserIdAndTypeNotOrderByCreatedAtDesc(
+            UUID supplierUserId,
+            SupplierTransaction.TransactionType excludedType,
+            Pageable pageable
+    );
 }

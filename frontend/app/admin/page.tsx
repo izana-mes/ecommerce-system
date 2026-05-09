@@ -17,7 +17,7 @@ type AdminUser = {
   roles?: string[];
 };
 
-type SupplierAccessRequest = {
+type AccessRequest = {
   id: string;
   status: "PENDING" | "APPROVED" | "REJECTED";
   businessName?: string | null;
@@ -753,10 +753,14 @@ export default function AdminPage() {
   const [loadingProductRequests, setLoadingProductRequests] = useState(true);
   const [productRequestError, setProductRequestError] = useState<string | null>(null);
   const [productRequestProcessingId, setProductRequestProcessingId] = useState<string | null>(null);
-  const [supplierRequests, setSupplierRequests] = useState<SupplierAccessRequest[]>([]);
+  const [supplierRequests, setSupplierRequests] = useState<AccessRequest[]>([]);
   const [loadingSupplierRequests, setLoadingSupplierRequests] = useState(true);
   const [supplierRequestError, setSupplierRequestError] = useState<string | null>(null);
   const [supplierRequestProcessingId, setSupplierRequestProcessingId] = useState<string | null>(null);
+  const [sellerRequests, setSellerRequests] = useState<AccessRequest[]>([]);
+  const [loadingSellerRequests, setLoadingSellerRequests] = useState(true);
+  const [sellerRequestError, setSellerRequestError] = useState<string | null>(null);
+  const [sellerRequestProcessingId, setSellerRequestProcessingId] = useState<string | null>(null);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -1303,6 +1307,37 @@ export default function AdminPage() {
       setSupplierRequestError(message);
     } finally {
       setLoadingSupplierRequests(false);
+    }
+  }, [router, token]);
+
+  const fetchSellerRequests = useCallback(async () => {
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    setLoadingSellerRequests(true);
+    setSellerRequestError(null);
+    try {
+      const response = await fetch("/api/auth/admin-seller-requests?status=PENDING", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || "Failed to load seller requests");
+      }
+      setSellerRequests(Array.isArray(data) ? data : []);
+      setLastUpdatedAt(new Date().toISOString());
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load seller requests";
+      setSellerRequestError(message);
+    } finally {
+      setLoadingSellerRequests(false);
     }
   }, [router, token]);
 
@@ -1977,7 +2012,7 @@ export default function AdminPage() {
       void fetchFulfillmentInsights();
       void fetchShipperIncidents();
     } else if (activeTab === "requests") {
-      void Promise.all([fetchProductRequests(), fetchSupplierRequests()]);
+      void Promise.all([fetchProductRequests(), fetchSupplierRequests(), fetchSellerRequests()]);
     } else if (activeTab === "users") {
       void fetchUsers(0);
     } else if (activeTab === "orders") {
@@ -2020,6 +2055,7 @@ export default function AdminPage() {
     fetchSystemHealth,
     fetchUsers,
     fetchSupplierRequests,
+    fetchSellerRequests,
     loadedTabs,
   ]);
 
@@ -2064,7 +2100,10 @@ export default function AdminPage() {
       await fetchShipperIncidents();
       return;
     }
-    if (activeTab === "requests") { await Promise.all([fetchProductRequests(), fetchSupplierRequests()]); return; }
+    if (activeTab === "requests") {
+      await Promise.all([fetchProductRequests(), fetchSupplierRequests(), fetchSellerRequests()]);
+      return;
+    }
     if (activeTab === "users") { await fetchUsers(userPage); return; }
     if (activeTab === "orders") { await fetchOrders(orderPage); return; }
     if (activeTab === "inventory") { await fetchInventoryHealth(); return; }
@@ -2096,6 +2135,7 @@ export default function AdminPage() {
     fetchSystemHealth,
     fetchUsers,
     fetchSupplierRequests,
+    fetchSellerRequests,
     orderPage,
     productSearchTerm,
     reviewPage,
@@ -2254,7 +2294,7 @@ export default function AdminPage() {
   };
 
   const handleReviewSupplierRequest = async (
-    request: SupplierAccessRequest,
+    request: AccessRequest,
     action: "approve" | "reject"
   ) => {
     if (!token) {
@@ -2293,6 +2333,49 @@ export default function AdminPage() {
       });
     } finally {
       setSupplierRequestProcessingId(null);
+    }
+  };
+
+  const handleReviewSellerRequest = async (
+    request: AccessRequest,
+    action: "approve" | "reject"
+  ) => {
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    setSellerRequestProcessingId(request.id);
+    try {
+      const response = await fetch("/api/auth/admin-seller-requests", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ requestId: request.id, action }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || `Failed to ${action} seller request`);
+      }
+
+      setSellerRequests((prev) => prev.filter((item) => item.id !== request.id));
+      if (loadedTabs.users) {
+        await fetchUsers(userPage);
+      }
+      toast.success(`Seller request ${action}d`, {
+        duration: 2000,
+        style: { backgroundColor: "#07bc0c", color: "#fff" },
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `Failed to ${action} seller request`, {
+        duration: 2500,
+        style: { backgroundColor: "#fb0404", color: "#fff" },
+      });
+    } finally {
+      setSellerRequestProcessingId(null);
     }
   };
 
@@ -2779,7 +2862,7 @@ export default function AdminPage() {
     [completedOrders, statusCountMap]
   );
   const maxFunnelValue = Math.max(...funnelSteps.map((step) => step.value), 1);
-  const pendingAdminRequests = productRequests.length + supplierRequests.length;
+  const pendingAdminRequests = productRequests.length + supplierRequests.length + sellerRequests.length;
 
   const actionItems = useMemo(
     () => [
@@ -3787,6 +3870,8 @@ export default function AdminPage() {
             {productRequestError ? <p className="adminStatus adminStatusError">{productRequestError}</p> : null}
             {loadingSupplierRequests ? <p className="adminStatus">Loading supplier access requests...</p> : null}
             {supplierRequestError ? <p className="adminStatus adminStatusError">{supplierRequestError}</p> : null}
+            {loadingSellerRequests ? <p className="adminStatus">Loading seller access requests...</p> : null}
+            {sellerRequestError ? <p className="adminStatus adminStatusError">{sellerRequestError}</p> : null}
 
             {!loadingProductRequests && !productRequestError ? (
               <>
@@ -3908,6 +3993,67 @@ export default function AdminPage() {
                                     className="adminActionButton"
                                     disabled={isProcessing}
                                     onClick={() => void handleReviewSupplierRequest(request, "reject")}
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div style={{ marginTop: 20, marginBottom: 12 }}>
+                  <h3 style={{ marginBottom: 6 }}>Seller Access Requests</h3>
+                  <p className="sectionHint"></p>
+                </div>
+                <div className="adminTableWrapper">
+                  <table className="adminTable">
+                    <thead>
+                      <tr>
+                        <th>User</th>
+                        <th>Business</th>
+                        <th>Submitted</th>
+                        <th>Details</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sellerRequests.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="adminEmpty">
+                            No pending seller access requests.
+                          </td>
+                        </tr>
+                      ) : (
+                        sellerRequests.map((request) => {
+                          const isProcessing = sellerRequestProcessingId === request.id;
+                          return (
+                            <tr key={request.id}>
+                              <td>{request.requestedByEmail || "-"}</td>
+                              <td>{request.businessName || "-"}</td>
+                              <td>{request.createdAt ? formatDateTime(request.createdAt) : "-"}</td>
+                              <td>
+                                {[request.websiteUrl, request.contactPhone, request.note]
+                                  .filter(Boolean)
+                                  .join(" • ") || "-"}
+                              </td>
+                              <td>
+                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                  <button
+                                    className="adminActionButton"
+                                    disabled={isProcessing}
+                                    onClick={() => void handleReviewSellerRequest(request, "approve")}
+                                  >
+                                    {isProcessing ? "Processing..." : "Approve"}
+                                  </button>
+                                  <button
+                                    className="adminActionButton"
+                                    disabled={isProcessing}
+                                    onClick={() => void handleReviewSellerRequest(request, "reject")}
                                   >
                                     Reject
                                   </button>

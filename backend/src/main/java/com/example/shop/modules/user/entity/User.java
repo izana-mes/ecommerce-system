@@ -86,6 +86,10 @@ public class User implements UserDetails,Principal {
     @Column(name = "provider_id", length = 255)
     private String providerId;
 
+    @Column(name = "loyalty_points", nullable = false)
+    @Builder.Default
+    private Long loyaltyPoints = 0L;
+
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

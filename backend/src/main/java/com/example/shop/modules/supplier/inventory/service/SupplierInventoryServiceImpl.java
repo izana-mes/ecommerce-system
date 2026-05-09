@@ -56,10 +56,8 @@ public class SupplierInventoryServiceImpl implements SupplierInventoryService {
     @Transactional(readOnly = true)
     public List<InventoryItemDto> getLowStockAlerts(UUID supplierUserId, int threshold) {
         int safeThreshold = Math.max(1, threshold);
-        return productRepository.findBySupplierUserIdOrderByIdAsc(supplierUserId)
+        return productRepository.findLowStockBySupplier(supplierUserId, safeThreshold)
                 .stream()
-                .filter(p -> Boolean.TRUE.equals(p.getActive())
-                        && stockOf(p) <= safeThreshold)
                 .map(p -> toDto(p, safeThreshold))
                 .toList();
     }

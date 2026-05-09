@@ -269,6 +269,24 @@ public class ProductServiceImpl implements ProductService {
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_INVENTORY_HEALTH, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.ADMIN_DASHBOARD, allEntries = true)
     })
+    public void assignSellerToProduct(String productId, UUID sellerUserId) {
+        if (!StringUtils.hasText(productId) || sellerUserId == null) {
+            return;
+        }
+        Product existing = productRepository.findByProductID(productId)
+                .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productId));
+        existing.setSellerUserId(sellerUserId);
+        productRepository.save(existing);
+    }
+
+    @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_ALL, allEntries = true),
+            @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SEARCH, allEntries = true),
+            @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SUGGEST, allEntries = true),
+            @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_INVENTORY_HEALTH, allEntries = true),
+            @CacheEvict(cacheNames = RedisCacheConfig.ADMIN_DASHBOARD, allEntries = true)
+    })
     public void deleteProduct(String productID) {
         Product existing = productRepository.findByProductID(productID)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productID));

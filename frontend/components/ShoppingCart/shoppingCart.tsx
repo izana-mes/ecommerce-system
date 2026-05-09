@@ -11,12 +11,13 @@ import {
   cartProduct,
   clearCart,
   fetchCartAsync,
+  removeFromCart,
   removeFromCartAsync,
   selectCartTotalAmount,
   updateQuantityAsync,
 } from "@/store/cartSlice";
 import { useAppDispatch, useAppSelector } from "@/store";
-import { getToken, getUser } from "@/lib/auth";
+import { getToken, getUser, refreshCurrentUserFromServer } from "@/lib/auth";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import type { TranslationKey } from "@/lib/i18n";
 
@@ -92,6 +93,15 @@ type AddressSuggestion = {
   postalCode: string;
   country: string;
 };
+type LoyaltySnapshot = {
+  redeemed: number;
+  earned: number;
+  remaining: number;
+  discountAmount: number;
+};
+
+const POINTS_PER_USD_DISCOUNT = 100;
+const MAX_POINTS_DISCOUNT_RATE = 0.25;
 
 function normalizeAuthorizationHeader(token: string | null): string | null {
   if (!token) return null;
@@ -160,6 +170,19 @@ export default function ShoppingCart() {
   const [couponCode, setCouponCode] = useState("");
   const [couponApplying, setCouponApplying] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+  const [availablePoints, setAvailablePoints] = useState(0);
+  const [pointsToRedeemInput, setPointsToRedeemInput] = useState("0");
+  const [lastLoyaltySnapshot, setLastLoyaltySnapshot] = useState<LoyaltySnapshot | null>(null);
+  const [lastPlacedItems, setLastPlacedItems] = useState<cartProduct[]>([]);
+  const [lastPlacedTotal, setLastPlacedTotal] = useState(0);
+  const [lastOrderPricing, setLastOrderPricing] = useState({
+    subtotal: 0,
+    shipping: 0,
+    vat: 0,
+    couponDiscount: 0,
+    pointsDiscount: 0,
+    total: 0,
+  });
   const requestedStep = (searchParams.get("step") || "").trim().toLowerCase();
   const requestedBuyNow = (searchParams.get("buyNow") || "").trim();
   const requestedPayment = (searchParams.get("payment") || "").trim().toLowerCase();
@@ -190,6 +213,16 @@ export default function ShoppingCart() {
       lastName: prev.lastName || user.lastName || "",
       email: prev.email || user.email || "",
     }));
+  }, []);
+
+  useEffect(() => {
+    const token = getToken();
+    const user = getUser();
+    setAvailablePoints(Math.max(0, Number(user?.loyaltyPoints ?? 0)));
+    if (!token) return;
+    void refreshCurrentUserFromServer().then((refreshed) => {
+      setAvailablePoints(Math.max(0, Number(refreshed?.loyaltyPoints ?? 0)));
+    });
   }, []);
 
   useEffect(() => {
@@ -226,7 +259,15 @@ export default function ShoppingCart() {
   const shippingFee = checkoutSubtotal === 0 ? 0 : 5;
   const vatAmount = checkoutSubtotal === 0 ? 0 : 11;
   const discountAmount = Math.min(checkoutSubtotal, Number(appliedCoupon?.discountAmount || 0));
-  const checkoutGrandTotal = Math.max(0, checkoutSubtotal + shippingFee + vatAmount - discountAmount);
+  const prePointsTotal = Math.max(0, checkoutSubtotal + shippingFee + vatAmount - discountAmount);
+  const maxRedeemablePointsByRate = Math.floor(prePointsTotal * MAX_POINTS_DISCOUNT_RATE * POINTS_PER_USD_DISCOUNT);
+  const requestedPointsToRedeem = Math.max(0, Number.parseInt(pointsToRedeemInput || "0", 10) || 0);
+  const pointsRedeemApplied = Math.max(
+    0,
+    Math.min(requestedPointsToRedeem, availablePoints, maxRedeemablePointsByRate)
+  );
+  const pointsDiscountAmount = pointsRedeemApplied / POINTS_PER_USD_DISCOUNT;
+  const checkoutGrandTotal = Math.max(0, prePointsTotal - pointsDiscountAmount);
 
   const handleCheckoutFieldChange = (field: keyof CheckoutForm, value: string | boolean) => {
     setCheckoutForm((prev) => ({
@@ -502,6 +543,7 @@ export default function ShoppingCart() {
     }
 
     setIsPlacingOrder(true);
+    const placedItemsSnapshot = checkoutItems.map((item) => ({ ...item }));
     try {
       const token = getToken();
       const checkoutHealthResponse = await fetch("/api/cart/checkout-health", {
@@ -565,6 +607,7 @@ export default function ShoppingCart() {
           vat: checkoutSubtotal === 0 ? 0 : 11,
           couponCode: appliedCoupon?.code,
           couponDiscount: discountAmount,
+          pointsToRedeem: pointsRedeemApplied,
           items: checkoutItems.map((item) => ({
             productID: item.productID,
             productName: item.productName,
@@ -582,8 +625,30 @@ export default function ShoppingCart() {
       const orderId = data?.data?.orderId as number | undefined;
       const orderNumber = data?.data?.orderNumber as string | undefined;
       const trackingSecret = data?.data?.trackingSecret as string | undefined;
+      const pointsRedeemed = Number(data?.data?.pointsRedeemed ?? 0);
+      const pointsEarned = Number(data?.data?.pointsEarned ?? 0);
+      const remainingPoints = Number(data?.data?.remainingPoints ?? availablePoints);
+      const serverPointsDiscountAmount = Number(data?.data?.pointsDiscountAmount ?? pointsDiscountAmount);
       if (orderNumber) setLastOrderNumber(orderNumber);
       setLastTrackingSecret(trackingSecret && String(trackingSecret).trim() ? String(trackingSecret).trim() : null);
+      setLastPlacedItems(placedItemsSnapshot);
+      setLastPlacedTotal(checkoutGrandTotal);
+      setLastOrderPricing({
+        subtotal: checkoutSubtotal,
+        shipping: shippingFee,
+        vat: vatAmount,
+        couponDiscount: discountAmount,
+        pointsDiscount: Math.max(0, serverPointsDiscountAmount),
+        total: checkoutGrandTotal,
+      });
+      setLastLoyaltySnapshot({
+        redeemed: Math.max(0, pointsRedeemed),
+        earned: Math.max(0, pointsEarned),
+        remaining: Math.max(0, remainingPoints),
+        discountAmount: Math.max(0, serverPointsDiscountAmount),
+      });
+      setAvailablePoints(Math.max(0, remainingPoints));
+      setPointsToRedeemInput("0");
 
       if (isVnpay && orderId && orderNumber) {
         const paymentResponse = await fetch("/api/vnpay/create-payment", {
@@ -641,6 +706,7 @@ export default function ShoppingCart() {
 
       if (buyNowProductId) {
         await dispatch(removeFromCartAsync(buyNowProductId)).unwrap().catch(() => null);
+        dispatch(removeFromCart(buyNowProductId));
         setBuyNowProductId(null);
       } else {
         await fetch("/api/cart/clear", {
@@ -653,6 +719,7 @@ export default function ShoppingCart() {
         dispatch(clearCart());
       }
       dispatch(fetchCartAsync());
+      void refreshCurrentUserFromServer();
 
       setPayments(true);
       handleTabClick("cartTab3");
@@ -1322,11 +1389,34 @@ export default function ShoppingCart() {
                           </td>
                         </tr>
                         <tr>
+                          <th>Points Discount</th>
+                          <td style={{ color: pointsDiscountAmount > 0 ? "#188038" : undefined }}>
+                            -${pointsDiscountAmount.toFixed(2)}
+                          </td>
+                        </tr>
+                        <tr>
                           <th>Total</th>
                           <td>${checkoutGrandTotal.toFixed(2)}</td>
                         </tr>
                       </tbody>
                     </table>
+                  </div>
+                  <div className="loyaltyPanel">
+                    <h4>Loyalty Points</h4>
+                    <p>Available: {availablePoints.toLocaleString()} points</p>
+                    <label htmlFor="pointsToRedeem">Use points</label>
+                    <input
+                      id="pointsToRedeem"
+                      type="number"
+                      min={0}
+                      max={Math.max(0, Math.min(availablePoints, maxRedeemablePointsByRate))}
+                      step={1}
+                      value={pointsToRedeemInput}
+                      onChange={(event) => setPointsToRedeemInput(event.target.value)}
+                    />
+                    <small>
+                      100 points = $1.00, up to 25% of order. Applying {pointsRedeemApplied.toLocaleString()} points.
+                    </small>
                   </div>
                 </div>
 
@@ -1468,7 +1558,7 @@ export default function ShoppingCart() {
                   </div>
                   <div className="orderInfoItem">
                     <p>{t("cart_total")}</p>
-                    <h4>${totalPrice.toFixed(2)}</h4>
+                    <h4>${lastPlacedTotal.toFixed(2)}</h4>
                   </div>
                   <div className="orderInfoItem">
                     <p>{t("order_payment_method")}</p>
@@ -1496,7 +1586,7 @@ export default function ShoppingCart() {
                         </tr>
                       </thead>
                       <tbody>
-                        {cartItems.map((item) => (
+                        {lastPlacedItems.map((item) => (
                           <tr key={`confirm-${item.productID}`}>
                             <td>
                               {item.productName} x {item.quantity ?? 1}
@@ -1513,23 +1603,42 @@ export default function ShoppingCart() {
                       <tbody>
                         <tr>
                           <th>{t("cart_table_subtotal")}</th>
-                          <td>${totalPrice.toFixed(2)}</td>
+                          <td>${lastOrderPricing.subtotal.toFixed(2)}</td>
                         </tr>
                         <tr>
                           <th>{t("cart_shipping")}</th>
-                          <td>$5</td>
+                          <td>${lastOrderPricing.shipping.toFixed(2)}</td>
                         </tr>
                         <tr>
                           <th>{t("cart_vat")}</th>
-                          <td>$11</td>
+                          <td>${lastOrderPricing.vat.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                          <th>Coupon Discount</th>
+                          <td style={{ color: lastOrderPricing.couponDiscount > 0 ? "#188038" : undefined }}>
+                            -${lastOrderPricing.couponDiscount.toFixed(2)}
+                          </td>
+                        </tr>
+                        <tr>
+                          <th>Points Discount</th>
+                          <td style={{ color: lastOrderPricing.pointsDiscount > 0 ? "#188038" : undefined }}>
+                            -${lastOrderPricing.pointsDiscount.toFixed(2)}
+                          </td>
                         </tr>
                         <tr>
                           <th>{t("cart_total")}</th>
-                          <td>${(totalPrice === 0 ? 0 : totalPrice + 16).toFixed(2)}</td>
+                          <td>${lastPlacedTotal.toFixed(2)}</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
+                  {lastLoyaltySnapshot ? (
+                    <div className="loyaltyOrderSummary">
+                      <p>Points redeemed: {lastLoyaltySnapshot.redeemed.toLocaleString()}</p>
+                      <p>Points earned: {lastLoyaltySnapshot.earned.toLocaleString()}</p>
+                      <p>Remaining points: {lastLoyaltySnapshot.remaining.toLocaleString()}</p>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>

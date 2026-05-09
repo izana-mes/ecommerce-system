@@ -11,6 +11,7 @@ public interface SupplierFinanceService {
     SupplierBalanceDto getBalance(UUID supplierUserId);
 
     TransactionPageDto getTransactions(UUID supplierUserId, int page, int size);
+    TransactionPageDto getTransactions(UUID supplierUserId, int page, int size, boolean includeCommission);
 
     /**
      * Record income from an order line item. Calculates commission and credits net amount.

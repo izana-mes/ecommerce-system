@@ -21,7 +21,7 @@ import { DataStore } from "@/data/StoreData";
 import { useProducts } from "@/hooks/useProducts";
 import { createPortal } from "react-dom";
 
-import Filter from "./Filters/Filter";
+import Filter, { ShopFiltersState } from "./Filters/Filter";
 import AuthRequiredModal from "@/components/Common/AuthRequiredModal";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import "./Shop.css";
@@ -184,6 +184,13 @@ export default function Shop() {
   const [replyDraftByReviewId, setReplyDraftByReviewId] = useState<Record<string, string>>({});
   const [activeReplyReviewId, setActiveReplyReviewId] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<string>("");
+  const [filters, setFilters] = useState<ShopFiltersState>({
+    categories: [],
+    colors: [],
+    sizes: [],
+    brands: [],
+    priceRange: [0, 300],
+  });
 
   const cartItems = useAppSelector((state: RootState) => state.cart.itemsById);
   const wishListItems = useAppSelector((state) => state.wishList.itemsById);
@@ -191,6 +198,22 @@ export default function Shop() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    if (products.length === 0) return;
+    const prices = products.map((item) => Number(item.productPrice || 0)).filter(Number.isFinite);
+    if (prices.length === 0) return;
+    const minPrice = Math.floor(Math.min(...prices));
+    const maxPrice = Math.ceil(Math.max(...prices));
+    setFilters((prev) => {
+      const nextMin = Math.max(minPrice, prev.priceRange[0]);
+      const nextMax = Math.min(maxPrice, prev.priceRange[1]);
+      return {
+        ...prev,
+        priceRange: nextMin <= nextMax ? [nextMin, nextMax] : [minPrice, maxPrice],
+      };
+    });
+  }, [products]);
 
   const resolveAvailableStock = (product: DataStore) =>
     product.active === false ? 0 : Number(product.stockQuantity ?? 25);
@@ -784,11 +807,23 @@ export default function Shop() {
     }
   };
 
+  const filteredProducts = useMemo(() => {
+    const [minPrice, maxPrice] = filters.priceRange;
+    return products.filter((item) => {
+      const category = String(item.category ?? "").trim().toLowerCase();
+      const sizeList = Array.isArray(item.sizes) ? item.sizes : [];
+      const price = Number(item.productPrice ?? 0);
+
+      if (categoryQuery && category !== categoryQuery) return false;
+      if (filters.categories.length > 0 && !filters.categories.some((c) => c.trim().toLowerCase() === category)) return false;
+      if (filters.sizes.length > 0 && !filters.sizes.some((size) => sizeList.includes(size))) return false;
+      if (Number.isFinite(price) && (price < minPrice || price > maxPrice)) return false;
+      return true;
+    });
+  }, [categoryQuery, filters, products]);
+
   const sortedProducts = useMemo(() => {
-    const categoryFiltered = categoryQuery
-      ? products.filter((item) => String(item.category ?? "").trim().toLowerCase() === categoryQuery)
-      : products;
-    const items = [...categoryFiltered];
+    const items = [...filteredProducts];
     switch (sortBy) {
       case "a-z":
         return items.sort((a, b) => a.productName.localeCompare(b.productName));
@@ -811,7 +846,21 @@ export default function Shop() {
       default:
         return items;
     }
-  }, [categoryQuery, products, sortBy]);
+  }, [filteredProducts, sortBy]);
+
+  const availableCategories = useMemo(
+    () => Array.from(new Set(products.map((p) => String(p.category ?? "").trim()).filter(Boolean))).sort(),
+    [products]
+  );
+  const availableSizes = useMemo(
+    () => Array.from(new Set(products.flatMap((p) => (Array.isArray(p.sizes) ? p.sizes : [])))).sort(),
+    [products]
+  );
+  const priceBounds = useMemo(() => {
+    const prices = products.map((p) => Number(p.productPrice ?? 0)).filter(Number.isFinite);
+    if (prices.length === 0) return { minPrice: 0, maxPrice: 300 };
+    return { minPrice: Math.floor(Math.min(...prices)), maxPrice: Math.ceil(Math.max(...prices)) };
+  }, [products]);
 
   const totalPages = Math.max(1, Math.ceil(sortedProducts.length / ITEMS_PER_PAGE));
 
@@ -878,7 +927,14 @@ export default function Shop() {
       <div className="shopDetails">
         <div className="shopDetailMain">
           <div className="shopDetails__left">
-            <Filter />
+            <Filter
+              filters={filters}
+              onChange={setFilters}
+              availableCategories={availableCategories}
+              availableSizes={availableSizes}
+              minPrice={priceBounds.minPrice}
+              maxPrice={priceBounds.maxPrice}
+            />
           </div>
 
           <div className="shopDetails__right">
@@ -1145,7 +1201,14 @@ export default function Shop() {
           <IoClose onClick={closeDrawer} className="closeButton" size={26} />
         </div>
         <div className="drawerContent">
-          <Filter />
+          <Filter
+            filters={filters}
+            onChange={setFilters}
+            availableCategories={availableCategories}
+            availableSizes={availableSizes}
+            minPrice={priceBounds.minPrice}
+            maxPrice={priceBounds.maxPrice}
+          />
         </div>
       </div>
 

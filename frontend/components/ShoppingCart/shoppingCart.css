@@ -618,6 +618,41 @@
   border-bottom: 1px solid var(--border-soft);
 }
 
+.loyaltyPanel {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px dashed var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.loyaltyPanel h4 {
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.loyaltyPanel p {
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+.loyaltyPanel label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.loyaltyPanel input {
+  border: 1px solid var(--border-soft);
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.loyaltyPanel small {
+  font-size: 12px;
+  color: var(--muted-text);
+}
+
 /* Checkout Payment */
 
 .checkoutPaymentContainer {
@@ -744,6 +779,18 @@
 }
 
 .orderCompleteMessage p {
+  font-size: 14px;
+  color: var(--muted-text);
+}
+
+.loyaltyOrderSummary {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.loyaltyOrderSummary p {
   font-size: 14px;
   color: var(--muted-text);
 }

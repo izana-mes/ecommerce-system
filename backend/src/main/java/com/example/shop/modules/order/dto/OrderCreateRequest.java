@@ -41,6 +41,7 @@ public class OrderCreateRequest {
     private String couponCode;
     private Double couponDiscount;
     private Long couponAssignmentId;
+    private Long pointsToRedeem;
 
     @Valid
     @NotEmpty(message = "items is required")

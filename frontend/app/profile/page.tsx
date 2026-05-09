@@ -32,7 +32,7 @@ type SupplierProductRequest = {
   reviewedAt?: string | null;
 };
 
-type SupplierAccessRequest = {
+type AccessRequest = {
   id: string;
   status: "PENDING" | "APPROVED" | "REJECTED";
   businessName?: string | null;
@@ -129,29 +129,23 @@ export default function ProfilePage() {
   >([]);
   const [couponLoading, setCouponLoading] = useState(false);
   const [confirmingId, setConfirmingId] = useState<number | null>(null);
-  const [supplierRequest, setSupplierRequest] = useState<{
-    id: string;
-    status: "PENDING" | "APPROVED" | "REJECTED";
-    businessName?: string | null;
-    websiteUrl?: string | null;
-    contactPhone?: string | null;
-    note?: string | null;
-    reviewerNote?: string | null;
-    createdAt?: string | null;
-    reviewedAt?: string | null;
-  } | null>(null);
+  const [supplierRequest, setSupplierRequest] = useState<AccessRequest | null>(null);
+  const [sellerRequest, setSellerRequest] = useState<AccessRequest | null>(null);
   const [supplierBusinessName, setSupplierBusinessName] = useState("");
   const [supplierWebsiteUrl, setSupplierWebsiteUrl] = useState("");
   const [supplierContactPhone, setSupplierContactPhone] = useState("");
   const [supplierRequestNote, setSupplierRequestNote] = useState("");
   const [supplierRequestLoading, setSupplierRequestLoading] = useState(false);
   const [supplierRequestSubmitting, setSupplierRequestSubmitting] = useState(false);
+  const [sellerRequestSubmitting, setSellerRequestSubmitting] = useState(false);
   const [supplierProductRequests, setSupplierProductRequests] = useState<SupplierProductRequest[]>([]);
   const [supplierProductsLoading, setSupplierProductsLoading] = useState(false);
   const [adminProductRequests, setAdminProductRequests] = useState<SupplierProductRequest[]>([]);
   const [adminProductsLoading, setAdminProductsLoading] = useState(false);
-  const [adminSupplierRequests, setAdminSupplierRequests] = useState<SupplierAccessRequest[]>([]);
+  const [adminSupplierRequests, setAdminSupplierRequests] = useState<AccessRequest[]>([]);
   const [adminSupplierRequestsLoading, setAdminSupplierRequestsLoading] = useState(false);
+  const [adminSellerRequests, setAdminSellerRequests] = useState<AccessRequest[]>([]);
+  const [adminSellerRequestsLoading, setAdminSellerRequestsLoading] = useState(false);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
 
@@ -231,6 +225,41 @@ export default function ProfilePage() {
       const message = error instanceof Error ? error.message : "Failed to load supplier request";
       toast.error(message);
       setSupplierRequest(null);
+    } finally {
+      setSupplierRequestLoading(false);
+    }
+  }, []);
+
+  const fetchSellerRequest = useCallback(async () => {
+    setSupplierRequestLoading(true);
+    try {
+      const token = typeof window === "undefined"
+        ? null
+        : localStorage.getItem("token") || sessionStorage.getItem("token");
+      if (!token) {
+        setSellerRequest(null);
+        return;
+      }
+
+      const response = await fetch("/api/auth/seller-access", {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || "Failed to load seller request");
+      }
+
+      setSellerRequest(data);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load seller request";
+      toast.error(message);
+      setSellerRequest(null);
     } finally {
       setSupplierRequestLoading(false);
     }
@@ -329,6 +358,37 @@ export default function ProfilePage() {
     }
   }, []);
 
+  const fetchAdminSellerRequests = useCallback(async () => {
+    const token = getToken();
+    if (!token) {
+      setAdminSellerRequests([]);
+      return;
+    }
+
+    setAdminSellerRequestsLoading(true);
+    try {
+      const response = await fetch("/api/auth/admin-seller-requests?status=PENDING", {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || "Failed to load seller requests");
+      }
+      setAdminSellerRequests(Array.isArray(data) ? data : []);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load seller requests";
+      toast.error(message);
+      setAdminSellerRequests([]);
+    } finally {
+      setAdminSellerRequestsLoading(false);
+    }
+  }, []);
+
   const fetchRecentOrders = useCallback(async () => {
     const token = getToken();
     setOrdersLoading(true);
@@ -363,27 +423,33 @@ export default function ProfilePage() {
     if (!user) return;
     void fetchCouponItems();
     void fetchSupplierRequest();
+    void fetchSellerRequest();
     void fetchRecentOrders();
     if (user.role === "supplier") {
       void fetchSupplierProductRequests();
       setAdminProductRequests([]);
       setAdminSupplierRequests([]);
+      setAdminSellerRequests([]);
     } else if (user.role === "admin") {
       void fetchAdminProductRequests();
       void fetchAdminSupplierRequests();
+      void fetchAdminSellerRequests();
       setSupplierProductRequests([]);
     } else {
       setSupplierProductRequests([]);
       setAdminProductRequests([]);
       setAdminSupplierRequests([]);
+      setAdminSellerRequests([]);
     }
   }, [
     fetchAdminProductRequests,
+    fetchAdminSellerRequests,
     fetchAdminSupplierRequests,
     fetchCouponItems,
     fetchRecentOrders,
     fetchSupplierProductRequests,
     fetchSupplierRequest,
+    fetchSellerRequest,
     user,
   ]);
 
@@ -411,7 +477,7 @@ export default function ProfilePage() {
     [supplierProductRequests]
   );
 
-  const adminQueueLoading = adminProductsLoading || adminSupplierRequestsLoading;
+  const adminQueueLoading = adminProductsLoading || adminSupplierRequestsLoading || adminSellerRequestsLoading;
 
   const handleConfirmCoupon = async (assignmentId: number) => {
     setConfirmingId(assignmentId);
@@ -487,6 +553,53 @@ export default function ProfilePage() {
     }
   };
 
+  const handleSubmitSellerRequest = async () => {
+    const token = typeof window === "undefined"
+      ? null
+      : localStorage.getItem("token") || sessionStorage.getItem("token");
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    setSellerRequestSubmitting(true);
+    try {
+      const response = await fetch("/api/auth/seller-access", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          businessName: supplierBusinessName,
+          websiteUrl: supplierWebsiteUrl,
+          contactPhone: supplierContactPhone,
+          note: supplierRequestNote,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || "Failed to submit seller request");
+      }
+      toast.success(data?.message || "Seller access request submitted");
+      setSupplierBusinessName("");
+      setSupplierWebsiteUrl("");
+      setSupplierContactPhone("");
+      setSupplierRequestNote("");
+      setSellerRequest(data?.request ?? null);
+      await refreshCurrentUserFromServer().then((refreshed) => {
+        if (refreshed) {
+          setUser(refreshed);
+        }
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to submit seller request";
+      toast.error(message);
+    } finally {
+      setSellerRequestSubmitting(false);
+    }
+  };
+
   const handleLogout = () => {
     // Clear auth and all per-user client state
     clearAuth();
@@ -515,11 +628,14 @@ export default function ProfilePage() {
   }
 
   const supplierRequestStatus = supplierRequest?.status || null;
+  const sellerRequestStatus = sellerRequest?.status || null;
   const canRequestSupplierAccess = user.role === "user" && supplierRequestStatus !== "PENDING";
+  const canRequestSellerAccess = user.role === "user" && sellerRequestStatus !== "PENDING";
   const isSupplier = user.role === "supplier";
   const isSeller = user.role === "seller";
   const isAdmin = user.role === "admin";
   const isShipper = user.role === "shipper";
+  const loyaltyPoints = Math.max(0, Number(user.loyaltyPoints ?? 0));
 
   return (
     <div className="profilePage">
@@ -542,6 +658,10 @@ export default function ProfilePage() {
             <div className="profileField">
               <span className="profileLabel">{t("profile_role")}</span>
               <span className="profileValue">{user.role}</span>
+            </div>
+            <div className="profileField profilePointsRow">
+              <span className="profileLabel">Loyalty points</span>
+              <span className="profileValue profilePointsValue">{loyaltyPoints.toLocaleString()} pts</span>
             </div>
             <div className="profileField">
               <span className="profileLabel">{t("profile_orders")}</span>
@@ -701,21 +821,36 @@ export default function ProfilePage() {
               </div>
             ) : null}
 
-            {supplierRequest ? (
+            {supplierRequest || sellerRequest ? (
               <div className="profileSupplierNotice">
-                <h3>Supplier Access Status</h3>
-                <p>
-                  Latest request: <strong className={`profileSupplierStatus profileSupplierStatus${supplierRequest.status.toLowerCase()}`}>{supplierRequest.status.toLowerCase()}</strong>
-                  {supplierRequest.createdAt ? ` on ${new Date(supplierRequest.createdAt).toLocaleDateString()}` : ""}
-                </p>
-                {supplierRequest.businessName ? <p>Business: {supplierRequest.businessName}</p> : null}
-                {supplierRequest.note ? <p>Request note: {supplierRequest.note}</p> : null}
-                {supplierRequest.reviewerNote ? <p>Admin note: {supplierRequest.reviewerNote}</p> : null}
+                <h3>Access Request Status</h3>
+                {supplierRequest ? (
+                  <>
+                    <p>
+                      Supplier request: <strong className={`profileSupplierStatus profileSupplierStatus${supplierRequest.status.toLowerCase()}`}>{supplierRequest.status.toLowerCase()}</strong>
+                      {supplierRequest.createdAt ? ` on ${new Date(supplierRequest.createdAt).toLocaleDateString()}` : ""}
+                    </p>
+                    {supplierRequest.businessName ? <p>Business: {supplierRequest.businessName}</p> : null}
+                    {supplierRequest.note ? <p>Request note: {supplierRequest.note}</p> : null}
+                    {supplierRequest.reviewerNote ? <p>Admin note: {supplierRequest.reviewerNote}</p> : null}
+                  </>
+                ) : null}
+                {sellerRequest ? (
+                  <>
+                    <p>
+                      Seller request: <strong className={`profileSupplierStatus profileSupplierStatus${sellerRequest.status.toLowerCase()}`}>{sellerRequest.status.toLowerCase()}</strong>
+                      {sellerRequest.createdAt ? ` on ${new Date(sellerRequest.createdAt).toLocaleDateString()}` : ""}
+                    </p>
+                    {sellerRequest.businessName ? <p>Business: {sellerRequest.businessName}</p> : null}
+                    {sellerRequest.note ? <p>Request note: {sellerRequest.note}</p> : null}
+                    {sellerRequest.reviewerNote ? <p>Admin note: {sellerRequest.reviewerNote}</p> : null}
+                  </>
+                ) : null}
               </div>
-            ) : canRequestSupplierAccess ? (
+            ) : canRequestSupplierAccess || canRequestSellerAccess ? (
               <div className="profileSupplierMiniForm">
-                <h3>Want to become a Supplier?</h3>
-                <p className="profileSubtitle">Request access to sell your own products on our platform.</p>
+                <h3>Want to become a Supplier or Seller?</h3>
+                <p className="profileSubtitle">Submit your request. Admin will review and notify by email.</p>
                 <div className="profileSupplierFormGrid">
                   <input
                     className="profileTextInput"
@@ -749,9 +884,17 @@ export default function ProfilePage() {
                     type="button"
                     className="profilePrimaryButton"
                     onClick={() => void handleSubmitSupplierRequest()}
-                    disabled={supplierRequestSubmitting || supplierRequestLoading}
+                    disabled={supplierRequestSubmitting || sellerRequestSubmitting || supplierRequestLoading}
                   >
-                    {supplierRequestSubmitting ? "Submitting..." : "Apply"}
+                    {supplierRequestSubmitting ? "Submitting..." : "Apply as Supplier"}
+                  </button>
+                  <button
+                    type="button"
+                    className="profilePrimaryButton"
+                    onClick={() => void handleSubmitSellerRequest()}
+                    disabled={sellerRequestSubmitting || supplierRequestSubmitting || supplierRequestLoading}
+                  >
+                    {sellerRequestSubmitting ? "Submitting..." : "Apply as Seller"}
                   </button>
                 </div>
               </div>
@@ -781,12 +924,18 @@ export default function ProfilePage() {
                     <strong>{adminSupplierRequests.length}</strong>
                     <span>Suppliers in queue</span>
                   </div>
+                  <div className="profileMetric">
+                    <strong>{adminSellerRequests.length}</strong>
+                    <span>Sellers in queue</span>
+                  </div>
                 </div>
 
                 <div className="profilePendingList">
-                  {adminQueueLoading ? <p>Loading approval queue...</p> : null}
+                  {adminQueueLoading || adminSellerRequestsLoading ? <p>Loading approval queue...</p> : null}
                   {!adminQueueLoading &&
+                  !adminSellerRequestsLoading &&
                   adminSupplierRequests.length === 0 &&
+                  adminSellerRequests.length === 0 &&
                   adminProductRequests.length === 0 ? (
                     <p>No supplier access or product submissions are currently waiting for approval.</p>
                   ) : null}
@@ -798,6 +947,27 @@ export default function ProfilePage() {
                               <div>
                                 <h3>{request.businessName || request.requestedByEmail || "Supplier access request"}</h3>
                                 <p>{request.requestedByEmail || "Unknown applicant"} · supplier access request</p>
+                              </div>
+                              <span className="profileSupplierStatus profileSupplierStatuspending">pending</span>
+                            </div>
+                            <div className="profilePendingMeta">
+                              <span>
+                                Submitted {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : "recently"}
+                              </span>
+                              {request.contactPhone ? <span>{request.contactPhone}</span> : null}
+                            </div>
+                          </article>
+                        );
+                      })
+                    : null}
+                  {!adminQueueLoading
+                    ? adminSellerRequests.slice(0, 2).map((request) => {
+                        return (
+                          <article key={request.id} className="profilePendingItem">
+                            <div className="profilePendingItemHeader">
+                              <div>
+                                <h3>{request.businessName || request.requestedByEmail || "Seller access request"}</h3>
+                                <p>{request.requestedByEmail || "Unknown applicant"} · seller access request</p>
                               </div>
                               <span className="profileSupplierStatus profileSupplierStatuspending">pending</span>
                             </div>

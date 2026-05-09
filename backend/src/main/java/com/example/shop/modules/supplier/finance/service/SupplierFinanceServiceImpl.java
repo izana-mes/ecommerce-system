@@ -10,6 +10,7 @@ import com.example.shop.modules.supplier.finance.repository.SupplierTransactionR
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -43,11 +44,23 @@ public class SupplierFinanceServiceImpl implements SupplierFinanceService {
     @Override
     @Transactional(readOnly = true)
     public TransactionPageDto getTransactions(UUID supplierUserId, int page, int size) {
+        return getTransactions(supplierUserId, page, size, false);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TransactionPageDto getTransactions(UUID supplierUserId, int page, int size, boolean includeCommission) {
         int safePage = Math.max(0, page);
         int safeSize = Math.max(1, Math.min(size, 100));
+        PageRequest pageable = PageRequest.of(safePage, safeSize);
 
-        Page<SupplierTransaction> resultPage = transactionRepository
-                .findBySupplierUserIdOrderByCreatedAtDesc(supplierUserId, PageRequest.of(safePage, safeSize));
+        Page<SupplierTransaction> resultPage = includeCommission
+                ? transactionRepository.findBySupplierUserIdOrderByCreatedAtDesc(supplierUserId, pageable)
+                : transactionRepository.findBySupplierUserIdAndTypeNotOrderByCreatedAtDesc(
+                        supplierUserId,
+                        SupplierTransaction.TransactionType.COMMISSION,
+                        pageable
+                );
 
         List<SupplierTransactionDto> content = resultPage.getContent().stream()
                 .map(this::toTransactionDto)
@@ -153,14 +166,21 @@ public class SupplierFinanceServiceImpl implements SupplierFinanceService {
      */
     private SupplierBalance getOrCreateBalance(UUID supplierUserId) {
         return balanceRepository.findBySupplierUserId(supplierUserId).orElseGet(() -> {
-            SupplierBalance fresh = SupplierBalance.builder()
-                    .supplierUserId(supplierUserId)
-                    .availableBalance(BigDecimal.ZERO)
-                    .pendingBalance(BigDecimal.ZERO)
-                    .totalEarned(BigDecimal.ZERO)
-                    .currency("USD")
-                    .build();
-            return balanceRepository.save(fresh);
+            try {
+                SupplierBalance fresh = SupplierBalance.builder()
+                        .supplierUserId(supplierUserId)
+                        .availableBalance(BigDecimal.ZERO)
+                        .pendingBalance(BigDecimal.ZERO)
+                        .totalEarned(BigDecimal.ZERO)
+                        .currency("USD")
+                        .build();
+                return balanceRepository.saveAndFlush(fresh);
+            } catch (DataIntegrityViolationException ex) {
+                log.debug("Race condition on supplier_balance insert for supplier {}; re-fetching.", supplierUserId);
+                return balanceRepository.findBySupplierUserId(supplierUserId)
+                        .orElseThrow(() -> new IllegalStateException(
+                                "Could not create or load balance for supplier " + supplierUserId, ex));
+            }
         });
     }
 

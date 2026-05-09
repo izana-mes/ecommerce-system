@@ -8,9 +8,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -18,7 +20,6 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class SupplierDashboardServiceImpl implements SupplierDashboardService {
 
     private final JdbcTemplate jdbcTemplate;
@@ -37,6 +38,8 @@ public class SupplierDashboardServiceImpl implements SupplierDashboardService {
         BigDecimal totalRevenue = querySupplierRevenue(supplierId);
         long totalProducts = countSupplierProducts(supplierId);
         long lowStockCount = countLowStockProducts(supplierId, safeThreshold);
+        long outOfStockCount = countOutOfStockProducts(supplierId);
+        double avgStockPerProduct = queryAvgStockPerProduct(supplierId);
 
         SupplierBalance balance = supplierBalanceRepository.findBySupplierUserId(supplierUserId).orElse(null);
         BigDecimal availableBalance = balance == null ? BigDecimal.ZERO : orZero(balance.getAvailableBalance());
@@ -44,6 +47,8 @@ public class SupplierDashboardServiceImpl implements SupplierDashboardService {
 
         List<SupplierDashboardResponse.RevenuePoint> revenueByDay = queryRevenueByDay(supplierId, safeDays);
         List<SupplierDashboardResponse.TopProductPoint> topProducts = queryTopSellingProducts(supplierId, 10);
+        List<SupplierDashboardResponse.RestockSuggestionPoint> restockSuggestions =
+                queryRestockSuggestions(supplierId, safeThreshold, 8);
 
         return SupplierDashboardResponse.builder()
                 .totalRevenue(orZero(totalRevenue))
@@ -52,10 +57,13 @@ public class SupplierDashboardServiceImpl implements SupplierDashboardService {
                 .cancelRate(cancelRate)
                 .totalProducts(totalProducts)
                 .lowStockCount(lowStockCount)
+                .outOfStockCount(outOfStockCount)
+                .avgStockPerProduct(avgStockPerProduct)
                 .availableBalance(availableBalance)
                 .pendingBalance(pendingBalance)
                 .revenueByDay(revenueByDay)
                 .topSellingProducts(topProducts)
+                .restockSuggestions(restockSuggestions)
                 .build();
     }
 
@@ -146,6 +154,40 @@ public class SupplierDashboardServiceImpl implements SupplierDashboardService {
         }
     }
 
+    private long countOutOfStockProducts(String supplierId) {
+        try {
+            Long val = jdbcTemplate.queryForObject(
+                    """
+                    SELECT COUNT(*) FROM products
+                    WHERE supplier_user_id = ?
+                      AND active = true
+                      AND COALESCE(stock_quantity, 0) = 0
+                    """,
+                    Long.class, supplierId);
+            return val == null ? 0L : val;
+        } catch (DataAccessException e) {
+            log.warn("Supplier dashboard: failed to count out-of-stock products for supplier {}", supplierId, e);
+            return 0L;
+        }
+    }
+
+    private double queryAvgStockPerProduct(String supplierId) {
+        try {
+            Double val = jdbcTemplate.queryForObject(
+                    """
+                    SELECT COALESCE(AVG(COALESCE(stock_quantity, 0)), 0)
+                    FROM products
+                    WHERE supplier_user_id = ?
+                      AND active = true
+                    """,
+                    Double.class, supplierId);
+            return val == null ? 0.0 : round2(val);
+        } catch (DataAccessException e) {
+            log.warn("Supplier dashboard: failed to query avg stock for supplier {}", supplierId, e);
+            return 0.0;
+        }
+    }
+
     private List<SupplierDashboardResponse.RevenuePoint> queryRevenueByDay(String supplierId, int days) {
         try {
             return jdbcTemplate.query(
@@ -208,6 +250,56 @@ public class SupplierDashboardServiceImpl implements SupplierDashboardService {
         }
     }
 
+    private List<SupplierDashboardResponse.RestockSuggestionPoint> queryRestockSuggestions(
+            String supplierId,
+            int threshold,
+            int limit
+    ) {
+        Timestamp soldSince = Timestamp.from(Instant.now().minus(30, ChronoUnit.DAYS));
+        try {
+            return jdbcTemplate.query(
+                    """
+                    SELECT
+                        p.product_id,
+                        p.product_name,
+                        COALESCE(p.stock_quantity, 0) AS stock_qty,
+                        COALESCE(SUM(CASE
+                            WHEN o.created_at >= ?
+                                 AND LOWER(o.order_status) <> 'cancelled'
+                            THEN oi.quantity ELSE 0 END), 0) AS sold_30d
+                    FROM products p
+                    LEFT JOIN order_items oi ON oi.product_id = p.product_id
+                    LEFT JOIN orders o ON o.id = oi.order_id
+                    WHERE p.supplier_user_id = ?
+                      AND p.active = true
+                      AND COALESCE(p.stock_quantity, 0) <= ?
+                    GROUP BY p.product_id, p.product_name, p.stock_quantity
+                    ORDER BY sold_30d DESC, stock_qty ASC, p.product_id ASC
+                    LIMIT ?
+                    """,
+                    (rs, rowNum) -> {
+                        int stock = rs.getInt("stock_qty");
+                        long sold30d = rs.getLong("sold_30d");
+                        double avgDailySold = sold30d <= 0 ? 0.0 : (double) sold30d / 30.0;
+                        double daysOfCover = avgDailySold <= 0 ? 999.0 : round2(stock / avgDailySold);
+
+                        return SupplierDashboardResponse.RestockSuggestionPoint.builder()
+                                .productId(rs.getString("product_id"))
+                                .productName(rs.getString("product_name"))
+                                .stockQuantity(stock)
+                                .soldLast30Days(sold30d)
+                                .daysOfCover(daysOfCover)
+                                .urgency(calculateUrgency(stock, daysOfCover))
+                                .build();
+                    },
+                    soldSince, supplierId, threshold, limit
+            );
+        } catch (DataAccessException e) {
+            log.warn("Supplier dashboard: restock suggestions query failed for supplier {}", supplierId, e);
+            return Collections.emptyList();
+        }
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private BigDecimal orZero(BigDecimal value) {
@@ -216,5 +308,18 @@ public class SupplierDashboardServiceImpl implements SupplierDashboardService {
 
     private double round2(double value) {
         return Math.round(value * 100.0) / 100.0;
+    }
+
+    private String calculateUrgency(int stock, double daysOfCover) {
+        if (stock <= 0) {
+            return "critical";
+        }
+        if (daysOfCover <= 7) {
+            return "high";
+        }
+        if (daysOfCover <= 14) {
+            return "medium";
+        }
+        return "watch";
     }
 }

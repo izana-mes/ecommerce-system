@@ -1,0 +1,9 @@
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS loyalty_points BIGINT NOT NULL DEFAULT 0;
+
+ALTER TABLE orders
+    ADD COLUMN IF NOT EXISTS points_redeemed INTEGER NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS points_discount_amount NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+    ADD COLUMN IF NOT EXISTS points_earned INTEGER NOT NULL DEFAULT 0;
+
+CREATE INDEX IF NOT EXISTS idx_users_loyalty_points ON users (loyalty_points);

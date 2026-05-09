@@ -69,7 +69,7 @@ public class SellerOrderServiceImpl implements SellerOrderService {
                 """);
 
         List<Object> params = new ArrayList<>();
-        params.add(sellerUserId.toString());
+        params.add(sellerUserId);
 
         if (filterByStatus) {
             sql.append(" AND UPPER(o.order_status) = UPPER(?) ");

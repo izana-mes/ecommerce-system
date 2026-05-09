@@ -37,4 +37,9 @@ public interface ProductService {
      * After admin approval of a supplier-originated product create, attaches catalog ownership for supplier APIs.
      */
     void assignSupplierToProduct(String productId, UUID supplierUserId);
+
+    /**
+     * After admin approval of a seller-originated product create, attaches catalog ownership for seller APIs.
+     */
+    void assignSellerToProduct(String productId, UUID sellerUserId);
 }

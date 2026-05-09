@@ -16,11 +16,14 @@ public class SupplierDashboardResponse {
     private double cancelRate;
     private long totalProducts;
     private long lowStockCount;
+    private long outOfStockCount;
+    private double avgStockPerProduct;
     private BigDecimal availableBalance;
     private BigDecimal pendingBalance;
 
     private List<RevenuePoint> revenueByDay;
     private List<TopProductPoint> topSellingProducts;
+    private List<RestockSuggestionPoint> restockSuggestions;
 
     @Getter
     @Builder
@@ -37,5 +40,16 @@ public class SupplierDashboardResponse {
         private String productName;
         private long soldQty;
         private BigDecimal revenue;
+    }
+
+    @Getter
+    @Builder
+    public static class RestockSuggestionPoint {
+        private String productId;
+        private String productName;
+        private int stockQuantity;
+        private long soldLast30Days;
+        private double daysOfCover;
+        private String urgency;
     }
 }

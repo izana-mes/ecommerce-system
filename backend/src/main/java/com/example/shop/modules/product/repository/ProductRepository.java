@@ -43,4 +43,16 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             @Param("sellerUserId") UUID sellerUserId,
             @Param("threshold") int threshold
     );
+
+    @Query("""
+            SELECT p FROM Product p
+            WHERE p.supplierUserId = :supplierUserId
+              AND p.active = true
+              AND COALESCE(p.stockQuantity, 0) <= :threshold
+            ORDER BY p.stockQuantity ASC, p.id ASC
+            """)
+    List<Product> findLowStockBySupplier(
+            @Param("supplierUserId") UUID supplierUserId,
+            @Param("threshold") int threshold
+    );
 }

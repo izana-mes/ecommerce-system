@@ -1,12 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { getToken } from "@/lib/auth";
+import { CSSProperties, useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { CSSProperties } from "react";
+import { getToken } from "@/lib/auth";
 
-type RevenuePoint = { day: string; orders: number; revenue: number };
 type TopProduct = { productId: string; productName: string; soldQty: number; revenue: number };
+type RestockSuggestion = {
+  productId: string;
+  productName: string;
+  stockQuantity: number;
+  soldLast30Days: number;
+  daysOfCover: number;
+  urgency: "critical" | "high" | "medium" | "watch";
+};
 
 type DashboardData = {
   totalRevenue: number;
@@ -15,10 +21,12 @@ type DashboardData = {
   cancelRate: number;
   totalProducts: number;
   lowStockCount: number;
+  outOfStockCount: number;
+  avgStockPerProduct: number;
   availableBalance: number;
   pendingBalance: number;
-  revenueByDay: RevenuePoint[];
   topSellingProducts: TopProduct[];
+  restockSuggestions: RestockSuggestion[];
 };
 
 export default function SupplierDashboardPage() {
@@ -28,16 +36,15 @@ export default function SupplierDashboardPage() {
   const fetchDashboard = useCallback(async () => {
     const token = getToken();
     if (!token) return;
-
     try {
-      const response = await fetch("/api/v1/supplier/dashboard?days=30&lowStockThreshold=5", {
+      const response = await fetch("/api/v1/supplier/dashboard?days=30&lowStockThreshold=8", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const res = await response.json();
-      if (!response.ok) throw new Error(res?.message || "Failed to load dashboard");
+      if (!response.ok) throw new Error(res?.message || "Failed to load supplier dashboard");
       setData(res.data);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to load supplier dashboard");
     } finally {
       setLoading(false);
     }
@@ -47,34 +54,76 @@ export default function SupplierDashboardPage() {
     void fetchDashboard();
   }, [fetchDashboard]);
 
-  if (loading) return <div style={containerStyle}>Loading dashboard...</div>;
-  if (!data) return <div style={containerStyle}>Failed to load.</div>;
+  if (loading) return <div style={containerStyle}>Loading supplier command center...</div>;
+  if (!data) return <div style={containerStyle}>Unable to load supplier dashboard.</div>;
 
   return (
     <div style={containerStyle}>
-      <h1 style={titleStyle}>Dashboard</h1>
-      <div style={gridStyle}>
-        <div style={cardStyle}>
-          <div style={cardLabel}>Total Revenue/30d</div>
-          <div style={cardValue}>${data.totalRevenue.toFixed(2)}</div>
-        </div>
-        <div style={cardStyle}>
-          <div style={cardLabel}>Orders (Cancel Rate)</div>
-          <div style={cardValue}>{data.totalOrders} <span style={{fontSize: 14, color: "#ef4444"}}>({data.cancelRate}%)</span></div>
-        </div>
-        <div style={cardStyle}>
-          <div style={cardLabel}>Active Products</div>
-          <div style={cardValue}>{data.totalProducts} <span style={{fontSize: 14, color: "#eab308"}}>({data.lowStockCount} low stock)</span></div>
-        </div>
-        <div style={cardStyle}>
-          <div style={cardLabel}>Available Balance</div>
-          <div style={cardValue}>${data.availableBalance.toFixed(2)}</div>
-        </div>
+      <h1 style={titleStyle}>Supplier Command Center</h1>
+      <p style={subtitleStyle}>Stock pressure, restock urgency, and wholesale operations snapshot.</p>
+
+      <div style={kpiGridStyle}>
+        <Kpi label="Out of Stock" value={String(data.outOfStockCount)} tone="#dc2626" />
+        <Kpi label="Low Stock SKUs" value={String(data.lowStockCount)} tone="#ea580c" />
+        <Kpi label="Avg Units / SKU" value={data.avgStockPerProduct.toFixed(1)} tone="#0f766e" />
+        <Kpi label="Supplier Revenue" value={`$${data.totalRevenue.toFixed(2)}`} tone="#1d4ed8" />
       </div>
 
-      <div style={{ marginTop: 32 }}>
-        <h2 style={sectionTitleStyle}>Top Selling Products</h2>
-        <div style={tableContainer}>
+      <div style={twoColStyle}>
+        <section style={panelStyle}>
+          <h2 style={panelTitleStyle}>Restock Radar</h2>
+          {data.restockSuggestions.length === 0 ? (
+            <div style={emptyStyle}>No urgent restock items.</div>
+          ) : (
+            data.restockSuggestions.map((item) => (
+              <div key={item.productId} style={radarRowStyle}>
+                <div>
+                  <div style={productNameStyle}>{item.productName}</div>
+                  <div style={productMetaStyle}>{item.productId}</div>
+                </div>
+                <div style={metricStyle}>Stock: {item.stockQuantity}</div>
+                <div style={metricStyle}>30d sold: {item.soldLast30Days}</div>
+                <div style={metricStyle}>
+                  Cover: {item.daysOfCover >= 999 ? "N/A" : `${item.daysOfCover}d`}
+                </div>
+                <span style={{ ...badgeStyle, background: urgencyColor(item.urgency) }}>
+                  {item.urgency.toUpperCase()}
+                </span>
+              </div>
+            ))
+          )}
+        </section>
+
+        <section style={panelStyle}>
+          <h2 style={panelTitleStyle}>Wholesale Health</h2>
+          <div style={healthRowStyle}>
+            <span>Total Products</span>
+            <strong>{data.totalProducts}</strong>
+          </div>
+          <div style={healthRowStyle}>
+            <span>Total Orders</span>
+            <strong>{data.totalOrders}</strong>
+          </div>
+          <div style={healthRowStyle}>
+            <span>Cancelled Orders</span>
+            <strong>{data.cancelledOrders} ({data.cancelRate.toFixed(2)}%)</strong>
+          </div>
+          <div style={healthRowStyle}>
+            <span>Available Balance</span>
+            <strong>${data.availableBalance.toFixed(2)}</strong>
+          </div>
+          <div style={healthRowStyle}>
+            <span>Pending Balance</span>
+            <strong>${data.pendingBalance.toFixed(2)}</strong>
+          </div>
+        </section>
+      </div>
+
+      <section style={{ ...panelStyle, marginTop: 16 }}>
+        <h2 style={panelTitleStyle}>Top Wholesale Movers</h2>
+        {data.topSellingProducts.length === 0 ? (
+          <div style={emptyStyle}>No sales data yet.</div>
+        ) : (
           <table style={tableStyle}>
             <thead>
               <tr>
@@ -84,32 +133,54 @@ export default function SupplierDashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {data.topSellingProducts.length === 0 ? (
-                <tr><td colSpan={3} style={tdStyle}>No sales yet.</td></tr>
-              ) : data.topSellingProducts.map(p => (
-                <tr key={p.productId}>
-                  <td style={tdStyle}><strong>{p.productName}</strong><br/><span style={mutedStyle}>{p.productId}</span></td>
-                  <td style={tdStyle}>{p.soldQty}</td>
-                  <td style={tdStyle}>${p.revenue.toFixed(2)}</td>
+              {data.topSellingProducts.map((product) => (
+                <tr key={product.productId}>
+                  <td style={tdStyle}>{product.productName}</td>
+                  <td style={tdStyle}>{product.soldQty}</td>
+                  <td style={tdStyle}>${product.revenue.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
-      </div>
+        )}
+      </section>
     </div>
   );
 }
 
-const containerStyle: CSSProperties = { padding: "40px", maxWidth: 1200, margin: "0 auto", animation: "pageIn 400ms ease" };
-const titleStyle: CSSProperties = { margin: "0 0 24px", fontSize: 28 };
-const sectionTitleStyle: CSSProperties = { margin: "0 0 16px", fontSize: 20 };
-const gridStyle: CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 };
-const cardStyle: CSSProperties = { background: "#fff", padding: 24, borderRadius: 16, boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" };
-const cardLabel: CSSProperties = { color: "#6b7280", fontSize: 14, fontWeight: 500 };
-const cardValue: CSSProperties = { color: "#111827", fontSize: 28, fontWeight: 700, marginTop: 8 };
-const tableContainer: CSSProperties = { background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" };
+function Kpi({ label, value, tone }: { label: string; value: string; tone: string }) {
+  return (
+    <div style={{ ...kpiCardStyle, borderColor: tone }}>
+      <div style={kpiLabelStyle}>{label}</div>
+      <div style={{ ...kpiValueStyle, color: tone }}>{value}</div>
+    </div>
+  );
+}
+
+function urgencyColor(urgency: RestockSuggestion["urgency"]) {
+  if (urgency === "critical") return "#b91c1c";
+  if (urgency === "high") return "#c2410c";
+  if (urgency === "medium") return "#a16207";
+  return "#334155";
+}
+
+const containerStyle: CSSProperties = { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 44px" };
+const titleStyle: CSSProperties = { margin: 0, fontSize: 30, color: "#0f172a", letterSpacing: "-0.01em" };
+const subtitleStyle: CSSProperties = { marginTop: 8, color: "#475569" };
+const kpiGridStyle: CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 12, marginTop: 16 };
+const kpiCardStyle: CSSProperties = { background: "#f8fafc", border: "2px solid", borderRadius: 14, padding: "16px 18px" };
+const kpiLabelStyle: CSSProperties = { fontSize: 12, color: "#334155", textTransform: "uppercase", letterSpacing: ".07em" };
+const kpiValueStyle: CSSProperties = { marginTop: 8, fontSize: 30, fontWeight: 800 };
+const twoColStyle: CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12, marginTop: 12 };
+const panelStyle: CSSProperties = { background: "#ffffff", borderRadius: 14, border: "1px solid #e2e8f0", padding: 16 };
+const panelTitleStyle: CSSProperties = { margin: "0 0 12px", fontSize: 18, color: "#0f172a" };
+const radarRowStyle: CSSProperties = { display: "grid", gridTemplateColumns: "1.2fr .7fr .7fr .7fr auto", gap: 8, alignItems: "center", padding: "10px 0", borderBottom: "1px dashed #e2e8f0" };
+const productNameStyle: CSSProperties = { fontWeight: 700, color: "#0f172a" };
+const productMetaStyle: CSSProperties = { fontSize: 12, color: "#64748b", fontFamily: "monospace" };
+const metricStyle: CSSProperties = { fontSize: 13, color: "#334155" };
+const badgeStyle: CSSProperties = { color: "#fff", fontSize: 11, fontWeight: 700, borderRadius: 999, padding: "5px 10px" };
+const healthRowStyle: CSSProperties = { display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", padding: "10px 0", color: "#1e293b", fontSize: 14 };
 const tableStyle: CSSProperties = { width: "100%", borderCollapse: "collapse" };
-const thStyle: CSSProperties = { background: "#f9fafb", padding: "12px 24px", textAlign: "left", fontSize: 13, textTransform: "uppercase", color: "#6b7280", borderBottom: "1px solid #e5e7eb" };
-const tdStyle: CSSProperties = { padding: "16px 24px", borderBottom: "1px solid #e5e7eb", fontSize: 14 };
-const mutedStyle: CSSProperties = { color: "#6b7280", fontSize: 13 };
+const thStyle: CSSProperties = { textAlign: "left", background: "#f8fafc", color: "#475569", fontSize: 12, textTransform: "uppercase", letterSpacing: ".06em", padding: "10px 12px" };
+const tdStyle: CSSProperties = { padding: "12px", borderTop: "1px solid #f1f5f9", color: "#0f172a" };
+const emptyStyle: CSSProperties = { color: "#64748b", fontSize: 14, padding: "8px 0" };

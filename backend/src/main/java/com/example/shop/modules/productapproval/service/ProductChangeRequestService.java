@@ -175,9 +175,13 @@ public class ProductChangeRequestService {
                     ProductDto payload = objectMapper.readValue(request.getRequestPayload(), ProductDto.class);
                     stripSupplierPin(payload);
                     productService.createProduct(payload);
-                    UUID supplierAssigneeId = resolveSupplierAssignee(request);
-                    if (supplierAssigneeId != null && StringUtils.hasText(payload.getProductID())) {
-                        productService.assignSupplierToProduct(payload.getProductID(), supplierAssigneeId);
+                    UUID ownerAssigneeId = resolveCatalogOwnerAssignee(request);
+                    if (ownerAssigneeId != null && StringUtils.hasText(payload.getProductID())) {
+                        if (isSupplier(request.getRequestedBy())) {
+                            productService.assignSupplierToProduct(payload.getProductID(), ownerAssigneeId);
+                        } else if (isSeller(request.getRequestedBy())) {
+                            productService.assignSellerToProduct(payload.getProductID(), ownerAssigneeId);
+                        }
                     }
                 }
                 case UPDATE -> {
@@ -209,7 +213,7 @@ public class ProductChangeRequestService {
         }
     }
 
-    private UUID resolveSupplierAssignee(ProductChangeRequest request) {
+    private UUID resolveCatalogOwnerAssignee(ProductChangeRequest request) {
         User ref = request.getRequestedBy();
         if (ref == null || ref.getId() == null) {
             return null;
@@ -218,10 +222,21 @@ public class ProductChangeRequestService {
         if (loaded == null || loaded.getRoles() == null) {
             return null;
         }
-        boolean supplier = loaded.getRoles().stream()
-                .map(Role::getName)
-                .anyMatch("ROLE_SUPPLIER"::equals);
-        return supplier ? loaded.getId() : null;
+        return (isSupplier(loaded) || isSeller(loaded)) ? loaded.getId() : null;
+    }
+
+    private boolean isSupplier(User user) {
+        return hasRole(user, "ROLE_SUPPLIER");
+    }
+
+    private boolean isSeller(User user) {
+        return hasRole(user, "ROLE_SELLER");
+    }
+
+    private boolean hasRole(User user, String roleName) {
+        return user != null
+                && user.getRoles() != null
+                && user.getRoles().stream().map(Role::getName).anyMatch(roleName::equals);
     }
 
     private String toJson(Object payload) {

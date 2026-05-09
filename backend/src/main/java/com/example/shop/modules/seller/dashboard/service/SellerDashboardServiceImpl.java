@@ -28,22 +28,21 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
     public SellerDashboardResponse getDashboard(UUID sellerUserId, int days, int lowStockThreshold) {
         int safeDays = Math.max(1, Math.min(days, 365));
         int safeThreshold = Math.max(1, lowStockThreshold);
-        String sellerId = sellerUserId.toString();
 
-        long totalOrders = countSellerOrders(sellerId);
-        long cancelledOrders = countSellerCancelledOrders(sellerId);
+        long totalOrders = countSellerOrders(sellerUserId);
+        long cancelledOrders = countSellerCancelledOrders(sellerUserId);
         double cancelRate = totalOrders == 0 ? 0.0 : round2((double) cancelledOrders / totalOrders * 100);
 
-        BigDecimal totalRevenue = querySellerRevenue(sellerId);
-        long totalProducts = countSellerProducts(sellerId);
-        long lowStockCount = countLowStockProducts(sellerId, safeThreshold);
+        BigDecimal totalRevenue = querySellerRevenue(sellerUserId);
+        long totalProducts = countSellerProducts(sellerUserId);
+        long lowStockCount = countLowStockProducts(sellerUserId, safeThreshold);
 
         SellerBalance balance = sellerBalanceRepository.findBySellerUserId(sellerUserId).orElse(null);
         BigDecimal availableBalance = balance == null ? BigDecimal.ZERO : orZero(balance.getAvailableBalance());
         BigDecimal pendingBalance = balance == null ? BigDecimal.ZERO : orZero(balance.getPendingBalance());
 
-        List<SellerDashboardResponse.RevenuePoint> revenueByDay = queryRevenueByDay(sellerId, safeDays);
-        List<SellerDashboardResponse.TopProductPoint> topProducts = queryTopSellingProducts(sellerId, 10);
+        List<SellerDashboardResponse.RevenuePoint> revenueByDay = queryRevenueByDay(sellerUserId, safeDays);
+        List<SellerDashboardResponse.TopProductPoint> topProducts = queryTopSellingProducts(sellerUserId, 10);
 
         return SellerDashboardResponse.builder()
                 .totalRevenue(orZero(totalRevenue))
@@ -61,7 +60,7 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
 
     // ── Queries ──────────────────────────────────────────────────────────────────
 
-    private long countSellerOrders(String sellerId) {
+    private long countSellerOrders(UUID sellerUserId) {
         try {
             Long val = jdbcTemplate.queryForObject(
                     """
@@ -71,15 +70,15 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
                     INNER JOIN products p ON p.product_id = oi.product_id
                     WHERE p.seller_user_id = ?
                     """,
-                    Long.class, sellerId);
+                    Long.class, sellerUserId);
             return val == null ? 0L : val;
         } catch (DataAccessException e) {
-            log.warn("Seller dashboard: failed to count orders for seller {}", sellerId, e);
+            log.warn("Seller dashboard: failed to count orders for seller {}", sellerUserId, e);
             return 0L;
         }
     }
 
-    private long countSellerCancelledOrders(String sellerId) {
+    private long countSellerCancelledOrders(UUID sellerUserId) {
         try {
             Long val = jdbcTemplate.queryForObject(
                     """
@@ -90,15 +89,15 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
                     WHERE p.seller_user_id = ?
                       AND LOWER(o.order_status) = 'cancelled'
                     """,
-                    Long.class, sellerId);
+                    Long.class, sellerUserId);
             return val == null ? 0L : val;
         } catch (DataAccessException e) {
-            log.warn("Seller dashboard: failed to count cancelled orders for seller {}", sellerId, e);
+            log.warn("Seller dashboard: failed to count cancelled orders for seller {}", sellerUserId, e);
             return 0L;
         }
     }
 
-    private BigDecimal querySellerRevenue(String sellerId) {
+    private BigDecimal querySellerRevenue(UUID sellerUserId) {
         try {
             BigDecimal val = jdbcTemplate.queryForObject(
                     """
@@ -109,27 +108,27 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
                     WHERE p.seller_user_id = ?
                       AND o.payment_status IN ('paid', 'authorized')
                     """,
-                    BigDecimal.class, sellerId);
+                    BigDecimal.class, sellerUserId);
             return orZero(val);
         } catch (DataAccessException e) {
-            log.warn("Seller dashboard: failed to query revenue for seller {}", sellerId, e);
+            log.warn("Seller dashboard: failed to query revenue for seller {}", sellerUserId, e);
             return BigDecimal.ZERO;
         }
     }
 
-    private long countSellerProducts(String sellerId) {
+    private long countSellerProducts(UUID sellerUserId) {
         try {
             Long val = jdbcTemplate.queryForObject(
                     "SELECT COUNT(*) FROM products WHERE seller_user_id = ?",
-                    Long.class, sellerId);
+                    Long.class, sellerUserId);
             return val == null ? 0L : val;
         } catch (DataAccessException e) {
-            log.warn("Seller dashboard: failed to count products for seller {}", sellerId, e);
+            log.warn("Seller dashboard: failed to count products for seller {}", sellerUserId, e);
             return 0L;
         }
     }
 
-    private long countLowStockProducts(String sellerId, int threshold) {
+    private long countLowStockProducts(UUID sellerUserId, int threshold) {
         try {
             Long val = jdbcTemplate.queryForObject(
                     """
@@ -138,15 +137,15 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
                       AND active = true
                       AND COALESCE(stock_quantity, 0) <= ?
                     """,
-                    Long.class, sellerId, threshold);
+                    Long.class, sellerUserId, threshold);
             return val == null ? 0L : val;
         } catch (DataAccessException e) {
-            log.warn("Seller dashboard: failed to count low-stock products for seller {}", sellerId, e);
+            log.warn("Seller dashboard: failed to count low-stock products for seller {}", sellerUserId, e);
             return 0L;
         }
     }
 
-    private List<SellerDashboardResponse.RevenuePoint> queryRevenueByDay(String sellerId, int days) {
+    private List<SellerDashboardResponse.RevenuePoint> queryRevenueByDay(UUID sellerUserId, int days) {
         try {
             return jdbcTemplate.query(
                     """
@@ -168,15 +167,15 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
                             .orders(rs.getLong("orders"))
                             .revenue(orZero(rs.getBigDecimal("revenue")))
                             .build(),
-                    sellerId, days
+                    sellerUserId, days
             );
         } catch (DataAccessException e) {
-            log.warn("Seller dashboard: revenue by day query failed for seller {}", sellerId, e);
+            log.warn("Seller dashboard: revenue by day query failed for seller {}", sellerUserId, e);
             return Collections.emptyList();
         }
     }
 
-    private List<SellerDashboardResponse.TopProductPoint> queryTopSellingProducts(String sellerId, int limit) {
+    private List<SellerDashboardResponse.TopProductPoint> queryTopSellingProducts(UUID sellerUserId, int limit) {
         try {
             return jdbcTemplate.query(
                     """
@@ -200,10 +199,10 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
                             .soldQty(rs.getLong("sold_qty"))
                             .revenue(orZero(rs.getBigDecimal("revenue")))
                             .build(),
-                    sellerId, limit
+                    sellerUserId, limit
             );
         } catch (DataAccessException e) {
-            log.warn("Seller dashboard: top products query failed for seller {}", sellerId, e);
+            log.warn("Seller dashboard: top products query failed for seller {}", sellerUserId, e);
             return Collections.emptyList();
         }
     }

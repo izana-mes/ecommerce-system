@@ -59,6 +59,19 @@
   word-break: break-word;
 }
 
+.profilePointsRow {
+  align-items: center;
+}
+
+.profilePointsValue {
+  font-weight: 700;
+  color: #0f7a34;
+  background: #e8f7ee;
+  border: 1px solid #bde7cc;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
 .profileLogoutButton {
   width: 100%;
   margin-top: 24px;

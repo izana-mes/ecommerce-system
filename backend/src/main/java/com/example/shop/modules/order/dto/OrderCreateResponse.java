@@ -19,6 +19,10 @@ public class OrderCreateResponse {
     private BigDecimal totalAmount;
     private String currency;
     private String couponCode;
+    private Integer pointsRedeemed;
+    private BigDecimal pointsDiscountAmount;
+    private Integer pointsEarned;
+    private Long remainingPoints;
     private String paymentStatus;
     private String orderStatus;
 }

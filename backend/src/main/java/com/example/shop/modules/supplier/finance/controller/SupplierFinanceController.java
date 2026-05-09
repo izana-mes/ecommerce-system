@@ -77,9 +77,11 @@ public class SupplierFinanceController {
     public ResponseEntity<ApiResponse<TransactionPageDto>> getTransactions(
             @AuthenticationPrincipal User user,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "false") boolean includeCommission
     ) {
-        TransactionPageDto transactions = financeService.getTransactions(user.getId(), page, size);
+        TransactionPageDto transactions = financeService
+                .getTransactions(user.getId(), page, size, includeCommission);
         return ResponseEntity.ok(ApiResponse.success(transactions));
     }
 }
