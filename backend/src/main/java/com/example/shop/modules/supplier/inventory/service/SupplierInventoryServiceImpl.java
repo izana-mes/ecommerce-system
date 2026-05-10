@@ -4,6 +4,8 @@ import com.example.shop.common.exception.BusinessException;
 import com.example.shop.modules.product.entity.Product;
 import com.example.shop.modules.product.repository.ProductRepository;
 import com.example.shop.modules.supplier.inventory.dto.InventoryItemDto;
+import com.example.shop.modules.supplier.inventory.dto.RestockRequestDto;
+import com.example.shop.modules.supplier.inventory.dto.RestockRequestResponseDto;
 import com.example.shop.modules.supplier.inventory.dto.StockUpdateRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +62,35 @@ public class SupplierInventoryServiceImpl implements SupplierInventoryService {
                 .stream()
                 .map(p -> toDto(p, safeThreshold))
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public RestockRequestResponseDto submitRestockRequest(UUID supplierUserId, RestockRequestDto request) {
+        Product product = productRepository.findByProductID(request.getProductId())
+                .orElseThrow(() -> new BusinessException(
+                        "Product not found: " + request.getProductId(), HttpStatus.NOT_FOUND));
+
+        if (!supplierUserId.equals(product.getSupplierUserId())) {
+            throw new BusinessException("You do not own this product", HttpStatus.FORBIDDEN);
+        }
+
+        int currentStock = stockOf(product);
+
+        // Log structured restock event for admin visibility / future workflow hook
+        log.info("RESTOCK_REQUEST supplier={} product={} currentStock={} requested={} note={}",
+                supplierUserId, request.getProductId(), currentStock,
+                request.getRequestedQuantity(), request.getNote());
+
+        return RestockRequestResponseDto.builder()
+                .productId(product.getProductID())
+                .productName(product.getProductName())
+                .currentStock(currentStock)
+                .requestedQuantity(request.getRequestedQuantity())
+                .note(request.getNote())
+                .status("SUBMITTED")
+                .message("Restock request submitted for admin review. Current stock: " + currentStock)
+                .build();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

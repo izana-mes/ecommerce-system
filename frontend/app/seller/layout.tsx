@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { name: "Dashboard", path: "/seller/dashboard", icon: "📊" },
   { name: "Orders", path: "/seller/orders", icon: "🛒" },
   { name: "Inventory", path: "/seller/inventory", icon: "🗄️" },
+  { name: "Promotions", path: "/seller/promotions", icon: "🏷️" },
   { name: "Finance", path: "/seller/finance", icon: "💰" },
   { name: "Reviews", path: "/seller/reviews", icon: "⭐" },
 ];

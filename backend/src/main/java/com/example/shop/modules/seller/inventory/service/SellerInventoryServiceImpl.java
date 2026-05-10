@@ -3,6 +3,7 @@ package com.example.shop.modules.seller.inventory.service;
 import com.example.shop.common.exception.BusinessException;
 import com.example.shop.modules.product.entity.Product;
 import com.example.shop.modules.product.repository.ProductRepository;
+import com.example.shop.modules.seller.inventory.dto.BulkStockUpdateRequest;
 import com.example.shop.modules.seller.inventory.dto.InventoryItemDto;
 import com.example.shop.modules.seller.inventory.dto.StockUpdateRequest;
 import lombok.RequiredArgsConstructor;
@@ -82,5 +83,13 @@ public class SellerInventoryServiceImpl implements SellerInventoryService {
 
     private int stockOf(Product product) {
         return product.getStockQuantity() == null ? 0 : product.getStockQuantity();
+    }
+
+    @Override
+    @Transactional
+    public List<InventoryItemDto> bulkUpdateStock(UUID sellerUserId, BulkStockUpdateRequest bulkRequest) {
+        return bulkRequest.getUpdates().stream()
+                .map(req -> updateStock(sellerUserId, req))
+                .toList();
     }
 }

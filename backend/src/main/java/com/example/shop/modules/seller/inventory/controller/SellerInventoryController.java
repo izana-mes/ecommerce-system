@@ -1,6 +1,7 @@
 package com.example.shop.modules.seller.inventory.controller;
 
 import com.example.shop.common.response.ApiResponse;
+import com.example.shop.modules.seller.inventory.dto.BulkStockUpdateRequest;
 import com.example.shop.modules.seller.inventory.dto.InventoryItemDto;
 import com.example.shop.modules.seller.inventory.dto.StockUpdateRequest;
 import com.example.shop.modules.seller.inventory.service.SellerInventoryService;
@@ -89,6 +90,24 @@ public class SellerInventoryController {
     ) {
         List<InventoryItemDto> alerts = inventoryService.getLowStockAlerts(user.getId(), threshold);
         return ResponseEntity.ok(ApiResponse.success(alerts));
+    }
+
+    /**
+     * POST /api/v1/seller/inventory/bulk-update
+     *
+     * Updates stock for multiple products in one call.
+     *
+     * Request body:
+     * { "updates": [ { "productId": "P001", "newQuantity": 50 }, { "productId": "P002", "newQuantity": 30 } ] }
+     */
+    @PostMapping("/bulk-update")
+    @PreAuthorize("hasRole('SELLER')")
+    public ResponseEntity<ApiResponse<List<InventoryItemDto>>> bulkUpdateStock(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody BulkStockUpdateRequest request
+    ) {
+        List<InventoryItemDto> updated = inventoryService.bulkUpdateStock(user.getId(), request);
+        return ResponseEntity.ok(ApiResponse.success(updated, "Bulk stock update applied to " + updated.size() + " products"));
     }
 }
 

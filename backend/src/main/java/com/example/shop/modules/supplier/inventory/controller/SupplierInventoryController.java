@@ -2,6 +2,8 @@ package com.example.shop.modules.supplier.inventory.controller;
 
 import com.example.shop.common.response.ApiResponse;
 import com.example.shop.modules.supplier.inventory.dto.InventoryItemDto;
+import com.example.shop.modules.supplier.inventory.dto.RestockRequestDto;
+import com.example.shop.modules.supplier.inventory.dto.RestockRequestResponseDto;
 import com.example.shop.modules.supplier.inventory.dto.StockUpdateRequest;
 import com.example.shop.modules.supplier.inventory.service.SupplierInventoryService;
 import com.example.shop.modules.user.entity.User;
@@ -25,15 +27,6 @@ public class SupplierInventoryController {
      * GET /api/v1/supplier/inventory?lowStockThreshold=5
      *
      * Returns all products owned by the authenticated supplier with their stock info.
-     *
-     * Example response:
-     * {
-     *   "success": true,
-     *   "data": [
-     *     { "productId": "P001", "productName": "Widget", "stockQuantity": 3, "lowStockThreshold": 5, "lowStock": true, "active": true },
-     *     { "productId": "P002", "productName": "Gadget", "stockQuantity": 40, "lowStockThreshold": 5, "lowStock": false, "active": true }
-     *   ]
-     * }
      */
     @GetMapping
     @PreAuthorize("hasRole('SUPPLIER')")
@@ -49,11 +42,6 @@ public class SupplierInventoryController {
      * PUT /api/v1/supplier/inventory/{productId}/stock
      *
      * Updates stock quantity for one of the supplier's products.
-     *
-     * Request body:
-     * { "productId": "P001", "newQuantity": 50, "lowStockThreshold": 5 }
-     *
-     * Example response: single updated InventoryItemDto
      */
     @PutMapping("/{productId}/stock")
     @PreAuthorize("hasRole('SUPPLIER')")
@@ -62,7 +50,6 @@ public class SupplierInventoryController {
             @PathVariable String productId,
             @Valid @RequestBody StockUpdateRequest request
     ) {
-        // Ensure path variable is consistent with body
         request.setProductId(productId);
         InventoryItemDto updated = inventoryService.updateStock(user.getId(), request);
         return ResponseEntity.ok(ApiResponse.success(updated, "Stock updated successfully"));
@@ -72,14 +59,6 @@ public class SupplierInventoryController {
      * GET /api/v1/supplier/inventory/low-stock?threshold=5
      *
      * Returns only products whose stock is at or below the threshold.
-     *
-     * Example response:
-     * {
-     *   "success": true,
-     *   "data": [
-     *     { "productId": "P001", "productName": "Widget", "stockQuantity": 3, "lowStockThreshold": 5, "lowStock": true, "active": true }
-     *   ]
-     * }
      */
     @GetMapping("/low-stock")
     @PreAuthorize("hasRole('SUPPLIER')")
@@ -89,5 +68,41 @@ public class SupplierInventoryController {
     ) {
         List<InventoryItemDto> alerts = inventoryService.getLowStockAlerts(user.getId(), threshold);
         return ResponseEntity.ok(ApiResponse.success(alerts));
+    }
+
+    /**
+     * POST /api/v1/supplier/inventory/restock-request
+     *
+     * Submits a formal restock request for a supplier-owned product.
+     *
+     * Request body:
+     * {
+     *   "productId": "P001",
+     *   "requestedQuantity": 200,
+     *   "note": "Running critically low, Black Friday approaching"
+     * }
+     *
+     * Example response:
+     * {
+     *   "success": true,
+     *   "message": "Restock request submitted for admin review. Current stock: 3",
+     *   "data": {
+     *     "productId": "P001",
+     *     "productName": "Widget",
+     *     "currentStock": 3,
+     *     "requestedQuantity": 200,
+     *     "note": "Running critically low...",
+     *     "status": "SUBMITTED"
+     *   }
+     * }
+     */
+    @PostMapping("/restock-request")
+    @PreAuthorize("hasRole('SUPPLIER')")
+    public ResponseEntity<ApiResponse<RestockRequestResponseDto>> submitRestockRequest(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody RestockRequestDto request
+    ) {
+        RestockRequestResponseDto response = inventoryService.submitRestockRequest(user.getId(), request);
+        return ResponseEntity.ok(ApiResponse.success(response, response.getMessage()));
     }
 }

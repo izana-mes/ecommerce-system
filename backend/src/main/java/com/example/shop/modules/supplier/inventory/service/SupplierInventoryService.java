@@ -1,6 +1,8 @@
 package com.example.shop.modules.supplier.inventory.service;
 
 import com.example.shop.modules.supplier.inventory.dto.InventoryItemDto;
+import com.example.shop.modules.supplier.inventory.dto.RestockRequestDto;
+import com.example.shop.modules.supplier.inventory.dto.RestockRequestResponseDto;
 import com.example.shop.modules.supplier.inventory.dto.StockUpdateRequest;
 
 import java.util.List;
@@ -13,4 +15,7 @@ public interface SupplierInventoryService {
     InventoryItemDto updateStock(UUID supplierUserId, StockUpdateRequest request);
 
     List<InventoryItemDto> getLowStockAlerts(UUID supplierUserId, int threshold);
+
+    /** Submit a formal restock request for a supplier-owned product. */
+    RestockRequestResponseDto submitRestockRequest(UUID supplierUserId, RestockRequestDto request);
 }
