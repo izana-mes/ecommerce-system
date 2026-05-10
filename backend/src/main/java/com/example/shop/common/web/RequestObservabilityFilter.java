@@ -11,6 +11,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -37,6 +38,13 @@ public class RequestObservabilityFilter extends OncePerRequestFilter {
 
         try {
             filterChain.doFilter(request, response);
+        } catch (Exception ex) {
+            if (isClientDisconnect(ex)) {
+                log.warn("client_disconnect requestId={} method={} path={} details=\"{}\"",
+                        requestId, request.getMethod(), request.getRequestURI(), rootMessage(ex));
+                return;
+            }
+            throw ex;
         } finally {
             long durationMs = Math.max(0L, System.currentTimeMillis() - startedAt);
             int status = response.getStatus();
@@ -56,6 +64,48 @@ public class RequestObservabilityFilter extends OncePerRequestFilter {
 
             MDC.remove(REQUEST_ID_MDC_KEY);
         }
+    }
+
+    private boolean isClientDisconnect(Exception ex) {
+        if (ex instanceof AsyncRequestNotUsableException) {
+            return true;
+        }
+        Throwable current = ex;
+        while (current != null) {
+            String className = current.getClass().getName();
+            if ("org.apache.catalina.connector.ClientAbortException".equals(className)) {
+                return true;
+            }
+            if (current instanceof IOException) {
+                String message = current.getMessage();
+                if (message != null) {
+                    String normalized = message.toLowerCase();
+                    if (normalized.contains("broken pipe") || normalized.contains("connection reset by peer")) {
+                        return true;
+                    }
+                }
+            }
+            current = current.getCause();
+        }
+        for (Throwable suppressed : ex.getSuppressed()) {
+            String className = suppressed.getClass().getName();
+            if ("org.apache.catalina.connector.ClientAbortException".equals(className)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String rootMessage(Exception ex) {
+        Throwable current = ex;
+        String last = ex.getMessage();
+        while (current != null) {
+            if (current.getMessage() != null && !current.getMessage().isBlank()) {
+                last = current.getMessage();
+            }
+            current = current.getCause();
+        }
+        return last == null ? "unknown" : last;
     }
 
     private String resolveRequestId(HttpServletRequest request) {
