@@ -12,7 +12,7 @@ services:
     dockerfilePath: ./Dockerfile
     plan: free
     autoDeploy: true
-    healthCheckPath: /api/products
+    healthCheckPath: /api/health
     envVars:
       - key: PORT
         value: 10000
