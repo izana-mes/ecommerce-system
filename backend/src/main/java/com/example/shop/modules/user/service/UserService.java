@@ -3,6 +3,7 @@ package com.example.shop.modules.user.service;
 import com.example.shop.common.exception.BusinessException;
 import com.example.shop.modules.role.entity.Role;
 import com.example.shop.modules.role.repository.RoleRepository;
+import com.example.shop.modules.token.service.TokenService;
 import com.example.shop.modules.user.dto.request.ChangePasswordRequest;
 import com.example.shop.modules.user.dto.request.UpdateProfileRequest;
 import com.example.shop.modules.user.dto.response.UserResponse;
@@ -42,6 +43,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TokenService tokenService;
 
     /**
      * Get user by ID.
@@ -164,6 +166,7 @@ public class UserService {
                 .orElseThrow(() -> new BusinessException("User not found", HttpStatus.NOT_FOUND));
         user.setActive(false);
         userRepository.save(user);
+        tokenService.revokeAllUserSessions(user.getId());
     }
 
     /**

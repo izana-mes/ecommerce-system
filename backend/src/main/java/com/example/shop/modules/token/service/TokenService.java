@@ -74,6 +74,11 @@ public class TokenService {
     public RefreshToken verifyRefreshToken(String token) {
         RefreshToken refreshToken = refreshTokenRepository.findByRefreshTokenHash(token)
                 .orElseThrow(() -> new BusinessException("Refresh token not found", HttpStatus.FORBIDDEN));
+        User user = refreshToken.getUser();
+        if (user == null || !user.isActive()) {
+            refreshTokenRepository.delete(refreshToken);
+            throw new BusinessException("User account is deactivated", HttpStatus.FORBIDDEN);
+        }
         if (refreshToken.isRevoked()) {
             throw new BusinessException("Refresh token has been revoked", HttpStatus.FORBIDDEN);
         }
