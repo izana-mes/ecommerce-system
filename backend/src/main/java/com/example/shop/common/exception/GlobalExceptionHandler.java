@@ -17,9 +17,11 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
 import java.util.stream.Collectors;
 
 /**
@@ -113,6 +115,10 @@ public class GlobalExceptionHandler {
 
         @ExceptionHandler(Exception.class)
         public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception e) {
+                if (isClientDisconnect(e)) {
+                        log.warn("Client disconnected before response could be fully written: {}", rootMessage(e));
+                        return ResponseEntity.status(499).body(ApiResponse.error("Client closed request"));
+                }
                 log.error("Unhandled exception", e);
                 String details = e.getMessage();
                 if ((details == null || details.isBlank()) && e.getCause() != null) {
@@ -122,5 +128,38 @@ public class GlobalExceptionHandler {
                 return ResponseEntity
                                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                                 .body(ApiResponse.error("An internal error occurred. Details: " + safeDetails));
+        }
+
+        private boolean isClientDisconnect(Exception e) {
+                if (e instanceof AsyncRequestNotUsableException) {
+                        return true;
+                }
+                Throwable current = e;
+                while (current != null) {
+                        if (current instanceof IOException) {
+                                String message = current.getMessage();
+                                if (message != null) {
+                                        String normalized = message.toLowerCase();
+                                        if (normalized.contains("broken pipe")
+                                                        || normalized.contains("connection reset by peer")) {
+                                                return true;
+                                        }
+                                }
+                        }
+                        current = current.getCause();
+                }
+                return false;
+        }
+
+        private String rootMessage(Exception e) {
+                Throwable current = e;
+                String last = e.getMessage();
+                while (current != null) {
+                        if (current.getMessage() != null && !current.getMessage().isBlank()) {
+                                last = current.getMessage();
+                        }
+                        current = current.getCause();
+                }
+                return last == null ? "unknown" : last;
         }
 }

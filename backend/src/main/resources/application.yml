@@ -4,6 +4,8 @@ spring:
   config:
     # Load local env files automatically so running from IDE picks up OAuth/SMTP secrets.
     import: optional:file:.env[.properties],optional:file:../.env[.properties],optional:file:../CONFIG_TO_FILL.env[.properties]
+  lifecycle:
+    timeout-per-shutdown-phase: ${SHUTDOWN_TIMEOUT_PER_PHASE:30s}
 
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:shop}
@@ -74,6 +76,7 @@ server:
   port: ${PORT:8080}
   # So request.isSecure() and redirects respect HTTPS when behind Render / other reverse proxies.
   forward-headers-strategy: ${SERVER_FORWARD_HEADERS_STRATEGY:framework}
+  shutdown: graceful
 
 logging:
   level:
