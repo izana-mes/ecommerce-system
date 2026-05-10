@@ -11,7 +11,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -67,7 +66,8 @@ public class RequestObservabilityFilter extends OncePerRequestFilter {
     }
 
     private boolean isClientDisconnect(Exception ex) {
-        if (ex instanceof AsyncRequestNotUsableException) {
+        String exClassName = ex.getClass().getName();
+        if ("org.springframework.web.context.request.async.AsyncRequestNotUsableException".equals(exClassName)) {
             return true;
         }
         Throwable current = ex;

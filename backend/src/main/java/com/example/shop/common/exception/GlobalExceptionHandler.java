@@ -17,7 +17,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -131,7 +130,8 @@ public class GlobalExceptionHandler {
         }
 
         private boolean isClientDisconnect(Exception e) {
-                if (e instanceof AsyncRequestNotUsableException) {
+                String exClassName = e.getClass().getName();
+                if ("org.springframework.web.context.request.async.AsyncRequestNotUsableException".equals(exClassName)) {
                         return true;
                 }
                 Throwable current = e;
