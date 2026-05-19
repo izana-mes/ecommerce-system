@@ -11,13 +11,13 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export async function PUT(request: Request, context: { params: Promise<{ productID: string }> }) {
+export async function PUT(request: Request, context: { params: Promise<{ productId: string }> }) {
   try {
     const authHeader = getAuthHeader(request);
-    const { productID } = await context.params;
+    const { productId } = await context.params;
     const body = await request.json();
 
-    const response = await fetch(`${API_URL}/v1/seller/products/${encodeURIComponent(productID)}`, {
+    const response = await fetch(`${API_URL}/v1/seller/products/${encodeURIComponent(productId)}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -36,12 +36,12 @@ export async function PUT(request: Request, context: { params: Promise<{ product
   }
 }
 
-export async function DELETE(request: Request, context: { params: Promise<{ productID: string }> }) {
+export async function DELETE(request: Request, context: { params: Promise<{ productId: string }> }) {
   try {
     const authHeader = getAuthHeader(request);
-    const { productID } = await context.params;
+    const { productId } = await context.params;
 
-    const response = await fetch(`${API_URL}/v1/seller/products/${encodeURIComponent(productID)}`, {
+    const response = await fetch(`${API_URL}/v1/seller/products/${encodeURIComponent(productId)}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -58,4 +58,3 @@ export async function DELETE(request: Request, context: { params: Promise<{ prod
     );
   }
 }
-

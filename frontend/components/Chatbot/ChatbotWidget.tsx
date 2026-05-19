@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 import styles from './ChatbotWidget.module.css';
 
 interface Message {
@@ -11,6 +12,7 @@ interface Message {
 }
 
 export default function ChatbotWidget() {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -122,6 +124,11 @@ export default function ChatbotWidget() {
 
   const formatTime = (date: Date) =>
     date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  // Avoid stacking multiple floating chat entry points on key storefront pages.
+  if (pathname === '/' || pathname === '/shop') {
+    return null;
+  }
 
   return (
     <>
