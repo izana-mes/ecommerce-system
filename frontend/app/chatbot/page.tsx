@@ -17,6 +17,10 @@ type CustomerChatResponse = {
   usedAi?: boolean;
 };
 
+type StreamMeta = {
+  conversationId?: string;
+};
+
 const CHATBOT_GUEST_KEY = "customer-chatbot-guest-id";
 const CHATBOT_CONVERSATION_KEY = "customer-chatbot-conversation-id";
 
@@ -85,7 +89,7 @@ export default function CustomerChatbotPage() {
 
     try {
       const token = getToken();
-      const response = await fetch("/api/chatbot/customer/ask", {
+      const response = await fetch("/api/chatbot/customer/stream", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -97,25 +101,43 @@ export default function CustomerChatbotPage() {
           conversationId: conversationId || undefined,
         }),
       });
-
-      const data = (await response.json().catch(() => ({}))) as CustomerChatResponse;
-
-      if (!response.ok) {
-        setMessages((prev) => [
-          ...prev,
-          createMessage("assistant", data.error || `Request failed (${response.status})`),
-        ]);
+      if (!response.ok || !response.body) {
+        const data = (await response.json().catch(() => ({}))) as CustomerChatResponse;
+        setMessages((prev) => [...prev, createMessage("assistant", data.error || `Request failed (${response.status})`)]);
         return;
       }
 
-      if (data.conversationId) {
-        setConversationId(data.conversationId);
-        if (typeof window !== "undefined") {
-          localStorage.setItem(CHATBOT_CONVERSATION_KEY, data.conversationId);
+      const assistantId = `${Date.now()}-assistant`;
+      setMessages((prev) => [...prev, { id: assistantId, role: "assistant", text: "" }]);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split("\n\n");
+        buffer = events.pop() || "";
+
+        for (const eventChunk of events) {
+          const event = eventChunk.match(/^event: (.+)$/m)?.[1]?.trim();
+          const dataText = eventChunk.match(/^data: (.+)$/m)?.[1]?.trim();
+          if (!event || !dataText) continue;
+          const data = JSON.parse(dataText) as { token?: string } & StreamMeta;
+
+          if (event === "meta" && data.conversationId) {
+            setConversationId(data.conversationId);
+            if (typeof window !== "undefined") localStorage.setItem(CHATBOT_CONVERSATION_KEY, data.conversationId);
+          }
+          if (event === "token" && data.token) {
+            setMessages((prev) =>
+              prev.map((m) => (m.id === assistantId ? { ...m, text: `${m.text}${data.token ?? ""}` } : m))
+            );
+          }
         }
       }
-
-      setMessages((prev) => [...prev, createMessage("assistant", (data.answer || "No answer returned.").trim())]);
     } catch {
       setMessages((prev) => [...prev, createMessage("assistant", "Request failed. Please try again.")]);
     } finally {

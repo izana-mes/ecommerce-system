@@ -111,7 +111,7 @@ export default function StaffChatbotPage() {
 
     try {
       const token = getToken();
-      const response = await fetch("/api/chatbot/ask", {
+      const response = await fetch("/api/chatbot/stream", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -119,17 +119,37 @@ export default function StaffChatbotPage() {
         },
         body: JSON.stringify({ question: trimmed }),
       });
-
-      const data = (await response.json().catch(() => ({}))) as ChatbotResponse;
-
-      if (!response.ok) {
+      if (!response.ok || !response.body) {
+        const data = (await response.json().catch(() => ({}))) as ChatbotResponse;
         const message = data?.error || `Request failed (${response.status})`;
         setMessages((prev) => [...prev, createMessage("assistant", message)]);
         return;
       }
 
-      const answer = (data?.answer || "No answer was returned.").trim();
-      setMessages((prev) => [...prev, createMessage("assistant", answer)]);
+      const assistantId = `${Date.now()}-assistant`;
+      setMessages((prev) => [...prev, { id: assistantId, role: "assistant", text: "", timestamp: new Date().toISOString() }]);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split("\n\n");
+        buffer = events.pop() || "";
+        for (const eventChunk of events) {
+          const event = eventChunk.match(/^event: (.+)$/m)?.[1]?.trim();
+          const dataText = eventChunk.match(/^data: (.+)$/m)?.[1]?.trim();
+          if (event !== "token" || !dataText) continue;
+          const data = JSON.parse(dataText) as { token?: string };
+          if (!data.token) continue;
+          setMessages((prev) =>
+            prev.map((m) => (m.id === assistantId ? { ...m, text: `${m.text}${data.token ?? ""}` } : m))
+          );
+        }
+      }
     } catch {
       setMessages((prev) => [
         ...prev,

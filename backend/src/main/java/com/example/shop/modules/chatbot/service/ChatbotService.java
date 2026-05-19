@@ -38,6 +38,24 @@ public class ChatbotService {
 
     private static final Pattern ORDER_NUMBER_PATTERN =
             Pattern.compile("\\b([A-Z]{2,}[A-Z0-9_\\-]{2,})\\b", Pattern.CASE_INSENSITIVE);
+    private static final Set<String> ORDER_KEYWORDS = Set.of(
+            "order", "orders", "status", "track", "tracking", "shipment", "shipped",
+            "delivered", "delivery status", "my order", "my orders", "recent orders", "order history"
+    );
+    private static final Set<String> POLICY_KEYWORDS = Set.of(
+            "shipping", "delivery", "return", "refund", "exchange", "support", "contact",
+            "payment method", "cash on delivery", "cod", "policy"
+    );
+    private static final Set<String> CATALOG_KEYWORDS = Set.of(
+            "price", "product", "products", "catalog", "stock", "available", "size",
+            "material", "color", "recommend", "recommendation", "suggest", "suggestion"
+    );
+    private static final Set<String> GREETING_KEYWORDS = Set.of(
+            "hi", "hello", "hey", "good morning", "good afternoon", "good evening"
+    );
+    private static final Set<String> HELP_KEYWORDS = Set.of(
+            "help", "what can you do", "options", "menu", "assist"
+    );
 
     // -------------------------------------------------------------------------
     // Public API
@@ -53,23 +71,16 @@ public class ChatbotService {
 
         String intent;
         String deterministicAnswer;
-        if (isPolicyIntent(normalized)) {
-            ChatResult result = resolvePolicyAnswer(normalized);
-            intent = result.intent();
-            deterministicAnswer = result.answer();
-        } else if (isOrderIntent(normalized)) {
-            ChatResult result = resolveOrderAnswer(normalized, currentUserEmail);
-            intent = result.intent();
-            deterministicAnswer = result.answer();
-        } else if (isCatalogIntent(normalized)) {
-            ChatResult result = resolveCatalogAnswer(normalized);
-            intent = result.intent();
-            deterministicAnswer = result.answer();
-        } else {
-            ChatResult result = resolveFallback();
-            intent = result.intent();
-            deterministicAnswer = result.answer();
-        }
+        ChatResult result = switch (detectIntent(normalized)) {
+            case GREETING -> resolveGreetingAnswer();
+            case HELP -> resolveHelpAnswer();
+            case ORDER -> resolveOrderAnswer(normalized, currentUserEmail);
+            case POLICY -> resolvePolicyAnswer(normalized);
+            case CATALOG -> resolveCatalogAnswer(normalized);
+            case FALLBACK -> resolveFallback();
+        };
+        intent = result.intent();
+        deterministicAnswer = result.answer();
 
         String context = buildContext(normalized, currentUserEmail, deterministicAnswer);
         List<String> recentMessages = buildRecentConversation(conversation.getConversationId());
@@ -96,16 +107,34 @@ public class ChatbotService {
     // Intent detection
     // -------------------------------------------------------------------------
 
-    private boolean isPolicyIntent(String q) {
-        return q.matches("(?i).*\\b(shipping|delivery|return|refund|exchange|support|contact|payment method|cash on delivery|cod)\\b.*");
-    }
+    private IntentType detectIntent(String q) {
+        String lower = q.toLowerCase(Locale.ROOT);
 
-    private boolean isOrderIntent(String q) {
-        return q.matches("(?i).*\\b(order|status|tracking|payment|my order)\\b.*");
-    }
+        if (containsAnyPhrase(lower, GREETING_KEYWORDS) && tokenCount(lower) <= 6) {
+            return IntentType.GREETING;
+        }
+        if (containsAnyPhrase(lower, HELP_KEYWORDS)) {
+            return IntentType.HELP;
+        }
 
-    private boolean isCatalogIntent(String q) {
-        return q.matches("(?i).*\\b(price|product|catalog|stock|available|size|material|color|show|find)\\b.*");
+        int orderScore = scoreIntent(lower, ORDER_KEYWORDS);
+        int policyScore = scoreIntent(lower, POLICY_KEYWORDS);
+        int catalogScore = scoreIntent(lower, CATALOG_KEYWORDS);
+
+        if (extractOrderNumber(q) != null) {
+            orderScore += 2;
+        }
+
+        if (orderScore >= Math.max(policyScore, catalogScore) && orderScore >= 1) {
+            return IntentType.ORDER;
+        }
+        if (policyScore >= Math.max(orderScore, catalogScore) && policyScore >= 1) {
+            return IntentType.POLICY;
+        }
+        if (catalogScore >= 1) {
+            return IntentType.CATALOG;
+        }
+        return IntentType.FALLBACK;
     }
 
     // -------------------------------------------------------------------------
@@ -135,6 +164,23 @@ public class ChatbotService {
         return new ChatResult("policy_general",
                 "For support questions, share your order number and issue details. " +
                 "You can also use the Contact page for direct assistance.",
+                null, false);
+    }
+
+    private ChatResult resolveGreetingAnswer() {
+        return new ChatResult("greeting",
+                "Hi! I can help with orders, product search, shipping, returns, and payments. " +
+                        "Try: \"Show my recent orders\" or \"Find black sneakers under $100\".",
+                null, false);
+    }
+
+    private ChatResult resolveHelpAnswer() {
+        return new ChatResult("help",
+                "I can help with:\n" +
+                        "- Orders: status, recent orders, tracking\n" +
+                        "- Products: price, stock, recommendations\n" +
+                        "- Policies: shipping, returns, refunds, payment methods\n" +
+                        "Try asking: \"Show my recent orders\", \"Track order ORD-123\", \"Recommend products under $100\", or \"What payment methods do you accept?\"",
                 null, false);
     }
 
@@ -239,8 +285,9 @@ public class ChatbotService {
                 .filter(p -> Boolean.TRUE.equals(p.getActive()))
                 .count();
         return new ChatResult("fallback",
-                "I can help with product questions, stock and prices, shipping/returns, and order status. " +
-                "Current catalog has " + count + " active products.",
+                "I didn’t fully catch that. I can help with orders, products, shipping, returns, and payments. " +
+                "Current catalog has " + count + " active products. " +
+                "Try: \"Track order ORD-123\", \"Show my recent orders\", or \"Find running shoes under $120\".",
                 null, false);
     }
 
@@ -403,9 +450,43 @@ public class ChatbotService {
     private String extractCatalogKeyword(String question) {
         return question.toLowerCase()
                 .replaceAll("[^a-z0-9\\s]", " ")
-                .replaceAll("\\b(price|product|catalog|stock|available|show|find|details|about|the|a|an|for|of)\\b", " ")
+                .replaceAll("\\b(price|product|products|catalog|stock|available|details|about|the|a|an|for|of|please|can|you|me|show|find)\\b", " ")
                 .replaceAll("\\s+", " ")
                 .trim();
+    }
+
+    private boolean containsAnyPhrase(String text, Set<String> phrases) {
+        for (String phrase : phrases) {
+            if (text.contains(phrase)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private int scoreIntent(String text, Set<String> phrases) {
+        int score = 0;
+        for (String phrase : phrases) {
+            if (text.contains(phrase)) {
+                score++;
+            }
+        }
+        return score;
+    }
+
+    private int tokenCount(String text) {
+        return (int) Arrays.stream(text.trim().split("\\s+"))
+                .filter(s -> !s.isBlank())
+                .count();
+    }
+
+    private enum IntentType {
+        GREETING,
+        HELP,
+        ORDER,
+        POLICY,
+        CATALOG,
+        FALLBACK
     }
 
     private String formatMoney(Object value, String currency) {

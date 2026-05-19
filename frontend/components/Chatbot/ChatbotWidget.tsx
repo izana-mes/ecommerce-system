@@ -117,9 +117,13 @@ export default function ChatbotWidget() {
 
   const quickActions = [
     { label: '📦 My Orders', text: 'Show me my recent orders' },
+    { label: '🔎 Track Order', text: 'Track order ORD-123' },
     { label: '🛍️ Browse Products', text: 'What products do you have?' },
+    { label: '💡 Recommend', text: 'Recommend products under $100' },
+    { label: '💳 Payment Methods', text: 'What payment methods do you accept?' },
     { label: '↩️ Return Item', text: 'I want to return an item' },
     { label: '❓ Shipping Info', text: 'How does shipping work?' },
+    { label: '🆘 Help', text: 'What can you help me with?' },
   ];
 
   const formatTime = (date: Date) =>

@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector")]
+}
+
+model User {
+  id              String         @id @default(uuid())
+  email           String         @unique
+  passwordHash    String?
+  oauthProvider   String?
+  oauthSubject    String?
+  name            String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  conversations   Conversation[]
+  memories        Memory[]
+  documents       Document[]
+}
+
+model Conversation {
+  id          String     @id @default(uuid())
+  userId      String
+  title       String
+  summary     String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  user        User       @relation(fields: [userId], references: [id])
+  messages    Message[]
+}
+
+model Message {
+  id              String    @id @default(uuid())
+  conversationId  String
+  role            String
+  content         String
+  toolCallsJson   Json?
+  tokenCount      Int?
+  createdAt       DateTime  @default(now())
+  conversation    Conversation @relation(fields: [conversationId], references: [id])
+}
+
+model Memory {
+  id            String   @id @default(uuid())
+  userId         String
+  conversationId String?
+  text           String
+  embedding      Unsupported("vector(1536)")
+  score          Float?
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id])
+}
+
+model Document {
+  id         String   @id @default(uuid())
+  userId      String
+  filename    String
+  mimeType    String
+  rawText     String
+  createdAt   DateTime @default(now())
+  chunks      DocumentChunk[]
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model DocumentChunk {
+  id          String   @id @default(uuid())
+  documentId  String
+  content     String
+  embedding   Unsupported("vector(1536)")
+  metadata    Json
+  createdAt   DateTime @default(now())
+  document    Document @relation(fields: [documentId], references: [id])
+}
+
+model McpServer {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  transport   String
+  endpoint    String?
+  command     String?
+  argsJson    Json?
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model ToolLog {
+  id            String   @id @default(uuid())
+  conversationId String?
+  toolName      String
+  argsJson      Json
+  outputJson    Json?
+  status        String
+  errorMessage  String?
+  latencyMs     Int?
+  createdAt     DateTime @default(now())
+}

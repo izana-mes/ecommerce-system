@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Map;
 
@@ -56,5 +57,39 @@ public class ChatbotController {
                     "details", e.getMessage() != null ? e.getMessage() : "Unknown error"
             ));
         }
+    }
+
+    @PostMapping("/customer/stream")
+    public SseEmitter customerAskStream(
+            @RequestBody Map<String, String> body,
+            @RequestHeader(value = "x-guest-id", required = false) String guestId,
+            @AuthenticationPrincipal User currentUser
+    ) {
+        SseEmitter emitter = new SseEmitter(60_000L);
+        String question = body == null ? null : body.get("question");
+        String conversationId = body == null ? null : body.get("conversationId");
+        if (!StringUtils.hasText(question)) {
+            emitter.completeWithError(new IllegalArgumentException("question is required"));
+            return emitter;
+        }
+        String userEmail = currentUser != null ? currentUser.getEmail() : null;
+
+        try {
+            ChatbotService.ChatResult result = chatbotService.buildAnswer(question.trim(), userEmail, guestId, conversationId);
+            emitter.send(SseEmitter.event().name("meta").data(Map.of(
+                    "conversationId", result.conversationId(),
+                    "usedAi", result.usedAi(),
+                    "authenticated", userEmail != null
+            )));
+            String[] chunks = result.answer().split("\\s+");
+            for (String chunk : chunks) {
+                emitter.send(SseEmitter.event().name("token").data(Map.of("token", chunk + " ")));
+            }
+            emitter.send(SseEmitter.event().name("done").data(Map.of("done", true)));
+            emitter.complete();
+        } catch (Exception e) {
+            emitter.completeWithError(e);
+        }
+        return emitter;
     }
 }

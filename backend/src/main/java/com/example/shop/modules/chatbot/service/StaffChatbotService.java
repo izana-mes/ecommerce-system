@@ -28,6 +28,7 @@ public class StaffChatbotService {
     private final ProductService productService;
     private final OrderService orderService;
     private final AdminDashboardService adminDashboardService;
+    private final ChatbotAiClient chatbotAiClient;
 
     private static final Pattern ORDER_NUMBER_PATTERN =
             Pattern.compile("\\b([A-Z]{2,}[A-Z0-9_\\-]{2,})\\b", Pattern.CASE_INSENSITIVE);
@@ -46,20 +47,33 @@ public class StaffChatbotService {
 
     public ChatResult buildAnswer(String question) {
         String normalized = question.trim().replaceAll("\\s+", " ");
-
-        if (isLowStockIntent(normalized)) return resolveLowStock();
-        if (isTopSellingIntent(normalized)) return resolveTopSelling();
-        if (isRevenueIntent(normalized)) return resolveRevenue();
-
-        String orderNumber = extractOrderNumber(normalized);
-        String email = extractEmail(normalized);
-        if (orderNumber != null || email != null) {
-            return resolveOrderLookup(orderNumber, email);
+        ChatResult deterministic = null;
+        if (isLowStockIntent(normalized)) {
+            deterministic = resolveLowStock();
+        } else if (isTopSellingIntent(normalized)) {
+            deterministic = resolveTopSelling();
+        } else if (isRevenueIntent(normalized)) {
+            deterministic = resolveRevenue();
         }
 
-        if (isCatalogIntent(normalized)) return resolveCatalog(normalized);
+        if (deterministic == null) {
+            String orderNumber = extractOrderNumber(normalized);
+            String email = extractEmail(normalized);
+            if (orderNumber != null || email != null) {
+                deterministic = resolveOrderLookup(orderNumber, email);
+            } else if (isCatalogIntent(normalized)) {
+                deterministic = resolveCatalog(normalized);
+            } else {
+                deterministic = resolveDefault();
+            }
+        }
 
-        return resolveDefault();
+        String context = "Staff operations assistant context for ecommerce admin.";
+        List<String> recentMessages = List.of("user: " + normalized, "assistant: " + deterministic.answer());
+        Optional<String> aiAnswer = chatbotAiClient.generateStaffAnswer(normalized, context, recentMessages);
+        String finalAnswer = aiAnswer.filter(v -> !v.isBlank()).orElse(deterministic.answer());
+        return new ChatResult(deterministic.intent(), finalAnswer);
+
     }
 
     // -------------------------------------------------------------------------
