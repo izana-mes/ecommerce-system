@@ -64,11 +64,8 @@ jobs:
       - name: Compile
         run: mvn -B -ntp clean compile
 
-      - name: Unit tests
-        run: mvn -B -ntp test
-
-      - name: Integration tests
-        run: mvn -B -ntp verify -DskipUnitTests=true
+      - name: Unit + integration tests with coverage
+        run: mvn -B -ntp clean verify
 
       - name: Checkstyle
         run: mvn -B -ntp checkstyle:check
@@ -88,3 +85,4 @@ jobs:
             backend/target/dependency-check-report.*
             backend/target/site/checkstyle.html
             backend/target/spotbugsXml.xml
+            backend/target/site/jacoco/**

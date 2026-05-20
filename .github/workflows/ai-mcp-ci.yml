@@ -28,6 +28,7 @@ jobs:
           cache-dependency-path: mcp-server/package-lock.json
       - run: npm ci
       - run: npm run build
+      - run: npm run test --if-present
       - run: npm audit --audit-level=high
 
   ai-backend-ci:
@@ -48,6 +49,7 @@ jobs:
           fi
       - run: npx prisma generate
       - run: npm run build
+      - run: npm run test --if-present
       - run: npm audit --audit-level=high
 
   ai-frontend-ci:
@@ -68,4 +70,17 @@ jobs:
           fi
       - run: npx tsc --noEmit
       - run: npm run build
+      - run: npm test
       - run: npm audit --audit-level=high
+
+
+  ai-test-artifacts:
+    runs-on: ubuntu-latest
+    needs: [ai-backend-ci]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ai-test-coverage
+          path: ai-chatbot-platform/backend/coverage/**
