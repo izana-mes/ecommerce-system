@@ -1,6 +1,7 @@
 package com.example.shop.modules.auth.oauth;
 
 import com.example.shop.modules.auth.security.AccessTokenCookieWriter;
+import com.example.shop.modules.auth.security.AccessTokenRevocationService;
 import com.example.shop.modules.auth.security.JwtProvider;
 import com.example.shop.modules.role.entity.Role;
 import com.example.shop.modules.role.repository.RoleRepository;
@@ -30,6 +31,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final JwtProvider jwtProvider;
+    private final AccessTokenRevocationService accessTokenRevocationService;
     private final OAuth2CookieAuthorizationRequestRepository authRequestRepository;
     private final AccessTokenCookieWriter accessTokenCookieWriter;
 
@@ -70,6 +72,15 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                 });
 
         String jwt = jwtProvider.generateAccessToken(user);
+        JwtProvider.AccessTokenParsed parsed = jwtProvider.parseAccessToken(jwt);
+        accessTokenRevocationService.linkAccessToken(
+                parsed.jti(),
+                parsed.expiresAt().toInstant(),
+                parsed.sessionId(),
+                parsed.familyId(),
+                String.valueOf(user.getId()),
+                request.getHeader("X-Request-Id")
+        );
         accessTokenCookieWriter.addCookie(request, response, jwt);
 
         // Fragment is not sent to the frontend server; needed when the SPA is on a different

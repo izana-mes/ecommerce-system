@@ -57,6 +57,9 @@ spring:
     jwt:
       secret-key: ${JWT_SECRET_KEY:}
       expiration: ${JWT_ACCESS_TOKEN_EXPIRATION_MS:900000}
+      revocation:
+        fail-closed: ${JWT_REVOCATION_FAIL_CLOSED:false}
+        max-ttl-seconds: ${JWT_REVOCATION_MAX_TTL_SECONDS:7200}
       refresh-token:
         expiration: ${JWT_REFRESH_TOKEN_EXPIRATION_MS:1209600000}
       email-verification:

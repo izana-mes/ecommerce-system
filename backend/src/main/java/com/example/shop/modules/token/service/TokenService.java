@@ -2,6 +2,7 @@ package com.example.shop.modules.token.service;
 
 import com.example.shop.common.exception.BusinessException;
 import com.example.shop.common.util.HashUtil;
+import com.example.shop.modules.auth.security.AccessTokenRevocationService;
 import com.example.shop.modules.auth.security.AuthAbuseProtectionService;
 import com.example.shop.modules.security.SecurityEventLogger;
 import com.example.shop.modules.token.dto.response.ActiveSessionResponse;
@@ -39,6 +40,7 @@ public class TokenService {
     private final UserRepository userRepository;
     private final SecurityEventLogger securityEventLogger;
     private final AuthAbuseProtectionService abuseProtectionService;
+    private final AccessTokenRevocationService accessTokenRevocationService;
 
     @Value("${application.security.jwt.refresh-token.expiration}")
     private long refreshExpiration;
@@ -108,7 +110,7 @@ public class TokenService {
         User user = current.getUser();
         if (user == null || !user.isActive()) {
             abuseProtectionService.recordRefreshFailure(userKey, metadata.ipAddress());
-            revokeTokenFamily(current.getTokenFamilyId(), RefreshTokenRevocationReason.USER_DEACTIVATED, now, now);
+            revokeTokenFamily(current.getTokenFamilyId(), RefreshTokenRevocationReason.USER_DEACTIVATED, now, now, metadata);
             throw new BusinessException("User account is deactivated", HttpStatus.FORBIDDEN);
         }
 
@@ -152,7 +154,7 @@ public class TokenService {
     }
 
     private void onRefreshReuseDetected(RefreshToken token, SessionClientMetadata metadata, LocalDateTime now, String reason) {
-        revokeTokenFamily(token.getTokenFamilyId(), RefreshTokenRevocationReason.REUSE_DETECTED, now, now);
+        revokeTokenFamily(token.getTokenFamilyId(), RefreshTokenRevocationReason.REUSE_DETECTED, now, now, metadata);
         securityEventLogger.warn("refresh_reuse_detected", Map.of(
                 "userId", String.valueOf(token.getUser().getId()),
                 "sessionId", String.valueOf(token.getId()),
@@ -164,12 +166,23 @@ public class TokenService {
         ));
     }
 
-    private void revokeTokenFamily(UUID familyId, RefreshTokenRevocationReason reason, LocalDateTime revokedAt, LocalDateTime reuseDetectedAt) {
+    private void revokeTokenFamily(UUID familyId, RefreshTokenRevocationReason reason, LocalDateTime revokedAt, LocalDateTime reuseDetectedAt, SessionClientMetadata metadata) {
         refreshTokenRepository.revokeTokenFamily(familyId, revokedAt, reuseDetectedAt, reason);
+        accessTokenRevocationService.revokeFamilyAccessTokens(
+                String.valueOf(familyId),
+                reason == RefreshTokenRevocationReason.REUSE_DETECTED ? "SECURITY_COMPROMISE" : "FAMILY_REVOKED",
+                metadata == null ? null : metadata.requestId()
+        );
+        securityEventLogger.warn("forced_logout_propagated", Map.of(
+                "scope", "family",
+                "familyId", String.valueOf(familyId),
+                "reason", reason.name(),
+                "requestId", metadata == null ? "" : safe(metadata.requestId())
+        ));
     }
 
     @Transactional
-    public void revokeRefreshToken(User user, RefreshTokenRevocationReason reason) {
+    public void revokeRefreshToken(User user, RefreshTokenRevocationReason reason, SessionClientMetadata metadata) {
         LocalDateTime now = LocalDateTime.now();
         refreshTokenRepository.findByUser_IdAndIsRevokedFalse(user.getId()).forEach(token -> {
             token.setRevoked(true);
@@ -177,15 +190,26 @@ public class TokenService {
             token.setRevocationReason(reason);
             refreshTokenRepository.save(token);
         });
+        accessTokenRevocationService.revokeUserAccessTokens(
+                String.valueOf(user.getId()),
+                reason == RefreshTokenRevocationReason.PASSWORD_RESET ? "PASSWORD_RESET" : "USER_REVOKED",
+                metadata == null ? null : metadata.requestId()
+        );
+        securityEventLogger.warn("forced_logout_propagated", Map.of(
+                "scope", "user",
+                "userId", String.valueOf(user.getId()),
+                "reason", reason.name(),
+                "requestId", metadata == null ? "" : safe(metadata.requestId())
+        ));
     }
 
     @Transactional
     public void revokeRefreshToken(User user) {
-        revokeRefreshToken(user, RefreshTokenRevocationReason.LOGOUT_ALL);
+        revokeRefreshToken(user, RefreshTokenRevocationReason.LOGOUT_ALL, null);
     }
 
     @Transactional
-    public void revokeRefreshTokenValue(String refreshToken, RefreshTokenRevocationReason reason) {
+    public void revokeRefreshTokenValue(String refreshToken, RefreshTokenRevocationReason reason, SessionClientMetadata metadata) {
         if (refreshToken == null || refreshToken.isBlank()) {
             return;
         }
@@ -195,12 +219,25 @@ public class TokenService {
             token.setRevokedAt(LocalDateTime.now());
             token.setRevocationReason(reason);
             refreshTokenRepository.save(token);
+            accessTokenRevocationService.revokeSessionAccessTokens(
+                    String.valueOf(token.getId()),
+                    "SESSION_REVOKED",
+                    metadata == null ? null : metadata.requestId()
+            );
+            securityEventLogger.warn("forced_logout_propagated", Map.of(
+                    "scope", "session",
+                    "sessionId", String.valueOf(token.getId()),
+                    "tokenFamilyId", String.valueOf(token.getTokenFamilyId()),
+                    "userId", String.valueOf(token.getUser().getId()),
+                    "reason", reason.name(),
+                    "requestId", metadata == null ? "" : safe(metadata.requestId())
+            ));
         });
     }
 
     @Transactional
     public void revokeRefreshTokenValue(String refreshToken) {
-        revokeRefreshTokenValue(refreshToken, RefreshTokenRevocationReason.LOGOUT);
+        revokeRefreshTokenValue(refreshToken, RefreshTokenRevocationReason.LOGOUT, null);
     }
 
     @Transactional
@@ -300,6 +337,11 @@ public class TokenService {
         token.setRevokedAt(LocalDateTime.now());
         token.setRevocationReason(RefreshTokenRevocationReason.LOGOUT);
         refreshTokenRepository.save(token);
+        accessTokenRevocationService.revokeSessionAccessTokens(
+                String.valueOf(token.getId()),
+                "SESSION_REVOKED",
+                null
+        );
     }
 
     @Transactional
@@ -318,6 +360,11 @@ public class TokenService {
                     t.setRevokedAt(LocalDateTime.now());
                     t.setRevocationReason(RefreshTokenRevocationReason.LOGOUT_ALL);
                     refreshTokenRepository.save(t);
+                    accessTokenRevocationService.revokeSessionAccessTokens(
+                            String.valueOf(t.getId()),
+                            "SESSION_REVOKED",
+                            null
+                    );
                 });
     }
 
@@ -329,7 +376,17 @@ public class TokenService {
             t.setRevokedAt(now);
             t.setRevocationReason(RefreshTokenRevocationReason.ADMIN_REVOKED);
             refreshTokenRepository.save(t);
+            accessTokenRevocationService.revokeSessionAccessTokens(
+                    String.valueOf(t.getId()),
+                    "SESSION_REVOKED",
+                    null
+            );
         });
+        accessTokenRevocationService.revokeUserAccessTokens(
+                String.valueOf(userId),
+                "USER_REVOKED",
+                null
+        );
     }
 
     @Transactional(readOnly = true)
@@ -346,6 +403,11 @@ public class TokenService {
         token.setRevokedAt(LocalDateTime.now());
         token.setRevocationReason(RefreshTokenRevocationReason.ADMIN_REVOKED);
         refreshTokenRepository.save(token);
+        accessTokenRevocationService.revokeSessionAccessTokens(
+                String.valueOf(token.getId()),
+                "SESSION_REVOKED",
+                null
+        );
     }
 
     private String trim(String value, int max) {

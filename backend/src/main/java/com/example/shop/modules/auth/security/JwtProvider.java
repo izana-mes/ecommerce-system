@@ -13,6 +13,7 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 /**
@@ -38,6 +39,9 @@ import java.util.function.Function;
  */
 @Component
 public class JwtProvider {
+    public static final String CLAIM_SESSION_ID = "sid";
+    public static final String CLAIM_FAMILY_ID = "fid";
+    public static final String CLAIM_DEVICE_ID = "did";
 
     @Value("${application.security.jwt.secret-key}")
     private String secretKey;
@@ -64,18 +68,36 @@ public class JwtProvider {
      * Generate access token for user.
      */
     public String generateAccessToken(UserDetails userDetails) {
-        return generateAccessToken(new HashMap<>(), userDetails);
+        return generateAccessToken(new HashMap<>(), userDetails, null);
     }
 
     /**
      * Generate access token with extra claims.
      */
     public String generateAccessToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+        return generateAccessToken(extraClaims, userDetails, null);
+    }
+
+    public String generateAccessToken(UserDetails userDetails, AccessTokenContext context) {
+        return generateAccessToken(new HashMap<>(), userDetails, context);
+    }
+
+    public String generateAccessToken(Map<String, Object> extraClaims, UserDetails userDetails, AccessTokenContext context) {
+        Date issuedAt = new Date(System.currentTimeMillis());
+        Date expiration = new Date(System.currentTimeMillis() + accessTokenExpiration);
+        String jti = UUID.randomUUID().toString();
+        Map<String, Object> claims = new HashMap<>(extraClaims);
+        if (context != null) {
+            putIfNotBlank(claims, CLAIM_SESSION_ID, context.sessionId());
+            putIfNotBlank(claims, CLAIM_FAMILY_ID, context.familyId());
+            putIfNotBlank(claims, CLAIM_DEVICE_ID, context.deviceId());
+        }
         return Jwts.builder()
-                .setClaims(extraClaims)
+                .setClaims(claims)
                 .setSubject(userDetails.getUsername())
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + accessTokenExpiration))
+                .setId(jti)
+                .setIssuedAt(issuedAt)
+                .setExpiration(expiration)
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -107,6 +129,43 @@ public class JwtProvider {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    public Claims extractClaims(String token) {
+        return extractAllClaims(token);
+    }
+
+    public AccessTokenParsed parseAccessToken(String token) {
+        Claims claims = extractAllClaims(token);
+        return new AccessTokenParsed(
+                claims.getSubject(),
+                claims.getId(),
+                claims.getIssuedAt(),
+                claims.getExpiration(),
+                claims.get(CLAIM_SESSION_ID, String.class),
+                claims.get(CLAIM_FAMILY_ID, String.class),
+                claims.get(CLAIM_DEVICE_ID, String.class)
+        );
+    }
+
+    private void putIfNotBlank(Map<String, Object> claims, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            claims.put(key, value);
+        }
+    }
+
+    public record AccessTokenContext(String sessionId, String familyId, String deviceId) {
+    }
+
+    public record AccessTokenParsed(
+            String subject,
+            String jti,
+            Date issuedAt,
+            Date expiresAt,
+            String sessionId,
+            String familyId,
+            String deviceId
+    ) {
     }
 
     private SecretKey getSignInKey() {

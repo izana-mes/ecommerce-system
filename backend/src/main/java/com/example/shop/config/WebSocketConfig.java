@@ -7,7 +7,9 @@ import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.handler.WebSocketHandlerDecoratorFactory;
 
 import java.util.Arrays;
 
@@ -17,6 +19,7 @@ import java.util.Arrays;
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final WebSocketJwtAuthChannelInterceptor webSocketJwtAuthChannelInterceptor;
+    private final WebSocketSessionRegistry webSocketSessionRegistry;
 
     @Value("${application.cors.allowed-origins:http://localhost:3000}")
     private String corsAllowedOrigins;
@@ -42,5 +45,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(webSocketJwtAuthChannelInterceptor);
+    }
+
+    @Override
+    public void configureWebSocketTransport(WebSocketTransportRegistration registry) {
+        WebSocketHandlerDecoratorFactory factory = handler -> new WebSocketTrackingDecorator(handler, webSocketSessionRegistry);
+        registry.addDecoratorFactory(factory);
     }
 }

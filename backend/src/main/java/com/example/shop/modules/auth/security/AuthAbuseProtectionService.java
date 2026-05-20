@@ -102,6 +102,38 @@ public class AuthAbuseProtectionService {
         ));
     }
 
+    public void assertWebSocketConnectAllowed(String userKey, String ip) {
+        if (userKey != null && !userKey.isBlank() && !"unknown".equalsIgnoreCase(userKey.trim())) {
+            assertNotLocked("lock:ws:user:" + safe(userKey), "WebSocket connect temporarily blocked for this account");
+        }
+        assertNotLocked("lock:ws:ip:" + safe(ip), "WebSocket connect temporarily blocked from this network");
+    }
+
+    public void recordWebSocketConnectFailure(String userKey, String ip, String reason) {
+        long userFailures = increment("bf:ws:user:" + safe(userKey), 300);
+        long ipFailures = increment("bf:ws:ip:" + safe(ip), 300);
+        if (userFailures >= 20) {
+            redisTemplate.opsForValue().set("lock:ws:user:" + safe(userKey), "1", Duration.ofMinutes(10));
+        }
+        if (ipFailures >= 80) {
+            redisTemplate.opsForValue().set("lock:ws:ip:" + safe(ip), "1", Duration.ofMinutes(10));
+        }
+        securityEventLogger.warn("websocket_connect_failure", java.util.Map.of(
+                "userKey", safe(userKey),
+                "ip", safe(ip),
+                "reason", reason == null ? "" : reason,
+                "userFailures", userFailures,
+                "ipFailures", ipFailures
+        ));
+    }
+
+    public void recordWebSocketConnectSuccess(String userKey, String ip) {
+        redisTemplate.delete(List.of(
+                "bf:ws:user:" + safe(userKey),
+                "bf:ws:ip:" + safe(ip)
+        ));
+    }
+
     private void assertNotLocked(String key, String message) {
         String lock = redisTemplate.opsForValue().get(key);
         if (lock != null) {

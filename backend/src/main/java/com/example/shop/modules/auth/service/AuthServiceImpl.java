@@ -7,6 +7,7 @@ import com.example.shop.modules.auth.dto.request.RegisterRequest;
 import com.example.shop.modules.auth.dto.request.ResetPasswordRequest;
 import com.example.shop.modules.auth.dto.request.VerifyOtpRequest;
 import com.example.shop.modules.auth.dto.response.AuthenticationResponse;
+import com.example.shop.modules.auth.security.AccessTokenRevocationService;
 import com.example.shop.modules.auth.security.JwtProvider;
 import com.example.shop.modules.auth.security.AuthAbuseProtectionService;
 import com.example.shop.modules.messaging.email.EmailMessage;
@@ -49,6 +50,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final SecurityEventLogger securityEventLogger;
     private final AuthAbuseProtectionService abuseProtectionService;
+    private final AccessTokenRevocationService accessTokenRevocationService;
 
     @Value("${application.security.jwt.expiration}")
     private long jwtExpiration;
@@ -113,8 +115,21 @@ public class AuthServiceImpl implements AuthService {
         }
         abuseProtectionService.recordLoginSuccess(normalizedEmail, metadata.ipAddress());
 
-        String accessToken = jwtProvider.generateAccessToken(user);
         TokenService.RefreshIssueResult refreshIssue = tokenService.createRefreshToken(user, metadata);
+        String accessToken = jwtProvider.generateAccessToken(user, new JwtProvider.AccessTokenContext(
+                String.valueOf(refreshIssue.tokenEntity().getId()),
+                String.valueOf(refreshIssue.tokenEntity().getTokenFamilyId()),
+                metadata.deviceId()
+        ));
+        JwtProvider.AccessTokenParsed parsed = jwtProvider.parseAccessToken(accessToken);
+        accessTokenRevocationService.linkAccessToken(
+                parsed.jti(),
+                parsed.expiresAt().toInstant(),
+                parsed.sessionId(),
+                parsed.familyId(),
+                String.valueOf(user.getId()),
+                metadata.requestId()
+        );
         securityEventLogger.info("login_success", java.util.Map.of(
                 "userId", String.valueOf(user.getId()),
                 "email", user.getEmail(),
@@ -136,7 +151,20 @@ public class AuthServiceImpl implements AuthService {
     public AuthenticationResponse refreshToken(String refreshTokenStr, SessionClientMetadata metadata) {
         TokenService.RefreshIssueResult rotated = tokenService.verifyAndRotateRefreshToken(refreshTokenStr, metadata);
         User user = rotated.tokenEntity().getUser();
-        String accessToken = jwtProvider.generateAccessToken(user);
+        String accessToken = jwtProvider.generateAccessToken(user, new JwtProvider.AccessTokenContext(
+                String.valueOf(rotated.tokenEntity().getId()),
+                String.valueOf(rotated.tokenEntity().getTokenFamilyId()),
+                metadata.deviceId()
+        ));
+        JwtProvider.AccessTokenParsed parsed = jwtProvider.parseAccessToken(accessToken);
+        accessTokenRevocationService.linkAccessToken(
+                parsed.jti(),
+                parsed.expiresAt().toInstant(),
+                parsed.sessionId(),
+                parsed.familyId(),
+                String.valueOf(user.getId()),
+                metadata.requestId()
+        );
 
         return AuthenticationResponse.builder()
                 .accessToken(accessToken)
@@ -239,7 +267,12 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         tokenService.markPasswordResetTokenAsUsed(resetToken);
-        tokenService.revokeRefreshToken(user, RefreshTokenRevocationReason.PASSWORD_RESET);
+        tokenService.revokeRefreshToken(user, RefreshTokenRevocationReason.PASSWORD_RESET, null);
+        accessTokenRevocationService.revokeUserAccessTokens(
+                String.valueOf(user.getId()),
+                RefreshTokenRevocationReason.PASSWORD_RESET.name(),
+                null
+        );
     }
 
     @Override
@@ -247,7 +280,7 @@ public class AuthServiceImpl implements AuthService {
     public void logout(String email, String refreshToken, SessionClientMetadata metadata) {
         User user = findUserByEmailOrThrow(email);
         if (refreshToken != null && !refreshToken.isBlank()) {
-            tokenService.revokeRefreshTokenValue(refreshToken, RefreshTokenRevocationReason.LOGOUT);
+            tokenService.revokeRefreshTokenValue(refreshToken, RefreshTokenRevocationReason.LOGOUT, metadata);
             securityEventLogger.info("logout_success", java.util.Map.of(
                     "userId", String.valueOf(user.getId()),
                     "ip", metadata.ipAddress() == null ? "" : metadata.ipAddress(),
@@ -257,7 +290,7 @@ public class AuthServiceImpl implements AuthService {
             ));
             return;
         }
-        tokenService.revokeRefreshToken(user, RefreshTokenRevocationReason.LOGOUT_ALL);
+        tokenService.revokeRefreshToken(user, RefreshTokenRevocationReason.LOGOUT_ALL, metadata);
         securityEventLogger.info("logout_all_success", java.util.Map.of(
                 "userId", String.valueOf(user.getId()),
                 "ip", metadata.ipAddress() == null ? "" : metadata.ipAddress(),

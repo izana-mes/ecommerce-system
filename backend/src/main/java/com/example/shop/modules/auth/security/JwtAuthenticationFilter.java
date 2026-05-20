@@ -24,6 +24,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
     private final UserDetailsService userDetailsService;
+    private final AccessTokenRevocationService accessTokenRevocationService;
 
     @Value("${application.security.auth-cookie.access-name:access_token}")
     private String authCookieName;
@@ -34,16 +35,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
         final String jwt = getJwtFromCookie(request, authCookieName);
-        final String userEmail;
+        final String requestId = request.getHeader("X-Request-Id");
 
         if (jwt == null) {
             filterChain.doFilter(request, response);
             return;
         }
-        // If extraction fails, it might throw exception which needs handling or simply
-        // continue
         try {
-            userEmail = jwtProvider.extractUsername(jwt);
+            JwtProvider.AccessTokenParsed parsed = jwtProvider.parseAccessToken(jwt);
+            String userEmail = parsed.subject();
+            String jti = parsed.jti();
+            if (jti == null || jti.isBlank()) {
+                SecurityContextHolder.clearContext();
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token");
+                return;
+            }
+
+            boolean revoked = accessTokenRevocationService.isRevoked(jti, requestId);
+            if (revoked) {
+                SecurityContextHolder.clearContext();
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token revoked");
+                return;
+            }
 
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
@@ -59,12 +72,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-            // Log error or let it bubble up to be handled by AuthenticationEntryPoint
-            // For now we just continue the filter chain, changing nothing in
-            // SecurityContext
+            SecurityContextHolder.clearContext();
+            if (isRevocationStoreFailure(e) && accessTokenRevocationService.shouldFailClosed()) {
+                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "Authentication unavailable");
+                return;
+            }
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isRevocationStoreFailure(Exception e) {
+        String type = e.getClass().getSimpleName();
+        return type.contains("Redis") || type.contains("Connection");
     }
 
     private String getJwtFromCookie(HttpServletRequest request, String cookieName) {
