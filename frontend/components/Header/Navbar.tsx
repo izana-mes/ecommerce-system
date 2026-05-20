@@ -548,7 +548,14 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {menuMobileOpen ? <button className="mobileBackdrop" onClick={closeMobileMenu} aria-label="Close menu" /> : null}
+      {menuMobileOpen ? (
+        <button
+          type="button"
+          className="mobileBackdrop open"
+          onClick={closeMobileMenu}
+          aria-label="Close menu"
+        />
+      ) : null}
       {showSearchPopup ? (
         <div className="searchSuccessPopup" role="status" aria-live="polite">
           <FiCheckCircle size={18} />

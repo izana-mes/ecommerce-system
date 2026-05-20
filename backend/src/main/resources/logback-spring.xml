@@ -1,18 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="shop-backend"/>
 
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <springProperty
+            scope="context"
+            name="APP_NAME"
+            source="spring.application.name"
+            defaultValue="shop-backend"/>
+
+    <appender name="STDOUT"
+              class="ch.qos.logback.core.ConsoleAppender">
+
         <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+
             <providers>
+
                 <timestamp/>
+
                 <pattern>
                     <pattern>
                         {
                           "level": "%level",
                           "logger": "%logger{36}",
                           "thread": "%thread",
-                          "message": "%replace(%replace(%replace(%msg){'(?i)(authorization|bearer)\\s+[A-Za-z0-9\\-._~+/]+=*','[REDACTED]'}{'(?i)(password|token|secret|api[-_]?key)\\s*[=:]\\s*[^,\\s]+' ,'$1=[REDACTED]'}{'(?i)(email)\\s*[=:]\\s*[^,\\s]+','$1=[REDACTED]'}",
+                          "message": "%msg",
                           "service": "${APP_NAME}",
                           "traceId": "%X{traceId:-}",
                           "spanId": "%X{spanId:-}",
@@ -20,13 +30,18 @@
                         }
                     </pattern>
                 </pattern>
+
                 <mdc/>
                 <stackTrace/>
+
             </providers>
+
         </encoder>
+
     </appender>
 
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
     </root>
+
 </configuration>

@@ -9,10 +9,12 @@ function getErrorMessage(error: unknown): string {
 
 export async function GET(request: Request) {
   try {
-        const response = await fetch(`${API_URL}/v1/supplier-access/me`, {
+    const cookie = request.headers.get("cookie") ?? "";
+    const response = await fetch(`${API_URL}/v1/supplier-access/me`, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json"},
+        "Content-Type": "application/json",
+        ...(cookie ? { cookie } : {})},
       cache: "no-store"});
 
     if (response.status === 204) {
@@ -35,10 +37,12 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
         const body = await request.json().catch(() => ({}));
+    const cookie = request.headers.get("cookie") ?? "";
     const response = await fetch(`${API_URL}/v1/supplier-access/request`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"},
+        "Content-Type": "application/json",
+        ...(cookie ? { cookie } : {})},
       body: JSON.stringify(body)});
 
     const data = await response.json();

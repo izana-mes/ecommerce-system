@@ -422,9 +422,14 @@
     border-right: 1px solid rgba(216, 229, 255, 0.8);
     box-shadow: 20px 0 60px rgba(15, 61, 173, 0.1);
     padding: 100px 30px 40px;
+    /* Closed drawer must not steal taps meant for the header (hamburger, logo, icons). */
+    pointer-events: none;
   }
   
-  .linkContainerOpen { transform: translateX(0); }
+  .linkContainerOpen {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
   
   .linkContainer ul {
     flex-direction: column;

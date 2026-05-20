@@ -9,7 +9,8 @@ function getErrorMessage(error: unknown): string {
 
 export async function GET(request: Request) {
   try {
-        const { searchParams } = new URL(request.url);
+    const cookie = request.headers.get("cookie") ?? "";
+    const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const query = new URLSearchParams();
     if (status) query.set("status", status);
@@ -17,7 +18,8 @@ export async function GET(request: Request) {
     const response = await fetch(`${API_URL}/v1/seller-access/requests${query.toString() ? `?${query.toString()}` : ""}`, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json"},
+        "Content-Type": "application/json",
+        ...(cookie ? { cookie } : {})},
       cache: "no-store"});
 
     const data = await response.json();
@@ -47,10 +49,12 @@ export async function PATCH(request: Request) {
       );
     }
 
+    const cookie = request.headers.get("cookie") ?? "";
     const response = await fetch(`${API_URL}/v1/seller-access/requests/${encodeURIComponent(requestId)}/${action}`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"},
+        "Content-Type": "application/json",
+        ...(cookie ? { cookie } : {})},
       body: JSON.stringify({ note })});
 
     const data = await response.json();

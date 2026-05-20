@@ -193,17 +193,10 @@ export default function ProfilePage() {
   const fetchSupplierRequest = useCallback(async () => {
     setSupplierRequestLoading(true);
     try {
-      const token = typeof window === "undefined"
-        ? null
-        : null;
-      if (!token) {
-        setSupplierRequest(null);
-        return;
-      }
-
       const response = await fetch("/api/auth/supplier-access", {
         method: "GET",
         cache: "no-store",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json"}});
 
@@ -225,17 +218,10 @@ export default function ProfilePage() {
   const fetchSellerRequest = useCallback(async () => {
     setSupplierRequestLoading(true);
     try {
-      const token = typeof window === "undefined"
-        ? null
-        : null;
-      if (!token) {
-        setSellerRequest(null);
-        return;
-      }
-
       const response = await fetch("/api/auth/seller-access", {
         method: "GET",
         cache: "no-store",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json"}});
 
@@ -472,13 +458,6 @@ export default function ProfilePage() {
   };
 
   const handleSubmitSupplierRequest = async () => {
-    const token = typeof window === "undefined"
-      ? null
-      : null;
-    if (!token) {
-      router.replace("/login");
-      return;
-    }
 
     setSupplierRequestSubmitting(true);
     try {
@@ -515,13 +494,6 @@ export default function ProfilePage() {
   };
 
   const handleSubmitSellerRequest = async () => {
-    const token = typeof window === "undefined"
-      ? null
-      : null;
-    if (!token) {
-      router.replace("/login");
-      return;
-    }
 
     setSellerRequestSubmitting(true);
     try {

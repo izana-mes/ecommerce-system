@@ -5,10 +5,12 @@ const API_URL = backendApiBaseUrl();
 
 export async function GET(request: Request) {
   try {
-        const response = await fetch(`${API_URL}/products/change-requests/mine`, {
+    const cookie = request.headers.get("cookie") ?? "";
+    const response = await fetch(`${API_URL}/products/change-requests/mine`, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json"},
+        "Content-Type": "application/json",
+        ...(cookie ? { cookie } : {})},
       cache: "no-store"});
 
     const data = await response.json();

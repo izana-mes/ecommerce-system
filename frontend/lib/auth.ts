@@ -16,6 +16,21 @@ function notifyAuthStateChanged(): void {
   window.dispatchEvent(new Event(AUTH_STATE_EVENT));
 }
 
+/** Avoid firing auth-state-changed when /me returns the same session (prevents refresh↔subscriber loops). */
+function usersShallowEqual(a: User | null, b: User | null): boolean {
+  if (a === null && b === null) return true;
+  if (a === null || b === null) return false;
+  return (
+    String(a.id ?? "") === String(b.id ?? "") &&
+    a.email === b.email &&
+    a.role === b.role &&
+    (a.loyaltyPoints ?? 0) === (b.loyaltyPoints ?? 0) &&
+    (a.firstName ?? "") === (b.firstName ?? "") &&
+    (a.lastName ?? "") === (b.lastName ?? "") &&
+    (a.username ?? "") === (b.username ?? "")
+  );
+}
+
 export function getUser(): User | null {
   return cachedUser;
 }
@@ -37,14 +52,19 @@ async function resolveMe(): Promise<User | null> {
 
 export async function refreshCurrentUserFromServer(): Promise<User | null> {
   if (typeof window === "undefined") return null;
+  const previous = cachedUser;
   try {
     const user = await resolveMe();
     cachedUser = user;
-    notifyAuthStateChanged();
+    if (!usersShallowEqual(previous, user)) {
+      notifyAuthStateChanged();
+    }
     return user;
   } catch {
     cachedUser = null;
-    notifyAuthStateChanged();
+    if (previous !== null) {
+      notifyAuthStateChanged();
+    }
     return null;
   }
 }
