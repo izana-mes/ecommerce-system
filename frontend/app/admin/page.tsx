@@ -3,7 +3,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { getToken, getUser, subscribeToAuthChanges } from "@/lib/auth";
+import {getUser, subscribeToAuthChanges } from "@/lib/auth";
 import toast from "react-hot-toast";
 import "./admin.css";
 
@@ -875,8 +875,6 @@ export default function AdminPage() {
     health: false,
     notes: false,
     settings: false});
-
-  const token = useMemo(() => getToken(), []);
   const settingsByKey = useMemo(() => {
     return settings.reduce<Record<string, AdminSetting>>((acc, setting) => {
       acc[setting.setting_key] = setting;

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MdRefresh, MdSend, MdMyLocation, MdSignalWifi4Bar } from "react-icons/md";
-import { getToken, getUser } from "@/lib/auth";
+import {getUser } from "@/lib/auth";
 import { publicBackendOriginUrl } from "@/lib/backendApiBase";
 import { Client, IMessage } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
@@ -61,7 +61,6 @@ export default function ShipperTrackingPage() {
   // WebSocket subscription
   useEffect(() => {
     if (!shipperUserId) return;
-    const token = getToken();
     if (!token) return;
 
     const client = new Client({
@@ -87,7 +86,6 @@ export default function ShipperTrackingPage() {
   }, [shipperUserId]);
 
   const fetchLatest = useCallback(async () => {
-    const token = getToken();
     if (!token || !shipperUserId) return;
     setFetchingLatest(true);
     try {
@@ -103,7 +101,6 @@ export default function ShipperTrackingPage() {
   useEffect(() => { void fetchLatest(); }, [fetchLatest]);
 
   const handleSend = async () => {
-    const token = getToken();
     if (!token) return;
     if (!form.lat || !form.lng) {
       toast.error("Latitude and longitude are required");

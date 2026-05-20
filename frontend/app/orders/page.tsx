@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getToken, getUser } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { useAppDispatch } from "@/store";
 import { addToCart, addToCartAsync, fetchCartAsync } from "@/store/cartSlice";
 
@@ -61,8 +61,6 @@ export default function OrdersPage() {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const size = 10;
-
-  const token = useMemo(() => getToken(), []);
   const user = useMemo(() => getUser(), []);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -71,7 +69,7 @@ export default function OrdersPage() {
   const [reorderingOrderNumber, setReorderingOrderNumber] = useState<string | null>(null);
 
   const fetchHistory = async () => {
-    if (!token && !user) {
+    if (!user) {
       router.replace("/login");
       return;
     }
@@ -103,7 +101,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     void fetchHistory();
-  }, [page, token, user]);
+  }, [page, user]);
 
   const handleCancelOrder = async (orderNumber: string) => {
     if (!window.confirm(t("orders_cancel_confirm"))) return;
@@ -134,7 +132,7 @@ export default function OrdersPage() {
   };
 
   const handleReorder = async (orderNumber: string) => {
-    if (!token && !user) {
+    if (!user) {
       router.push("/login");
       return;
     }
@@ -162,7 +160,7 @@ export default function OrdersPage() {
           productPrice,
           productReviews: "0"};
         for (let i = 0; i < quantity; i += 1) {
-          if (token || user) {
+          if (user) {
             await dispatch(addToCartAsync(payload)).unwrap();
           } else {
             dispatch(addToCart(payload));

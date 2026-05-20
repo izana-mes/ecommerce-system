@@ -16,7 +16,7 @@ import {
   selectCartTotalAmount,
   updateQuantityAsync} from "@/store/cartSlice";
 import { useAppDispatch, useAppSelector } from "@/store";
-import { getToken, getUser, refreshCurrentUserFromServer } from "@/lib/auth";
+import {getUser, refreshCurrentUserFromServer } from "@/lib/auth";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import type { TranslationKey } from "@/lib/i18n";
 
@@ -100,14 +100,6 @@ type LoyaltySnapshot = {
 
 const POINTS_PER_USD_DISCOUNT = 100;
 const MAX_POINTS_DISCOUNT_RATE = 0.25;
-
-function normalizeAuthorizationHeader(token: string | null): string | null {
-  if (!token) return null;
-  const trimmed = token.trim();
-  if (!trimmed) return null;
-  const normalizedToken = trimmed.replace(/^Bearer\s+/i, "");
-  return `Bearer ${normalizedToken}`;
-}
 
 function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -211,10 +203,8 @@ export default function ShoppingCart() {
   }, []);
 
   useEffect(() => {
-    const token = getToken();
     const user = getUser();
     setAvailablePoints(Math.max(0, Number(user?.loyaltyPoints ?? 0)));
-    if (!token) return;
     void refreshCurrentUserFromServer().then((refreshed) => {
       setAvailablePoints(Math.max(0, Number(refreshed?.loyaltyPoints ?? 0)));
     });
@@ -529,7 +519,6 @@ export default function ShoppingCart() {
     setIsPlacingOrder(true);
     const placedItemsSnapshot = checkoutItems.map((item) => ({ ...item }));
     try {
-      const token = getToken();
       const checkoutHealthResponse = await fetch("/api/cart/checkout-health", {
         method: "GET",
         credentials: "include",
@@ -709,7 +698,6 @@ export default function ShoppingCart() {
 
     setCouponApplying(true);
     try {
-      const authorizationHeader = normalizeAuthorizationHeader(getToken());
       const response = await fetch("/api/coupons/validate", {
         method: "POST",
         credentials: "include",

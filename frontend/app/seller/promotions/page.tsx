@@ -1,7 +1,7 @@
 "use client";
 
 import { CSSProperties, useCallback, useEffect, useState } from "react";
-import { getToken } from "@/lib/auth";
+import {}  from "@/lib/auth";
 import toast from "react-hot-toast";
 
 type InventoryItem = {
@@ -24,7 +24,6 @@ export default function SellerPromotionsPage() {
   const [search, setSearch] = useState("");
 
   const fetchProducts = useCallback(async () => {
-    const token = getToken();
     if (!token) return;
     setLoading(true);
     try {
@@ -48,7 +47,6 @@ export default function SellerPromotionsPage() {
       toast.error("Enter a valid positive sale price");
       return;
     }
-    const token = getToken();
     if (!token) return;
     setApplying(prev => ({ ...prev, [productId]: true }));
     try {
@@ -68,7 +66,6 @@ export default function SellerPromotionsPage() {
   };
 
   const clearPromo = async (productId: string) => {
-    const token = getToken();
     if (!token) return;
     setClearing(prev => ({ ...prev, [productId]: true }));
     try {

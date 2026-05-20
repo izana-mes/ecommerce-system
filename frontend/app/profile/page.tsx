@@ -4,9 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import "./profile.css";
-import {
-  getToken,
-  getUser,
+import {getUser,
   logout as clearAuth,
   logoutServerSession,
   refreshCurrentUserFromServer,
@@ -173,7 +171,6 @@ export default function ProfilePage() {
   const fetchCouponItems = useCallback(async () => {
     setCouponLoading(true);
     try {
-      const token = getToken();
       const response = await fetch("/api/coupons/notifications", {
         cache: "no-store",
         credentials: "include",
@@ -257,7 +254,6 @@ export default function ProfilePage() {
   }, []);
 
   const fetchSupplierProductRequests = useCallback(async () => {
-    const token = getToken();
     if (!token) {
       setSupplierProductRequests([]);
       return;
@@ -285,7 +281,6 @@ export default function ProfilePage() {
   }, []);
 
   const fetchAdminProductRequests = useCallback(async () => {
-    const token = getToken();
     if (!token) {
       setAdminProductRequests([]);
       return;
@@ -313,7 +308,6 @@ export default function ProfilePage() {
   }, []);
 
   const fetchAdminSupplierRequests = useCallback(async () => {
-    const token = getToken();
     if (!token) {
       setAdminSupplierRequests([]);
       return;
@@ -341,7 +335,6 @@ export default function ProfilePage() {
   }, []);
 
   const fetchAdminSellerRequests = useCallback(async () => {
-    const token = getToken();
     if (!token) {
       setAdminSellerRequests([]);
       return;
@@ -369,7 +362,6 @@ export default function ProfilePage() {
   }, []);
 
   const fetchRecentOrders = useCallback(async () => {
-    const token = getToken();
     setOrdersLoading(true);
     try {
       const response = await fetch("/api/orders/history?page=0&size=3", {
@@ -458,7 +450,6 @@ export default function ProfilePage() {
   const handleConfirmCoupon = async (assignmentId: number) => {
     setConfirmingId(assignmentId);
     try {
-      const token = getToken();
       const response = await fetch("/api/coupons/notifications", {
         method: "PATCH",
         credentials: "include",

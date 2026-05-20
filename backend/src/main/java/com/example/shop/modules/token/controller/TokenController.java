@@ -1,9 +1,11 @@
 package com.example.shop.modules.token.controller;
 
 import com.example.shop.common.response.ApiResponse;
+import com.example.shop.modules.auth.security.AuthCookieService;
 import com.example.shop.modules.token.dto.response.ActiveSessionResponse;
 import com.example.shop.modules.token.dto.response.RefreshTokenResponse;
 import com.example.shop.modules.token.service.TokenService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,6 +37,7 @@ import java.util.UUID;
 public class TokenController {
 
     private final TokenService tokenService;
+    private final AuthCookieService authCookieService;
 
     // ==================== USER SESSION ENDPOINTS ====================
 
@@ -44,9 +47,9 @@ public class TokenController {
     @GetMapping("/api/v1/sessions")
     public ResponseEntity<ApiResponse<List<ActiveSessionResponse>>> getMySessions(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestHeader(value = "X-Refresh-Token", required = false) String currentToken) {
+            HttpServletRequest request) {
         List<ActiveSessionResponse> sessions = tokenService.getUserSessions(
-                userDetails.getUsername(), currentToken);
+                userDetails.getUsername(), authCookieService.readRefreshToken(request));
         return ResponseEntity.ok(ApiResponse.success(sessions));
     }
 
@@ -67,8 +70,8 @@ public class TokenController {
     @DeleteMapping("/api/v1/sessions")
     public ResponseEntity<ApiResponse<Void>> revokeAllOtherSessions(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestHeader(value = "X-Refresh-Token", required = false) String currentToken) {
-        tokenService.revokeAllSessionsExceptCurrent(userDetails.getUsername(), currentToken);
+            HttpServletRequest request) {
+        tokenService.revokeAllSessionsExceptCurrent(userDetails.getUsername(), authCookieService.readRefreshToken(request));
         return ResponseEntity.ok(ApiResponse.success(null, "All other sessions revoked successfully"));
     }
 

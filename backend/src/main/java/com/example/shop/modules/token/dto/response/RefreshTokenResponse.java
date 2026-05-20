@@ -24,8 +24,15 @@ public class RefreshTokenResponse {
     private String userEmail;
     private boolean revoked;
     private LocalDateTime expiresAt;
+    private LocalDateTime issuedAt;
+    private LocalDateTime revokedAt;
+    private String revocationReason;
     private LocalDateTime lastUsedAt;
     private LocalDateTime createdAt;
+    private String issuedIp;
+    private String userAgent;
+    private String deviceId;
+    private String tokenFamilyId;
 
     public static RefreshTokenResponse fromEntity(RefreshToken token) {
         return RefreshTokenResponse.builder()
@@ -34,8 +41,15 @@ public class RefreshTokenResponse {
                 .userEmail(token.getUser().getEmail())
                 .revoked(token.isRevoked())
                 .expiresAt(token.getExpiresAt())
+                .issuedAt(token.getIssuedAt())
+                .revokedAt(token.getRevokedAt())
+                .revocationReason(token.getRevocationReason() == null ? null : token.getRevocationReason().name())
                 .lastUsedAt(token.getLastUsedAt())
                 .createdAt(token.getCreatedAt())
+                .issuedIp(token.getIssuedIp())
+                .userAgent(token.getIssuedUserAgent())
+                .deviceId(token.getDeviceId())
+                .tokenFamilyId(token.getTokenFamilyId() == null ? null : token.getTokenFamilyId().toString())
                 .build();
     }
 }

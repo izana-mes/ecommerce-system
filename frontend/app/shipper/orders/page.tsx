@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { MdRefresh, MdCheckCircle, MdWarning, MdCancel, MdSearch } from "react-icons/md";
-import { getToken, getUser } from "@/lib/auth";
+import {getUser } from "@/lib/auth";
 import toast from "react-hot-toast";
 import { useShipperSocket } from "@/hooks/useShipperSocket";
 
@@ -59,7 +59,6 @@ export default function ShipperOrdersPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const fetchOrder = useCallback(async (id: string) => {
-    const token = getToken();
     if (!token || !id) return;
     setLoading(true);
     try {
@@ -77,7 +76,6 @@ export default function ShipperOrdersPage() {
   }, []);
 
   const fetchAssignedOrders = useCallback(async () => {
-    const token = getToken();
     if (!token) return;
     setLoadingAssigned(true);
     try {
@@ -95,7 +93,6 @@ export default function ShipperOrdersPage() {
   }, []);
 
   const updateStatus = async () => {
-    const token = getToken();
     if (!token || !order) return;
     setSubmitting(true);
     try {

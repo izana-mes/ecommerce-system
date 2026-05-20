@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getToken } from "@/lib/auth";
+import {}  from "@/lib/auth";
 import toast from "react-hot-toast";
 
 type IssueDto = {

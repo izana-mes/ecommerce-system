@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { getToken } from "@/lib/auth";
+import {}  from "@/lib/auth";
 import toast from "react-hot-toast";
 import { CSSProperties } from "react";
 
@@ -41,7 +41,6 @@ export default function SellerFinancePage() {
   const [currentPage, setCurrentPage] = useState(0);
 
   const loadBalance = useCallback(async () => {
-    const token = getToken();
     if (!token) return;
     const res = await fetch("/api/v1/seller/finance/balance", {
       headers: { }});
@@ -51,7 +50,6 @@ export default function SellerFinancePage() {
   }, []);
 
   const loadTransactions = useCallback(async (page = 0) => {
-    const token = getToken();
     if (!token) return;
     const res = await fetch(`/api/v1/seller/finance/transactions?page=${page}&size=20`, {
       headers: { }});

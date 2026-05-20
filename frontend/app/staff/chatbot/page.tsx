@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getToken, getUser } from "@/lib/auth";
+import {getUser } from "@/lib/auth";
 import "./staff-chatbot.css";
 
 type Message = {
@@ -49,8 +49,6 @@ export default function StaffChatbotPage() {
   useEffect(() => {
     const checkAccess = async () => {
       const user = getUser();
-      const token = getToken();
-
       if (!user || !token) {
         router.replace("/login");
         return;
@@ -106,7 +104,6 @@ export default function StaffChatbotPage() {
     setQuestion("");
 
     try {
-      const token = getToken();
       const response = await fetch("/api/chatbot/stream", {
         method: "POST",
         headers: {

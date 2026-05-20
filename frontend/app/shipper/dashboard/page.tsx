@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   MdLocalShipping, MdCheckCircle, MdTimer, MdWarning,
   MdRefresh, MdTrendingUp, MdLocationOn, MdAssignment, MdBarChart} from "react-icons/md";
-import { getToken, getUser } from "@/lib/auth";
+import {getUser } from "@/lib/auth";
 import { useShipperSocket } from "@/hooks/useShipperSocket";
 
 interface PerformanceStats {
@@ -61,7 +61,6 @@ export default function ShipperDashboardPage() {
   const shipperUserId = user?.id as string | undefined;
 
   const fetchStats = useCallback(async () => {
-    const token = getToken();
     if (!token || !shipperUserId) return;
     try {
       const from = new Date();
@@ -79,7 +78,6 @@ export default function ShipperDashboardPage() {
   }, [shipperUserId]);
 
   const fetchActiveOrder = useCallback(async () => {
-    const token = getToken();
     if (!token) return;
     try {
       const res = await fetch(`/api/v1/shipper/orders?activeOnly=true&limit=1`, {

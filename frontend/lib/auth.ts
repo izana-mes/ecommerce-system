@@ -16,10 +16,6 @@ function notifyAuthStateChanged(): void {
   window.dispatchEvent(new Event(AUTH_STATE_EVENT));
 }
 
-export function getToken(): string | null {
-  return null;
-}
-
 export function getUser(): User | null {
   return cachedUser;
 }

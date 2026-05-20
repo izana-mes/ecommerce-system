@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getToken, getUser } from "@/lib/auth";
+import {getUser } from "@/lib/auth";
 import { Client, StompSubscription } from "@stomp/stompjs";
 import { createSupportChatStompClient, parseStompJson } from "@/lib/supportChatSocket";
 import "./support-chat.css";
@@ -84,7 +84,6 @@ export default function StaffSupportChatPage() {
   const clientRef = useRef<Client | null>(null);
   const activeConversationSubscriptionRef = useRef<StompSubscription | null>(null);
   const staffConversationSubscriptionRef = useRef<StompSubscription | null>(null);
-  const token = getToken();
   const currentUser = getUser();
 
   useEffect(() => {

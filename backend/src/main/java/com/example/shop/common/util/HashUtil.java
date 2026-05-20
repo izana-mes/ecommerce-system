@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Base64;
 
 /**
@@ -15,6 +16,7 @@ import java.util.Base64;
 public class HashUtil {
 
     private static final String ALGORITHM = "SHA-256";
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     /**
      * Hashes a string using SHA-256.
@@ -40,6 +42,19 @@ public class HashUtil {
      * @return true if matches, false otherwise
      */
     public static boolean verify(String input, String hash) {
-        return hash(input).equals(hash);
+        return constantTimeEquals(hash(input), hash);
+    }
+
+    public static boolean constantTimeEquals(String left, String right) {
+        if (left == null || right == null) {
+            return false;
+        }
+        return MessageDigest.isEqual(left.getBytes(StandardCharsets.UTF_8), right.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public static String generateSecureToken() {
+        byte[] bytes = new byte[32];
+        SECURE_RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 }

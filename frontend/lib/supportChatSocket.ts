@@ -5,7 +5,6 @@ import SockJS from "sockjs-client";
 import { publicBackendOriginUrl } from "@/lib/backendApiBase";
 
 export function createSupportChatStompClient(options: {
-  token?: string | null;
   onConnect?: () => void;
   onStompError?: (error: string) => void;
   onSocketError?: () => void;
@@ -13,14 +12,9 @@ export function createSupportChatStompClient(options: {
   const origin = publicBackendOriginUrl();
   const wsEndpoint = `${origin}/ws`;
 
-  const connectHeaders: Record<string, string> = {};
-  if (options.token) {
-    connectHeaders.Authorization = `Bearer ${options.token}`;
-  }
-
   const client = new Client({
     webSocketFactory: () => new SockJS(wsEndpoint),
-    connectHeaders,
+    connectHeaders: {},
     reconnectDelay: 2500,
     heartbeatIncoming: 10000,
     heartbeatOutgoing: 10000,

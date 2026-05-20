@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { getToken } from "@/lib/auth";
+import {}  from "@/lib/auth";
 import toast from "react-hot-toast";
 import { CSSProperties } from "react";
 
@@ -92,7 +92,6 @@ export default function SellerDashboardPage() {
   const [days, setDays] = useState(30);
 
   const fetchDashboard = useCallback(async (daysParam = 30) => {
-    const token = getToken();
     if (!token) return;
     try {
       const res = await fetch(

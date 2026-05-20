@@ -25,6 +25,12 @@ public class AuthCookieService {
     @Value("${application.security.auth-cookie.secure:true}")
     private boolean secureCookie;
 
+    @Value("${application.security.auth-cookie.access-path:/}")
+    private String accessCookiePath;
+
+    @Value("${application.security.auth-cookie.refresh-path:/api/v1/auth}")
+    private String refreshCookiePath;
+
     @Value("${application.security.jwt.expiration:900000}")
     private long accessTokenExpirationMs;
 
@@ -32,17 +38,17 @@ public class AuthCookieService {
     private long refreshTokenExpirationMs;
 
     public void writeAuthCookies(HttpServletRequest request, HttpServletResponse response, String accessToken, String refreshToken) {
-        addCookie(response, accessCookieName, accessToken, accessTokenExpirationMs, request.isSecure());
-        addCookie(response, refreshCookieName, refreshToken, refreshTokenExpirationMs, request.isSecure());
+        addCookie(response, accessCookieName, accessToken, accessCookiePath, accessTokenExpirationMs, request.isSecure());
+        addCookie(response, refreshCookieName, refreshToken, refreshCookiePath, refreshTokenExpirationMs, request.isSecure());
     }
 
     public void writeAccessCookie(HttpServletRequest request, HttpServletResponse response, String accessToken) {
-        addCookie(response, accessCookieName, accessToken, accessTokenExpirationMs, request.isSecure());
+        addCookie(response, accessCookieName, accessToken, accessCookiePath, accessTokenExpirationMs, request.isSecure());
     }
 
     public void clearAuthCookies(HttpServletRequest request, HttpServletResponse response) {
-        deleteCookie(response, accessCookieName, request.isSecure());
-        deleteCookie(response, refreshCookieName, request.isSecure());
+        deleteCookie(response, accessCookieName, accessCookiePath, request.isSecure());
+        deleteCookie(response, refreshCookieName, refreshCookiePath, request.isSecure());
     }
 
     public String readRefreshToken(HttpServletRequest request) {
@@ -57,23 +63,23 @@ public class AuthCookieService {
         return null;
     }
 
-    private void addCookie(HttpServletResponse response, String name, String value, long maxAgeMs, boolean requestSecure) {
+    private void addCookie(HttpServletResponse response, String name, String value, String path, long maxAgeMs, boolean requestSecure) {
         ResponseCookie cookie = ResponseCookie.from(name, value)
                 .httpOnly(true)
                 .secure(secureCookie || requestSecure)
                 .sameSite(sameSite)
-                .path("/")
+                .path(path)
                 .maxAge(Duration.ofMillis(maxAgeMs))
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
-    private void deleteCookie(HttpServletResponse response, String name, boolean requestSecure) {
+    private void deleteCookie(HttpServletResponse response, String name, String path, boolean requestSecure) {
         ResponseCookie cookie = ResponseCookie.from(name, "")
                 .httpOnly(true)
                 .secure(secureCookie || requestSecure)
                 .sameSite(sameSite)
-                .path("/")
+                .path(path)
                 .maxAge(Duration.ZERO)
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MdWarning, MdSend, MdRefresh, MdHelpOutline } from "react-icons/md";
-import { getToken, getUser } from "@/lib/auth";
+import {getUser } from "@/lib/auth";
 import { publicBackendOriginUrl } from "@/lib/backendApiBase";
 import { Client, IMessage } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
@@ -66,7 +66,6 @@ export default function ShipperIssuesPage() {
   // WebSocket: listen for help acknowledgements
   useEffect(() => {
     if (!shipperUserId) return;
-    const token = getToken();
     if (!token) return;
 
     const client = new Client({
@@ -91,7 +90,6 @@ export default function ShipperIssuesPage() {
   }, [shipperUserId]);
 
   const submitIssue = async () => {
-    const token = getToken();
     if (!token) return;
     if (!issueOrderId) { toast.error("Order ID is required"); return; }
     setSubmittingIssue(true);
@@ -113,7 +111,6 @@ export default function ShipperIssuesPage() {
   };
 
   const submitHelpRequest = async () => {
-    const token = getToken();
     if (!token) return;
     if (!helpOrderId) { toast.error("Order ID is required"); return; }
     if (!helpMessage.trim()) { toast.error("Message is required"); return; }
@@ -135,7 +132,6 @@ export default function ShipperIssuesPage() {
   };
 
   const fetchIssues = useCallback(async (orderId: string) => {
-    const token = getToken();
     if (!token || !orderId) return;
     setFetchingIssues(true);
     try {

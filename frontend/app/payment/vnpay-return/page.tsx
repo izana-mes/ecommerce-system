@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useAppDispatch } from "@/store";
 import { clearCart, fetchCartAsync, removeFromCartAsync } from "@/store/cartSlice";
-import { getToken } from "@/lib/auth";
+import {}  from "@/lib/auth";
 import styles from "./vnpay-return.module.css";
 
 type ReturnedOrderItem = {
@@ -103,14 +103,6 @@ type HistoryOrder = {
   items?: HistoryOrderItem[];
 };
 
-function normalizeAuthorizationHeader(token: string | null): string | null {
-  if (!token) return null;
-  const trimmed = token.trim();
-  if (!trimmed) return null;
-  const normalizedToken = trimmed.replace(/^Bearer\s+/i, "");
-  return `Bearer ${normalizedToken}`;
-}
-
 function toNumber(value: unknown): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -163,8 +155,7 @@ async function fetchOrderFromHistory(orderNumber: string, token: string | null):
       method: "GET",
       credentials: "include",
       headers: {
-        "Content-Type": "application/json",
-        ...(token ? { } : {})}});
+        "Content-Type": "application/json"}});
     if (!response.ok) return null;
 
     const payload = await response.json().catch(() => null);
@@ -208,8 +199,6 @@ function VnpayReturnContent() {
         const data = await response.json();
 
         if (data?.success) {
-          const authorizationHeader = normalizeAuthorizationHeader(getToken());
-
           if (data?.clearCart) {
             await fetch("/api/cart/clear", {
               method: "DELETE",
@@ -252,9 +241,7 @@ function VnpayReturnContent() {
         let resolvedOrder = (data?.order as ReturnedOrder | null) ?? null;
         const resolvedOrderNumber = String(data?.orderNumber || data?.order?.orderNumber || "");
 
-        if (data?.success && (!resolvedOrder || !Array.isArray(resolvedOrder.items) || resolvedOrder.items.length === 0)) {
-          const authorizationHeader = normalizeAuthorizationHeader(getToken());
-          const fallbackOrder = await fetchOrderFromHistory(resolvedOrderNumber, authorizationHeader);
+        if (data?.success && (!resolvedOrder || !Array.isArray(resolvedOrder.items) || resolvedOrder.items.length === 0)) {          const fallbackOrder = await fetchOrderFromHistory(resolvedOrderNumber, null);
           if (fallbackOrder) {
             resolvedOrder = fallbackOrder;
           }

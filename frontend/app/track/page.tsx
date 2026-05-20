@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useLocale } from "@/components/providers/LocaleProvider";
-import { getToken, getUser } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 
 type TrackingLine = {
   productId: string;
@@ -83,8 +83,6 @@ function TrackPageInner() {
   const searchParams = useSearchParams();
   const token = (searchParams.get("t") || searchParams.get("token") || "").trim();
   const orderHint = (searchParams.get("order") || "").trim();
-
-  const authToken = useMemo(() => getToken(), []);
   const user = useMemo(() => getUser(), []);
 
   const [loading, setLoading] = useState(true);
@@ -113,12 +111,12 @@ function TrackPageInner() {
           return;
         }
 
-        if (orderHint && (authToken || user)) {
+        if (orderHint && (user)) {
           const res = await fetch(`/api/orders/${encodeURIComponent(orderHint)}/track`, {
             credentials: "include",
             headers: {
               "Content-Type": "application/json",
-              ...(authToken ? { } : {})},
+            },
             cache: "no-store"});
           const json = await res.json().catch(() => null);
           if (!res.ok || !json?.success) {
@@ -144,7 +142,7 @@ function TrackPageInner() {
     return () => {
       cancelled = true;
     };
-  }, [token, orderHint, authToken, user, t]);
+  }, [token, orderHint, user, t]);
 
   const mapSrc =
     data?.deliveryLatitude != null &&

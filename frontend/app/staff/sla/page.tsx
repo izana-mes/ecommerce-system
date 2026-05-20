@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getToken } from "@/lib/auth";
+import {}  from "@/lib/auth";
 import toast from "react-hot-toast";
 import Link from "next/link";
 
@@ -32,8 +32,6 @@ export default function StaffSlaPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const token = getToken();
-
       const [lateRes, nearRes] = await Promise.all([
         fetch(`/api/v1/staff/sla/late`, { headers: { } }),
         fetch(`/api/v1/staff/sla/near-late?thresholdMinutes=30`, { headers: { } }),

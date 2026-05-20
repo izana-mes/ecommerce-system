@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { getToken } from "@/lib/auth";
+import {}  from "@/lib/auth";
 import toast from "react-hot-toast";
 import { CSSProperties } from "react";
 
@@ -26,7 +26,6 @@ export default function SupplierReviewsPage() {
   const [replyContent, setReplyContent] = useState<string>("");
 
   const loadProducts = useCallback(async () => {
-    const token = getToken();
     if (!token) return;
 
     try {
@@ -47,7 +46,6 @@ export default function SupplierReviewsPage() {
 
   const loadReviews = useCallback(async () => {
     if (!selectedProductId) return;
-    const token = getToken();
     if (!token) return;
 
     try {
@@ -79,8 +77,6 @@ export default function SupplierReviewsPage() {
       toast.error("Reply content cannot be empty");
       return;
     }
-    
-    const token = getToken();
     if (!token) return;
 
     try {

@@ -23,6 +23,9 @@ public class ActiveSessionResponse {
     private LocalDateTime expiresAt;
     private LocalDateTime lastUsedAt;
     private LocalDateTime createdAt;
+    private String issuedIp;
+    private String userAgent;
+    private String deviceId;
     private boolean current; // Indicates if this is the current session
 
     public static ActiveSessionResponse fromEntity(RefreshToken token, boolean isCurrent) {
@@ -31,6 +34,9 @@ public class ActiveSessionResponse {
                 .expiresAt(token.getExpiresAt())
                 .lastUsedAt(token.getLastUsedAt())
                 .createdAt(token.getCreatedAt())
+                .issuedIp(token.getIssuedIp())
+                .userAgent(token.getIssuedUserAgent())
+                .deviceId(token.getDeviceId())
                 .current(isCurrent)
                 .build();
     }

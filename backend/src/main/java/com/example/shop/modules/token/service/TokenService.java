@@ -2,11 +2,14 @@ package com.example.shop.modules.token.service;
 
 import com.example.shop.common.exception.BusinessException;
 import com.example.shop.common.util.HashUtil;
+import com.example.shop.modules.auth.security.AuthAbuseProtectionService;
+import com.example.shop.modules.security.SecurityEventLogger;
 import com.example.shop.modules.token.dto.response.ActiveSessionResponse;
 import com.example.shop.modules.token.dto.response.RefreshTokenResponse;
 import com.example.shop.modules.token.entity.EmailVerificationToken;
 import com.example.shop.modules.token.entity.PasswordResetToken;
 import com.example.shop.modules.token.entity.RefreshToken;
+import com.example.shop.modules.token.entity.RefreshTokenRevocationReason;
 import com.example.shop.modules.token.repository.EmailVerificationTokenRepository;
 import com.example.shop.modules.token.repository.PasswordResetTokenRepository;
 import com.example.shop.modules.token.repository.RefreshTokenRepository;
@@ -22,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -33,6 +37,8 @@ public class TokenService {
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final UserRepository userRepository;
+    private final SecurityEventLogger securityEventLogger;
+    private final AuthAbuseProtectionService abuseProtectionService;
 
     @Value("${application.security.jwt.refresh-token.expiration}")
     private long refreshExpiration;
@@ -43,56 +49,158 @@ public class TokenService {
     @Value("${application.security.jwt.password-reset.expiration:3600000}")
     private long passwordResetExpiration;
 
+    public record RefreshIssueResult(RefreshToken tokenEntity, String rawToken) {
+    }
+
     @Transactional
-    public RefreshToken createRefreshToken(User user) {
-        String token = UUID.randomUUID().toString();
+    public RefreshIssueResult createRefreshToken(User user, SessionClientMetadata metadata) {
+        String rawToken = HashUtil.generateSecureToken();
+        String tokenHash = HashUtil.hash(rawToken);
+        LocalDateTime now = LocalDateTime.now();
+
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
-                .refreshTokenHash(token)
-                .expiresAt(LocalDateTime.now().plusSeconds(refreshExpiration / 1000))
+                .tokenHash(tokenHash)
+                .tokenFamilyId(UUID.randomUUID())
+                .parentTokenId(null)
+                .replacedByTokenId(null)
+                .issuedAt(now)
+                .expiresAt(now.plusSeconds(refreshExpiration / 1000))
                 .isRevoked(false)
+                .issuedIp(trim(metadata.ipAddress(), 128))
+                .issuedUserAgent(trim(metadata.userAgent(), 1024))
+                .deviceId(trim(metadata.deviceId(), 256))
                 .build();
-        return refreshTokenRepository.save(refreshToken);
+
+        return new RefreshIssueResult(refreshTokenRepository.save(refreshToken), rawToken);
     }
 
     @Transactional
-    public RefreshToken verifyAndRotateRefreshToken(String token) {
-        RefreshToken current = verifyRefreshToken(token);
-        current.setRevoked(true);
-        refreshTokenRepository.save(current);
-        return createRefreshToken(current.getUser());
-    }
-
-    public RefreshToken verifyRefreshToken(String token) {
-        RefreshToken refreshToken = refreshTokenRepository.findByRefreshTokenHash(token)
-                .orElseThrow(() -> new BusinessException("Refresh token not found", HttpStatus.FORBIDDEN));
-        User user = refreshToken.getUser();
-        if (user == null || !user.isActive()) {
-            refreshTokenRepository.delete(refreshToken);
-            throw new BusinessException("User account is deactivated", HttpStatus.FORBIDDEN);
+    public RefreshIssueResult verifyAndRotateRefreshToken(String rawToken, SessionClientMetadata metadata) {
+        abuseProtectionService.assertRefreshAllowed("unknown", metadata.ipAddress());
+        if (rawToken == null || rawToken.isBlank()) {
+            abuseProtectionService.recordRefreshFailure("unknown", metadata.ipAddress());
+            throw new BusinessException("Refresh token missing", HttpStatus.FORBIDDEN);
         }
-        if (refreshToken.isRevoked()) {
+
+        String tokenHash = HashUtil.hash(rawToken);
+        RefreshToken current = refreshTokenRepository.findByTokenHashForUpdate(tokenHash)
+                .orElseThrow(() -> new BusinessException("Refresh token not found", HttpStatus.FORBIDDEN));
+
+        LocalDateTime now = LocalDateTime.now();
+        String userKey = current.getUser() == null ? "unknown" : current.getUser().getId().toString();
+        abuseProtectionService.assertRefreshAllowed(userKey, metadata.ipAddress());
+
+        if (current.isRevoked()) {
+            abuseProtectionService.recordRefreshReuse(userKey, metadata.ipAddress());
+            onRefreshReuseDetected(current, metadata, now, "revoked_token_reused");
             throw new BusinessException("Refresh token has been revoked", HttpStatus.FORBIDDEN);
         }
-        if (refreshToken.getExpiresAt().isBefore(LocalDateTime.now())) {
-            refreshTokenRepository.delete(refreshToken);
+        if (current.getExpiresAt().isBefore(now)) {
+            abuseProtectionService.recordRefreshFailure(userKey, metadata.ipAddress());
+            current.setRevoked(true);
+            current.setRevokedAt(now);
+            current.setRevocationReason(RefreshTokenRevocationReason.EXPIRED);
+            refreshTokenRepository.save(current);
             throw new BusinessException("Refresh token expired", HttpStatus.FORBIDDEN);
         }
-        refreshToken.setLastUsedAt(LocalDateTime.now());
-        return refreshTokenRepository.save(refreshToken);
+
+        User user = current.getUser();
+        if (user == null || !user.isActive()) {
+            abuseProtectionService.recordRefreshFailure(userKey, metadata.ipAddress());
+            revokeTokenFamily(current.getTokenFamilyId(), RefreshTokenRevocationReason.USER_DEACTIVATED, now, now);
+            throw new BusinessException("User account is deactivated", HttpStatus.FORBIDDEN);
+        }
+
+        String nextRawToken = HashUtil.generateSecureToken();
+        String nextHash = HashUtil.hash(nextRawToken);
+
+        RefreshToken rotated = RefreshToken.builder()
+                .user(user)
+                .tokenHash(nextHash)
+                .tokenFamilyId(current.getTokenFamilyId())
+                .parentTokenId(current.getId())
+                .issuedAt(now)
+                .expiresAt(now.plusSeconds(refreshExpiration / 1000))
+                .isRevoked(false)
+                .issuedIp(trim(metadata.ipAddress(), 128))
+                .issuedUserAgent(trim(metadata.userAgent(), 1024))
+                .deviceId(trim(metadata.deviceId(), 256))
+                .build();
+
+        RefreshToken savedRotated = refreshTokenRepository.save(rotated);
+
+        current.setRevoked(true);
+        current.setRevokedAt(now);
+        current.setRevocationReason(RefreshTokenRevocationReason.ROTATED);
+        current.setReplacedByTokenId(savedRotated.getId());
+        current.setLastUsedAt(now);
+        refreshTokenRepository.save(current);
+
+        securityEventLogger.info("refresh_success", Map.of(
+                "userId", String.valueOf(user.getId()),
+                "sessionId", String.valueOf(current.getId()),
+                "nextSessionId", String.valueOf(savedRotated.getId()),
+                "tokenFamilyId", String.valueOf(current.getTokenFamilyId()),
+                "ip", safe(metadata.ipAddress()),
+                "deviceId", safe(metadata.deviceId()),
+                "requestId", safe(metadata.requestId())
+        ));
+        abuseProtectionService.recordRefreshSuccess(user.getId().toString(), metadata.ipAddress());
+
+        return new RefreshIssueResult(savedRotated, nextRawToken);
+    }
+
+    private void onRefreshReuseDetected(RefreshToken token, SessionClientMetadata metadata, LocalDateTime now, String reason) {
+        revokeTokenFamily(token.getTokenFamilyId(), RefreshTokenRevocationReason.REUSE_DETECTED, now, now);
+        securityEventLogger.warn("refresh_reuse_detected", Map.of(
+                "userId", String.valueOf(token.getUser().getId()),
+                "sessionId", String.valueOf(token.getId()),
+                "tokenFamilyId", String.valueOf(token.getTokenFamilyId()),
+                "ip", safe(metadata.ipAddress()),
+                "deviceId", safe(metadata.deviceId()),
+                "requestId", safe(metadata.requestId()),
+                "reason", reason
+        ));
+    }
+
+    private void revokeTokenFamily(UUID familyId, RefreshTokenRevocationReason reason, LocalDateTime revokedAt, LocalDateTime reuseDetectedAt) {
+        refreshTokenRepository.revokeTokenFamily(familyId, revokedAt, reuseDetectedAt, reason);
+    }
+
+    @Transactional
+    public void revokeRefreshToken(User user, RefreshTokenRevocationReason reason) {
+        LocalDateTime now = LocalDateTime.now();
+        refreshTokenRepository.findByUser_IdAndIsRevokedFalse(user.getId()).forEach(token -> {
+            token.setRevoked(true);
+            token.setRevokedAt(now);
+            token.setRevocationReason(reason);
+            refreshTokenRepository.save(token);
+        });
     }
 
     @Transactional
     public void revokeRefreshToken(User user) {
-        refreshTokenRepository.deleteByUser_Id(user.getId());
+        revokeRefreshToken(user, RefreshTokenRevocationReason.LOGOUT_ALL);
+    }
+
+    @Transactional
+    public void revokeRefreshTokenValue(String refreshToken, RefreshTokenRevocationReason reason) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return;
+        }
+        String hash = HashUtil.hash(refreshToken);
+        refreshTokenRepository.findByTokenHash(hash).ifPresent(token -> {
+            token.setRevoked(true);
+            token.setRevokedAt(LocalDateTime.now());
+            token.setRevocationReason(reason);
+            refreshTokenRepository.save(token);
+        });
     }
 
     @Transactional
     public void revokeRefreshTokenValue(String refreshToken) {
-        refreshTokenRepository.findByRefreshTokenHash(refreshToken).ifPresent(token -> {
-            token.setRevoked(true);
-            refreshTokenRepository.save(token);
-        });
+        revokeRefreshTokenValue(refreshToken, RefreshTokenRevocationReason.LOGOUT);
     }
 
     @Transactional
@@ -162,19 +270,23 @@ public class TokenService {
     }
 
     @Transactional(readOnly = true)
-    public List<ActiveSessionResponse> getUserSessions(String email, String currentToken) {
-        User user = userRepository.findByEmail(email)
+    public List<ActiveSessionResponse> getUserSessions(String email, String currentRefreshToken) {
+        User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new BusinessException("User not found", HttpStatus.NOT_FOUND));
+
+        String currentHash = (currentRefreshToken == null || currentRefreshToken.isBlank())
+                ? null
+                : HashUtil.hash(currentRefreshToken);
 
         return refreshTokenRepository.findByUser_IdAndIsRevokedFalse(user.getId()).stream()
                 .filter(t -> t.getExpiresAt().isAfter(LocalDateTime.now()))
-                .map(t -> ActiveSessionResponse.fromEntity(t, t.getRefreshTokenHash().equals(currentToken)))
+                .map(t -> ActiveSessionResponse.fromEntity(t, currentHash != null && HashUtil.constantTimeEquals(t.getTokenHash(), currentHash)))
                 .collect(Collectors.toList());
     }
 
     @Transactional
     public void revokeSession(String email, UUID sessionId) {
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new BusinessException("User not found", HttpStatus.NOT_FOUND));
 
         RefreshToken token = refreshTokenRepository.findById(sessionId)
@@ -185,25 +297,39 @@ public class TokenService {
         }
 
         token.setRevoked(true);
+        token.setRevokedAt(LocalDateTime.now());
+        token.setRevocationReason(RefreshTokenRevocationReason.LOGOUT);
         refreshTokenRepository.save(token);
     }
 
     @Transactional
-    public void revokeAllSessionsExceptCurrent(String email, String currentToken) {
-        User user = userRepository.findByEmail(email)
+    public void revokeAllSessionsExceptCurrent(String email, String currentRefreshToken) {
+        User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new BusinessException("User not found", HttpStatus.NOT_FOUND));
 
+        String currentHash = (currentRefreshToken == null || currentRefreshToken.isBlank())
+                ? null
+                : HashUtil.hash(currentRefreshToken);
+
         refreshTokenRepository.findByUser_IdAndIsRevokedFalse(user.getId()).stream()
-                .filter(t -> !t.getRefreshTokenHash().equals(currentToken))
+                .filter(t -> currentHash == null || !HashUtil.constantTimeEquals(t.getTokenHash(), currentHash))
                 .forEach(t -> {
                     t.setRevoked(true);
+                    t.setRevokedAt(LocalDateTime.now());
+                    t.setRevocationReason(RefreshTokenRevocationReason.LOGOUT_ALL);
                     refreshTokenRepository.save(t);
                 });
     }
 
     @Transactional
     public void revokeAllUserSessions(UUID userId) {
-        refreshTokenRepository.deleteByUser_Id(userId);
+        LocalDateTime now = LocalDateTime.now();
+        refreshTokenRepository.findByUser_IdAndIsRevokedFalse(userId).forEach(t -> {
+            t.setRevoked(true);
+            t.setRevokedAt(now);
+            t.setRevocationReason(RefreshTokenRevocationReason.ADMIN_REVOKED);
+            refreshTokenRepository.save(t);
+        });
     }
 
     @Transactional(readOnly = true)
@@ -217,6 +343,19 @@ public class TokenService {
         RefreshToken token = refreshTokenRepository.findById(tokenId)
                 .orElseThrow(() -> new BusinessException("Token not found", HttpStatus.NOT_FOUND));
         token.setRevoked(true);
+        token.setRevokedAt(LocalDateTime.now());
+        token.setRevocationReason(RefreshTokenRevocationReason.ADMIN_REVOKED);
         refreshTokenRepository.save(token);
+    }
+
+    private String trim(String value, int max) {
+        if (value == null) return null;
+        String v = value.trim();
+        if (v.length() <= max) return v;
+        return v.substring(0, max);
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value;
     }
 }

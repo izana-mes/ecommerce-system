@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getToken, getUser } from "@/lib/auth";
+import {getUser } from "@/lib/auth";
 import { Client, StompSubscription } from "@stomp/stompjs";
 import { createSupportChatStompClient, parseStompJson } from "@/lib/supportChatSocket";
 import "./support-chat.css";
@@ -53,8 +53,6 @@ export default function SupportChatPage() {
   const conversationSubscriptionRef = useRef<StompSubscription | null>(null);
 
   const customer = getUser();
-  const token = getToken();
-
   useEffect(() => {
     setGuestId(getGuestId());
   }, []);

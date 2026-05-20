@@ -2,7 +2,7 @@
 
 import { CSSProperties, useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { getToken } from "@/lib/auth";
+import {}  from "@/lib/auth";
 
 type TopProduct = { productId: string; productName: string; soldQty: number; revenue: number };
 type RestockSuggestion = {
@@ -34,7 +34,6 @@ export default function SupplierDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   const fetchDashboard = useCallback(async () => {
-    const token = getToken();
     if (!token) return;
     try {
       const response = await fetch("/api/v1/supplier/dashboard?days=30&lowStockThreshold=8", {

@@ -4,7 +4,7 @@ import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getToken, getUser, subscribeToAuthChanges } from "@/lib/auth";
+import {getUser, subscribeToAuthChanges } from "@/lib/auth";
 import toast from "react-hot-toast";
 
 type ExpenseRow = {
@@ -101,13 +101,11 @@ export default function ExpensesPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const authHeaders = useCallback(() => {
-    const token = getToken();
     return {
       "Content-Type": "application/json"};
   }, []);
 
   const load = useCallback(async () => {
-    const token = getToken();
     if (!token) {
       router.replace("/login?returnTo=/expenses");
       return;
@@ -165,7 +163,6 @@ export default function ExpensesPage() {
   };
 
   const submit = async () => {
-    const token = getToken();
     if (!token) return;
     const num = Number(amount);
     if (!Number.isFinite(num) || num <= 0) {

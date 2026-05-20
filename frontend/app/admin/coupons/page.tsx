@@ -4,7 +4,6 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
-import { getToken } from "@/lib/auth";
 
 type Coupon = {
   id: number;
@@ -45,7 +44,6 @@ type AdminUsersResponse = {
 };
 
 export default function AdminCouponsPage() {
-  const [token, setToken] = useState<string | null>(null);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCouponId, setSelectedCouponId] = useState<number | null>(null);
@@ -66,18 +64,11 @@ export default function AdminCouponsPage() {
     min_order_amount: "",
     usage_limit: "",
     expires_at: ""});
-
-  useEffect(() => {
-    setToken(getToken() || "");
-  }, []);
-
   const fetchCoupons = useCallback(async () => {
-    if (token === null) return;
     setLoading(true);
     try {
       const response = await fetch("/api/auth/admin-coupons", {
-        cache: "no-store",
-        headers: token ? { } : undefined});
+        cache: "no-store"});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.error || "Failed to load coupons");
@@ -98,15 +89,13 @@ export default function AdminCouponsPage() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   const fetchCustomers = useCallback(async () => {
-    if (token === null) return;
     setCustomersLoading(true);
     try {
       const response = await fetch("/api/auth/admin?page=0&size=100", {
-        cache: "no-store",
-        headers: token ? { } : undefined});
+        cache: "no-store"});
       const data = await response.json() as AdminUsersResponse;
       if (!response.ok) {
         throw new Error((data as { error?: string })?.error || "Failed to load customers");
@@ -134,7 +123,7 @@ export default function AdminCouponsPage() {
     } finally {
       setCustomersLoading(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     void fetchCoupons();

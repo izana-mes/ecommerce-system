@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getToken, getUser, refreshCurrentUserFromServer, subscribeToAuthChanges } from "@/lib/auth";
+import {getUser, refreshCurrentUserFromServer, subscribeToAuthChanges } from "@/lib/auth";
 import toast from "react-hot-toast";
 
 type OrderItem = {
@@ -87,7 +87,6 @@ export default function UserDashboardPage() {
   }, [router]);
 
   const fetchOrders = useCallback(async () => {
-    const token = getToken();
     setOrdersLoading(true);
     try {
       const response = await fetch("/api/orders/history?page=0&size=5", {
@@ -110,7 +109,6 @@ export default function UserDashboardPage() {
   }, []);
 
   const fetchCoupons = useCallback(async () => {
-    const token = getToken();
     setCouponsLoading(true);
     try {
       const response = await fetch("/api/coupons/notifications", {

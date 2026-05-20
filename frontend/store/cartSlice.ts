@@ -1,7 +1,7 @@
 "use client";
 
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
-import { getToken, getUser } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 
 export interface cartProduct {
   productID: string;
@@ -30,16 +30,8 @@ const initialState: cartState = {
 
 const MAX_QUANTITY = 20;
 
-function normalizeAuthorizationHeader(token: string | null): string | null {
-  if (!token) return null;
-  const trimmed = token.trim();
-  if (!trimmed) return null;
-  const normalizedToken = trimmed.replace(/^Bearer\s+/i, "");
-  return `Bearer ${normalizedToken}`;
-}
-
 function shouldSyncCartWithBackend(): boolean {
-  return Boolean(getToken() || getUser());
+  return Boolean(getUser());
 }
 
 // Async thunks for database operations
@@ -50,8 +42,6 @@ export const addToCartAsync = createAsyncThunk(
       if (!shouldSyncCartWithBackend()) {
         return { product, quantity: 1 };
       }
-
-      const authorizationHeader = normalizeAuthorizationHeader(getToken());
       const response = await fetch("/api/cart", {
         method: "POST",
         credentials: "include",
@@ -83,8 +73,6 @@ export const removeFromCartAsync = createAsyncThunk(
       if (!shouldSyncCartWithBackend()) {
         return productID;
       }
-
-      const authorizationHeader = normalizeAuthorizationHeader(getToken());
       const response = await fetch("/api/cart", {
         method: "DELETE",
         credentials: "include",
@@ -118,8 +106,6 @@ export const updateQuantityAsync = createAsyncThunk(
       if (!shouldSyncCartWithBackend()) {
         return { productID, quantity };
       }
-
-      const authorizationHeader = normalizeAuthorizationHeader(getToken());
       const response = await fetch("/api/cart", {
         method: "PUT",
         credentials: "include",
@@ -155,11 +141,9 @@ export const fetchCartAsync = createAsyncThunk(
       if (!shouldSyncCartWithBackend()) {
         return [];
       }
-
-      const authorizationHeader = normalizeAuthorizationHeader(getToken());
       const response = await fetch("/api/cart", {
         credentials: "include",
-        headers: {        }});
+        headers: undefined});
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {

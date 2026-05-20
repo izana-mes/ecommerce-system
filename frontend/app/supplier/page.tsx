@@ -2,7 +2,7 @@
 
 import { CSSProperties, ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getToken, getUser, refreshCurrentUserFromServer, subscribeToAuthChanges } from "@/lib/auth";
+import {getUser, refreshCurrentUserFromServer, subscribeToAuthChanges } from "@/lib/auth";
 import toast from "react-hot-toast";
 
 type ProductFormState = {
@@ -134,7 +134,6 @@ export default function SupplierPage() {
   }, [router]);
 
   const fetchRequests = useCallback(async () => {
-    const token = getToken();
     if (!token) return;
 
     setRequestsLoading(true);
@@ -158,7 +157,6 @@ export default function SupplierPage() {
   }, []);
 
   const fetchCatalog = useCallback(async (query?: string) => {
-    const token = getToken();
     if (!token) return;
 
     setCatalogLoading(true);
@@ -261,7 +259,6 @@ export default function SupplierPage() {
   };
 
   const submitProductRequest = async () => {
-    const token = getToken();
     if (!token) {
       router.replace("/login?returnTo=/supplier");
       return;
@@ -315,7 +312,6 @@ export default function SupplierPage() {
   };
 
   const submitDeleteRequest = async (productID: string) => {
-    const token = getToken();
     if (!token) {
       router.replace("/login?returnTo=/supplier");
       return;

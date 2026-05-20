@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { getToken } from "@/lib/auth";
+import {}  from "@/lib/auth";
 import toast from "react-hot-toast";
 import { CSSProperties } from "react";
 
@@ -35,7 +35,6 @@ export default function SellerReviewsPage() {
   const [submittingReply, setSubmittingReply] = useState(false);
 
   const loadProducts = useCallback(async () => {
-    const token = getToken();
     if (!token) return;
     try {
       const res = await fetch("/api/v1/seller/inventory", {
@@ -54,7 +53,6 @@ export default function SellerReviewsPage() {
 
   const loadReviews = useCallback(async (productId: string) => {
     if (!productId) return;
-    const token = getToken();
     if (!token) return;
     setLoadingReviews(true);
     setReviewsError(null);
@@ -83,7 +81,6 @@ export default function SellerReviewsPage() {
 
   const handleReply = async (reviewId: string) => {
     if (!replyContent.trim()) { toast.error("Reply cannot be empty"); return; }
-    const token = getToken();
     if (!token) return;
     setSubmittingReply(true);
     try {

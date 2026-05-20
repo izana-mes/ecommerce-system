@@ -2,7 +2,7 @@
 
 import { CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getToken, getUser, subscribeToAuthChanges } from "@/lib/auth";
+import {getUser, subscribeToAuthChanges } from "@/lib/auth";
 import toast from "react-hot-toast";
 
 type SellerOrder = {
@@ -42,7 +42,6 @@ export default function SellerOrdersPage() {
   const [search, setSearch] = useState("");
 
   const fetchOrders = useCallback(async (status?: string) => {
-    const token = getToken();
     if (!token) return;
     try {
       const qs = status && status !== "ALL" ? `?status=${status}` : "";

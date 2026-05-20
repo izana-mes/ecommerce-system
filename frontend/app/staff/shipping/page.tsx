@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getToken, getUser } from "@/lib/auth";
+import {getUser } from "@/lib/auth";
 import "./shipping.css";
 
 type OrderRow = {
@@ -76,7 +76,6 @@ function formatDateTime(value?: string | null): string {
 
 export default function StaffShippingPage() {
   const router = useRouter();
-  const token = getToken();
   const [loadingAccess, setLoadingAccess] = useState(true);
   const [allowed, setAllowed] = useState(false);
   const [orders, setOrders] = useState<OrderRow[]>([]);

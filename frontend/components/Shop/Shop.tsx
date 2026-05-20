@@ -15,7 +15,7 @@ import {
   addToWishlistAsync,
   removeFromWishlistAsync,
   wishListProduct} from "@/store/wishListSlice";
-import { getToken, getUser, isAuthenticated } from "@/lib/auth";
+import {getUser, isAuthenticated } from "@/lib/auth";
 import { DataStore } from "@/data/StoreData";
 import { useProducts } from "@/hooks/useProducts";
 import { createPortal } from "react-dom";
@@ -67,14 +67,6 @@ type SortOption =
   | "highToLow"
   | "oldToNew"
   | "newToOld";
-
-function normalizeAuthorizationHeader(token: string | null): string | null {
-  const trimmed = (token ?? "").trim();
-  if (!trimmed) {
-    return null;
-  }
-  return /^bearer\s+/i.test(trimmed) ? trimmed : `Bearer ${trimmed}`;
-}
 
 function resolveProductImage(src?: string | null): string {
   const value = String(src ?? "").trim();
@@ -474,7 +466,6 @@ export default function Shop() {
   const loadProductReviews = async (productID: string) => {
     setIsLoadingReviews(true);
     try {
-      const authorizationHeader = normalizeAuthorizationHeader(getToken());
       const response = await fetch(`/api/products/${encodeURIComponent(productID)}/reviews?limit=10`, {
         method: "GET",
         credentials: "include",
@@ -507,7 +498,6 @@ export default function Shop() {
     const productID = selectedProduct.productID;
 
     try {
-      const authorizationHeader = normalizeAuthorizationHeader(getToken());
       const response = await fetch(`/api/products/${encodeURIComponent(productID)}/reviews`, {
         method: "POST",
         credentials: "include",
@@ -559,7 +549,6 @@ export default function Shop() {
     const productID = selectedProduct.productID;
 
     try {
-      const authorizationHeader = normalizeAuthorizationHeader(getToken());
       const response = await fetch(
         `/api/products/${encodeURIComponent(productID)}/reviews/${encodeURIComponent(reviewID)}`,
         {
@@ -593,7 +582,6 @@ export default function Shop() {
 
     const productID = selectedProduct.productID;
     try {
-      const authorizationHeader = normalizeAuthorizationHeader(getToken());
       const response = await fetch(
         `/api/products/${encodeURIComponent(productID)}/reviews/${encodeURIComponent(reviewID)}`,
         {
@@ -629,7 +617,6 @@ export default function Shop() {
 
     const productID = selectedProduct.productID;
     try {
-      const authorizationHeader = normalizeAuthorizationHeader(getToken());
       const response = await fetch(
         `/api/products/${encodeURIComponent(productID)}/reviews/${encodeURIComponent(reviewID)}/dislike`,
         {
@@ -670,7 +657,6 @@ export default function Shop() {
 
     const productID = selectedProduct.productID;
     try {
-      const authorizationHeader = normalizeAuthorizationHeader(getToken());
       const response = await fetch(
         `/api/products/${encodeURIComponent(productID)}/reviews/${encodeURIComponent(reviewID)}/like`,
         {
@@ -728,7 +714,6 @@ export default function Shop() {
 
     const productID = selectedProduct.productID;
     try {
-      const authorizationHeader = normalizeAuthorizationHeader(getToken());
       const response = await fetch(
         `/api/products/${encodeURIComponent(productID)}/reviews/${encodeURIComponent(reviewID)}/replies`,
         {

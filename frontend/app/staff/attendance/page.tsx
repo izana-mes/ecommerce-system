@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getToken, getUser } from "@/lib/auth";
+import {getUser } from "@/lib/auth";
 import "./attendance.css";
 
 type AttendanceAction = "clock_in" | "clock_out" | "start_break" | "end_break";
@@ -146,9 +146,6 @@ export default function StaffAttendancePage() {
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
   const [tick, setTick] = useState(Date.now());
-
-  const token = getToken();
-
   const fetchSnapshot = useCallback(async () => {
     setLoadingSnapshot(true);
     try {

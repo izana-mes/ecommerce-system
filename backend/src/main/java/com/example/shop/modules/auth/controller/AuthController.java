@@ -1,10 +1,12 @@
 package com.example.shop.modules.auth.controller;
 
 import com.example.shop.common.response.ApiResponse;
+import com.example.shop.common.web.ClientIpExtractor;
 import com.example.shop.modules.auth.dto.request.*;
 import com.example.shop.modules.auth.dto.response.AuthenticationResponse;
 import com.example.shop.modules.auth.security.AuthCookieService;
 import com.example.shop.modules.auth.service.AuthService;
+import com.example.shop.modules.token.service.SessionClientMetadata;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -21,6 +23,7 @@ public class AuthController {
 
     private final AuthService service;
     private final AuthCookieService authCookieService;
+    private final ClientIpExtractor clientIpExtractor;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthenticationResponse>> register(@Valid @RequestBody RegisterRequest request) {
@@ -32,7 +35,7 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
-        AuthenticationResponse body = service.authenticate(request);
+        AuthenticationResponse body = service.authenticate(request, metadata(httpRequest));
         authCookieService.writeAuthCookies(httpRequest, httpResponse, body.getAccessToken(), body.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.success(body));
     }
@@ -42,7 +45,7 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response) {
         String refreshToken = authCookieService.readRefreshToken(request);
-        AuthenticationResponse body = service.refreshToken(refreshToken);
+        AuthenticationResponse body = service.refreshToken(refreshToken, metadata(request));
         authCookieService.writeAuthCookies(request, response, body.getAccessToken(), body.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.success(body));
     }
@@ -89,9 +92,21 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response) {
         if (userDetails != null && userDetails.getUsername() != null) {
-            service.logout(userDetails.getUsername(), authCookieService.readRefreshToken(request));
+            service.logout(userDetails.getUsername(), authCookieService.readRefreshToken(request), metadata(request));
         }
         authCookieService.clearAuthCookies(request, response);
         return ResponseEntity.ok(ApiResponse.success(null, "Logged out successfully"));
+    }
+
+    private SessionClientMetadata metadata(HttpServletRequest request) {
+        String userAgent = request.getHeader("User-Agent");
+        String deviceId = request.getHeader("X-Device-Id");
+        String requestId = request.getHeader("X-Request-Id");
+        return new SessionClientMetadata(
+                clientIpExtractor.extractClientIp(request),
+                userAgent,
+                deviceId,
+                requestId
+        );
     }
 }

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { MdBarChart, MdSearch, MdRefresh } from "react-icons/md";
-import { getToken, getUser } from "@/lib/auth";
+import {getUser } from "@/lib/auth";
 import toast from "react-hot-toast";
 
 interface PerformanceResponse {
@@ -61,7 +61,6 @@ export default function ShipperPerformancePage() {
   const [loading, setLoading] = useState(false);
 
   const fetchPerf = useCallback(async () => {
-    const token = getToken();
     if (!token || !shipperUserId) return;
     setLoading(true);
     try {

@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getToken, getUser } from "@/lib/auth";
+import {getUser } from "@/lib/auth";
 import "./workspace.css";
 
 type Task = {
@@ -42,7 +42,6 @@ function canUseWorkspace(role?: string): boolean {
 
 export default function WorkspacePage() {
   const router = useRouter();
-  const token = getToken();
   const user = getUser();
 
   const [tasks, setTasks] = useState<Task[]>([]);

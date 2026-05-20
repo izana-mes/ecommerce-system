@@ -8,14 +8,17 @@ import com.example.shop.modules.auth.dto.request.ResetPasswordRequest;
 import com.example.shop.modules.auth.dto.request.VerifyOtpRequest;
 import com.example.shop.modules.auth.dto.response.AuthenticationResponse;
 import com.example.shop.modules.auth.security.JwtProvider;
+import com.example.shop.modules.auth.security.AuthAbuseProtectionService;
 import com.example.shop.modules.messaging.email.EmailMessage;
 import com.example.shop.modules.messaging.email.EmailMessagePublisher;
 import com.example.shop.modules.otp.service.OtpService;
 import com.example.shop.modules.role.entity.Role;
 import com.example.shop.modules.role.repository.RoleRepository;
+import com.example.shop.modules.security.SecurityEventLogger;
 import com.example.shop.modules.token.entity.EmailVerificationToken;
 import com.example.shop.modules.token.entity.PasswordResetToken;
-import com.example.shop.modules.token.entity.RefreshToken;
+import com.example.shop.modules.token.entity.RefreshTokenRevocationReason;
+import com.example.shop.modules.token.service.SessionClientMetadata;
 import com.example.shop.modules.token.service.TokenService;
 import com.example.shop.modules.user.entity.User;
 import com.example.shop.modules.user.repository.UserRepository;
@@ -23,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -43,6 +47,8 @@ public class AuthServiceImpl implements AuthService {
     private final JwtProvider jwtProvider;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
+    private final SecurityEventLogger securityEventLogger;
+    private final AuthAbuseProtectionService abuseProtectionService;
 
     @Value("${application.security.jwt.expiration}")
     private long jwtExpiration;
@@ -81,39 +87,61 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthenticationResponse authenticate(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(normalizeEmail(request.getEmail()), request.getPassword()));
+    public AuthenticationResponse authenticate(LoginRequest request, SessionClientMetadata metadata) {
+        String normalizedEmail = normalizeEmail(request.getEmail());
+        abuseProtectionService.assertLoginAllowed(normalizedEmail, metadata.ipAddress());
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(normalizedEmail, request.getPassword()));
+        } catch (BadCredentialsException ex) {
+            abuseProtectionService.recordLoginFailure(normalizedEmail, metadata.ipAddress());
+            securityEventLogger.warn("login_failure", java.util.Map.of(
+                    "email", normalizedEmail,
+                    "ip", metadata.ipAddress() == null ? "" : metadata.ipAddress(),
+                    "deviceId", metadata.deviceId() == null ? "" : metadata.deviceId(),
+                    "requestId", metadata.requestId() == null ? "" : metadata.requestId()
+            ));
+            throw ex;
+        }
 
-        User user = userRepository.findByEmailIgnoreCase(normalizeEmail(request.getEmail()))
+        User user = userRepository.findByEmailIgnoreCase(normalizedEmail)
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
 
         if (!user.isEmailVerified()) {
+            abuseProtectionService.recordLoginFailure(normalizedEmail, metadata.ipAddress());
             throw new UnauthorizedException("Please verify your email before logging in");
         }
+        abuseProtectionService.recordLoginSuccess(normalizedEmail, metadata.ipAddress());
 
         String accessToken = jwtProvider.generateAccessToken(user);
-        RefreshToken refreshToken = tokenService.createRefreshToken(user);
+        TokenService.RefreshIssueResult refreshIssue = tokenService.createRefreshToken(user, metadata);
+        securityEventLogger.info("login_success", java.util.Map.of(
+                "userId", String.valueOf(user.getId()),
+                "email", user.getEmail(),
+                "ip", metadata.ipAddress() == null ? "" : metadata.ipAddress(),
+                "deviceId", metadata.deviceId() == null ? "" : metadata.deviceId(),
+                "requestId", metadata.requestId() == null ? "" : metadata.requestId()
+        ));
 
         return AuthenticationResponse.builder()
                 .accessToken(accessToken)
-                .refreshToken(refreshToken.getRefreshTokenHash())
-                .tokenType("Bearer")
+                .refreshToken(refreshIssue.rawToken())
+                .tokenType("Cookie")
                 .expiresIn(jwtExpiration)
                 .status("AUTHENTICATED")
                 .build();
     }
 
     @Override
-    public AuthenticationResponse refreshToken(String refreshTokenStr) {
-        RefreshToken rotated = tokenService.verifyAndRotateRefreshToken(refreshTokenStr);
-        User user = rotated.getUser();
+    public AuthenticationResponse refreshToken(String refreshTokenStr, SessionClientMetadata metadata) {
+        TokenService.RefreshIssueResult rotated = tokenService.verifyAndRotateRefreshToken(refreshTokenStr, metadata);
+        User user = rotated.tokenEntity().getUser();
         String accessToken = jwtProvider.generateAccessToken(user);
 
         return AuthenticationResponse.builder()
                 .accessToken(accessToken)
-                .refreshToken(rotated.getRefreshTokenHash())
-                .tokenType("Bearer")
+                .refreshToken(rotated.rawToken())
+                .tokenType("Cookie")
                 .expiresIn(jwtExpiration)
                 .status("REFRESHED")
                 .build();
@@ -211,18 +239,32 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         tokenService.markPasswordResetTokenAsUsed(resetToken);
-        tokenService.revokeRefreshToken(user);
+        tokenService.revokeRefreshToken(user, RefreshTokenRevocationReason.PASSWORD_RESET);
     }
 
     @Override
     @Transactional
-    public void logout(String email, String refreshToken) {
+    public void logout(String email, String refreshToken, SessionClientMetadata metadata) {
         User user = findUserByEmailOrThrow(email);
         if (refreshToken != null && !refreshToken.isBlank()) {
-            tokenService.revokeRefreshTokenValue(refreshToken);
+            tokenService.revokeRefreshTokenValue(refreshToken, RefreshTokenRevocationReason.LOGOUT);
+            securityEventLogger.info("logout_success", java.util.Map.of(
+                    "userId", String.valueOf(user.getId()),
+                    "ip", metadata.ipAddress() == null ? "" : metadata.ipAddress(),
+                    "deviceId", metadata.deviceId() == null ? "" : metadata.deviceId(),
+                    "requestId", metadata.requestId() == null ? "" : metadata.requestId(),
+                    "scope", "current_session"
+            ));
             return;
         }
-        tokenService.revokeRefreshToken(user);
+        tokenService.revokeRefreshToken(user, RefreshTokenRevocationReason.LOGOUT_ALL);
+        securityEventLogger.info("logout_all_success", java.util.Map.of(
+                "userId", String.valueOf(user.getId()),
+                "ip", metadata.ipAddress() == null ? "" : metadata.ipAddress(),
+                "deviceId", metadata.deviceId() == null ? "" : metadata.deviceId(),
+                "requestId", metadata.requestId() == null ? "" : metadata.requestId(),
+                "scope", "all_sessions"
+        ));
     }
 
     private User findUserByEmailOrThrow(String email) {

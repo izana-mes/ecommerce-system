@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { getToken } from "@/lib/auth";
+import {}  from "@/lib/auth";
 import "./chatbot.css";
 
 type Message = {
@@ -87,7 +87,6 @@ export default function CustomerChatbotPage() {
     setQuestion("");
 
     try {
-      const token = getToken();
       const response = await fetch("/api/chatbot/customer/stream", {
         method: "POST",
         headers: {

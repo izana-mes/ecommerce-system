@@ -2,7 +2,7 @@
 
 import { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getToken, getUser, subscribeToAuthChanges } from "@/lib/auth";
+import {getUser, subscribeToAuthChanges } from "@/lib/auth";
 import toast from "react-hot-toast";
 
 type InventoryItem = {
@@ -42,7 +42,6 @@ export default function SellerInventoryPage() {
 
   /* ── Fetch ──────────────────────────────────────────────── */
   const fetchInventory = useCallback(async () => {
-    const token = getToken();
     if (!token) return;
     setLoading(true);
     try {
@@ -84,8 +83,6 @@ export default function SellerInventoryPage() {
     const raw = editMap[productId];
     const qty = parseInt(raw ?? "", 10);
     if (isNaN(qty) || qty < 0) { toast.error("Enter a valid non-negative number"); return; }
-
-    const token = getToken();
     if (!token) return;
     setSaving(prev => ({ ...prev, [productId]: true }));
     try {
@@ -113,8 +110,6 @@ export default function SellerInventoryPage() {
     const updates = Object.entries(editMap)
       .map(([productId, raw]) => ({ productId, newQuantity: parseInt(raw, 10), lowStockThreshold: threshold }))
       .filter(u => !isNaN(u.newQuantity) && u.newQuantity >= 0);
-
-    const token = getToken();
     if (!token) { setBulkSaving(false); bulkSaveRef.current = false; return; }
 
     try {

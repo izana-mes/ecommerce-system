@@ -1,7 +1,7 @@
 "use client";
 
 import { CSSProperties, useRef, useState } from "react";
-import { getToken } from "@/lib/auth";
+import {}  from "@/lib/auth";
 import toast from "react-hot-toast";
 
 type UploadResult = {
@@ -29,7 +29,6 @@ export default function SupplierBulkUploadPage() {
   };
 
   const downloadTemplate = async () => {
-    const token = getToken();
     if (!token) return;
     try {
       const res = await fetch("/api/v1/supplier/catalog/csv-template", {
@@ -56,7 +55,6 @@ export default function SupplierBulkUploadPage() {
 
   const upload = async () => {
     if (!selectedFile) { toast.error("Please select a CSV file first"); return; }
-    const token = getToken();
     if (!token) return;
 
     setUploading(true);

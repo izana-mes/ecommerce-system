@@ -1,7 +1,7 @@
 "use client";
 
 import { CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
-import { getToken } from "@/lib/auth";
+import {}  from "@/lib/auth";
 import toast from "react-hot-toast";
 
 type InventoryItem = {
@@ -26,7 +26,6 @@ export default function SupplierInventoryPage() {
   const [search, setSearch] = useState("");
 
   const fetchInventory = useCallback(async () => {
-    const token = getToken();
     if (!token) return;
     setLoading(true);
     try {
@@ -64,7 +63,6 @@ export default function SupplierInventoryPage() {
   const saveOne = async (productId: string) => {
     const qty = parseInt(editMap[productId] ?? "", 10);
     if (isNaN(qty) || qty < 0) { toast.error("Enter a valid non-negative number"); return; }
-    const token = getToken();
     if (!token) return;
     setSaving(prev => ({ ...prev, [productId]: true }));
     try {
@@ -91,7 +89,6 @@ export default function SupplierInventoryPage() {
     if (!restockForm) return;
     const qty = parseInt(restockForm.quantity, 10);
     if (isNaN(qty) || qty < 1) { toast.error("Enter a valid requested quantity (≥ 1)"); return; }
-    const token = getToken();
     if (!token) return;
     setSubmittingRestock(true);
     try {

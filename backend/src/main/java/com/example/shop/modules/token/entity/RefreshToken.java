@@ -41,18 +41,54 @@ public class RefreshToken {
     @JoinColumn(name = "users_id", nullable = false)
     private User user;
 
-    @Column(name = "refresh_tokens_hash", nullable = false, columnDefinition = "TEXT")
-    private String refreshTokenHash;
+    @Column(name = "refresh_tokens_hash", nullable = false, unique = true, columnDefinition = "TEXT")
+    private String tokenHash;
+
+    @Column(name = "token_family_id", nullable = false)
+    private UUID tokenFamilyId;
+
+    @Column(name = "parent_token_id")
+    private UUID parentTokenId;
+
+    @Column(name = "replaced_by_token_id")
+    private UUID replacedByTokenId;
 
     @Column(name = "is_revoked")
     @Builder.Default
     private boolean isRevoked = false;
 
+    @Column(name = "issued_at", nullable = false)
+    private LocalDateTime issuedAt;
+
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
 
+    @Column(name = "revoked_at")
+    private LocalDateTime revokedAt;
+
+    @Column(name = "reuse_detected_at")
+    private LocalDateTime reuseDetectedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "revocation_reason")
+    private RefreshTokenRevocationReason revocationReason;
+
     @Column(name = "last_used_at")
     private LocalDateTime lastUsedAt;
+
+    @Column(name = "issued_ip", length = 128)
+    private String issuedIp;
+
+    @Column(name = "issued_user_agent", length = 1024)
+    private String issuedUserAgent;
+
+    @Column(name = "device_id", length = 256)
+    private String deviceId;
+
+    @Version
+    @Column(name = "entity_version", nullable = false)
+    @Builder.Default
+    private long version = 0L;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)

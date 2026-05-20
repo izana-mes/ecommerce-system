@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getToken, getUser } from "@/lib/auth";
+import {getUser } from "@/lib/auth";
 
 type Row = {
   productID?: string;
@@ -14,7 +14,6 @@ type Row = {
 
 export default function SupplierCatalogPage() {
   const router = useRouter();
-  const token = getToken();
   const [allowed, setAllowed] = useState(false);
   const [loadingAccess, setLoadingAccess] = useState(true);
   const [loading, setLoading] = useState(true);

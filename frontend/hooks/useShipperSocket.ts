@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Client, IMessage } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
-import { getToken } from "@/lib/auth";
+import {}  from "@/lib/auth";
 import { publicBackendOriginUrl } from "@/lib/backendApiBase";
 
 /** Mirrors the backend ShipperDtos.OrderStatusEvent payload. */
@@ -41,7 +41,6 @@ export function useShipperSocket(
 
   useEffect(() => {
     if (!shipperUserId) return;
-    const token = getToken();
     if (!token) return;
 
     const client = new Client({

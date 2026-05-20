@@ -5,14 +5,15 @@ import com.example.shop.modules.auth.dto.request.RegisterRequest;
 import com.example.shop.modules.auth.dto.request.ResetPasswordRequest;
 import com.example.shop.modules.auth.dto.request.VerifyOtpRequest;
 import com.example.shop.modules.auth.dto.response.AuthenticationResponse;
+import com.example.shop.modules.token.service.SessionClientMetadata;
 
 public interface AuthService {
 
     AuthenticationResponse register(RegisterRequest request);
 
-    AuthenticationResponse authenticate(LoginRequest request);
+    AuthenticationResponse authenticate(LoginRequest request, SessionClientMetadata metadata);
 
-    AuthenticationResponse refreshToken(String refreshToken);
+    AuthenticationResponse refreshToken(String refreshToken, SessionClientMetadata metadata);
 
     void verifyEmail(String token);
 
@@ -26,5 +27,5 @@ public interface AuthService {
 
     void resetPassword(ResetPasswordRequest request);
 
-    void logout(String email, String refreshToken);
+    void logout(String email, String refreshToken, SessionClientMetadata metadata);
 }

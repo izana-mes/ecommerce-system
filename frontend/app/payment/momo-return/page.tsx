@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useAppDispatch } from "@/store";
 import { clearCart, fetchCartAsync } from "@/store/cartSlice";
-import { getToken } from "@/lib/auth";
+import {}  from "@/lib/auth";
 import { useEffect } from "react";
 import styles from "./momo-return.module.css";
 
@@ -24,7 +24,6 @@ function MomoReturnContent() {
   useEffect(() => {
     if (isSuccess) {
       // Clear the cart on successful payment
-      const token = getToken();
       fetch("/api/cart/clear", {
         method: "DELETE",
         credentials: "include",

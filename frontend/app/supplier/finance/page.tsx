@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { getToken } from "@/lib/auth";
+import {}  from "@/lib/auth";
 import toast from "react-hot-toast";
 import { CSSProperties } from "react";
 
@@ -30,7 +30,6 @@ export default function SupplierFinancePage() {
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
-    const token = getToken();
     if (!token) return;
 
     try {
