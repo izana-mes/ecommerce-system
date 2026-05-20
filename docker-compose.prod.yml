@@ -1,0 +1,174 @@
+x-default-security: &default-security
+  security_opt:
+    - no-new-privileges:true
+    - seccomp=default
+  cap_drop:
+    - ALL
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m,noexec,nosuid,nodev
+  pids_limit: 256
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - data_net
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - data_net
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+    networks:
+      - data_net
+
+  backend:
+    <<: *default-security
+    build: ./backend
+    restart: unless-stopped
+    env_file:
+      - path: ./.env.prod
+        required: false
+    environment:
+      DB_HOST: postgres
+      REDIS_HOST: redis
+      RABBITMQ_HOST: rabbitmq
+      MCP_SERVER_URL: http://mcp-server:3100
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_SHUTDOWN: graceful
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/api/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 8
+      start_period: 60s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app_net
+      - data_net
+    mem_limit: 1g
+    cpus: "1.00"
+
+  mcp-server:
+    <<: *default-security
+    build: ./mcp-server
+    restart: unless-stopped
+    env_file:
+      - path: ./.env.prod
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: 3100
+      BACKEND_URL: http://backend:8080
+    expose:
+      - "3100"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3100/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 8
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app_net
+    mem_limit: 512m
+    cpus: "0.50"
+
+  frontend:
+    <<: *default-security
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL}
+        BACKEND_URL: http://backend:8080
+    restart: unless-stopped
+    env_file:
+      - path: ./.env.prod
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      BACKEND_API_BASE_URL: http://backend:8080/api
+      BACKEND_URL: http://backend:8080
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000"]
+      interval: 20s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - edge_net
+      - app_net
+    mem_limit: 768m
+    cpus: "0.75"
+
+networks:
+  edge_net:
+    driver: bridge
+  app_net:
+    driver: bridge
+    internal: true
+  data_net:
+    driver: bridge
+    internal: true
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password.txt

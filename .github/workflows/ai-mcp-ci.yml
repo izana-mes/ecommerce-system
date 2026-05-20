@@ -1,0 +1,71 @@
+name: ai-mcp-ci
+
+on:
+  pull_request:
+    paths:
+      - 'mcp-server/**'
+      - 'ai-chatbot-platform/**'
+      - '.github/workflows/ai-mcp-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'mcp-server/**'
+      - 'ai-chatbot-platform/**'
+      - '.github/workflows/ai-mcp-ci.yml'
+
+jobs:
+  mcp-server-ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mcp-server/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm audit --audit-level=high
+
+  ai-backend-ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai-chatbot-platform/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+      - run: npx prisma generate
+      - run: npm run build
+      - run: npm audit --audit-level=high
+
+  ai-frontend-ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai-chatbot-platform/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+      - run: npx tsc --noEmit
+      - run: npm run build
+      - run: npm audit --audit-level=high

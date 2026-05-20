@@ -1,37 +1,122 @@
-version: "3.9"
+x-default-security: &default-security
+  security_opt:
+    - no-new-privileges:true
+    - seccomp=default
+  cap_drop:
+    - ALL
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m,noexec,nosuid,nodev
+  pids_limit: 256
+
 services:
   postgres:
     image: pgvector/pgvector:pg16
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: aichat
-    ports: ["5432:5432"]
-    volumes: ["pgdata:/var/lib/postgresql/data"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d aichat"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - data_net
 
   redis:
     image: redis:7-alpine
-    ports: ["6379:6379"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - data_net
 
   backend:
+    <<: *default-security
     build: ./backend
     env_file: ./backend/.env.example
-    ports: ["4000:4000"]
-    depends_on: [postgres, redis]
+    expose:
+      - "4000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4000/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app_net
+      - data_net
+    mem_limit: 768m
+    cpus: "0.75"
 
   frontend:
+    <<: *default-security
     build: ./frontend
     environment:
-      NEXT_PUBLIC_API_BASE: http://localhost:4000/api
-    ports: ["3000:3000"]
-    depends_on: [backend]
+      NEXT_PUBLIC_API_BASE: http://backend:4000/api
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000"]
+      interval: 20s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - edge_net
+      - app_net
+    mem_limit: 512m
+    cpus: "0.50"
 
   nginx:
     image: nginx:1.27-alpine
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:size=32m,noexec,nosuid,nodev
+      - /var/run:size=8m,noexec,nosuid,nodev
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=default
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    ports: ["80:80"]
-    depends_on: [frontend, backend]
+    ports:
+      - "80:80"
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    networks:
+      - edge_net
+
+networks:
+  edge_net:
+    driver: bridge
+  app_net:
+    driver: bridge
+    internal: true
+  data_net:
+    driver: bridge
+    internal: true
 
 volumes:
   pgdata:

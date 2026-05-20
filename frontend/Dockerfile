@@ -1,5 +1,10 @@
-FROM node:22-alpine
+FROM node:22-alpine AS deps
+WORKDIR /app
 
+COPY package*.json ./
+RUN npm ci
+
+FROM node:22-alpine AS build
 WORKDIR /app
 
 ARG NEXT_PUBLIC_API_URL=http://localhost:8080/api
@@ -11,21 +16,29 @@ ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
 ENV BACKEND_URL=${BACKEND_URL}
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copy package trước để tận dụng cache
-COPY package*.json ./
-
-# Fix network + tăng retry + dùng ci
-RUN npm config set registry https://registry.npmjs.org/ \
- && npm config set fetch-retries 5 \
- && npm config set fetch-retry-maxtimeout 600000 \
- && npm ci
-
-# Copy source
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Build Next.js
 RUN npm run build
 
+FROM node:22-alpine AS runtime
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN addgroup -S nextjs && adduser -S -G nextjs nextjs
+
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+
+COPY --from=build /app/.next ./.next
+COPY --from=build /app/public ./public
+COPY --from=build /app/next.config.ts ./next.config.ts
+
+USER nextjs
 EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=5 \
+  CMD wget -qO- http://127.0.0.1:3000 || exit 1
 
 CMD ["npm", "start"]

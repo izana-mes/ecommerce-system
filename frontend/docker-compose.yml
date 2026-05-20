@@ -94,6 +94,7 @@ services:
       args:
         NEXT_PUBLIC_API_URL: http://localhost:8080/api
         NEXT_PUBLIC_BACKEND_URL: http://localhost:8080
+        BACKEND_URL: http://backend:8080
     restart: unless-stopped
     env_file:
       - ../.env

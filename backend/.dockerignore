@@ -1,0 +1,7 @@
+target
+.mvn
+.git
+.gitignore
+Dockerfile
+README.md
+*.log
