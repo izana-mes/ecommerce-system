@@ -48,8 +48,9 @@ export default function ShipperLayout({ children }: { children: React.ReactNode 
   }, [router]);
 
   useEffect(() => {
-    syncUser();
-    return subscribeToAuthChanges(syncUser);
+    const unsubscribe = subscribeToAuthChanges(syncUser);
+    queueMicrotask(syncUser);
+    return unsubscribe;
   }, [syncUser]);
 
   const handleLogout = async () => {

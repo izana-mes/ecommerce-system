@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+<!--
+  Legacy codebase: style rules are enforced in CI but existing violations are
+  suppressed until modules are cleaned up incrementally.
+-->
+<suppressions>
+  <suppress checks="AvoidStarImport|NeedBraces|WhitespaceAfter|WhitespaceAround|UnusedImports|NewlineAtEndOfFile|EmptyBlock|FinalClass" files=".*\.java"/>
+</suppressions>

@@ -7,11 +7,21 @@ import com.example.shop.modules.auth.service.AuthService;
 import com.example.shop.common.web.ClientIpExtractor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import com.example.shop.config.SecurityConfig;
+import com.example.shop.common.web.RateLimitFilter;
+import com.example.shop.common.web.RequestObservabilityFilter;
+import com.example.shop.modules.auth.oauth.OAuth2AuthenticationSuccessHandler;
+import com.example.shop.modules.auth.oauth.OAuth2CookieAuthorizationRequestRepository;
+import com.example.shop.modules.auth.security.JwtAuthenticationFilter;
+import com.example.shop.modules.chatbot.security.McpServiceTokenFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -20,7 +30,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(AuthController.class)
+@WebMvcTest(
+        controllers = AuthController.class,
+        excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = SecurityConfig.class))
 @AutoConfigureMockMvc(addFilters = false)
 class AuthControllerTest {
 
@@ -30,6 +42,13 @@ class AuthControllerTest {
     @MockBean private AuthService authService;
     @MockBean private AuthCookieService authCookieService;
     @MockBean private ClientIpExtractor clientIpExtractor;
+    @MockBean private JwtAuthenticationFilter jwtAuthenticationFilter;
+    @MockBean private RateLimitFilter rateLimitFilter;
+    @MockBean private RequestObservabilityFilter requestObservabilityFilter;
+    @MockBean private McpServiceTokenFilter mcpServiceTokenFilter;
+    @MockBean private UserDetailsService userDetailsService;
+    @MockBean private OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    @MockBean private OAuth2CookieAuthorizationRequestRepository oAuth2CookieAuthorizationRequestRepository;
 
     @Test
     void authenticate_returnsApiResponse() throws Exception {

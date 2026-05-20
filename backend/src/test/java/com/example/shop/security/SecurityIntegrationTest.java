@@ -7,6 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -35,6 +36,7 @@ class SecurityIntegrationTest {
         int statusCode = 0;
         for (int i = 0; i < 12; i++) {
             statusCode = mockMvc.perform(post("/api/v1/auth/authenticate")
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"email\":\"x@y.com\",\"password\":\"bad\"}"))
                     .andReturn().getResponse().getStatus();

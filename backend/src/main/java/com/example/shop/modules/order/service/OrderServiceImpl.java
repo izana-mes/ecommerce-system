@@ -810,7 +810,7 @@ public class OrderServiceImpl implements OrderService {
         if (stamp.length() > 10) {
             stamp = stamp.substring(stamp.length() - 10);
         }
-        String random = String.format("%04d", new Random().nextInt(10_000));
+        String random = String.format("%04d", java.util.concurrent.ThreadLocalRandom.current().nextInt(10_000));
         return "ORD-" + stamp + "-" + random;
     }
 
