@@ -84,6 +84,9 @@ model McpServer {
   command     String?
   argsJson    Json?
   enabled     Boolean  @default(true)
+  trusted     Boolean  @default(false)
+  tlsRequired Boolean  @default(true)
+  fingerprint String?
   createdAt   DateTime @default(now())
 }
 
@@ -91,10 +94,62 @@ model ToolLog {
   id            String   @id @default(uuid())
   conversationId String?
   toolName      String
+  serverName    String?
   argsJson      Json
   outputJson    Json?
   status        String
   errorMessage  String?
   latencyMs     Int?
+  retries       Int?
+  traceId       String?
+  correlationId String?
+  userId        String?
+  role          String?
   createdAt     DateTime @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([toolName, createdAt])
+  @@index([status, createdAt])
+  @@index([traceId])
+}
+
+model AiAuditEvent {
+  id            String   @id @default(uuid())
+  traceId       String
+  correlationId String
+  conversationId String?
+  userId        String?
+  role          String?
+  eventType     String
+  serverName    String?
+  toolName      String?
+  status        String
+  durationMs    Int?
+  retries       Int?
+  tokenUsage    Int?
+  inputJson     Json?
+  outputJson    Json?
+  errorMessage  String?
+  metadataJson  Json?
+  createdAt     DateTime @default(now())
+
+  @@index([traceId])
+  @@index([conversationId, createdAt])
+  @@index([eventType, createdAt])
+  @@index([status, createdAt])
+}
+
+model AiSecurityEvent {
+  id            String   @id @default(uuid())
+  traceId       String
+  correlationId String
+  conversationId String?
+  userId        String?
+  eventType     String
+  severity      String
+  payloadJson   Json?
+  createdAt     DateTime @default(now())
+
+  @@index([eventType, createdAt])
+  @@index([severity, createdAt])
 }

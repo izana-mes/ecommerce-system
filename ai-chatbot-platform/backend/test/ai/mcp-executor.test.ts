@@ -1,16 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const createMock = vi.fn();
-const canExecuteMock = vi.fn();
 
 vi.mock("../../src/config/prisma.js", () => ({
-  prisma: { toolLog: { create: createMock } },
-}));
-
-vi.mock("../../src/mcp/mcp.permissions.js", () => ({
-  ToolPermissionService: class {
-    canExecute = canExecuteMock;
-  },
+  prisma: { toolLog: { create: createMock }, aiAuditEvent: { create: vi.fn() } },
 }));
 
 describe("McpExecutor", () => {
@@ -19,27 +12,46 @@ describe("McpExecutor", () => {
     vi.clearAllMocks();
   });
 
-  it("blocks unauthorized tool execution", async () => {
-    canExecuteMock.mockReturnValue(false);
+  it("blocks unauthorized tool execution by RBAC", async () => {
     const { McpExecutor } = await import("../../src/mcp/mcp.executor.js");
     const executor = new McpExecutor();
 
-    const result = await executor.execute("admin__dangerous", { any: true }, "conv-1");
+    const result = await executor.execute("admin__mcp_health", {}, {
+      userId: "u1",
+      role: "guest",
+      conversationId: "conv-1",
+    });
 
     expect(result.ok).toBe(false);
-    expect(result.error).toMatch(/permission denied/i);
+    expect(result.error).toMatch(/tool_not_allowed|denied/i);
     expect(createMock).toHaveBeenCalled();
   });
 
-  it("executes allowed tools and logs success", async () => {
-    canExecuteMock.mockReturnValue(true);
+  it("rejects malformed arguments", async () => {
     const { McpExecutor } = await import("../../src/mcp/mcp.executor.js");
     const executor = new McpExecutor();
 
-    const result = await executor.execute("health__ping", { a: 1 }, "conv-2");
+    const result = await executor.execute("orders__detail", { nope: true }, {
+      userId: "u2",
+      role: "user",
+      conversationId: "conv-2",
+    });
 
-    expect(result.ok).toBe(true);
-    expect(result.output).toBeTruthy();
-    expect(createMock).toHaveBeenCalled();
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe("validation_error");
+  });
+
+  it("rejects hallucinated tool names", async () => {
+    const { McpExecutor } = await import("../../src/mcp/mcp.executor.js");
+    const executor = new McpExecutor();
+
+    const result = await executor.execute("imaginary__delete_cluster", {}, {
+      userId: "u3",
+      role: "admin",
+      conversationId: "conv-3",
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatch(/unknown_tool/i);
   });
 });

@@ -13,6 +13,11 @@ const schema = z.object({
   OPENAI_MODEL: z.string().default("gpt-4.1"),
   OPENAI_EMBEDDING_MODEL: z.string().default("text-embedding-3-small"),
   JWT_SECRET: z.string().min(16),
+  AI_MAX_CONTEXT_BYTES: z.coerce.number().default(32_000),
+  AI_TOKEN_BUDGET: z.coerce.number().default(12_000),
+  AI_MAX_TOOL_CALLS: z.coerce.number().default(6),
+  AI_MAX_RECURSION_DEPTH: z.coerce.number().default(6),
+  MCP_TRUSTED_SERVERS: z.string().default("catalog,orders,support,admin"),
 });
 
 export const env = schema.parse(process.env);

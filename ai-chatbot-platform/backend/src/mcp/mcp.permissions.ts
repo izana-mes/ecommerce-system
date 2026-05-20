@@ -1,11 +1,10 @@
-export class ToolPermissionService {
-  private allowlist = new Set<string>([
-    "filesystem__ping",
-    "github__ping",
-    "browser__ping",
-  ]);
+import { PermissionService } from "../ai/rbac/permission.service.js";
+import type { AgentExecutionContext } from "../ai/types/runtime.types.js";
 
-  canExecute(toolName: string): boolean {
-    return this.allowlist.has(toolName);
+export class ToolPermissionService {
+  private permissionService = new PermissionService();
+
+  canExecute(ctx: AgentExecutionContext, toolName: string, serverName: string, args: Record<string, unknown>): boolean {
+    return this.permissionService.canExecute(ctx, toolName, serverName, args).allowed;
   }
 }
