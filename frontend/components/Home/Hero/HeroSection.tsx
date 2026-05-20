@@ -30,8 +30,7 @@ export default function HeroSection() {
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: "smooth",
-    });
+      behavior: "smooth"});
   };
 
     return (

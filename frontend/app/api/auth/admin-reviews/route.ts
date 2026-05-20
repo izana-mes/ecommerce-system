@@ -3,26 +3,20 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_URL = backendApiBaseUrl();
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
 export async function GET(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const { searchParams } = new URL(request.url);
+        const { searchParams } = new URL(request.url);
     const page = searchParams.get("page") || "1";
     const size = searchParams.get("size") || "10";
     const q = (searchParams.get("q") || "").trim();
 
     const query = new URLSearchParams({
       page: String(Math.max(0, Number(page) - 1)),
-      size,
-    });
+      size});
     if (q) {
       query.set("q", q);
     }
@@ -30,11 +24,8 @@ export async function GET(request: Request) {
     const response = await fetch(`${API_URL}/v1/admin/reviews?${query.toString()}`, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-      cache: "no-store",
-    });
+        "Content-Type": "application/json"},
+      cache: "no-store"});
 
     const data = await response.json();
     if (!response.ok) {
@@ -52,8 +43,7 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const body = (await request.json()) as {
+        const body = (await request.json()) as {
       productID?: string;
       reviewID?: string;
       rating?: number;
@@ -69,14 +59,10 @@ export async function PUT(request: Request) {
       {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
-          ...(authHeader ? { Authorization: authHeader } : {}),
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           rating: body.rating,
-          comment: body.comment,
-        }),
-      }
+          comment: body.comment})}
     );
 
     const data = await response.json();
@@ -96,8 +82,7 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const body = (await request.json()) as {
+        const body = (await request.json()) as {
       productID?: string;
       reviewID?: string;
     };
@@ -111,10 +96,7 @@ export async function DELETE(request: Request) {
       {
         method: "DELETE",
         headers: {
-          "Content-Type": "application/json",
-          ...(authHeader ? { Authorization: authHeader } : {}),
-        },
-      }
+          "Content-Type": "application/json"}}
     );
 
     const data = await response.json();

@@ -42,8 +42,7 @@ export async function GET(request: NextRequest) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(params),   // includes vnp_SecureHash so backend can re-verify
-      signal: AbortSignal.timeout(15_000),
-    });
+      signal: AbortSignal.timeout(15_000)});
     if (!backendRes.ok) {
       const errText = await backendRes.text().catch(() => "");
       console.error(`VNPAY_RETURN: backend IPN returned ${backendRes.status}: ${errText}`);
@@ -58,6 +57,5 @@ export async function GET(request: NextRequest) {
     success: paid,
     clearCart: paid,
     orderNumber: txnRef,
-    message: paid ? "Payment successful" : "Payment failed",
-  });
+    message: paid ? "Payment successful" : "Payment failed"});
 }

@@ -3,10 +3,6 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_URL = backendApiBaseUrl();
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -16,8 +12,7 @@ export async function POST(
   context: { params: Promise<{ productId: string; reviewId: string }> }
 ) {
   try {
-    const authHeader = getAuthHeader(request);
-    const { productId, reviewId } = await context.params;
+        const { productId, reviewId } = await context.params;
     const body = await request.json();
 
     const response = await fetch(
@@ -25,11 +20,8 @@ export async function POST(
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          ...(authHeader ? { Authorization: authHeader } : {}),
-        },
-        body: JSON.stringify(body),
-      }
+          "Content-Type": "application/json"},
+        body: JSON.stringify(body)}
     );
 
     const data = await response.json();

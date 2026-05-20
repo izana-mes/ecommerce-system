@@ -77,8 +77,7 @@ export default function GlobalScrollReveal() {
         },
         {
           threshold: 0.12,
-          rootMargin: "0px 0px -10% 0px",
-        }
+          rootMargin: "0px 0px -10% 0px"}
       );
 
       observer = io;

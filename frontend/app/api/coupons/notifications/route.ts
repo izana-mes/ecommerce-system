@@ -97,10 +97,8 @@ export async function GET(request: Request) {
             maxDiscountAmount: row.max_discount_amount == null ? null : Number(row.max_discount_amount),
             startsAt: row.starts_at,
             expiresAt: row.expires_at,
-            isActive: Boolean(row.is_active),
-          },
-          status: row.used_at ? "used" : expired ? "expired" : row.acknowledged_at ? "ready" : "pending",
-        };
+            isActive: Boolean(row.is_active)},
+          status: row.used_at ? "used" : expired ? "expired" : row.acknowledged_at ? "ready" : "pending"};
       });
     });
 
@@ -120,10 +118,8 @@ export async function GET(request: Request) {
         ...(status === 503
           ? {
               hint:
-                "Coupon DB is not configured for this deployment. Set DATABASE_URL (Postgres) or MYSQL_URL / DB_HOST/DB_USER/DB_PASSWORD/DB_NAME in Vercel Environment Variables.",
-            }
-          : {}),
-      },
+                "Coupon DB is not configured for this deployment. Set DATABASE_URL (Postgres) or MYSQL_URL / DB_HOST/DB_USER/DB_PASSWORD/DB_NAME in Vercel Environment Variables."}
+          : {})},
       { status }
     );
   }
@@ -174,8 +170,7 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: result.alreadyAcknowledged ? "Coupon already confirmed" : "Coupon confirmed successfully",
-    });
+      message: result.alreadyAcknowledged ? "Coupon already confirmed" : "Coupon confirmed successfully"});
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     const status = message === "Coupon notification not found" ? 404 : 400;

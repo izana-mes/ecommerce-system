@@ -46,8 +46,7 @@ function createMessage(role: "user" | "assistant", text: string): Message {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     role,
-    text,
-  };
+    text};
 }
 
 const QUICK_PROMPTS = [
@@ -92,15 +91,10 @@ export default function CustomerChatbotPage() {
       const response = await fetch("/api/chatbot/customer/stream", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(guestId ? { "x-guest-id": guestId } : {}),
-        },
+          "Content-Type": "application/json",          ...(guestId ? { "x-guest-id": guestId } : {})},
         body: JSON.stringify({
           question: trimmed,
-          conversationId: conversationId || undefined,
-        }),
-      });
+          conversationId: conversationId || undefined})});
       if (!response.ok || !response.body) {
         const data = (await response.json().catch(() => ({}))) as CustomerChatResponse;
         setMessages((prev) => [...prev, createMessage("assistant", data.error || `Request failed (${response.status})`)]);

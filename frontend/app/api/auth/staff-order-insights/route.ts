@@ -3,21 +3,13 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_URL = backendApiBaseUrl();
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 export async function GET(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const response = await fetch(`${API_URL}/v1/staff/order-insights`, {
+        const response = await fetch(`${API_URL}/v1/staff/order-insights`, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-      cache: "no-store",
-    });
+        "Content-Type": "application/json"},
+      cache: "no-store"});
 
     const data = await response.json().catch(() => null);
     if (!response.ok) {

@@ -32,7 +32,7 @@ function LocationModal({ shipper, onClose }: { shipper: ShipperDto | null, onClo
     const fetchLocation = async () => {
       try {
         const res = await fetch(`/api/v1/staff/shippers/${shipper.id}/location`, {
-          headers: { Authorization: `Bearer ${getToken()}` }
+          headers: { }
         });
         if (res.status === 404) {
           setLocation(null);
@@ -113,8 +113,7 @@ export default function StaffShippersPage() {
     try {
       setLoading(true);
       const res = await fetch("/api/v1/staff/shippers", {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
+        headers: { }});
       if (!res.ok) throw new Error("Failed to load shippers");
       setShippers(await res.json());
     } catch (err: any) {

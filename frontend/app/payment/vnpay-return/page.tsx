@@ -127,8 +127,7 @@ function mapHistoryOrderToReturnedOrder(order: HistoryOrder): ReturnedOrder {
           productName: String(item.product_name ?? item.productName ?? "Unknown product"),
           unitPrice,
           quantity,
-          lineTotal: lineTotalRaw > 0 ? lineTotalRaw : unitPrice * quantity,
-        };
+          lineTotal: lineTotalRaw > 0 ? lineTotalRaw : unitPrice * quantity};
       })
     : [];
 
@@ -154,8 +153,7 @@ function mapHistoryOrderToReturnedOrder(order: HistoryOrder): ReturnedOrder {
     paymentMethod: String(order.payment_method ?? order.paymentMethod ?? ""),
     paymentStatus: String(order.payment_status ?? order.paymentStatus ?? ""),
     orderStatus: String(order.order_status ?? order.orderStatus ?? ""),
-    items: mappedItems,
-  };
+    items: mappedItems};
 }
 
 async function fetchOrderFromHistory(orderNumber: string, token: string | null): Promise<ReturnedOrder | null> {
@@ -166,9 +164,7 @@ async function fetchOrderFromHistory(orderNumber: string, token: string | null):
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: token } : {}),
-      },
-    });
+        ...(token ? { } : {})}});
     if (!response.ok) return null;
 
     const payload = await response.json().catch(() => null);
@@ -188,8 +184,7 @@ function VnpayReturnContent() {
     success: false,
     message: "Verifying payment...",
     orderNumber: "",
-    order: null,
-  });
+    order: null});
 
   const query = useMemo(() => searchParams.toString(), [searchParams]);
   const currentDate = new Date();
@@ -202,16 +197,14 @@ function VnpayReturnContent() {
           success: false,
           message: "Missing VNPAY return data.",
           orderNumber: "",
-          order: null,
-        });
+          order: null});
         return;
       }
 
       try {
         const response = await fetch(`/api/vnpay/return?${query}`, {
           method: "GET",
-          credentials: "include",
-        });
+          credentials: "include"});
         const data = await response.json();
 
         if (data?.success) {
@@ -222,10 +215,7 @@ function VnpayReturnContent() {
               method: "DELETE",
               credentials: "include",
               headers: {
-                "Content-Type": "application/json",
-                ...(authorizationHeader ? { Authorization: authorizationHeader } : {}),
-              },
-            }).catch(() => null);
+                "Content-Type": "application/json"}}).catch(() => null);
 
             dispatch(clearCart());
           }
@@ -275,16 +265,14 @@ function VnpayReturnContent() {
           success: !!data?.success,
           message: data?.message || "Unknown payment result",
           orderNumber: resolvedOrderNumber,
-          order: resolvedOrder,
-        });
+          order: resolvedOrder});
       } catch {
         setState({
           loading: false,
           success: false,
           message: "Could not verify payment result.",
           orderNumber: "",
-          order: null,
-        });
+          order: null});
       }
     };
 
@@ -296,8 +284,7 @@ function VnpayReturnContent() {
     try {
       return new Intl.NumberFormat("en-US", {
         style: "currency",
-        currency: upperCurrency,
-      }).format(Number(amount || 0));
+        currency: upperCurrency}).format(Number(amount || 0));
     } catch {
       return `${upperCurrency} ${Number(amount || 0).toFixed(2)}`;
     }

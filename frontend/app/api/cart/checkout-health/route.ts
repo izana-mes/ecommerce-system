@@ -3,10 +3,6 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_URL = backendApiBaseUrl();
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getCookieHeader(request: Request) {
   return request.headers.get("cookie");
 }
@@ -23,18 +19,13 @@ async function parseJsonOrText(response: Response) {
 
 export async function GET(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const cookieHeader = getCookieHeader(request);
+        const cookieHeader = getCookieHeader(request);
 
     const response = await fetch(`${API_URL}/cart/checkout-health`, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
-      cache: "no-store",
-    });
+        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})},
+      cache: "no-store"});
 
     const data = await parseJsonOrText(response);
     if (!response.ok) {
@@ -46,8 +37,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to validate checkout stock",
-        details,
-      },
+        details},
       { status: 500 }
     );
   }

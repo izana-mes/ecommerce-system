@@ -19,8 +19,7 @@ export default function ChatbotWidget() {
       id: 'welcome',
       role: 'assistant',
       content: '👋 Hi! I\'m your shopping assistant. I can help with product search, order status, returns, and more. How can I help you today?',
-      timestamp: new Date(),
-    },
+      timestamp: new Date()},
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -56,8 +55,7 @@ export default function ChatbotWidget() {
       id: `user-${Date.now()}`,
       role: 'user',
       content: text,
-      timestamp: new Date(),
-    };
+      timestamp: new Date()};
 
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
@@ -69,10 +67,8 @@ export default function ChatbotWidget() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           question: text,
-          conversationId: conversationId ?? undefined,
-        }),
-        credentials: 'include',
-      });
+          conversationId: conversationId ?? undefined}),
+        credentials: 'include'});
 
       const data = await res.json();
 
@@ -85,8 +81,7 @@ export default function ChatbotWidget() {
         id: `bot-${Date.now()}`,
         role: 'assistant',
         content: data.answer || data.error || 'Sorry, I couldn\'t understand that. Please try again.',
-        timestamp: new Date(),
-      };
+        timestamp: new Date()};
 
       setMessages((prev) => [...prev, botMessage]);
 
@@ -100,8 +95,7 @@ export default function ChatbotWidget() {
           id: `err-${Date.now()}`,
           role: 'assistant',
           content: 'Sorry, something went wrong. Please check your connection and try again.',
-          timestamp: new Date(),
-        },
+          timestamp: new Date()},
       ]);
     } finally {
       setIsLoading(false);

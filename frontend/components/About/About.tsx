@@ -82,13 +82,11 @@ const AboutPage: React.FC = () => {
           breakpoints={{
             640: { slidesPerView: 2, spaceBetween: 5 },
             768: { slidesPerView: 4, spaceBetween: 40 },
-            1024: { slidesPerView: 5, spaceBetween: 50 },
-          }}
+            1024: { slidesPerView: 5, spaceBetween: 50 }}}
           spaceBetween={10}
           autoplay={{
             delay: 2500,
-            disableOnInteraction: false,
-          }}
+            disableOnInteraction: false}}
           modules={[Autoplay]}
         >
           {[brand1, brand2, brand3, brand4, brand5, brand6, brand7].map(

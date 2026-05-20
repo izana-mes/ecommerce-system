@@ -3,10 +3,6 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_URL = backendApiBaseUrl();
 
-function getAuthHeader(request: Request): string | null {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getCookieHeader(request: Request): string | null {
   return request.headers.get("cookie");
 }
@@ -18,10 +14,9 @@ function toInt(input: string | null, fallback: number): number {
 }
 
 export async function GET(request: Request) {
-  const authHeader = getAuthHeader(request);
-  const cookieHeader = getCookieHeader(request);
+    const cookieHeader = getCookieHeader(request);
 
-  if (!authHeader && !cookieHeader) {
+  if (!cookieHeader) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -34,11 +29,7 @@ export async function GET(request: Request) {
     const historyResponse = await fetch(`${API_URL.replace(/\/+$/, "")}/orders/history?limit=${limit}`, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
-    });
+        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})}});
     const historyData = await historyResponse.json().catch(() => null);
 
     if (!historyResponse.ok) {
@@ -62,8 +53,7 @@ export async function GET(request: Request) {
         payment_status: String(order.payment_status ?? order.paymentStatus ?? ""),
         order_status: String(order.order_status ?? order.orderStatus ?? ""),
         created_at: String(order.created_at ?? order.createdAt ?? new Date().toISOString()),
-        items: Array.isArray(order.items) ? order.items : [],
-      })
+        items: Array.isArray(order.items) ? order.items : []})
     );
     const start = page * size;
     const content = allOrders.slice(start, start + size);
@@ -74,8 +64,7 @@ export async function GET(request: Request) {
       totalElements,
       totalPages: Math.max(1, Math.ceil(totalElements / size)),
       number: page,
-      size,
-    });
+      size});
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("Error fetching order history:", message);

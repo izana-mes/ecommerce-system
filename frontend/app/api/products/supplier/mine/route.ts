@@ -11,11 +11,8 @@ export async function GET(request: Request) {
     const response = await fetch(`${API_URL}/products/supplier/mine`, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-      cache: "no-store",
-    });
+        "Content-Type": "application/json"},
+      cache: "no-store"});
 
     const data = await response.json().catch(() => null);
 

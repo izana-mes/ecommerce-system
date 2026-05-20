@@ -52,8 +52,7 @@ const INITIAL_FORM: ProductFormState = {
   backImg: "",
   stockQuantity: "",
   sizes: "",
-  active: true,
-};
+  active: true};
 
 function normalizeFormState(source?: SellerCatalogProduct | null): ProductFormState {
   return {
@@ -67,8 +66,7 @@ function normalizeFormState(source?: SellerCatalogProduct | null): ProductFormSt
     stockQuantity:
       source?.stockQuantity === null || source?.stockQuantity === undefined ? "" : String(source.stockQuantity),
     sizes: Array.isArray(source?.sizes) ? source.sizes.join(", ") : "",
-    active: source?.active !== false,
-  };
+    active: source?.active !== false};
 }
 
 export default function SellerPage() {
@@ -113,10 +111,7 @@ export default function SellerPage() {
         method: "GET",
         cache: "no-store",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+          "Content-Type": "application/json"}});
       const payload = await response.json();
       if (!response.ok) {
         throw new Error(payload?.message || payload?.error || "Failed to fetch catalog");
@@ -206,9 +201,7 @@ export default function SellerPage() {
       const response = await fetch(endpoint, {
         method: method,
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           productID,
           productName: form.productName.trim(),
@@ -222,9 +215,7 @@ export default function SellerPage() {
             .split(",")
             .map((item) => item.trim())
             .filter(Boolean),
-          active: form.active,
-        }),
-      });
+          active: form.active})});
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(
@@ -264,10 +255,7 @@ export default function SellerPage() {
       const response = await fetch(`/api/v1/seller/products/${encodeURIComponent(productID)}`, {
         method: "DELETE",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+          "Content-Type": "application/json"}});
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(data?.message || data?.error || "Failed to delete product");
@@ -523,15 +511,13 @@ const panelStyle: CSSProperties = {
   background: "#fff",
   borderRadius: 20,
   padding: 28,
-  boxShadow: "0 18px 40px rgba(15, 23, 42, 0.08)",
-};
+  boxShadow: "0 18px 40px rgba(15, 23, 42, 0.08)"};
 
 const summaryGridStyle: CSSProperties = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
   gap: 14,
-  marginTop: 20,
-};
+  marginTop: 20};
 
 const summaryCardStyle: CSSProperties = {
   display: "grid",
@@ -539,32 +525,27 @@ const summaryCardStyle: CSSProperties = {
   padding: 18,
   borderRadius: 16,
   background: "#f8fafc",
-  border: "1px solid rgba(16, 24, 40, 0.08)",
-};
+  border: "1px solid rgba(16, 24, 40, 0.08)"};
 
 const summaryValueStyle: CSSProperties = {
   fontSize: 28,
-  color: "#111827",
-};
+  color: "#111827"};
 
 const summaryLabelStyle: CSSProperties = {
   color: "#667085",
-  fontSize: 14,
-};
+  fontSize: 14};
 
 const sectionHeaderStyle: CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
   gap: 16,
   alignItems: "flex-start",
-  flexWrap: "wrap",
-};
+  flexWrap: "wrap"};
 
 const sectionSubtleTextStyle: CSSProperties = {
   marginTop: 8,
   marginBottom: 0,
-  color: "#667085",
-};
+  color: "#667085"};
 
 const inputStyle: CSSProperties = {
   width: "100%",
@@ -572,32 +553,27 @@ const inputStyle: CSSProperties = {
   borderRadius: 12,
   padding: "12px 14px",
   background: "#fff",
-  color: "#101828",
-};
+  color: "#101828"};
 
 const selectStyle: CSSProperties = {
   border: "1px solid rgba(16, 24, 40, 0.12)",
   borderRadius: 12,
   padding: "10px 14px",
   background: "#fff",
-  color: "#101828",
-};
+  color: "#101828"};
 
 const uploadFieldStyle: CSSProperties = {
   display: "grid",
-  gap: 6,
-};
+  gap: 6};
 
 const uploadLabelStyle: CSSProperties = {
   fontSize: 14,
   fontWeight: 600,
-  color: "#344054",
-};
+  color: "#344054"};
 
 const uploadHintStyle: CSSProperties = {
   fontSize: 12,
-  color: "#667085",
-};
+  color: "#667085"};
 
 const previewCardStyle: CSSProperties = {
   display: "grid",
@@ -605,8 +581,7 @@ const previewCardStyle: CSSProperties = {
   padding: 14,
   border: "1px solid rgba(16, 24, 40, 0.08)",
   borderRadius: 16,
-  background: "#fcfcfd",
-};
+  background: "#fcfcfd"};
 
 const previewImageStyle: CSSProperties = {
   width: "100%",
@@ -614,8 +589,7 @@ const previewImageStyle: CSSProperties = {
   objectFit: "contain",
   borderRadius: 12,
   background: "#fff",
-  border: "1px solid rgba(16, 24, 40, 0.08)",
-};
+  border: "1px solid rgba(16, 24, 40, 0.08)"};
 
 const primaryButtonStyle: CSSProperties = {
   border: "none",
@@ -624,8 +598,7 @@ const primaryButtonStyle: CSSProperties = {
   background: "#101828",
   color: "#fff",
   fontWeight: 700,
-  cursor: "pointer",
-};
+  cursor: "pointer"};
 
 const secondaryButtonStyle: CSSProperties = {
   border: "1px solid rgba(16, 24, 40, 0.12)",
@@ -633,8 +606,7 @@ const secondaryButtonStyle: CSSProperties = {
   padding: "10px 16px",
   background: "#fff",
   color: "#101828",
-  cursor: "pointer",
-};
+  cursor: "pointer"};
 
 const dangerButtonStyle: CSSProperties = {
   border: "1px solid rgba(185, 28, 28, 0.18)",
@@ -642,8 +614,7 @@ const dangerButtonStyle: CSSProperties = {
   padding: "10px 16px",
   background: "#fff5f5",
   color: "#b42318",
-  cursor: "pointer",
-};
+  cursor: "pointer"};
 
 const tableActionButtonStyle: CSSProperties = {
   border: "1px solid rgba(16, 24, 40, 0.12)",
@@ -651,8 +622,7 @@ const tableActionButtonStyle: CSSProperties = {
   padding: "8px 12px",
   background: "#fff",
   color: "#101828",
-  cursor: "pointer",
-};
+  cursor: "pointer"};
 
 const cellHead: CSSProperties = {
   textAlign: "left",
@@ -661,23 +631,19 @@ const cellHead: CSSProperties = {
   color: "#475467",
   fontSize: 13,
   textTransform: "uppercase",
-  letterSpacing: "0.04em",
-};
+  letterSpacing: "0.04em"};
 
 const cellBody: CSSProperties = {
   padding: "14px 10px",
   borderBottom: "1px solid rgba(16, 24, 40, 0.08)",
   color: "#101828",
-  verticalAlign: "top",
-};
+  verticalAlign: "top"};
 
 const cellEmpty: CSSProperties = {
   padding: "20px 10px",
   textAlign: "center",
-  color: "#667085",
-};
+  color: "#667085"};
 
 const mutedTextStyle: CSSProperties = {
   color: "#667085",
-  fontSize: 13,
-};
+  fontSize: 13};

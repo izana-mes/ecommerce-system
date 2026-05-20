@@ -3,10 +3,6 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_BASE_URL = backendApiBaseUrl().replace(/\/+$/, "");
 
-function getAuthHeader(request: Request): string | null {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getCookieHeader(request: Request): string | null {
   return request.headers.get("cookie");
 }
@@ -31,19 +27,14 @@ export async function PUT(request: Request, context: RouteParams) {
   try {
     const { orderNumber } = await context.params;
     const body = await request.json().catch(() => ({}));
-    const authHeader = getAuthHeader(request);
-    const cookieHeader = getCookieHeader(request);
+        const cookieHeader = getCookieHeader(request);
 
     const response = await fetch(`${API_BASE_URL}/orders/${encodeURIComponent(orderNumber)}`, {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
+        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})},
       body: JSON.stringify(body),
-      cache: "no-store",
-    });
+      cache: "no-store"});
 
     const data = await parseJsonOrText(response);
     return NextResponse.json(data ?? { success: response.ok }, { status: response.status });

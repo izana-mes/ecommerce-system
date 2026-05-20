@@ -14,8 +14,7 @@ import { addToCartAsync, updateQuantityAsync } from "@/store/cartSlice";
 import {
   addToWishlistAsync,
   removeFromWishlistAsync,
-  wishListProduct,
-} from "@/store/wishListSlice";
+  wishListProduct} from "@/store/wishListSlice";
 import { getToken, getUser, isAuthenticated } from "@/lib/auth";
 import { DataStore } from "@/data/StoreData";
 import { useProducts } from "@/hooks/useProducts";
@@ -113,8 +112,7 @@ function getPriceChangeInfo(product: DataStore) {
     newPrice,
     delta,
     label: `${delta > 0 ? "+" : ""}${Math.round(delta)}%`,
-    className: delta > 0 ? "priceChangeBadgeUp" : "priceChangeBadgeDown",
-  };
+    className: delta > 0 ? "priceChangeBadgeUp" : "priceChangeBadgeDown"};
 }
 
 function resolveReviewInteractionActorKey(): string {
@@ -189,8 +187,7 @@ export default function Shop() {
     colors: [],
     sizes: [],
     brands: [],
-    priceRange: [0, 300],
-  });
+    priceRange: [0, 300]});
 
   const cartItems = useAppSelector((state: RootState) => state.cart.itemsById);
   const wishListItems = useAppSelector((state) => state.wishList.itemsById);
@@ -210,8 +207,7 @@ export default function Shop() {
       const nextMax = Math.min(maxPrice, prev.priceRange[1]);
       return {
         ...prev,
-        priceRange: nextMin <= nextMax ? [nextMin, nextMax] : [minPrice, maxPrice],
-      };
+        priceRange: nextMin <= nextMax ? [nextMin, nextMax] : [minPrice, maxPrice]};
     });
   }, [products]);
 
@@ -260,8 +256,7 @@ export default function Shop() {
     }
     setProductDescriptions((prev) => ({
       ...prev,
-      [selectedProduct.productID]: descriptionDraft.trim(),
-    }));
+      [selectedProduct.productID]: descriptionDraft.trim()}));
     toast.success("Product description saved");
   };
 
@@ -323,13 +318,10 @@ export default function Shop() {
         duration: 2000,
         style: {
           backgroundColor: "#ff4b4b",
-          color: "white",
-        },
+          color: "white"},
         iconTheme: {
           primary: "#fff",
-          secondary: "#ff4b4b",
-        },
-      });
+          secondary: "#ff4b4b"}});
       return;
     }
 
@@ -337,8 +329,7 @@ export default function Shop() {
       dispatch(
         updateQuantityAsync({
           productID: product.productID,
-          quantity: (productInCart.quantity ?? 0) + 1,
-        })
+          quantity: (productInCart.quantity ?? 0) + 1})
       )
         .unwrap()
         .then(() => {
@@ -346,13 +337,10 @@ export default function Shop() {
             duration: 2000,
             style: {
               backgroundColor: "#07bc0c",
-              color: "white",
-            },
+              color: "white"},
             iconTheme: {
               primary: "#fff",
-              secondary: "#07bc0c",
-            },
-          });
+              secondary: "#07bc0c"}});
         })
         .catch((err) => {
           toast.error(err?.toString?.() ?? "Failed to update cart");
@@ -366,8 +354,7 @@ export default function Shop() {
         productName: product.productName,
         productPrice: product.productPrice,
         productReviews: product.productReviews,
-        stockQuantity: availableStock,
-      })
+        stockQuantity: availableStock})
     )
       .unwrap()
       .then(() => {
@@ -375,13 +362,10 @@ export default function Shop() {
           duration: 2000,
           style: {
             backgroundColor: "#07bc0c",
-            color: "white",
-          },
+            color: "white"},
           iconTheme: {
             primary: "#fff",
-            secondary: "#07bc0c",
-          },
-        });
+            secondary: "#07bc0c"}});
       })
       .catch((err) => {
         toast.error(err?.toString?.() ?? "Failed to add to cart");
@@ -399,13 +383,10 @@ export default function Shop() {
             duration: 2000,
             style: {
               backgroundColor: "#fb0404",
-              color: "#fff",
-            },
+              color: "#fff"},
             iconTheme: {
               primary: "#fff",
-              secondary: "#fb0404",
-            },
-          });
+              secondary: "#fb0404"}});
         })
         .catch((error: unknown) => {
           const message = error instanceof Error ? error.message : String(error);
@@ -421,13 +402,10 @@ export default function Shop() {
           duration: 2000,
           style: {
             backgroundColor: "#07bc0c",
-            color: "#fff",
-          },
+            color: "#fff"},
           iconTheme: {
             primary: "#fff",
-            secondary: "#07bc0c",
-          },
-        });
+            secondary: "#07bc0c"}});
       })
       .catch((error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
@@ -461,8 +439,7 @@ export default function Shop() {
             productName: product.productName,
             productPrice: product.productPrice,
             productReviews: product.productReviews,
-            stockQuantity: availableStock,
-          })
+            stockQuantity: availableStock})
         ).unwrap();
       }
       closeProductModal();
@@ -486,15 +463,12 @@ export default function Shop() {
   const applyReviewSummary = (summary: ProductReviewSummary) => {
     setProductReviewsById((prev) => ({
       ...prev,
-      [summary.productID]: Array.isArray(summary.reviews) ? summary.reviews : [],
-    }));
+      [summary.productID]: Array.isArray(summary.reviews) ? summary.reviews : []}));
     setReviewStatsById((prev) => ({
       ...prev,
       [summary.productID]: {
         averageRating: Number(summary.averageRating ?? 0),
-        reviewCount: Number(summary.reviewCount ?? 0),
-      },
-    }));
+        reviewCount: Number(summary.reviewCount ?? 0)}}));
   };
 
   const loadProductReviews = async (productID: string) => {
@@ -504,10 +478,7 @@ export default function Shop() {
       const response = await fetch(`/api/products/${encodeURIComponent(productID)}/reviews?limit=10`, {
         method: "GET",
         credentials: "include",
-        headers: {
-          ...(authorizationHeader ? { Authorization: authorizationHeader } : {}),
-        },
-      });
+        headers: {        }});
       const data = await response.json().catch(() => null);
       if (!response.ok || !data) {
         throw new Error(data?.message || data?.error || "Failed to load reviews");
@@ -541,14 +512,10 @@ export default function Shop() {
         method: "POST",
         credentials: "include",
         headers: {
-          "Content-Type": "application/json",
-          ...(authorizationHeader ? { Authorization: authorizationHeader } : {}),
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           rating: safeRating,
-          comment: trimmedComment,
-        }),
-      });
+          comment: trimmedComment})});
 
       const data = await response.json().catch(() => null);
       if (!response.ok || !data) {
@@ -599,14 +566,10 @@ export default function Shop() {
           method: "PUT",
           credentials: "include",
           headers: {
-            "Content-Type": "application/json",
-            ...(authorizationHeader ? { Authorization: authorizationHeader } : {}),
-          },
+            "Content-Type": "application/json"},
           body: JSON.stringify({
             rating: safeRating,
-            comment: trimmedComment,
-          }),
-        }
+            comment: trimmedComment})}
       );
 
       const data = await response.json().catch(() => null);
@@ -636,10 +599,7 @@ export default function Shop() {
         {
           method: "DELETE",
           credentials: "include",
-          headers: {
-            ...(authorizationHeader ? { Authorization: authorizationHeader } : {}),
-          },
-        }
+          headers: {          }}
       );
 
       const data = await response.json().catch(() => null);
@@ -675,10 +635,7 @@ export default function Shop() {
         {
           method: "POST",
           credentials: "include",
-          headers: {
-            ...(authorizationHeader ? { Authorization: authorizationHeader } : {}),
-          },
-        }
+          headers: {          }}
       );
 
       const data = await response.json().catch(() => null);
@@ -719,10 +676,7 @@ export default function Shop() {
         {
           method: "POST",
           credentials: "include",
-          headers: {
-            ...(authorizationHeader ? { Authorization: authorizationHeader } : {}),
-          },
-        }
+          headers: {          }}
       );
 
       const data = await response.json().catch(() => null);
@@ -754,8 +708,7 @@ export default function Shop() {
     }
     setReplyDraftByReviewId((prev) => ({
       ...prev,
-      [reviewID]: value,
-    }));
+      [reviewID]: value}));
   };
 
   const submitReply = async (reviewID: string) => {
@@ -782,11 +735,8 @@ export default function Shop() {
           method: "POST",
           credentials: "include",
           headers: {
-            "Content-Type": "application/json",
-            ...(authorizationHeader ? { Authorization: authorizationHeader } : {}),
-          },
-          body: JSON.stringify({ content: replyText }),
-        }
+            "Content-Type": "application/json"},
+          body: JSON.stringify({ content: replyText })}
       );
 
       const data = await response.json().catch(() => null);
@@ -797,8 +747,7 @@ export default function Shop() {
       applyReviewSummary(data as ProductReviewSummary);
       setReplyDraftByReviewId((prev) => ({
         ...prev,
-        [reviewID]: "",
-      }));
+        [reviewID]: ""}));
       setActiveReplyReviewId(null);
       toast.success("Reply added");
     } catch (error: unknown) {
@@ -1083,15 +1032,13 @@ export default function Shop() {
                                 productID: product.productID,
                                 productName: product.productName,
                                 productPrice: product.productPrice,
-                                productReviews: product.productReviews,
-                              })
+                                productReviews: product.productReviews})
                             }
                             style={{
                               color: wishListItems[product.productID]
                                 ? "red"
                                 : "#767676",
-                              cursor: "pointer",
-                            }}
+                              cursor: "pointer"}}
                           />
                         </div>
 

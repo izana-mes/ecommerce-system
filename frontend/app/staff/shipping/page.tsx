@@ -71,8 +71,7 @@ function formatDateTime(value?: string | null): string {
     month: "short",
     day: "2-digit",
     hour: "2-digit",
-    minute: "2-digit",
-  }).format(ts);
+    minute: "2-digit"}).format(ts);
 }
 
 export default function StaffShippingPage() {
@@ -105,11 +104,8 @@ export default function StaffShippingPage() {
         const response = await fetch("/api/auth/me", {
           method: "GET",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          cache: "no-store",
-        });
+            "Content-Type": "application/json"},
+          cache: "no-store"});
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
           setAllowed(false);
@@ -133,11 +129,8 @@ export default function StaffShippingPage() {
       const response = await fetch("/api/auth/admin-orders?page=1&size=100", {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        cache: "no-store",
-      });
+          "Content-Type": "application/json"},
+        cache: "no-store"});
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
         throw new Error(payload?.error || payload?.message || "Could not load orders");
@@ -157,11 +150,8 @@ export default function StaffShippingPage() {
       const response = await fetch("/api/auth/shipper-incidents?status=OPEN", {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        cache: "no-store",
-      });
+          "Content-Type": "application/json"},
+        cache: "no-store"});
       const payload = await response.json().catch(() => null);
       if (!response.ok) throw new Error(payload?.error || payload?.message || "Could not load incidents");
       setIncidents(Array.isArray(payload) ? (payload as ShipperIncident[]) : []);
@@ -191,19 +181,15 @@ export default function StaffShippingPage() {
 
       const body: Record<string, unknown> = {
         orderId: order.id,
-        orderStatus: "shipped",
-      };
+        orderStatus: "shipped"};
       if (carrier) body.carrier = carrier;
       if (trackingNumber) body.trackingNumber = trackingNumber;
 
       const response = await fetch("/api/auth/admin-orders", {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify(body)});
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
         throw new Error(payload?.error || payload?.message || "Update failed");
@@ -229,16 +215,12 @@ export default function StaffShippingPage() {
       const response = await fetch("/api/auth/shipper-incidents", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           orderId: order.id,
           incidentType,
           severity,
-          details,
-        }),
-      });
+          details})});
       const payload = await response.json().catch(() => null);
       if (!response.ok) throw new Error(payload?.error || payload?.message || "Failed to submit incident");
 
@@ -432,8 +414,7 @@ export default function StaffShippingPage() {
                           onChange={(ev) =>
                             setIncidentTypeById((prev) => ({
                               ...prev,
-                              [o.id]: ev.target.value as ShipperIncident["incident_type"],
-                            }))
+                              [o.id]: ev.target.value as ShipperIncident["incident_type"]}))
                           }
                         >
                           <option value="DELIVERY_DELAY">Delivery delay</option>
@@ -447,8 +428,7 @@ export default function StaffShippingPage() {
                           onChange={(ev) =>
                             setIncidentSeverityById((prev) => ({
                               ...prev,
-                              [o.id]: ev.target.value as ShipperIncident["severity"],
-                            }))
+                              [o.id]: ev.target.value as ShipperIncident["severity"]}))
                           }
                         >
                           <option value="LOW">Low</option>

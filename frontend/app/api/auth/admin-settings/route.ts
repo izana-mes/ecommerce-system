@@ -33,8 +33,7 @@ export async function GET() {
     return NextResponse.json({
       settings: [],
       unavailable: true,
-      details: message,
-    });
+      details: message});
   } finally {
     await conn?.end();
   }

@@ -53,8 +53,7 @@ export async function GET(request: Request) {
       totalElements,
       totalPages,
       number: page,
-      size,
-    });
+      size});
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("Error fetching admin notes:", message);
@@ -66,8 +65,7 @@ export async function GET(request: Request) {
       number: 0,
       size: 20,
       unavailable: true,
-      details: message,
-    });
+      details: message});
   } finally {
     await conn?.end();
   }
@@ -96,8 +94,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       message: "Note created",
-      id: (result as any).insertId ?? (result as any)?.[0]?.id,
-    });
+      id: (result as any).insertId ?? (result as any)?.[0]?.id});
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("Error creating admin note:", message);

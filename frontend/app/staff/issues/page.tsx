@@ -50,11 +50,8 @@ function RespondIssueModal({ issue, onClose, onResponded }: RespondModalProps) {
       const res = await fetch(url, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getToken()}`,
-        },
-        body: JSON.stringify({ response, markResolved }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ response, markResolved })});
 
       if (!res.ok) throw new Error("Failed to submit response");
       toast.success("Successfully responded to issue");
@@ -122,8 +119,7 @@ export default function StaffIssuesPage() {
       setLoading(true);
       const url = statusFilter ? `/api/v1/staff/issues?status=${statusFilter}` : `/api/v1/staff/issues`;
       const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
+        headers: { }});
       if (!res.ok) throw new Error("Failed to load issues");
       setIssues(await res.json());
     } catch (err: any) {

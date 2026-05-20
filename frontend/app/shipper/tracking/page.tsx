@@ -37,8 +37,7 @@ export default function ShipperTrackingPage() {
     lng: "",
     speed: "",
     heading: "",
-    accuracy: "",
-  });
+    accuracy: ""});
   const [sending, setSending] = useState(false);
   const [latestLocation, setLatestLocation] = useState<LocationPayload | null>(null);
   const [log, setLog] = useState<LogEntry[]>([]);
@@ -54,8 +53,7 @@ export default function ShipperTrackingPage() {
         lat: payload.lat,
         lng: payload.lng,
         orderId: payload.orderId,
-        source: "WS",
-      },
+        source: "WS"},
       ...prev.slice(0, 49),
     ]);
   };
@@ -68,7 +66,7 @@ export default function ShipperTrackingPage() {
 
     const client = new Client({
       webSocketFactory: () => new SockJS(`${publicBackendOriginUrl()}/ws`) as WebSocket,
-      connectHeaders: { Authorization: `Bearer ${token}` },
+      connectHeaders: { },
       reconnectDelay: 5000,
       onConnect: () => {
         setWsConnected(true);
@@ -81,8 +79,7 @@ export default function ShipperTrackingPage() {
         });
       },
       onDisconnect: () => setWsConnected(false),
-      onStompError: () => setWsConnected(false),
-    });
+      onStompError: () => setWsConnected(false)});
 
     client.activate();
     stompRef.current = client;
@@ -95,8 +92,7 @@ export default function ShipperTrackingPage() {
     setFetchingLatest(true);
     try {
       const res = await fetch(`/api/v1/shipper/shippers/${shipperUserId}/location/latest`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        headers: { }});
       const data = await res.json();
       if (res.ok && data?.data) setLatestLocation(data.data);
     } catch {/* silent */} finally {
@@ -118,8 +114,7 @@ export default function ShipperTrackingPage() {
       const body: Record<string, unknown> = {
         lat: parseFloat(form.lat),
         lng: parseFloat(form.lng),
-        timestampEpochMs: Date.now(),
-      };
+        timestampEpochMs: Date.now()};
       if (form.orderId) body.orderId = parseInt(form.orderId);
       if (form.speed) body.speed = parseFloat(form.speed);
       if (form.heading) body.heading = parseFloat(form.heading);
@@ -127,9 +122,8 @@ export default function ShipperTrackingPage() {
 
       const res = await fetch("/api/v1/shipper/location", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(body),
-      });
+        headers: { "Content-Type": "application/json"},
+        body: JSON.stringify(body)});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed to update location");
       toast.success("📍 Location updated");
@@ -154,8 +148,7 @@ export default function ShipperTrackingPage() {
           lng: pos.coords.longitude.toFixed(7),
           accuracy: pos.coords.accuracy?.toFixed(1) ?? "",
           speed: pos.coords.speed ? pos.coords.speed.toFixed(1) : "",
-          heading: pos.coords.heading ? pos.coords.heading.toFixed(1) : "",
-        }));
+          heading: pos.coords.heading ? pos.coords.heading.toFixed(1) : ""}));
         toast.success("GPS coordinates loaded");
       },
       () => toast.error("Could not get GPS location")
@@ -291,8 +284,7 @@ export default function ShipperTrackingPage() {
                     { label: "Order ID", value: latestLocation.orderId ?? "—" },
                     {
                       label: "Recorded At",
-                      value: new Date(latestLocation.recordedAt).toLocaleString(),
-                    },
+                      value: new Date(latestLocation.recordedAt).toLocaleString()},
                   ].map((row) => (
                     <div
                       key={row.label}

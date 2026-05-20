@@ -77,8 +77,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
               textDecoration: "none",
               fontWeight: 500,
               fontSize: 14,
-              transition: "all 0.2s",
-            };
+              transition: "all 0.2s"};
             return (
               <Link key={item.path} href={item.path} style={style}>
                 {item.name}

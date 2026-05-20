@@ -3,14 +3,12 @@
 import { RootState, useAppDispatch, useAppSelector } from "@/store/index";
 import {
   addToCartAsync,
-  updateQuantityAsync,
-} from "@/store/cartSlice";
+  updateQuantityAsync} from "@/store/cartSlice";
 import toast from "react-hot-toast";
 import {
   removeFromWishlistAsync,
   addToWishlistAsync,
-  wishListProduct,
-} from "@/store/wishListSlice";
+  wishListProduct} from "@/store/wishListSlice";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { DataStore } from "@/data/StoreData";
@@ -41,8 +39,7 @@ function getPriceChangeInfo(product: DataStore) {
     oldPrice,
     newPrice,
     label: `${delta > 0 ? "+" : ""}${Math.round(delta)}%`,
-    className: delta > 0 ? "priceChangeBadgeUp" : "priceChangeBadgeDown",
-  };
+    className: delta > 0 ? "priceChangeBadgeUp" : "priceChangeBadgeDown"};
 }
 
 export default function Trendy() {
@@ -72,16 +69,14 @@ export default function Trendy() {
     if (availableStock <= 0) {
       toast.error("This product is out of stock", {
         duration: 2000,
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
       return;
     }
 
     if (itemInCart && (itemInCart.quantity ?? 0) >= limit) {
       toast.error("Product reached limit", {
         duration: 2000,
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
       return;
     }
 
@@ -90,15 +85,13 @@ export default function Trendy() {
       dispatch(
         updateQuantityAsync({
           productID: product.productID,
-          quantity: (itemInCart.quantity ?? 0) + quantityToAdd,
-        })
+          quantity: (itemInCart.quantity ?? 0) + quantityToAdd})
       )
         .unwrap()
         .then(() =>
           toast.success("Updated quantity", {
             duration: 2000,
-            style: { backgroundColor: "#07bc0c", color: "#fff" },
-          })
+            style: { backgroundColor: "#07bc0c", color: "#fff" }})
         )
         .catch((err) => toast.error(err.toString()));
     } else {
@@ -108,15 +101,13 @@ export default function Trendy() {
           productName: product.productName,
           productPrice: product.productPrice,
           productReviews: product.productReviews,
-          stockQuantity: availableStock,
-        })
+          stockQuantity: availableStock})
       )
         .unwrap()
         .then(() =>
           toast.success("Added to cart", {
             duration: 2000,
-            style: { backgroundColor: "#07bc0c", color: "#fff" },
-          })
+            style: { backgroundColor: "#07bc0c", color: "#fff" }})
         )
         .catch((err) => toast.error(err.toString()));
     }
@@ -139,13 +130,10 @@ export default function Trendy() {
             duration: 2000,
             style: {
               backgroundColor: "#fb0404",
-              color: "#fff",
-            },
+              color: "#fff"},
             iconTheme: {
               primary: "#fff",
-              secondary: "#fb0404",
-            },
-          });
+              secondary: "#fb0404"}});
         })
         .catch((error: unknown) => {
           const errorMessage =
@@ -154,9 +142,7 @@ export default function Trendy() {
             duration: 2000,
             style: {
               backgroundColor: "#fb0404",
-              color: "#fff",
-            },
-          });
+              color: "#fff"}});
         });
     } else {
       dispatch(addToWishlistAsync({ ...product }))
@@ -166,13 +152,10 @@ export default function Trendy() {
             duration: 2000,
             style: {
               backgroundColor: "#07bc0c",
-              color: "#fff",
-            },
+              color: "#fff"},
             iconTheme: {
               primary: "#fff",
-              secondary: "#07bc0c",
-            },
-          });
+              secondary: "#07bc0c"}});
         })
         .catch((error: unknown) => {
           const errorMessage =
@@ -181,9 +164,7 @@ export default function Trendy() {
             duration: 2000,
             style: {
               backgroundColor: "#fb0404",
-              color: "#fff",
-            },
-          });
+              color: "#fff"}});
         });
     }
   };
@@ -236,8 +217,7 @@ export default function Trendy() {
             productName: product.productName,
             productPrice: product.productPrice,
             productReviews: product.productReviews,
-            stockQuantity: availableStock,
-          })
+            stockQuantity: availableStock})
         ).unwrap();
       }
       closeProductModal();
@@ -274,8 +254,7 @@ export default function Trendy() {
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: "smooth",
-    });
+      behavior: "smooth"});
   };
 
   return (
@@ -375,8 +354,7 @@ export default function Trendy() {
                             color: wishListItem[product.productID]
                               ? "red"
                               : "black",
-                            cursor: "pointer",
-                          }}
+                            cursor: "pointer"}}
                         />
                       </div>
 
@@ -470,8 +448,7 @@ export default function Trendy() {
                               color: wishListItem[product.productID]
                                 ? "red"
                                 : "black",
-                              cursor: "pointer",
-                            }}
+                              cursor: "pointer"}}
                           />
                         </div>
 
@@ -565,8 +542,7 @@ export default function Trendy() {
                               color: wishListItem[product.productID]
                                 ? "red"
                                 : "black",
-                              cursor: "pointer",
-                            }}
+                              cursor: "pointer"}}
                           />
                         </div>
 
@@ -660,8 +636,7 @@ export default function Trendy() {
                               color: wishListItem[product.productID]
                                 ? "red"
                                 : "black",
-                              cursor: "pointer",
-                            }}
+                              cursor: "pointer"}}
                           />
                         </div>
 

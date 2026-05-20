@@ -38,8 +38,7 @@ export default function DealTimer() {
     days: "00",
     hours: "00",
     minutes: "00",
-    seconds: "00",
-  });
+    seconds: "00"});
 
   const [isLoad, setIsLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,8 +65,7 @@ export default function DealTimer() {
         days: "00",
         hours: "00",
         minutes: "00",
-        seconds: "00",
-      };
+        seconds: "00"};
     }
 
     const days = Math.floor(diff / (1000 * 60 * 60 * 24))
@@ -152,8 +150,7 @@ export default function DealTimer() {
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: "smooth",
-    });
+      behavior: "smooth"});
   };
 
   if (isLoad) {

@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Terms & Privacy | Uomo",
-  description: "Read Uomo's terms, privacy practices, and support information.",
-};
+  description: "Read Uomo's terms, privacy practices, and support information."};
 
 export default function TermsPage() {
   return (

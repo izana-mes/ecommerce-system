@@ -13,8 +13,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      data: coupon,
-    });
+      data: coupon});
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     const status =

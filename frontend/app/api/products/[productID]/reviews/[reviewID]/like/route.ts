@@ -3,10 +3,6 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_BASE_URL = backendApiBaseUrl().replace(/\/+$/, "");
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getCookieHeader(request: Request) {
   return request.headers.get("cookie");
 }
@@ -27,18 +23,13 @@ export async function POST(
 ) {
   try {
     const { productID, reviewID } = await context.params;
-    const authHeader = getAuthHeader(request);
-    const cookieHeader = getCookieHeader(request);
+        const cookieHeader = getCookieHeader(request);
 
     const response = await fetch(`${API_BASE_URL}/products/${encodeURIComponent(productID)}/reviews/${encodeURIComponent(reviewID)}/like`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
-      cache: "no-store",
-    });
+        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})},
+      cache: "no-store"});
 
     const data = await parseJsonOrText(response);
     if (!response.ok) {
@@ -51,8 +42,7 @@ export async function POST(
     return NextResponse.json(
       {
         error: "Failed to toggle review like",
-        details,
-      },
+        details},
       { status: 500 }
     );
   }

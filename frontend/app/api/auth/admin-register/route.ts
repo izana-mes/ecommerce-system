@@ -10,10 +10,8 @@ export async function POST(request: Request) {
     const response = await fetch(`${API_URL}/v1/auth/register`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+        "Content-Type": "application/json"},
+      body: JSON.stringify(body)});
 
     const data = await response.json();
 
@@ -27,8 +25,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to create admin",
-        details: error?.message || String(error),
-      },
+        details: error?.message || String(error)},
       { status: 500 }
     );
   }
@@ -45,8 +42,7 @@ export async function GET() {
     return NextResponse.json(
       {
         error: "Failed to fetch admins",
-        details: error?.message || String(error),
-      },
+        details: error?.message || String(error)},
       { status: 500 }
     );
   }

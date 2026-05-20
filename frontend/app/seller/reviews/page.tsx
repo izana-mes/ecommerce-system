@@ -39,8 +39,7 @@ export default function SellerReviewsPage() {
     if (!token) return;
     try {
       const res = await fetch("/api/v1/seller/inventory", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        headers: { }});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed to load products");
       const items: ProductSummary[] = data.data || [];
@@ -62,8 +61,7 @@ export default function SellerReviewsPage() {
     setSummary(null);
     try {
       const res = await fetch(`/api/v1/seller/reviews/${productId}?limit=50`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        headers: { }});
       if (res.ok) {
         const data = await res.json();
         setSummary(data);
@@ -93,9 +91,8 @@ export default function SellerReviewsPage() {
         `/api/v1/seller/reviews/${selectedProductId}/${reviewId}/reply`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ content: replyContent }),
-        }
+          headers: { "Content-Type": "application/json"},
+          body: JSON.stringify({ content: replyContent })}
       );
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

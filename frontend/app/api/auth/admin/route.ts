@@ -7,17 +7,10 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function getAuthHeader(request: Request) {
-  return (
-    request.headers.get("authorization") || request.headers.get("Authorization")
-  );
-}
-
 // GET - Get all users (admin only)
 export async function GET(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const { searchParams } = new URL(request.url);
+        const { searchParams } = new URL(request.url);
     const page = searchParams.get("page");
     const size = searchParams.get("size");
     const query = new URLSearchParams();
@@ -31,10 +24,7 @@ export async function GET(request: Request) {
     const response = await fetch(usersUrl, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-    });
+        "Content-Type": "application/json"}});
 
     const data = await response.json();
 
@@ -49,8 +39,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to fetch users",
-        details: message,
-      },
+        details: message},
       { status: 500 }
     );
   }
@@ -60,8 +49,7 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const authHeader = getAuthHeader(request);
-    const { userId, active } = body as { userId?: string; active?: boolean };
+        const { userId, active } = body as { userId?: string; active?: boolean };
 
     if (!userId || typeof active !== "boolean") {
       return NextResponse.json(
@@ -77,10 +65,7 @@ export async function PATCH(request: Request) {
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-    });
+        "Content-Type": "application/json"}});
 
     const data = await response.json();
 
@@ -95,8 +80,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to update user status",
-        details: message,
-      },
+        details: message},
       { status: 500 }
     );
   }
@@ -106,18 +90,14 @@ export async function PATCH(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const authHeader = getAuthHeader(request);
-
+    
     // Call the Spring backend register endpoint
     const response = await fetch(`${API_URL}/v1/auth/register`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
+        "Content-Type": "application/json"},
       // Admin creation can use the same register mechanics for now depending on role implementation
-      body: JSON.stringify(body),
-    });
+      body: JSON.stringify(body)});
 
     const data = await response.json();
 
@@ -132,8 +112,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to create admin user",
-        details: message,
-      },
+        details: message},
       { status: 500 }
     );
   }
@@ -144,8 +123,7 @@ export async function PUT(request: Request) {
   try {
     const body = await request.json();
     const { userId, role } = body;
-    const authHeader = getAuthHeader(request);
-
+    
     if (!userId || !role) {
       return NextResponse.json(
         { error: "Missing required fields: userId, role" },
@@ -157,11 +135,8 @@ export async function PUT(request: Request) {
     const response = await fetch(`${API_URL}/v1/users/${userId}/role`, {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-      body: JSON.stringify({ role }),
-    });
+        "Content-Type": "application/json"},
+      body: JSON.stringify({ role })});
 
     const data = await response.json();
 
@@ -176,8 +151,7 @@ export async function PUT(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to update user role",
-        details: message,
-      },
+        details: message},
       { status: 500 }
     );
   }
@@ -188,8 +162,7 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
-    const authHeader = getAuthHeader(request);
-
+    
     if (!userId) {
       return NextResponse.json(
         { error: "Missing required parameter: userId" },
@@ -201,10 +174,7 @@ export async function DELETE(request: Request) {
     const response = await fetch(`${API_URL}/v1/users/${userId}`, {
       method: "DELETE",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-    });
+        "Content-Type": "application/json"}});
 
     if (!response.ok) {
       try {
@@ -222,8 +192,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to delete user",
-        details: message,
-      },
+        details: message},
       { status: 500 }
     );
   }

@@ -71,8 +71,7 @@ function CouponRedeemContent() {
       const response = await fetch("/api/coupons/notifications", {
         cache: "no-store",
         credentials: "include",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
+        headers: token ? { } : undefined});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.error || "Failed to load coupon details");
@@ -111,11 +110,8 @@ function CouponRedeemContent() {
         method: "PATCH",
         credentials: "include",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ assignmentId: matchedCoupon.id }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ assignmentId: matchedCoupon.id })});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.details || data?.error || "Failed to confirm coupon");

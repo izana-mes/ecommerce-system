@@ -55,13 +55,10 @@ export function createRateLimitResponse(message: string, retryAfterSeconds: numb
   return NextResponse.json(
     {
       error: message,
-      retryAfterSeconds,
-    },
+      retryAfterSeconds},
     {
       status: 429,
       headers: {
-        "Retry-After": String(retryAfterSeconds),
-      },
-    }
+        "Retry-After": String(retryAfterSeconds)}}
   );
 }

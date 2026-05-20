@@ -3,18 +3,13 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_URL = backendApiBaseUrl();
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
 export async function GET(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const { searchParams } = new URL(request.url);
+        const { searchParams } = new URL(request.url);
 
     const days = searchParams.get("days") || "7";
     const recentLimit = searchParams.get("recentLimit") || "8";
@@ -26,11 +21,8 @@ export async function GET(request: Request) {
     const response = await fetch(endpoint, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-      cache: "no-store",
-    });
+        "Content-Type": "application/json"},
+      cache: "no-store"});
 
     const data = await response.json();
 
@@ -44,8 +36,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to fetch admin dashboard",
-        details: message,
-      },
+        details: message},
       { status: 500 }
     );
   }

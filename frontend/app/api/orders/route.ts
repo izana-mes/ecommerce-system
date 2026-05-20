@@ -14,10 +14,6 @@ type OrderRequestBody = Record<string, unknown> & {
   couponCode?: string | null;
 };
 
-function getAuthHeader(request: NextRequest): string | null {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getCookieHeader(request: NextRequest): string | null {
   return request.headers.get("cookie");
 }
@@ -58,21 +54,15 @@ export async function POST(request: NextRequest) {
       ...body,
       couponCode: validatedCoupon?.code ?? null,
       couponAssignmentId: validatedCoupon?.assignmentId ?? null,
-      couponDiscount: validatedCoupon?.discountAmount ?? 0,
-    };
+      couponDiscount: validatedCoupon?.discountAmount ?? 0};
 
-    const authHeader = getAuthHeader(request);
-    const cookieHeader = getCookieHeader(request);
+        const cookieHeader = getCookieHeader(request);
 
     const backendResponse = await fetch(`${API_URL}/orders`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
-      body: JSON.stringify(sanitizedBody),
-    });
+        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})},
+      body: JSON.stringify(sanitizedBody)});
 
     const rawText = await backendResponse.text();
     let data: unknown = null;
@@ -90,8 +80,7 @@ export async function POST(request: NextRequest) {
           ? data
           : {
               error: `Backend /orders failed with status ${backendResponse.status}`,
-              details: rawText || backendResponse.statusText || "Unknown backend error",
-            };
+              details: rawText || backendResponse.statusText || "Unknown backend error"};
       return NextResponse.json(payload, { status: backendResponse.status });
     }
 

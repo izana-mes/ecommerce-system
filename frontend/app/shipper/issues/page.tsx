@@ -32,15 +32,13 @@ interface HelpRequest {
 const ISSUE_TYPE_LABELS: Record<IssueType, string> = {
   CUSTOMER_NOT_AVAILABLE: "Customer Not Available",
   WRONG_ADDRESS: "Wrong Address",
-  DAMAGED_GOODS: "Damaged Goods",
-};
+  DAMAGED_GOODS: "Damaged Goods"};
 
 const PRIORITY_COLORS: Record<Priority, string> = {
   LOW: "sh-badge-gray",
   NORMAL: "sh-badge-blue",
   HIGH: "sh-badge-amber",
-  URGENT: "sh-badge-red",
-};
+  URGENT: "sh-badge-red"};
 
 export default function ShipperIssuesPage() {
   const user = getUser();
@@ -73,7 +71,7 @@ export default function ShipperIssuesPage() {
 
     const client = new Client({
       webSocketFactory: () => new SockJS(`${publicBackendOriginUrl()}/ws`) as WebSocket,
-      connectHeaders: { Authorization: `Bearer ${token}` },
+      connectHeaders: { },
       reconnectDelay: 5000,
       onConnect: () => {
         setWsConnected(true);
@@ -85,8 +83,7 @@ export default function ShipperIssuesPage() {
           } catch {/* ignore */}
         });
       },
-      onDisconnect: () => setWsConnected(false),
-    });
+      onDisconnect: () => setWsConnected(false)});
 
     client.activate();
     stompRef.current = client;
@@ -101,9 +98,8 @@ export default function ShipperIssuesPage() {
     try {
       const res = await fetch(`/api/v1/shipper/orders/${issueOrderId}/issues`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ issueType, message: issueMessage }),
-      });
+        headers: { "Content-Type": "application/json"},
+        body: JSON.stringify({ issueType, message: issueMessage })});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed");
       toast.success("⚠️ Issue reported successfully");
@@ -125,9 +121,8 @@ export default function ShipperIssuesPage() {
     try {
       const res = await fetch(`/api/v1/shipper/orders/${helpOrderId}/help-request`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ message: helpMessage, priority: helpPriority }),
-      });
+        headers: { "Content-Type": "application/json"},
+        body: JSON.stringify({ message: helpMessage, priority: helpPriority })});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed");
       toast.success("🆘 Help request sent to admin");
@@ -145,8 +140,7 @@ export default function ShipperIssuesPage() {
     setFetchingIssues(true);
     try {
       const res = await fetch(`/api/v1/shipper/orders/${orderId}/issues`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        headers: { }});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed");
       setIssues(Array.isArray(data.data) ? data.data : []);
@@ -167,8 +161,7 @@ export default function ShipperIssuesPage() {
     background: activeTab === tab ? "rgba(59,130,246,0.15)" : "transparent",
     color: activeTab === tab ? "#60a5fa" : "#64748b",
     borderBottom: activeTab === tab ? "2px solid #3b82f6" : "2px solid transparent",
-    transition: "all 0.2s",
-  });
+    transition: "all 0.2s"});
 
   return (
     <>
@@ -183,8 +176,7 @@ export default function ShipperIssuesPage() {
               style={{
                 width: 8, height: 8, borderRadius: "50%",
                 background: wsConnected ? "#10b981" : "#ef4444",
-                display: "inline-block",
-              }}
+                display: "inline-block"}}
             />
             <span style={{ fontSize: 13, color: wsConnected ? "#34d399" : "#f87171" }}>
               {wsConnected ? "Live" : "Offline"}

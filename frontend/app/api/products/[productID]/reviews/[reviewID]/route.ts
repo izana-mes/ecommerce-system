@@ -3,10 +3,6 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_BASE_URL = backendApiBaseUrl().replace(/\/+$/, "");
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getCookieHeader(request: Request) {
   return request.headers.get("cookie");
 }
@@ -28,18 +24,13 @@ async function proxyReviewMutation(
 ) {
   try {
     const { productID, reviewID } = await context.params;
-    const authHeader = getAuthHeader(request);
-    const cookieHeader = getCookieHeader(request);
+        const cookieHeader = getCookieHeader(request);
 
     const requestInit: RequestInit = {
       method,
-      headers: {
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-        ...(method === "PUT" ? { "Content-Type": "application/json" } : {}),
-      },
-      cache: "no-store",
-    };
+      headers: {        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+        ...(method === "PUT" ? { "Content-Type": "application/json" } : {})},
+      cache: "no-store"};
 
     if (method === "PUT") {
       const body = await request.json();
@@ -62,8 +53,7 @@ async function proxyReviewMutation(
     return NextResponse.json(
       {
         error: method === "PUT" ? "Failed to update product review" : "Failed to delete product review",
-        details,
-      },
+        details},
       { status: 500 }
     );
   }

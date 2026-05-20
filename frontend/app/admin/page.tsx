@@ -430,44 +430,37 @@ const HOME_BANNER_SETTINGS = [
     key: "banner_left_url",
     label: "Main Banner Left",
     defaultValue: "/Banner/banner_1.jpg",
-    description: "URL for the left hero banner panel on the home page.",
-  },
+    description: "URL for the left hero banner panel on the home page."},
   {
     key: "banner_right_url",
     label: "Main Banner Right",
     defaultValue: "/Banner/banner_2.jpg",
-    description: "URL for the right hero banner panel on the home page.",
-  },
+    description: "URL for the right hero banner panel on the home page."},
   {
     key: "collection_left_url",
     label: "Collection Left",
     defaultValue: "/Collection/collection1.jpg",
-    description: "URL for the left image in the collection section.",
-  },
+    description: "URL for the left image in the collection section."},
   {
     key: "collection_top_url",
     label: "Collection Top Right",
     defaultValue: "/Collection/collection2.jpg",
-    description: "URL for the top-right image in the collection section.",
-  },
+    description: "URL for the top-right image in the collection section."},
   {
     key: "collection_bottom_left_url",
     label: "Collection Bottom Left",
     defaultValue: "/Collection/collection3.jpg",
-    description: "URL for the bottom-left image in the collection section.",
-  },
+    description: "URL for the bottom-left image in the collection section."},
   {
     key: "deal_background_url",
     label: "Deal Background",
     defaultValue: "/Deal/dealbg.jpg",
-    description: "URL for the Deal of the Week section background image.",
-  },
+    description: "URL for the Deal of the Week section background image."},
   {
     key: "hero_background_url",
     label: "3D Hero Background",
     defaultValue: "/slideshow-pattern.png",
-    description: "URL for the 3D hero section background image.",
-  },
+    description: "URL for the 3D hero section background image."},
 ] as const;
 const HOME_BANNER_SETTING_KEY_SET = new Set<string>(HOME_BANNER_SETTINGS.map((item) => item.key));
 const CLOTHING_SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL"] as const;
@@ -482,8 +475,7 @@ const INITIAL_PRODUCT_FORM: Product = {
   category: "",
   sizes: ["S", "M", "L"],
   stockQuantity: 25,
-  active: true,
-};
+  active: true};
 
 const INITIAL_DASHBOARD: DashboardSummary = {
   totalUsers: 0,
@@ -507,12 +499,10 @@ const INITIAL_DASHBOARD: DashboardSummary = {
     highRatingCount: 0,
     distribution: [],
     topReviewedProducts: [],
-    lowestRatedProducts: [],
-  },
+    lowestRatedProducts: []},
   revenueByDay: [],
   ordersByStatus: [],
-  recentOrders: [],
-};
+  recentOrders: []};
 
 const INITIAL_ATTENDANCE: AdminAttendanceSnapshot = {
   timezone: "UTC",
@@ -522,25 +512,21 @@ const INITIAL_ATTENDANCE: AdminAttendanceSnapshot = {
     longBreakMinutes: 30,
     breakReminderIntervalMinutes: 30,
     minDailyWorkMinutes: 480,
-    lowHoursReminderAfterLocalHour: 16,
-  },
+    lowHoursReminderAfterLocalHour: 16},
   summary: {
     employeesTracked: 0,
     activeEmployees: 0,
     employeesOnBreak: 0,
     todayWorkedMinutes: 0,
-    weekWorkedMinutes: 0,
-  },
+    weekWorkedMinutes: 0},
   performanceSummary: {
     totalReviews: 0,
     openReviews: 0,
     warningCount: 0,
-    reprimandCount: 0,
-  },
+    reprimandCount: 0},
   activeShifts: [],
   records: [],
-  performanceReviews: [],
-};
+  performanceReviews: []};
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -597,8 +583,7 @@ function formatCurrency(value: number, currency = "USD"): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: currency || "USD",
-    maximumFractionDigits: 2,
-  }).format(Number.isFinite(amount) ? amount : 0);
+    maximumFractionDigits: 2}).format(Number.isFinite(amount) ? amount : 0);
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -711,8 +696,7 @@ function buildRatingAnalytics(reviews: AdminReview[]): RatingAnalyticsSummary {
       productID,
       reviewCount: value.count,
       averageRating: value.count > 0 ? value.total / value.count : 0,
-      lowRatingCount: value.low,
-    }))
+      lowRatingCount: value.low}))
     .sort((a, b) => b.reviewCount - a.reviewCount || b.averageRating - a.averageRating);
 
   const totalReviews = reviews.length;
@@ -724,8 +708,7 @@ function buildRatingAnalytics(reviews: AdminReview[]): RatingAnalyticsSummary {
     lowRatingCount,
     highRatingCount,
     distribution,
-    productStats,
-  };
+    productStats};
 }
 
 export default function AdminPage() {
@@ -891,8 +874,7 @@ export default function AdminPage() {
     export: false,
     health: false,
     notes: false,
-    settings: false,
-  });
+    settings: false});
 
   const token = useMemo(() => getToken(), []);
   const settingsByKey = useMemo(() => {
@@ -944,8 +926,7 @@ export default function AdminPage() {
       stockExposure,
       actions,
       unsoldInStockItems: unsoldInStockItems.slice(0, 8),
-      outOfStockItems: inventoryHealth.outOfStockItems.slice(0, 8),
-    };
+      outOfStockItems: inventoryHealth.outOfStockItems.slice(0, 8)};
   }, [inventoryHealth]);
   const auditInsights = useMemo(() => {
     if (auditEvents.length === 0) {
@@ -953,8 +934,7 @@ export default function AdminPage() {
         uniqueActors: 0,
         uniqueEntities: 0,
         mostCommonEvent: null as string | null,
-        actorlessCount: 0,
-      };
+        actorlessCount: 0};
     }
 
     const actorSet = new Set(auditEvents.map((event) => (event.actor || "").trim()).filter(Boolean));
@@ -971,8 +951,7 @@ export default function AdminPage() {
       uniqueActors: actorSet.size,
       uniqueEntities: entitySet.size,
       mostCommonEvent,
-      actorlessCount: auditEvents.filter((event) => !(event.actor || "").trim()).length,
-    };
+      actorlessCount: auditEvents.filter((event) => !(event.actor || "").trim()).length};
   }, [auditEvents]);
   const queueInsights = useMemo(() => {
     if (!queueData) return null;
@@ -1013,8 +992,7 @@ export default function AdminPage() {
       actions,
       stalledQueues,
       busyQueues: busyQueues.slice(0, 6),
-      topQueues: mainQueuesByBacklog.slice(0, 8),
-    };
+      topQueues: mainQueuesByBacklog.slice(0, 8)};
   }, [queueData]);
 
   const fetchDashboard = useCallback(async () => {
@@ -1034,16 +1012,12 @@ export default function AdminPage() {
       const params = new URLSearchParams({
         days: String(safeDays),
         recentLimit: String(safeRecentLimit),
-        lowStockThreshold: String(safeLowStockThreshold),
-      });
+        lowStockThreshold: String(safeLowStockThreshold)});
       const response = await fetch(`/api/auth/admin-dashboard?${params.toString()}`, {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        cache: "no-store",
-      });
+          "Content-Type": "application/json"},
+        cache: "no-store"});
 
       const data = await response.json();
       if (!response.ok) {
@@ -1066,22 +1040,19 @@ export default function AdminPage() {
         wishlistAddsByDay: Array.isArray(payload?.wishlistAddsByDay)
           ? payload.wishlistAddsByDay.map((item) => ({
               day: item.day,
-              adds: Number(item.adds ?? 0),
-            }))
+              adds: Number(item.adds ?? 0)}))
           : [],
         topWishlistedProducts: Array.isArray(payload?.topWishlistedProducts)
           ? payload.topWishlistedProducts.map((item) => ({
               productID: item.productID ?? "",
               productName: item.productName ?? "",
-              wishlists: Number(item.wishlists ?? 0),
-            }))
+              wishlists: Number(item.wishlists ?? 0)}))
           : [],
         topSoldProducts: Array.isArray(payload?.topSoldProducts)
           ? payload.topSoldProducts.map((item) => ({
               productID: item.productID ?? "",
               productName: item.productName ?? "",
-              soldQty: Number(item.soldQty ?? 0),
-            }))
+              soldQty: Number(item.soldQty ?? 0)}))
           : [],
         ratingAnalysis: {
           totalReviews: Number(payload?.ratingAnalysis?.totalReviews ?? 0),
@@ -1091,8 +1062,7 @@ export default function AdminPage() {
           distribution: Array.isArray(payload?.ratingAnalysis?.distribution)
             ? payload.ratingAnalysis.distribution.map((item) => ({
                 rating: Number(item.rating ?? 0),
-                count: Number(item.count ?? 0),
-              }))
+                count: Number(item.count ?? 0)}))
             : [],
           topReviewedProducts: Array.isArray(payload?.ratingAnalysis?.topReviewedProducts)
             ? payload.ratingAnalysis.topReviewedProducts.map((item) => ({
@@ -1100,8 +1070,7 @@ export default function AdminPage() {
                 productName: item.productName ?? "",
                 reviewCount: Number(item.reviewCount ?? 0),
                 averageRating: Number(item.averageRating ?? 0),
-                lowRatingCount: Number(item.lowRatingCount ?? 0),
-              }))
+                lowRatingCount: Number(item.lowRatingCount ?? 0)}))
             : [],
           lowestRatedProducts: Array.isArray(payload?.ratingAnalysis?.lowestRatedProducts)
             ? payload.ratingAnalysis.lowestRatedProducts.map((item) => ({
@@ -1109,22 +1078,18 @@ export default function AdminPage() {
                 productName: item.productName ?? "",
                 reviewCount: Number(item.reviewCount ?? 0),
                 averageRating: Number(item.averageRating ?? 0),
-                lowRatingCount: Number(item.lowRatingCount ?? 0),
-              }))
-            : [],
-        },
+                lowRatingCount: Number(item.lowRatingCount ?? 0)}))
+            : []},
         revenueByDay: Array.isArray(payload?.revenueByDay)
           ? payload.revenueByDay.map((item) => ({
               day: item.day,
               orders: Number(item.orders ?? 0),
-              revenue: Number(item.revenue ?? 0),
-            }))
+              revenue: Number(item.revenue ?? 0)}))
           : [],
         ordersByStatus: Array.isArray(payload?.ordersByStatus)
           ? payload.ordersByStatus.map((item) => ({
               status: item.status,
-              count: Number(item.count ?? 0),
-            }))
+              count: Number(item.count ?? 0)}))
           : [],
         recentOrders: Array.isArray(payload?.recentOrders)
           ? payload.recentOrders.map((item) => ({
@@ -1136,10 +1101,8 @@ export default function AdminPage() {
               currency: item.currency ?? "USD",
               paymentStatus: item.paymentStatus ?? "pending",
               orderStatus: item.orderStatus ?? "pending",
-              createdAt: item.createdAt ?? "",
-            }))
-          : [],
-      });
+              createdAt: item.createdAt ?? ""}))
+          : []});
       setLastUpdatedAt(new Date().toISOString());
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load dashboard";
@@ -1156,11 +1119,8 @@ export default function AdminPage() {
       const response = await fetch("/api/auth/staff-order-insights", {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        cache: "no-store",
-      });
+          "Content-Type": "application/json"},
+        cache: "no-store"});
       const payload = await response.json().catch(() => null);
       if (!response.ok || !payload?.data) {
         setFulfillmentInsights(null);
@@ -1170,8 +1130,7 @@ export default function AdminPage() {
       setFulfillmentInsights({
         readyToShip: Number(d.readyToShip ?? 0) || 0,
         shippedLast7Days: Number(d.shippedLast7Days ?? 0) || 0,
-        pendingCheckoutOrders: Number(d.pendingCheckoutOrders ?? 0) || 0,
-      });
+        pendingCheckoutOrders: Number(d.pendingCheckoutOrders ?? 0) || 0});
     } catch {
       setFulfillmentInsights(null);
     }
@@ -1185,11 +1144,8 @@ export default function AdminPage() {
       const response = await fetch("/api/auth/shipper-incidents", {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        cache: "no-store",
-      });
+          "Content-Type": "application/json"},
+        cache: "no-store"});
       const payload = await response.json().catch(() => null);
       if (!response.ok) throw new Error(payload?.error || payload?.message || "Failed to load shipper incidents");
       setShipperIncidents(Array.isArray(payload) ? (payload as ShipperIncident[]) : []);
@@ -1214,10 +1170,7 @@ export default function AdminPage() {
         const response = await fetch(`/api/auth/admin?page=${targetPage}&size=10`, {
           method: "GET",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
+            "Content-Type": "application/json"}});
 
         const data = await response.json();
 
@@ -1230,8 +1183,7 @@ export default function AdminPage() {
         const normalizedUsers = Array.isArray(payload?.content)
           ? payload.content.map((user) => ({
               ...user,
-              role: resolveAdminUserRole(user),
-            }))
+              role: resolveAdminUserRole(user)}))
           : [];
         setUsers(normalizedUsers);
         setUserPage(payload?.number ?? targetPage);
@@ -1260,11 +1212,8 @@ export default function AdminPage() {
       const response = await fetch("/api/auth/admin-product-requests?status=PENDING", {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        cache: "no-store",
-      });
+          "Content-Type": "application/json"},
+        cache: "no-store"});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.message || data?.error || "Failed to load product requests");
@@ -1291,11 +1240,8 @@ export default function AdminPage() {
       const response = await fetch("/api/auth/admin-supplier-requests?status=PENDING", {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        cache: "no-store",
-      });
+          "Content-Type": "application/json"},
+        cache: "no-store"});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.message || data?.error || "Failed to load supplier requests");
@@ -1322,11 +1268,8 @@ export default function AdminPage() {
       const response = await fetch("/api/auth/admin-seller-requests?status=PENDING", {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        cache: "no-store",
-      });
+          "Content-Type": "application/json"},
+        cache: "no-store"});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.message || data?.error || "Failed to load seller requests");
@@ -1360,11 +1303,8 @@ export default function AdminPage() {
         const response = await fetch(url, {
           method: "GET",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          cache: "no-store",
-        });
+            "Content-Type": "application/json"},
+          cache: "no-store"});
 
         const data = await response.json();
         if (!response.ok) {
@@ -1382,8 +1322,7 @@ export default function AdminPage() {
                   : [],
                 category: String(item?.category ?? "").trim() || "Uncategorized",
                 stockQuantity: Math.max(0, Number(item?.stockQuantity ?? 25)),
-                active: item?.active !== false,
-              }))
+                active: item?.active !== false}))
             : []
         );
         setLastUpdatedAt(new Date().toISOString());
@@ -1420,8 +1359,7 @@ export default function AdminPage() {
       try {
         const query = new URLSearchParams({
           page: String(targetPage + 1),
-          size: "10",
-        });
+          size: "10"});
 
         const searchTerm = overrides?.searchTerm ?? orderSearchTerm;
         const orderStatus = overrides?.orderStatus ?? orderStatusFilter;
@@ -1438,11 +1376,8 @@ export default function AdminPage() {
         const response = await fetch(`/api/auth/admin-orders?${query.toString()}`, {
           method: "GET",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          cache: "no-store",
-        });
+            "Content-Type": "application/json"},
+          cache: "no-store"});
 
         const data = (await response.json()) as PagedOrders & { message?: string; error?: string };
         if (!response.ok) {
@@ -1477,8 +1412,7 @@ export default function AdminPage() {
       try {
         const query = new URLSearchParams({
           page: String(targetPage + 1),
-          size: "10",
-        });
+          size: "10"});
         const searchTerm = overrides?.searchTerm ?? reviewSearchTerm;
         if (searchTerm.trim()) {
           query.set("q", searchTerm.trim());
@@ -1487,11 +1421,8 @@ export default function AdminPage() {
         const response = await fetch(`/api/auth/admin-reviews?${query.toString()}`, {
           method: "GET",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          cache: "no-store",
-        });
+            "Content-Type": "application/json"},
+          cache: "no-store"});
 
         const data = (await response.json()) as
           | { data?: PagedReviews; message?: string; error?: string }
@@ -1537,8 +1468,7 @@ export default function AdminPage() {
         while (currentPage <= totalPages) {
           const query = new URLSearchParams({
             page: String(currentPage),
-            size: String(size),
-          });
+            size: String(size)});
           if (searchTerm.trim()) {
             query.set("q", searchTerm.trim());
           }
@@ -1546,11 +1476,8 @@ export default function AdminPage() {
           const response = await fetch(`/api/auth/admin-reviews?${query.toString()}`, {
             method: "GET",
             headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            cache: "no-store",
-          });
+              "Content-Type": "application/json"},
+            cache: "no-store"});
 
           const data = (await response.json()) as
             | { data?: PagedReviews; message?: string; error?: string }
@@ -1595,11 +1522,8 @@ export default function AdminPage() {
       const response = await fetch(`/api/auth/admin-inventory?lowStockThreshold=${safeLowStockThreshold}`, {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        cache: "no-store",
-      });
+          "Content-Type": "application/json"},
+        cache: "no-store"});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.message || data?.error || "Failed to load inventory health");
@@ -1616,8 +1540,7 @@ export default function AdminPage() {
         lowStockItems: Array.isArray(data?.lowStockItems) ? data.lowStockItems : [],
         outOfStockItems: Array.isArray(data?.outOfStockItems) ? data.outOfStockItems : [],
         noSalesItems: Array.isArray(data?.noSalesItems) ? data.noSalesItems : [],
-        topSellingItems: Array.isArray(data?.topSellingItems) ? data.topSellingItems : [],
-      });
+        topSellingItems: Array.isArray(data?.topSellingItems) ? data.topSellingItems : []});
       setLastUpdatedAt(new Date().toISOString());
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load inventory health";
@@ -1644,17 +1567,13 @@ export default function AdminPage() {
         reviewStatus: attendanceReviewStatusFilter,
         dateFrom: attendanceDateFrom,
         dateTo: attendanceDateTo,
-        limit: "50",
-      });
+        limit: "50"});
 
       const response = await fetch(`/api/auth/admin-attendance?${params.toString()}`, {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        cache: "no-store",
-      });
+          "Content-Type": "application/json"},
+        cache: "no-store"});
 
       const data = (await response.json()) as AdminAttendanceSnapshot & { error?: string };
       if (!response.ok) {
@@ -1669,36 +1588,31 @@ export default function AdminPage() {
           longBreakMinutes: Number(data?.policy?.longBreakMinutes ?? 30),
           breakReminderIntervalMinutes: Number(data?.policy?.breakReminderIntervalMinutes ?? 30),
           minDailyWorkMinutes: Number(data?.policy?.minDailyWorkMinutes ?? 480),
-          lowHoursReminderAfterLocalHour: Number(data?.policy?.lowHoursReminderAfterLocalHour ?? 16),
-        },
+          lowHoursReminderAfterLocalHour: Number(data?.policy?.lowHoursReminderAfterLocalHour ?? 16)},
         summary: {
           employeesTracked: Number(data?.summary?.employeesTracked ?? 0),
           activeEmployees: Number(data?.summary?.activeEmployees ?? 0),
           employeesOnBreak: Number(data?.summary?.employeesOnBreak ?? 0),
           todayWorkedMinutes: Number(data?.summary?.todayWorkedMinutes ?? 0),
-          weekWorkedMinutes: Number(data?.summary?.weekWorkedMinutes ?? 0),
-        },
+          weekWorkedMinutes: Number(data?.summary?.weekWorkedMinutes ?? 0)},
         performanceSummary: {
           totalReviews: Number(data?.performanceSummary?.totalReviews ?? 0),
           openReviews: Number(data?.performanceSummary?.openReviews ?? 0),
           warningCount: Number(data?.performanceSummary?.warningCount ?? 0),
-          reprimandCount: Number(data?.performanceSummary?.reprimandCount ?? 0),
-        },
+          reprimandCount: Number(data?.performanceSummary?.reprimandCount ?? 0)},
         activeShifts: Array.isArray(data?.activeShifts)
           ? data.activeShifts.map((item) => ({
               ...item,
               warningCount: Number(item?.warningCount ?? 0),
               reprimandCount: Number(item?.reprimandCount ?? 0),
-              openIssueCount: Number(item?.openIssueCount ?? 0),
-            }))
+              openIssueCount: Number(item?.openIssueCount ?? 0)}))
           : [],
         records: Array.isArray(data?.records)
           ? data.records.map((item) => ({
               ...item,
               warningCount: Number(item?.warningCount ?? 0),
               reprimandCount: Number(item?.reprimandCount ?? 0),
-              openIssueCount: Number(item?.openIssueCount ?? 0),
-            }))
+              openIssueCount: Number(item?.openIssueCount ?? 0)}))
           : [],
         performanceReviews: Array.isArray(data?.performanceReviews)
           ? data.performanceReviews.map((item) => ({
@@ -1706,10 +1620,8 @@ export default function AdminPage() {
               lastNotifiedAt: item?.lastNotifiedAt == null ? null : Number(item.lastNotifiedAt),
               notificationCount: Number(item?.notificationCount ?? 0),
               createdAt: Number(item?.createdAt ?? 0),
-              updatedAt: Number(item?.updatedAt ?? 0),
-            }))
-          : [],
-      });
+              updatedAt: Number(item?.updatedAt ?? 0)}))
+          : []});
       setLastUpdatedAt(new Date().toISOString());
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load attendance management";
@@ -1733,8 +1645,7 @@ export default function AdminPage() {
       userId: record.employee.userId,
       email: record.employee.email,
       name: record.employee.name,
-      shiftId: record.shiftId ?? null,
-    });
+      shiftId: record.shiftId ?? null});
     setAttendanceReviewType("WARNING");
     setAttendanceReviewTitle(
       record.status === "ON_BREAK" ? "Break duration requires review" : "Attendance performance review"
@@ -1758,8 +1669,7 @@ export default function AdminPage() {
     }
     if (!selectedAttendanceEmployee) {
       toast.error("Choose an employee from the attendance table first.", {
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
       return;
     }
 
@@ -1767,8 +1677,7 @@ export default function AdminPage() {
     const trimmedSummary = attendanceReviewSummary.trim();
     if (!trimmedTitle || !trimmedSummary) {
       toast.error("Title and summary are required.", {
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
       return;
     }
 
@@ -1777,9 +1686,7 @@ export default function AdminPage() {
       const response = await fetch("/api/auth/admin-attendance", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           employeeUserId: selectedAttendanceEmployee.userId,
           employeeEmail: selectedAttendanceEmployee.email,
@@ -1789,9 +1696,7 @@ export default function AdminPage() {
           title: trimmedTitle,
           summary: trimmedSummary,
           relatedShiftId: selectedAttendanceEmployee.shiftId,
-          sendEmail: attendanceReviewSendEmail,
-        }),
-      });
+          sendEmail: attendanceReviewSendEmail})});
 
       const data = await response.json();
       if (!response.ok) {
@@ -1800,15 +1705,13 @@ export default function AdminPage() {
 
       toast.success("Performance review saved", {
         duration: 1800,
-        style: { backgroundColor: "#07bc0c", color: "#fff" },
-      });
+        style: { backgroundColor: "#07bc0c", color: "#fff" }});
       resetAttendanceReviewForm();
       await fetchAttendance();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to create performance review", {
         duration: 2500,
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
     } finally {
       setAttendanceReviewProcessingKey(null);
     }
@@ -1829,15 +1732,11 @@ export default function AdminPage() {
       const response = await fetch("/api/auth/admin-attendance", {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           reviewId: review.reviewId,
           status,
-          resendEmail,
-        }),
-      });
+          resendEmail})});
 
       const data = await response.json();
       if (!response.ok) {
@@ -1852,22 +1751,18 @@ export default function AdminPage() {
                 ...item,
                 status,
                 notificationCount: resendEmail ? item.notificationCount + 1 : item.notificationCount,
-                lastNotifiedAt: resendEmail ? Date.now() : item.lastNotifiedAt,
-              }
+                lastNotifiedAt: resendEmail ? Date.now() : item.lastNotifiedAt}
             : item
-        ),
-      }));
+        )}));
 
       toast.success(resendEmail ? "Review updated and email resent" : "Review updated", {
         duration: 1800,
-        style: { backgroundColor: "#07bc0c", color: "#fff" },
-      });
+        style: { backgroundColor: "#07bc0c", color: "#fff" }});
       await fetchAttendance();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update performance review", {
         duration: 2500,
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
     } finally {
       setAttendanceReviewProcessingKey(null);
     }
@@ -1891,7 +1786,7 @@ export default function AdminPage() {
         if (enType) q.set("entityType", enType);
         if (dFrom) q.set("dateFrom", dFrom);
         if (dTo) q.set("dateTo", dTo);
-        const response = await fetch(`/api/auth/admin-audit?${q.toString()}`, { method: "GET", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, cache: "no-store" });
+        const response = await fetch(`/api/auth/admin-audit?${q.toString()}`, { method: "GET", headers: { "Content-Type": "application/json"}, cache: "no-store" });
         const data = await response.json() as PagedAudit & { error?: string };
         if (!response.ok) throw new Error(data?.error || "Failed to load audit events");
         const parsedAuditEvents = (data?.content ?? []).map((event) => {
@@ -1922,7 +1817,7 @@ export default function AdminPage() {
     setLoadingQueues(true);
     setQueueError(null);
     try {
-      const response = await fetch("/api/auth/admin-queues", { method: "GET", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, cache: "no-store" });
+      const response = await fetch("/api/auth/admin-queues", { method: "GET", headers: { "Content-Type": "application/json"}, cache: "no-store" });
       const data = await response.json();
       if (!response.ok) throw new Error(data?.error || "Failed to load queues");
       setQueueData(data as QueueData);
@@ -1938,7 +1833,7 @@ export default function AdminPage() {
     setLoadingHealth(true);
     setHealthError(null);
     try {
-      const response = await fetch("/api/auth/admin-system-health", { method: "GET", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, cache: "no-store" });
+      const response = await fetch("/api/auth/admin-system-health", { method: "GET", headers: { "Content-Type": "application/json"}, cache: "no-store" });
       const data = await response.json();
       if (!response.ok) throw new Error(data?.error || "Failed to load system health");
       setHealthData(data as SystemHealth);
@@ -1954,7 +1849,7 @@ export default function AdminPage() {
     setLoadingNotes(true);
     setNoteError(null);
     try {
-      const response = await fetch("/api/auth/admin-notes?page=1&size=50", { method: "GET", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, cache: "no-store" });
+      const response = await fetch("/api/auth/admin-notes?page=1&size=50", { method: "GET", headers: { "Content-Type": "application/json"}, cache: "no-store" });
       const data = await response.json();
       if (!response.ok) throw new Error(data?.error || "Failed to load notes");
       setNotes(data?.content ?? []);
@@ -1970,7 +1865,7 @@ export default function AdminPage() {
     setLoadingSettings(true);
     setSettingsError(null);
     try {
-      const response = await fetch("/api/auth/admin-settings", { method: "GET", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, cache: "no-store" });
+      const response = await fetch("/api/auth/admin-settings", { method: "GET", headers: { "Content-Type": "application/json"}, cache: "no-store" });
       const data = await response.json();
       if (!response.ok) throw new Error(data?.error || "Failed to load settings");
       const items = (data?.settings ?? []) as AdminSetting[];
@@ -2153,11 +2048,8 @@ export default function AdminPage() {
       const response = await fetch("/api/auth/admin", {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ userId: user.id, active: !user.active }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ userId: user.id, active: !user.active })});
 
       const data = await response.json();
 
@@ -2171,13 +2063,11 @@ export default function AdminPage() {
       await fetchDashboard();
       toast.success(`User ${user.active ? "deactivated" : "activated"} successfully`, {
         duration: 2000,
-        style: { backgroundColor: "#07bc0c", color: "#fff" },
-      });
+        style: { backgroundColor: "#07bc0c", color: "#fff" }});
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update user", {
         duration: 2500,
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
     } finally {
       setUserProcessingId(null);
     }
@@ -2202,11 +2092,8 @@ export default function AdminPage() {
       const response = await fetch("/api/auth/admin", {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ userId: user.id, role: nextRole }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ userId: user.id, role: nextRole })});
 
       const data = await response.json();
       if (!response.ok) {
@@ -2230,21 +2117,18 @@ export default function AdminPage() {
                         ? ["ROLE_USER", "ROLE_SHIPPER"]
                         : nextRole === "seller"
                           ? ["ROLE_USER", "ROLE_SELLER"]
-                        : ["ROLE_USER"],
-              }
+                        : ["ROLE_USER"]}
             : item
         )
       );
       await fetchDashboard();
       toast.success(`User role updated to ${nextRole}`, {
         duration: 2000,
-        style: { backgroundColor: "#07bc0c", color: "#fff" },
-      });
+        style: { backgroundColor: "#07bc0c", color: "#fff" }});
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update user role", {
         duration: 2500,
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
     } finally {
       setUserProcessingId(null);
     }
@@ -2264,11 +2148,8 @@ export default function AdminPage() {
       const response = await fetch("/api/auth/admin-product-requests", {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ requestId: request.id, action }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ requestId: request.id, action })});
 
       const data = await response.json();
       if (!response.ok) {
@@ -2281,13 +2162,11 @@ export default function AdminPage() {
       }
       toast.success(`Product request ${action}d`, {
         duration: 2000,
-        style: { backgroundColor: "#07bc0c", color: "#fff" },
-      });
+        style: { backgroundColor: "#07bc0c", color: "#fff" }});
     } catch (err) {
       toast.error(err instanceof Error ? err.message : `Failed to ${action} product request`, {
         duration: 2500,
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
     } finally {
       setProductRequestProcessingId(null);
     }
@@ -2307,11 +2186,8 @@ export default function AdminPage() {
       const response = await fetch("/api/auth/admin-supplier-requests", {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ requestId: request.id, action }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ requestId: request.id, action })});
 
       const data = await response.json();
       if (!response.ok) {
@@ -2324,13 +2200,11 @@ export default function AdminPage() {
       }
       toast.success(`Supplier request ${action}d`, {
         duration: 2000,
-        style: { backgroundColor: "#07bc0c", color: "#fff" },
-      });
+        style: { backgroundColor: "#07bc0c", color: "#fff" }});
     } catch (err) {
       toast.error(err instanceof Error ? err.message : `Failed to ${action} supplier request`, {
         duration: 2500,
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
     } finally {
       setSupplierRequestProcessingId(null);
     }
@@ -2350,11 +2224,8 @@ export default function AdminPage() {
       const response = await fetch("/api/auth/admin-seller-requests", {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ requestId: request.id, action }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ requestId: request.id, action })});
 
       const data = await response.json();
       if (!response.ok) {
@@ -2367,13 +2238,11 @@ export default function AdminPage() {
       }
       toast.success(`Seller request ${action}d`, {
         duration: 2000,
-        style: { backgroundColor: "#07bc0c", color: "#fff" },
-      });
+        style: { backgroundColor: "#07bc0c", color: "#fff" }});
     } catch (err) {
       toast.error(err instanceof Error ? err.message : `Failed to ${action} seller request`, {
         duration: 2500,
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
     } finally {
       setSellerRequestProcessingId(null);
     }
@@ -2387,8 +2256,7 @@ export default function AdminPage() {
   const onProductInputChange = (field: keyof Product, value: string) => {
     setProductForm((prev) => ({
       ...prev,
-      [field]: field === "productPrice" || field === "stockQuantity" ? Number(value) : value,
-    }));
+      [field]: field === "productPrice" || field === "stockQuantity" ? Number(value) : value}));
   };
 
   const toggleProductSize = (size: (typeof CLOTHING_SIZE_OPTIONS)[number]) => {
@@ -2396,8 +2264,7 @@ export default function AdminPage() {
       const hasSize = prev.sizes.includes(size);
       return {
         ...prev,
-        sizes: hasSize ? prev.sizes.filter((item) => item !== size) : [...prev.sizes, size],
-      };
+        sizes: hasSize ? prev.sizes.filter((item) => item !== size) : [...prev.sizes, size]};
     });
   };
 
@@ -2410,8 +2277,7 @@ export default function AdminPage() {
 
     if (!file.type.startsWith("image/")) {
       toast.error("Please choose an image file", {
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
       return;
     }
 
@@ -2424,12 +2290,10 @@ export default function AdminPage() {
 
       toast.success(`${field === "frontImg" ? "Front" : "Back"} image uploaded`, {
         duration: 1800,
-        style: { backgroundColor: "#07bc0c", color: "#fff" },
-      });
+        style: { backgroundColor: "#07bc0c", color: "#fff" }});
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Image upload failed", {
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
     } finally {
       if (field === "frontImg") setUploadingFront(false);
       if (field === "backImg") setUploadingBack(false);
@@ -2454,20 +2318,17 @@ export default function AdminPage() {
 
     if (!productForm.productID.trim() || !productForm.productName.trim() || !productForm.category.trim()) {
       toast.error("Product ID, Product Name, and Category are required", {
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
       return;
     }
     if (productForm.sizes.length === 0) {
       toast.error("Select at least one clothing size", {
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
       return;
     }
     if (productForm.stockQuantity < 0) {
       toast.error("Stock quantity must be >= 0", {
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
       return;
     }
 
@@ -2477,11 +2338,8 @@ export default function AdminPage() {
       const response = await fetch("/api/auth/admin-products", {
         method,
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(productForm),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify(productForm)});
 
       const data = await response.json();
       if (!response.ok) {
@@ -2490,8 +2348,7 @@ export default function AdminPage() {
 
       toast.success(editingProductId ? "Product updated" : "Product created", {
         duration: 2000,
-        style: { backgroundColor: "#07bc0c", color: "#fff" },
-      });
+        style: { backgroundColor: "#07bc0c", color: "#fff" }});
 
       resetProductForm();
       await fetchProducts(productSearchTerm);
@@ -2500,8 +2357,7 @@ export default function AdminPage() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save product", {
         duration: 2500,
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
     } finally {
       setIsSavingProduct(false);
     }
@@ -2513,8 +2369,7 @@ export default function AdminPage() {
       ...product,
       sizes: Array.isArray(product.sizes) ? product.sizes : [],
       stockQuantity: Math.max(0, Number(product.stockQuantity ?? 25)),
-      active: product.active !== false,
-    });
+      active: product.active !== false});
   };
 
   const handleDeleteProduct = async (productID: string) => {
@@ -2532,11 +2387,8 @@ export default function AdminPage() {
       const response = await fetch("/api/auth/admin-products", {
         method: "DELETE",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ productID }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ productID })});
 
       const data = await response.json();
       if (!response.ok) {
@@ -2546,8 +2398,7 @@ export default function AdminPage() {
       setProducts((prev) => prev.filter((item) => item.productID !== productID));
       toast.success("Product deleted", {
         duration: 2000,
-        style: { backgroundColor: "#07bc0c", color: "#fff" },
-      });
+        style: { backgroundColor: "#07bc0c", color: "#fff" }});
 
       if (editingProductId === productID) {
         resetProductForm();
@@ -2557,8 +2408,7 @@ export default function AdminPage() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete product", {
         duration: 2500,
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
     } finally {
       setProductProcessingId(null);
     }
@@ -2584,8 +2434,7 @@ export default function AdminPage() {
       orderStatus: "",
       paymentStatus: "",
       dateFrom: "",
-      dateTo: "",
-    });
+      dateTo: ""});
   };
 
   const handleOrderStatusUpdate = async (
@@ -2602,11 +2451,8 @@ export default function AdminPage() {
       const response = await fetch("/api/auth/admin-orders", {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ orderId, ...payload }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ orderId, ...payload })});
 
       const data = await response.json();
       if (!response.ok) {
@@ -2619,8 +2465,7 @@ export default function AdminPage() {
             ? {
                 ...order,
                 order_status: payload.orderStatus ?? order.order_status,
-                payment_status: payload.paymentStatus ?? order.payment_status,
-              }
+                payment_status: payload.paymentStatus ?? order.payment_status}
             : order
         )
       );
@@ -2628,13 +2473,11 @@ export default function AdminPage() {
 
       toast.success("Order updated", {
         duration: 1800,
-        style: { backgroundColor: "#07bc0c", color: "#fff" },
-      });
+        style: { backgroundColor: "#07bc0c", color: "#fff" }});
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update order", {
         duration: 2500,
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
     } finally {
       setOrderProcessingId(null);
     }
@@ -2673,8 +2516,7 @@ export default function AdminPage() {
     const trimmedComment = reviewEditComment.trim();
     if (trimmedComment.length < 2) {
       toast.error("Comment must be at least 2 characters", {
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
       return;
     }
 
@@ -2684,16 +2526,12 @@ export default function AdminPage() {
       const response = await fetch("/api/auth/admin-reviews", {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           productID: editingReview.productID,
           reviewID: editingReview.reviewID,
           rating: Math.max(1, Math.min(5, reviewEditRating)),
-          comment: trimmedComment,
-        }),
-      });
+          comment: trimmedComment})});
 
       const data = await response.json();
       if (!response.ok) {
@@ -2706,22 +2544,19 @@ export default function AdminPage() {
             ? {
                 ...item,
                 rating: Math.max(1, Math.min(5, reviewEditRating)),
-                comment: trimmedComment,
-              }
+                comment: trimmedComment}
             : item
         )
       );
       toast.success("Comment updated", {
         duration: 1800,
-        style: { backgroundColor: "#07bc0c", color: "#fff" },
-      });
+        style: { backgroundColor: "#07bc0c", color: "#fff" }});
       cancelEditReview();
       await fetchRatingAnalytics();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update comment", {
         duration: 2500,
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
     } finally {
       setReviewProcessingKey(null);
     }
@@ -2742,14 +2577,10 @@ export default function AdminPage() {
       const response = await fetch("/api/auth/admin-reviews", {
         method: "DELETE",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           productID: review.productID,
-          reviewID: review.reviewID,
-        }),
-      });
+          reviewID: review.reviewID})});
 
       const data = await response.json();
       if (!response.ok) {
@@ -2769,14 +2600,12 @@ export default function AdminPage() {
 
       toast.success("Comment deleted", {
         duration: 1800,
-        style: { backgroundColor: "#07bc0c", color: "#fff" },
-      });
+        style: { backgroundColor: "#07bc0c", color: "#fff" }});
       await Promise.all([fetchDashboard(), fetchRatingAnalytics()]);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete comment", {
         duration: 2500,
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
     } finally {
       setReviewProcessingKey(null);
     }
@@ -2871,36 +2700,31 @@ export default function AdminPage() {
         value: pendingAdminRequests,
         detail: "Product submissions and supplier access",
         severity: pendingAdminRequests > 0 ? "high" : "low",
-        tab: "requests" as AdminTab,
-      },
+        tab: "requests" as AdminTab},
       {
         label: "Pending orders",
         value: dashboard.pendingOrders,
         detail: "Need fulfillment or review",
         severity: dashboard.pendingOrders > 10 ? "high" : dashboard.pendingOrders > 0 ? "medium" : "low",
-        tab: "orders" as AdminTab,
-      },
+        tab: "orders" as AdminTab},
       {
         label: "Low stock products",
         value: dashboard.lowStockProducts,
         detail: `At or below threshold (${dashboardLowStockThreshold})`,
         severity: dashboard.lowStockProducts > 8 ? "high" : dashboard.lowStockProducts > 0 ? "medium" : "low",
-        tab: "inventory" as AdminTab,
-      },
+        tab: "inventory" as AdminTab},
       {
         label: "Failed payments (recent)",
         value: failedPayments,
         detail: "Orders that require payment recovery",
         severity: failedPayments > 0 ? "high" : "low",
-        tab: "orders" as AdminTab,
-      },
+        tab: "orders" as AdminTab},
       {
         label: "Cancelled orders",
         value: cancelledOrders,
         detail: "Potential CX or fulfillment issue",
         severity: cancelledOrders > 0 ? "medium" : "low",
-        tab: "orders" as AdminTab,
-      },
+        tab: "orders" as AdminTab},
     ],
     [
       cancelledOrders,
@@ -2941,16 +2765,14 @@ export default function AdminPage() {
     try {
       const response = await fetch(`/api/auth/shipper-incidents/${incidentId}/resolve`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      });
+        headers: { "Content-Type": "application/json"}});
       const payload = await response.json().catch(() => null);
       if (!response.ok) throw new Error(payload?.error || payload?.message || "Failed to resolve incident");
       await fetchShipperIncidents();
       toast.success("Incident resolved", { duration: 2000, style: { backgroundColor: "#07bc0c", color: "#fff" } });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to resolve incident", {
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
     } finally {
       setIncidentProcessingId(null);
     }
@@ -2998,9 +2820,8 @@ export default function AdminPage() {
     try {
       const response = await fetch("/api/auth/admin-orders?page=1&size=1000", {
         method: "GET",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
+        headers: { "Content-Type": "application/json"},
+        cache: "no-store"});
       const data = await response.json();
       const items = (data?.content ?? []) as AdminOrder[];
       const headers = ["Order Number", "Customer Email", "Customer Name", "Total", "Currency", "Payment Method", "Payment Status", "Order Status", "Items", "Created At"];
@@ -3018,8 +2839,7 @@ export default function AdminPage() {
     try {
       const response = await fetch("/api/auth/admin?page=0&size=1000", {
         method: "GET",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      });
+        headers: { "Content-Type": "application/json"}});
       const data = await response.json();
       const payload = (data?.data ?? data) as PagedUsers;
       const items = payload?.content ?? [];
@@ -3038,9 +2858,8 @@ export default function AdminPage() {
     try {
       const response = await fetch("/api/auth/admin-products", {
         method: "GET",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
+        headers: { "Content-Type": "application/json"},
+        cache: "no-store"});
       const data = await response.json();
       const items = (Array.isArray(data) ? data : []) as Product[];
       const headers = ["Product ID", "Name", "Category", "Price", "Stock", "Active", "Reviews"];
@@ -3058,9 +2877,8 @@ export default function AdminPage() {
     try {
       const response = await fetch("/api/auth/admin-reviews?page=1&size=1000", {
         method: "GET",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
+        headers: { "Content-Type": "application/json"},
+        cache: "no-store"});
       const raw = await response.json();
       const payload = (raw as { data?: PagedReviews })?.data ?? (raw as PagedReviews);
       const items = payload?.content ?? [];
@@ -3094,9 +2912,8 @@ export default function AdminPage() {
         : { title: noteTitle, content: noteContent, is_pinned: notePinned };
       const response = await fetch("/api/auth/admin-notes", {
         method,
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(body),
-      });
+        headers: { "Content-Type": "application/json"},
+        body: JSON.stringify(body)});
       const data = await response.json();
       if (!response.ok) throw new Error(data?.error || "Failed to save note");
       toast.success(editingNoteId ? "Note updated" : "Note created", { duration: 2000, style: { backgroundColor: "#07bc0c", color: "#fff" } });
@@ -3120,9 +2937,8 @@ export default function AdminPage() {
     try {
       const response = await fetch("/api/auth/admin-notes", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ id: noteId }),
-      });
+        headers: { "Content-Type": "application/json"},
+        body: JSON.stringify({ id: noteId })});
       const data = await response.json();
       if (!response.ok) throw new Error(data?.error || "Failed to delete note");
       toast.success("Note deleted", { duration: 1800, style: { backgroundColor: "#07bc0c", color: "#fff" } });
@@ -3138,9 +2954,8 @@ export default function AdminPage() {
     try {
       const response = await fetch("/api/auth/admin-notes", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ id: note.id, is_pinned: !note.is_pinned }),
-      });
+        headers: { "Content-Type": "application/json"},
+        body: JSON.stringify({ id: note.id, is_pinned: !note.is_pinned })});
       const data = await response.json();
       if (!response.ok) throw new Error(data?.error || "Failed to update note");
       toast.success(note.is_pinned ? "Note unpinned" : "Note pinned", { duration: 1500, style: { backgroundColor: "#07bc0c", color: "#fff" } });
@@ -3159,13 +2974,11 @@ export default function AdminPage() {
       const settingDefinition = HOME_BANNER_SETTINGS.find((item) => item.key === key);
       const response = await fetch("/api/auth/admin-settings", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json"},
         body: JSON.stringify({
           setting_key: key,
           setting_value: valueToSave,
-          description: settingDefinition?.description,
-        }),
-      });
+          description: settingDefinition?.description})});
       const data = await response.json();
       if (!response.ok) throw new Error(data?.error || "Failed to update setting");
       toast.success(`Setting "${key}" updated`, { duration: 2000, style: { backgroundColor: "#07bc0c", color: "#fff" } });
@@ -3184,8 +2997,7 @@ export default function AdminPage() {
 
     if (!file.type.startsWith("image/")) {
       toast.error("Please choose an image file", {
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
       event.target.value = "";
       return;
     }
@@ -3196,12 +3008,10 @@ export default function AdminPage() {
       setSettingsEditValues((prev) => ({ ...prev, [key]: imageDataUrl }));
       toast.success("Banner image selected", {
         duration: 1800,
-        style: { backgroundColor: "#07bc0c", color: "#fff" },
-      });
+        style: { backgroundColor: "#07bc0c", color: "#fff" }});
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Image upload failed", {
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
     } finally {
       setUploadingSettingKey(null);
       event.target.value = "";
@@ -3221,8 +3031,7 @@ export default function AdminPage() {
       return {
         rating,
         count,
-        percentage,
-      };
+        percentage};
     });
   }, [ratingAnalytics]);
 
@@ -3489,8 +3298,7 @@ export default function AdminPage() {
                             <div
                               className="trendBarFill"
                               style={{
-                                height: `${Math.max((Number(point.revenue || 0) / maxRevenuePoint) * 100, 6)}%`,
-                              }}
+                                height: `${Math.max((Number(point.revenue || 0) / maxRevenuePoint) * 100, 6)}%`}}
                               title={`${point.day}: ${formatCurrency(point.revenue)}`}
                             />
                             <label>{point.day.slice(5)}</label>
@@ -3648,8 +3456,7 @@ export default function AdminPage() {
                             <div
                               className="trendBarFill wishlistTrendFill"
                               style={{
-                                height: `${Math.max((Number(point.adds || 0) / maxWishlistAddsPoint) * 100, 6)}%`,
-                              }}
+                                height: `${Math.max((Number(point.adds || 0) / maxWishlistAddsPoint) * 100, 6)}%`}}
                               title={`${point.day}: ${point.adds} wishlist adds`}
                             />
                             <label>{point.day.slice(5)}</label>
@@ -4309,8 +4116,7 @@ export default function AdminPage() {
                                       disabled={isProcessing}
                                       onChange={(event) =>
                                         handleOrderStatusUpdate(order.id, {
-                                          orderStatus: event.target.value,
-                                        })
+                                          orderStatus: event.target.value})
                                       }
                                     >
                                       {ORDER_STATUS_OPTIONS.map((status) => (
@@ -4325,8 +4131,7 @@ export default function AdminPage() {
                                       disabled={isProcessing}
                                       onChange={(event) =>
                                         handleOrderStatusUpdate(order.id, {
-                                          paymentStatus: event.target.value,
-                                        })
+                                          paymentStatus: event.target.value})
                                       }
                                     >
                                       {PAYMENT_STATUS_OPTIONS.map((status) => (

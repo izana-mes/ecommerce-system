@@ -143,8 +143,7 @@ function dateKeyFromTimestamp(timestamp: number): string {
     timeZone: ATTENDANCE_TIMEZONE,
     year: "numeric",
     month: "2-digit",
-    day: "2-digit",
-  });
+    day: "2-digit"});
   return dtf.format(new Date(timestamp));
 }
 
@@ -173,8 +172,7 @@ function toShiftView(shift: AttendanceShiftRow): SnapshotShift {
     totalWorkMinutes: Number(shift.total_work_minutes || 0),
     totalBreakMinutes: Number(shift.total_break_minutes || 0),
     status: shift.clock_out_at ? "closed" : "open",
-    note: shift.note,
-  };
+    note: shift.note};
 }
 
 function toAdminShiftStatus(shift: AttendanceShiftRow, hasOpenBreak: boolean): AttendanceAdminStatus {
@@ -190,15 +188,13 @@ function toAdminRecord(shift: AttendanceShiftRow, hasOpenBreak: boolean): AdminA
       email: shift.employee_email,
       name: shift.employee_name,
       role: shift.employee_role,
-      userId: String(shift.employee_user_id ?? shift.employee_email),
-    },
+      userId: String(shift.employee_user_id ?? shift.employee_email)},
     clockInAt: Number(shift.clock_in_at),
     clockOutAt: shift.clock_out_at ? Number(shift.clock_out_at) : null,
     totalWorkMinutes: Number(shift.total_work_minutes || 0),
     totalBreakMinutes: Number(shift.total_break_minutes || 0),
     status: toAdminShiftStatus(shift, hasOpenBreak),
-    note: shift.note,
-  };
+    note: shift.note};
 }
 
 async function toComputedAdminRecord(
@@ -225,8 +221,7 @@ async function toComputedAdminRecord(
   return {
     ...toAdminRecord(shift, hasOpenBreak),
     totalWorkMinutes,
-    totalBreakMinutes,
-  };
+    totalBreakMinutes};
 }
 
 function sanitizeDateInput(value: unknown): string | null {
@@ -299,22 +294,16 @@ async function getShiftBreaks(
   return rows || [];
 }
 
-export async function resolveEmployeeFromRequest(request: Request): Promise<EmployeeIdentity> {
-  const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
-  const cookieHeader = request.headers.get("cookie");
+export async function resolveEmployeeFromRequest(request: Request): Promise<EmployeeIdentity> {  const cookieHeader = request.headers.get("cookie");
 
-  if (!authHeader && !cookieHeader) {
+  if (!cookieHeader) {
     throw new Error("Missing authentication headers.");
   }
 
   const response = await fetch(`${backendApiBaseUrl()}/v1/auth/me`, {
     method: "GET",
     headers: {
-      "Content-Type": "application/json",
-      ...(authHeader ? { Authorization: authHeader } : {}),
-      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-    },
-  });
+      "Content-Type": "application/json",      ...(cookieHeader ? { Cookie: cookieHeader } : {})}});
 
   const payload = (await response.json().catch(() => ({}))) as BackendMeResponse;
   if (!response.ok || !payload?.data?.email) {
@@ -350,8 +339,7 @@ export async function resolveEmployeeFromRequest(request: Request): Promise<Empl
     email: String(profile.email),
     displayName,
     role: normalizedRole,
-    userId: String(profile.id ?? profile.email),
-  };
+    userId: String(profile.id ?? profile.email)};
 }
 
 export async function resolveAdminFromRequest(request: Request): Promise<EmployeeIdentity> {
@@ -410,8 +398,7 @@ async function buildSnapshot(
       email: employee.email,
       name: employee.displayName,
       role: employee.role,
-      userId: employee.userId,
-    },
+      userId: employee.userId},
     timezone: ATTENDANCE_TIMEZONE,
     generatedAt: now,
     status: openShift ? "CLOCKED_IN" : "CLOCKED_OUT",
@@ -420,15 +407,13 @@ async function buildSnapshot(
       ? {
           shiftId: openShift.shift_id,
           clockInAt: Number(openShift.clock_in_at),
-          shiftDate: openShift.shift_date,
-        }
+          shiftDate: openShift.shift_date}
       : null,
     liveWorkedMinutes,
     liveBreakMinutes: openShift ? openShiftBreakMinutes : 0,
     todayTotalMinutes,
     weekTotalMinutes,
-    recentShifts: (recentRows || []).map(toShiftView),
-  };
+    recentShifts: (recentRows || []).map(toShiftView)};
 }
 
 export async function getAttendanceSnapshot(employee: EmployeeIdentity): Promise<AttendanceSnapshot> {
@@ -750,8 +735,7 @@ export async function getAdminAttendanceSnapshot(
     const summary = summaryRows?.[0] ?? {
       employees_tracked: 0,
       active_employees: 0,
-      employees_on_break: 0,
-    };
+      employees_on_break: 0};
 
     return {
       timezone: ATTENDANCE_TIMEZONE,
@@ -761,8 +745,7 @@ export async function getAdminAttendanceSnapshot(
         activeEmployees: Number(summary.active_employees || 0),
         employeesOnBreak: Number(summary.employees_on_break || 0),
         todayWorkedMinutes,
-        weekWorkedMinutes,
-      },
+        weekWorkedMinutes},
       activeShifts: await Promise.all(
         (activeRows || []).map((row: AdminAttendanceShiftRow) =>
           toComputedAdminRecord(db, row, now, Boolean(row.has_open_break))
@@ -772,8 +755,7 @@ export async function getAdminAttendanceSnapshot(
         (recordRows || []).map((row: AdminAttendanceShiftRow) =>
           toComputedAdminRecord(db, row, now, Boolean(row.has_open_break))
         )
-      ),
-    };
+      )};
   } finally {
     await conn?.end();
   }

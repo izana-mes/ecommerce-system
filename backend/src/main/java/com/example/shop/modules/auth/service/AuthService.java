@@ -1,14 +1,11 @@
 package com.example.shop.modules.auth.service;
 
-import com.example.shop.modules.auth.dto.response.AuthenticationResponse;
 import com.example.shop.modules.auth.dto.request.LoginRequest;
 import com.example.shop.modules.auth.dto.request.RegisterRequest;
 import com.example.shop.modules.auth.dto.request.ResetPasswordRequest;
 import com.example.shop.modules.auth.dto.request.VerifyOtpRequest;
+import com.example.shop.modules.auth.dto.response.AuthenticationResponse;
 
-/**
- * Interface defines all authentication-related business logic.
- */
 public interface AuthService {
 
     AuthenticationResponse register(RegisterRequest request);
@@ -29,5 +26,5 @@ public interface AuthService {
 
     void resetPassword(ResetPasswordRequest request);
 
-    void logout(String email);
+    void logout(String email, String refreshToken);
 }

@@ -7,11 +7,8 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
  * The backend (StaffChatbotController) requires ROLE_ADMIN / ROLE_STAFF / ROLE_EMPLOYEE.
  */
 
-function getAuthHeader(request: Request): string | null {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 export async function POST(request: Request) {
+  const cookieHeader = request.headers.get("cookie");
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
@@ -24,9 +21,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Question is required" }, { status: 400 });
   }
 
-  const authHeader = getAuthHeader(request);
-  // Staff endpoint requires authentication — reject early if no token.
-  if (!authHeader) {
+    // Staff endpoint requires authentication — reject early if no token.
+  if (!cookieHeader) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
 
@@ -39,12 +35,10 @@ export async function POST(request: Request) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: authHeader,
-      },
+        Authorization: authHeader},
       body: JSON.stringify({ question }),
       signal: controller.signal,
-      cache: "no-store",
-    });
+      cache: "no-store"});
 
     const data = await upstream.json().catch(() => ({}));
 
@@ -63,8 +57,7 @@ export async function POST(request: Request) {
         intent: "service_unavailable",
         answer: isTimeout
           ? "The assistant is taking too long to respond. Please try again."
-          : "The assistant is temporarily unavailable. Please try again shortly.",
-      },
+          : "The assistant is temporarily unavailable. Please try again shortly."},
       { status: 503 }
     );
   } finally {

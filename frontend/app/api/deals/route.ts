@@ -7,12 +7,6 @@ export const runtime = 'nodejs';
 
 const API_URL = backendApiBaseUrl();
 
-function getAuthHeader(request: Request) {
-  return (
-    request.headers.get("authorization") || request.headers.get("Authorization")
-  );
-}
-
 function fallbackDeals() {
   const end = new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(); // +3 days
   return [
@@ -22,8 +16,7 @@ function fallbackDeals() {
       price: 100,
       discount_price: 79,
       end_time: end,
-      image: "/placeholder.png",
-    },
+      image: "/placeholder.png"},
   ];
 }
 
@@ -33,9 +26,7 @@ export async function GET() {
     const response = await fetch(`${API_URL}/deals`, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-      },
-    });
+        "Content-Type": "application/json"}});
 
     if (response.status === 404) {
       return NextResponse.json(fallbackDeals());
@@ -58,16 +49,12 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const authHeader = getAuthHeader(request);
-
+    
     const response = await fetch(`${API_URL}/deals`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-      body: JSON.stringify(body),
-    });
+        "Content-Type": "application/json"},
+      body: JSON.stringify(body)});
 
     const data = await response.json();
 
@@ -90,8 +77,7 @@ export async function PUT(request: Request) {
   try {
     const body = await request.json();
     const { id } = body;
-    const authHeader = getAuthHeader(request);
-
+    
     if (!id) {
       return NextResponse.json(
         { error: "Missing required field: id" },
@@ -102,11 +88,8 @@ export async function PUT(request: Request) {
     const response = await fetch(`${API_URL}/deals/${id}`, {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-      body: JSON.stringify(body),
-    });
+        "Content-Type": "application/json"},
+      body: JSON.stringify(body)});
 
     const data = await response.json();
 
@@ -129,8 +112,7 @@ export async function DELETE(request: Request) {
   try {
     const body = await request.json();
     const { id } = body;
-    const authHeader = getAuthHeader(request);
-
+    
     if (!id) {
       return NextResponse.json(
         { error: "Missing required field: id" },
@@ -141,10 +123,7 @@ export async function DELETE(request: Request) {
     const response = await fetch(`${API_URL}/deals/${id}`, {
       method: "DELETE",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-    });
+        "Content-Type": "application/json"}});
 
     const data = await response.json();
 

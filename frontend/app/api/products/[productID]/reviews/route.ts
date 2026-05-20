@@ -3,10 +3,6 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_BASE_URL = backendApiBaseUrl().replace(/\/+$/, "");
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getCookieHeader(request: Request) {
   return request.headers.get("cookie");
 }
@@ -47,20 +43,15 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const limit = (searchParams.get("limit") || "10").trim();
 
-    const authHeader = getAuthHeader(request);
-    const cookieHeader = getCookieHeader(request);
+        const cookieHeader = getCookieHeader(request);
 
     const response = await fetch(
       `${API_BASE_URL}/products/${encodeURIComponent(productID)}/reviews?limit=${encodeURIComponent(limit)}`,
       {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          ...(authHeader ? { Authorization: authHeader } : {}),
-          ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-        },
-        cache: "no-store",
-      }
+          "Content-Type": "application/json",          ...(cookieHeader ? { Cookie: cookieHeader } : {})},
+        cache: "no-store"}
     );
 
     const data = await parseJsonOrText(response);
@@ -71,8 +62,7 @@ export async function GET(
           productID,
           averageRating: 0,
           reviewCount: 0,
-          reviews: [],
-        });
+          reviews: []});
       }
       return NextResponse.json(data, { status: response.status });
     }
@@ -83,8 +73,7 @@ export async function GET(
     return NextResponse.json(
       {
         error: "Failed to fetch product reviews",
-        details,
-      },
+        details},
       { status: 500 }
     );
   }
@@ -97,19 +86,14 @@ export async function POST(
   try {
     const { productID } = await context.params;
     const body = await request.json();
-    const authHeader = getAuthHeader(request);
-    const cookieHeader = getCookieHeader(request);
+        const cookieHeader = getCookieHeader(request);
 
     const response = await fetch(`${API_BASE_URL}/products/${encodeURIComponent(productID)}/reviews`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
+        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})},
       body: JSON.stringify(body),
-      cache: "no-store",
-    });
+      cache: "no-store"});
 
     const data = await parseJsonOrText(response);
     if (!response.ok) {
@@ -122,8 +106,7 @@ export async function POST(
     return NextResponse.json(
       {
         error: "Failed to submit product review",
-        details,
-      },
+        details},
       { status: 500 }
     );
   }

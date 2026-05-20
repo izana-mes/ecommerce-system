@@ -3,8 +3,7 @@ import { NextResponse } from "next/server";
 import {
   normalizeDiscountType,
   requireAdminUser,
-  withCouponTables,
-} from "@/lib/coupons";
+  withCouponTables} from "@/lib/coupons";
 import { getDbRuntimeInfo } from "@/lib/db";
 
 type DiscountType = "percentage" | "fixed";
@@ -143,13 +142,11 @@ export async function GET(request: Request) {
           is_active: Boolean(row.is_active),
           assigned_count: Number(row.assigned_count || 0),
           acknowledged_count: Number(row.acknowledged_count || 0),
-          used_assignment_count: Number(row.used_assignment_count || 0),
-        })),
+          used_assignment_count: Number(row.used_assignment_count || 0)})),
         totalElements,
         totalPages,
         number: page,
-        size,
-      };
+        size};
     });
 
     return NextResponse.json(result);
@@ -168,10 +165,8 @@ export async function GET(request: Request) {
         ...(status === 503
           ? {
               hint:
-                "Coupon DB is not configured for this deployment. Set DATABASE_URL (Postgres) or MYSQL_URL / DB_HOST/DB_USER/DB_PASSWORD/DB_NAME in Vercel Environment Variables.",
-            }
-          : {}),
-      },
+                "Coupon DB is not configured for this deployment. Set DATABASE_URL (Postgres) or MYSQL_URL / DB_HOST/DB_USER/DB_PASSWORD/DB_NAME in Vercel Environment Variables."}
+          : {})},
       { status }
     );
   }
@@ -256,10 +251,8 @@ export async function POST(request: Request) {
         ...(status === 503
           ? {
               hint:
-                "Coupon DB is not configured for this deployment. Set DATABASE_URL (Postgres) or MYSQL_URL / DB_HOST/DB_USER/DB_PASSWORD/DB_NAME in Vercel Environment Variables.",
-            }
-          : {}),
-      },
+                "Coupon DB is not configured for this deployment. Set DATABASE_URL (Postgres) or MYSQL_URL / DB_HOST/DB_USER/DB_PASSWORD/DB_NAME in Vercel Environment Variables."}
+          : {})},
       { status }
     );
   }
@@ -362,10 +355,8 @@ export async function PATCH(request: Request) {
         ...(status === 503
           ? {
               hint:
-                "Coupon DB is not configured for this deployment. Set DATABASE_URL (Postgres) or MYSQL_URL / DB_HOST/DB_USER/DB_PASSWORD/DB_NAME in Vercel Environment Variables.",
-            }
-          : {}),
-      },
+                "Coupon DB is not configured for this deployment. Set DATABASE_URL (Postgres) or MYSQL_URL / DB_HOST/DB_USER/DB_PASSWORD/DB_NAME in Vercel Environment Variables."}
+          : {})},
       { status }
     );
   }

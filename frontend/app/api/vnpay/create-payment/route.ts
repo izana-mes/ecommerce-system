@@ -138,8 +138,7 @@ export async function POST(request: NextRequest) {
       originHeader: request.headers.get("origin"),
       referer: request.headers.get("referer"),
       forwardedHost: request.headers.get("x-forwarded-host"),
-      forwardedProto: request.headers.get("x-forwarded-proto"),
-    });
+      forwardedProto: request.headers.get("x-forwarded-proto")});
 
     // Convert USD → VND, multiply by 100 as required by VNPAY
     const amountVnd = Math.round(amountNumber * usdToVnd);
@@ -175,8 +174,7 @@ export async function POST(request: NextRequest) {
       vnp_ReturnUrl: returnUrl,
       vnp_IpAddr: ip,
       vnp_CreateDate: createDate,
-      vnp_ExpireDate: expireDate,
-    };
+      vnp_ExpireDate: expireDate};
 
     const paymentUrl = buildVnpPaymentUrl(vnpayUrl, params, hashSecret);
 

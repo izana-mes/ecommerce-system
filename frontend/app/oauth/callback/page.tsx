@@ -54,14 +54,12 @@ function OAuthCallbackContent() {
         const meHeaders: HeadersInit = {
           "Content-Type": "application/json",
           ...(tokenFromFragment
-            ? { Authorization: `Bearer ${tokenFromFragment}` }
-            : {}),
-        };
+            ? { }
+            : {})};
 
         const response = await fetch("/api/auth/me", {
           credentials: tokenFromFragment ? "same-origin" : "include",
-          headers: meHeaders,
-        });
+          headers: meHeaders});
         const data = await response.json();
         const userData = data?.data;
 
@@ -80,8 +78,7 @@ function OAuthCallbackContent() {
             email: userData.email,
             firstName: userData.firstName,
             lastName: userData.lastName,
-            role,
-          }, true);
+            role}, true);
           window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
         } else {
           setUserFromCookieSession(
@@ -90,8 +87,7 @@ function OAuthCallbackContent() {
               email: userData.email,
               firstName: userData.firstName,
               lastName: userData.lastName,
-              role,
-            },
+              role},
             true
           );
         }

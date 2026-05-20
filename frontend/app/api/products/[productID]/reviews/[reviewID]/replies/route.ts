@@ -3,10 +3,6 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_BASE_URL = backendApiBaseUrl().replace(/\/+$/, "");
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getCookieHeader(request: Request) {
   return request.headers.get("cookie");
 }
@@ -27,20 +23,15 @@ export async function POST(
 ) {
   try {
     const { productID, reviewID } = await context.params;
-    const authHeader = getAuthHeader(request);
-    const cookieHeader = getCookieHeader(request);
+        const cookieHeader = getCookieHeader(request);
     const body = await request.text();
 
     const response = await fetch(`${API_BASE_URL}/products/${encodeURIComponent(productID)}/reviews/${encodeURIComponent(reviewID)}/replies`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
+        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})},
       body,
-      cache: "no-store",
-    });
+      cache: "no-store"});
 
     const data = await parseJsonOrText(response);
     if (!response.ok) {
@@ -53,8 +44,7 @@ export async function POST(
     return NextResponse.json(
       {
         error: "Failed to add review reply",
-        details,
-      },
+        details},
       { status: 500 }
     );
   }

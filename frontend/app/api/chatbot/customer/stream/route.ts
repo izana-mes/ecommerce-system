@@ -12,23 +12,17 @@ export async function POST(request: Request) {
   const question = String(body.question || "").trim();
   if (!question) return NextResponse.json({ error: "Question is required" }, { status: 400 });
 
-  const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
-  const guestId = request.headers.get("x-guest-id");
+    const guestId = request.headers.get("x-guest-id");
 
   const upstream = await fetch(`${backendApiBaseUrl()}/chatbot/customer/stream`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
-      ...(authHeader ? { Authorization: authHeader } : {}),
-      ...(guestId ? { "x-guest-id": guestId } : {}),
-      Accept: "text/event-stream",
-    },
+      "Content-Type": "application/json",      ...(guestId ? { "x-guest-id": guestId } : {}),
+      Accept: "text/event-stream"},
     body: JSON.stringify({
       question,
-      conversationId: typeof body.conversationId === "string" ? body.conversationId : undefined,
-    }),
-    cache: "no-store",
-  });
+      conversationId: typeof body.conversationId === "string" ? body.conversationId : undefined}),
+    cache: "no-store"});
 
   if (!upstream.ok || !upstream.body) {
     const data = await upstream.text().catch(() => "Backend error");
@@ -40,7 +34,5 @@ export async function POST(request: Request) {
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
-  });
+      Connection: "keep-alive"}});
 }

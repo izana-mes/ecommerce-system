@@ -3,10 +3,6 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_URL = backendApiBaseUrl();
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getCookieHeader(request: Request) {
   return request.headers.get("cookie");
 }
@@ -14,17 +10,12 @@ function getCookieHeader(request: Request) {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const authHeader = getAuthHeader(request);
-    const cookieHeader = getCookieHeader(request);
+        const cookieHeader = getCookieHeader(request);
     const response = await fetch(`${API_URL}/admin/attendance?${searchParams.toString()}`, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
-      cache: "no-store",
-    });
+        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})},
+      cache: "no-store"});
     const payload = await response.json().catch(() => ({}));
     return NextResponse.json(payload, { status: response.status });
   } catch (error: unknown) {
@@ -36,18 +27,13 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const cookieHeader = getCookieHeader(request);
+        const cookieHeader = getCookieHeader(request);
     const body = await request.json().catch(() => ({}));
     const response = await fetch(`${API_URL}/admin/attendance/reviews`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
-      body: JSON.stringify(body),
-    });
+        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})},
+      body: JSON.stringify(body)});
     const payload = await response.json().catch(() => ({}));
     return NextResponse.json(payload, { status: response.status });
   } catch (error: unknown) {
@@ -59,8 +45,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const cookieHeader = getCookieHeader(request);
+        const cookieHeader = getCookieHeader(request);
     const body = (await request.json().catch(() => ({}))) as { reviewId?: string };
     if (!body.reviewId) {
       return NextResponse.json({ error: "Missing reviewId." }, { status: 400 });
@@ -69,12 +54,8 @@ export async function PATCH(request: Request) {
     const response = await fetch(`${API_URL}/admin/attendance/reviews/${encodeURIComponent(body.reviewId)}`, {
       method: "PATCH",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
-      body: JSON.stringify(body),
-    });
+        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})},
+      body: JSON.stringify(body)});
     const payload = await response.json().catch(() => ({}));
     return NextResponse.json(payload, { status: response.status });
   } catch (error: unknown) {

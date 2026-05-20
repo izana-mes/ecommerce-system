@@ -46,8 +46,7 @@ function AssignShipperModal({ orderId, onClose, onAssigned }: AssignedShipperMod
     const fetchShippers = async () => {
       try {
         const res = await fetch("/api/v1/staff/shippers", {
-          headers: { Authorization: `Bearer ${getToken()}` },
-        });
+          headers: { }});
         if (res.ok) setShippers(await res.json());
       } catch (err: any) {
         toast.error("Failed to load shippers");
@@ -69,14 +68,11 @@ function AssignShipperModal({ orderId, onClose, onAssigned }: AssignedShipperMod
       const res = await fetch(`/api/v1/staff/orders/${orderId}/assign-shipper`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getToken()}`,
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({ 
           shipperUserId: selectedShipper,
           expectedDeliveryAt: expectedDeliveryAt ? new Date(expectedDeliveryAt).toISOString() : null 
-        }),
-      });
+        })});
 
       if (!res.ok) throw new Error("Failed to assign shipper");
       toast.success("Shipper assigned successfully");
@@ -160,15 +156,12 @@ function StatusOverrideModal({ orderId, currentStatus, currentPaymentPath, onClo
       const res = await fetch(`/api/v1/staff/orders/${orderId}/status`, {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getToken()}`,
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({ 
           orderStatus: orderStatus !== currentStatus ? orderStatus : undefined,
           paymentStatus: paymentStatus !== currentPaymentPath ? paymentStatus : undefined,
           reason 
-        }),
-      });
+        })});
 
       if (!res.ok) {
         if (res.status === 403) throw new Error("You do not have permission to override statuses (requires Admin).");
@@ -273,8 +266,7 @@ export default function StaffOrdersPage() {
       if (paymentFilter) params.append("paymentStatus", paymentFilter);
       
       const res = await fetch(`/api/v1/staff/orders?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
+        headers: { }});
       if (!res.ok) throw new Error("Failed to fetch orders");
       const json = await res.json();
       setOrders(json.content || []);

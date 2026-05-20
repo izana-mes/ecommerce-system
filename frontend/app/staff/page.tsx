@@ -33,8 +33,7 @@ export default function StaffDashboardPage() {
     try {
       setLoading(true);
       const res = await fetch("/api/v1/staff/dashboard", {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
+        headers: { }});
       if (!res.ok) throw new Error("Failed to fetch staff dashboard");
       const json = await res.json();
       setData(json);
@@ -72,8 +71,7 @@ export default function StaffDashboardPage() {
         background: "#fff",
         borderRadius: 12,
         padding: 24,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-      }}>
+        boxShadow: "0 1px 3px rgba(0,0,0,0.1)"}}>
         <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 600, color: "#374151" }}>7-Day Revenue Trend</h2>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>

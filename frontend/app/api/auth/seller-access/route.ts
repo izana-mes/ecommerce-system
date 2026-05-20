@@ -3,25 +3,17 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_URL = backendApiBaseUrl();
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
 export async function GET(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const response = await fetch(`${API_URL}/v1/seller-access/me`, {
+        const response = await fetch(`${API_URL}/v1/seller-access/me`, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-      cache: "no-store",
-    });
+        "Content-Type": "application/json"},
+      cache: "no-store"});
 
     if (response.status === 204) {
       return NextResponse.json(null);
@@ -42,16 +34,12 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const body = await request.json().catch(() => ({}));
+        const body = await request.json().catch(() => ({}));
     const response = await fetch(`${API_URL}/v1/seller-access/request`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-      body: JSON.stringify(body),
-    });
+        "Content-Type": "application/json"},
+      body: JSON.stringify(body)});
 
     const data = await response.json();
     if (!response.ok) {

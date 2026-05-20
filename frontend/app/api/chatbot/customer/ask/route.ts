@@ -32,16 +32,11 @@ export async function POST(request: Request) {
     const upstream = await fetch(backendUrl, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(guestId ? { "x-guest-id": guestId } : {}),
-      },
+        "Content-Type": "application/json",        ...(guestId ? { "x-guest-id": guestId } : {})},
       body: JSON.stringify({
         question,
-        conversationId: typeof body.conversationId === "string" ? body.conversationId : undefined,
-      }),
-      signal: controller.signal,
-    });
+        conversationId: typeof body.conversationId === "string" ? body.conversationId : undefined}),
+      signal: controller.signal});
 
     const data = await upstream.json().catch(() => ({}));
 
@@ -60,8 +55,7 @@ export async function POST(request: Request) {
         intent: "service_unavailable",
         answer: isTimeout
           ? "The assistant is taking too long to respond. Please try again in a moment."
-          : "The assistant is temporarily unavailable. Please try again shortly.",
-      },
+          : "The assistant is temporarily unavailable. Please try again shortly."},
       { status: 503 }
     );
   } finally {

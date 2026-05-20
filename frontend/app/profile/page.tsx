@@ -11,8 +11,7 @@ import {
   logoutServerSession,
   refreshCurrentUserFromServer,
   subscribeToAuthChanges,
-  User,
-} from "@/lib/auth";
+  User} from "@/lib/auth";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { clearCart } from "@/store/cartSlice";
 import { clearWishList } from "@/store/wishListSlice";
@@ -85,8 +84,7 @@ function formatMoney(value: number, currency: string): string {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: (currency || "USD").toUpperCase(),
-      maximumFractionDigits: 2,
-    }).format(Number(value || 0));
+      maximumFractionDigits: 2}).format(Number(value || 0));
   } catch {
     return `${Number(value || 0).toFixed(2)} ${currency || "USD"}`;
   }
@@ -179,8 +177,7 @@ export default function ProfilePage() {
       const response = await fetch("/api/coupons/notifications", {
         cache: "no-store",
         credentials: "include",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
+        headers: token ? { } : undefined});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.error || "Failed to load coupons");
@@ -200,7 +197,7 @@ export default function ProfilePage() {
     try {
       const token = typeof window === "undefined"
         ? null
-        : localStorage.getItem("token") || sessionStorage.getItem("token");
+        : null;
       if (!token) {
         setSupplierRequest(null);
         return;
@@ -210,10 +207,7 @@ export default function ProfilePage() {
         method: "GET",
         cache: "no-store",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+          "Content-Type": "application/json"}});
 
       const data = await response.json().catch(() => null);
       if (!response.ok) {
@@ -235,7 +229,7 @@ export default function ProfilePage() {
     try {
       const token = typeof window === "undefined"
         ? null
-        : localStorage.getItem("token") || sessionStorage.getItem("token");
+        : null;
       if (!token) {
         setSellerRequest(null);
         return;
@@ -245,10 +239,7 @@ export default function ProfilePage() {
         method: "GET",
         cache: "no-store",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+          "Content-Type": "application/json"}});
 
       const data = await response.json().catch(() => null);
       if (!response.ok) {
@@ -278,10 +269,7 @@ export default function ProfilePage() {
         method: "GET",
         cache: "no-store",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+          "Content-Type": "application/json"}});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.message || data?.error || "Failed to load supplier product requests");
@@ -309,10 +297,7 @@ export default function ProfilePage() {
         method: "GET",
         cache: "no-store",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+          "Content-Type": "application/json"}});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.message || data?.error || "Failed to load product approvals");
@@ -340,10 +325,7 @@ export default function ProfilePage() {
         method: "GET",
         cache: "no-store",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+          "Content-Type": "application/json"}});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.message || data?.error || "Failed to load supplier requests");
@@ -371,10 +353,7 @@ export default function ProfilePage() {
         method: "GET",
         cache: "no-store",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+          "Content-Type": "application/json"}});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.message || data?.error || "Failed to load seller requests");
@@ -398,10 +377,7 @@ export default function ProfilePage() {
         cache: "no-store",
         credentials: "include",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
+          "Content-Type": "application/json"}});
       const data = (await response.json()) as Partial<HistoryResponse> & {
         message?: string;
         error?: string;
@@ -487,11 +463,8 @@ export default function ProfilePage() {
         method: "PATCH",
         credentials: "include",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ assignmentId }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ assignmentId })});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.details || data?.error || "Failed to confirm coupon");
@@ -509,7 +482,7 @@ export default function ProfilePage() {
   const handleSubmitSupplierRequest = async () => {
     const token = typeof window === "undefined"
       ? null
-      : localStorage.getItem("token") || sessionStorage.getItem("token");
+      : null;
     if (!token) {
       router.replace("/login");
       return;
@@ -520,16 +493,12 @@ export default function ProfilePage() {
       const response = await fetch("/api/auth/supplier-access", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           businessName: supplierBusinessName,
           websiteUrl: supplierWebsiteUrl,
           contactPhone: supplierContactPhone,
-          note: supplierRequestNote,
-        }),
-      });
+          note: supplierRequestNote})});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.message || data?.error || "Failed to submit supplier request");
@@ -556,7 +525,7 @@ export default function ProfilePage() {
   const handleSubmitSellerRequest = async () => {
     const token = typeof window === "undefined"
       ? null
-      : localStorage.getItem("token") || sessionStorage.getItem("token");
+      : null;
     if (!token) {
       router.replace("/login");
       return;
@@ -567,16 +536,12 @@ export default function ProfilePage() {
       const response = await fetch("/api/auth/seller-access", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           businessName: supplierBusinessName,
           websiteUrl: supplierWebsiteUrl,
           contactPhone: supplierContactPhone,
-          note: supplierRequestNote,
-        }),
-      });
+          note: supplierRequestNote})});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.message || data?.error || "Failed to submit seller request");
@@ -609,16 +574,14 @@ export default function ProfilePage() {
 
     toast.success(t("profile_logout_success"), {
       duration: 2000,
-      style: { backgroundColor: "#07bc0c", color: "#fff" },
-    });
+      style: { backgroundColor: "#07bc0c", color: "#fff" }});
 
     confetti({
       particleCount: 100,
       spread: 60,
       origin: { y: 0.8 },
       zIndex: 9999,
-      colors: ['#bb0000', '#ffffff'],
-    });
+      colors: ['#bb0000', '#ffffff']});
 
     router.replace("/login");
   };

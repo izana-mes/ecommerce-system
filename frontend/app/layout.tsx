@@ -12,8 +12,7 @@ import Script from "next/script";
 import LocaleProvider from "@/components/providers/LocaleProvider";
 
 export default function RootLayout({
-  children,
-}: {
+  children}: {
   children: React.ReactNode;
 }) {
   return (

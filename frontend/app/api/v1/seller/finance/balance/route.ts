@@ -3,25 +3,17 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_URL = backendApiBaseUrl();
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
 export async function GET(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const response = await fetch(`${API_URL}/v1/seller/finance/balance`, {
+        const response = await fetch(`${API_URL}/v1/seller/finance/balance`, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-      cache: "no-store",
-    });
+        "Content-Type": "application/json"},
+      cache: "no-store"});
 
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });

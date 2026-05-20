@@ -45,10 +45,6 @@ type BackendDashboardPayload = {
   topSoldProducts?: BackendDashboardSoldProduct[];
 };
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function asNumber(value: unknown, fallback = 0): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -56,35 +52,25 @@ function asNumber(value: unknown, fallback = 0): number {
 
 export async function GET(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const { searchParams } = new URL(request.url);
+        const { searchParams } = new URL(request.url);
     const lowStockThreshold = Math.max(1, Number(searchParams.get("lowStockThreshold") ?? 5) || 5);
 
     const [productResponse, inventoryHealthResponse, dashboardResponse] = await Promise.all([
       fetch(`${API_URL}/products`, {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          ...(authHeader ? { Authorization: authHeader } : {}),
-        },
-        cache: "no-store",
-      }),
+          "Content-Type": "application/json"},
+        cache: "no-store"}),
       fetch(`${API_URL}/products/inventory-health?lowStockThreshold=${lowStockThreshold}`, {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          ...(authHeader ? { Authorization: authHeader } : {}),
-        },
-        cache: "no-store",
-      }),
+          "Content-Type": "application/json"},
+        cache: "no-store"}),
       fetch(`${API_URL}/v1/admin/dashboard?days=30&recentLimit=10&lowStockThreshold=${lowStockThreshold}`, {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          ...(authHeader ? { Authorization: authHeader } : {}),
-        },
-        cache: "no-store",
-      }),
+          "Content-Type": "application/json"},
+        cache: "no-store"}),
     ]);
 
     const products = (await productResponse.json()) as Product[];
@@ -116,8 +102,7 @@ export async function GET(request: Request) {
           productID: product.productID,
           productName: product.productName,
           stockQuantity: Math.max(0, asNumber(product.stockQuantity, 0)),
-          active: product.active !== false,
-        },
+          active: product.active !== false},
       ])
     );
 
@@ -130,8 +115,7 @@ export async function GET(request: Request) {
           stockQuantity: Math.max(0, asNumber(item.stockQuantity ?? base?.stockQuantity, 0)),
           reservedInCarts: Math.max(0, asNumber(item.reservedInCarts, 0)),
           availableToSell: Math.max(0, asNumber(item.availableToSell, 0)),
-          active: item.active !== false && base?.active !== false,
-        };
+          active: item.active !== false && base?.active !== false};
       });
 
     const lowStockItems = normalizeHealthItems(backendHealth.lowStockItems);
@@ -150,8 +134,7 @@ export async function GET(request: Request) {
         reservedInCarts,
         availableToSell,
         soldQty: soldByProductId.get(p.productID) ?? 0,
-        active: p.active !== false,
-      };
+        active: p.active !== false};
     });
 
     const noSalesItems = enriched
@@ -185,8 +168,7 @@ export async function GET(request: Request) {
       lowStockItems,
       outOfStockItems,
       noSalesItems,
-      topSellingItems,
-    });
+      topSellingItems});
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     return NextResponse.json(

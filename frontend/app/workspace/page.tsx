@@ -85,9 +85,8 @@ export default function WorkspacePage() {
       const query = new URLSearchParams({ limit: "50" });
       if (statusFilter) query.set("status", statusFilter);
       const response = await fetch(`/api/workspace/tasks?${query.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
+        headers: { },
+        cache: "no-store"});
       const payload = await response.json().catch(() => null);
       if (!response.ok) throw new Error(payload?.message || payload?.error || "Failed to load tasks");
       setTasks(Array.isArray(payload?.data) ? payload.data : []);
@@ -100,9 +99,8 @@ export default function WorkspacePage() {
     if (!token) return;
     try {
       const response = await fetch("/api/workspace/notifications?limit=30", {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
+        headers: { },
+        cache: "no-store"});
       const payload = await response.json().catch(() => null);
       if (!response.ok) throw new Error(payload?.message || payload?.error || "Failed to load notifications");
       setNotifications(Array.isArray(payload?.data) ? payload.data : []);
@@ -115,9 +113,8 @@ export default function WorkspacePage() {
     if (!token || !isAdmin) return;
     try {
       const response = await fetch("/api/workspace/audit-events?limit=20", {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
+        headers: { },
+        cache: "no-store"});
       const payload = await response.json().catch(() => null);
       if (!response.ok) throw new Error(payload?.message || payload?.error || "Failed to load audit events");
       setAuditEvents(Array.isArray(payload?.data) ? payload.data : []);
@@ -135,17 +132,13 @@ export default function WorkspacePage() {
       const response = await fetch("/api/workspace/tasks", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           title,
           description,
           assigned_to: assignee || undefined,
           status: "OPEN",
-          priority: "MEDIUM",
-        }),
-      });
+          priority: "MEDIUM"})});
       const payload = await response.json().catch(() => null);
       if (!response.ok) throw new Error(payload?.message || payload?.error || "Failed to create task");
       setTitle("");
@@ -165,11 +158,8 @@ export default function WorkspacePage() {
       const response = await fetch(`/api/workspace/tasks/${taskId}/status`, {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ status })});
       const payload = await response.json().catch(() => null);
       if (!response.ok) throw new Error(payload?.message || payload?.error || "Failed to update task");
       await fetchTasks();
@@ -183,10 +173,7 @@ export default function WorkspacePage() {
     if (!token) return;
     const response = await fetch(`/api/workspace/notifications/${id}/read`, {
       method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+      headers: {      }});
     if (response.ok) {
       await fetchNotifications();
     }
@@ -195,8 +182,7 @@ export default function WorkspacePage() {
   const exportReport = async (type: "workflow" | "notifications" | "audit") => {
     if (!token) return;
     const response = await fetch(`/api/workspace/reports/export?type=${type}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+      headers: { }});
     if (!response.ok) {
       setError("Export failed");
       return;

@@ -10,10 +10,8 @@ export async function POST(request: Request) {
     const response = await fetch(`${API_URL}/v1/auth/register`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+        "Content-Type": "application/json"},
+      body: JSON.stringify(body)});
 
     const data = await response.json();
 
@@ -27,8 +25,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to register user",
-        details: error?.message || String(error),
-      },
+        details: error?.message || String(error)},
       { status: 500 }
     );
   }
@@ -36,15 +33,11 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
-
+    
     const response = await fetch(`${API_URL}/v1/users`, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-    });
+        "Content-Type": "application/json"}});
 
     const data = await response.json();
 
@@ -58,8 +51,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to fetch users",
-        details: error?.message || String(error),
-      },
+        details: error?.message || String(error)},
       { status: 500 }
     );
   }

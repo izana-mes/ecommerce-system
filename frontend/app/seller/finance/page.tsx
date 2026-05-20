@@ -44,8 +44,7 @@ export default function SellerFinancePage() {
     const token = getToken();
     if (!token) return;
     const res = await fetch("/api/v1/seller/finance/balance", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+      headers: { }});
     const data = await res.json();
     if (!res.ok) throw new Error(data?.message || "Failed to load balance");
     setBalance(data.data);
@@ -55,8 +54,7 @@ export default function SellerFinancePage() {
     const token = getToken();
     if (!token) return;
     const res = await fetch(`/api/v1/seller/finance/transactions?page=${page}&size=20`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+      headers: { }});
     const data = await res.json();
     if (!res.ok) throw new Error(data?.message || "Failed to load transactions");
     const pageData: TransactionPage = data.data;

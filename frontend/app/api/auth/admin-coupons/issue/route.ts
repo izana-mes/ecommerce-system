@@ -120,8 +120,7 @@ export async function POST(request: Request) {
             firstName,
             lastName,
             notificationTitle: effectiveTitle,
-            notificationMessage: effectiveMessage,
-          });
+            notificationMessage: effectiveMessage});
           resent += 1;
           continue;
         }
@@ -168,8 +167,7 @@ export async function POST(request: Request) {
             firstName,
             lastName,
             notificationTitle: effectiveTitle,
-            notificationMessage: effectiveMessage,
-          });
+            notificationMessage: effectiveMessage});
         }
         issued += 1;
       }
@@ -182,10 +180,8 @@ export async function POST(request: Request) {
           code: coupon.code,
           title: coupon.title,
           description: coupon.description,
-          expiresAt: coupon.expires_at,
-        },
-        assignments,
-      };
+          expiresAt: coupon.expires_at},
+        assignments};
     });
 
     const internalToken = process.env.INTERNAL_NOTIFY_TOKEN?.trim();
@@ -197,8 +193,7 @@ export async function POST(request: Request) {
       if (notificationAuthFailed) {
         mailResults.push({
           status: "rejected",
-          reason: new Error("Notification service authorization failed"),
-        });
+          reason: new Error("Notification service authorization failed")});
         continue;
       }
 
@@ -212,8 +207,7 @@ export async function POST(request: Request) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(internalToken ? { "X-Internal-Token": internalToken } : {}),
-          },
+            ...(internalToken ? { "X-Internal-Token": internalToken } : {})},
           body: JSON.stringify({
             to: assignment.userEmail,
             customerFirstName: assignment.firstName,
@@ -223,10 +217,8 @@ export async function POST(request: Request) {
             notificationTitle: assignment.notificationTitle,
             notificationMessage: assignment.notificationMessage,
             redeemUrl: redeemUrl.toString(),
-            expiresAt: result.coupon.expiresAt,
-          }),
-          signal: AbortSignal.timeout(15_000),
-        });
+            expiresAt: result.coupon.expiresAt}),
+          signal: AbortSignal.timeout(15_000)});
 
         if (!response.ok) {
           const payload = await response.json().catch(() => null) as { message?: string; error?: string } | null;
@@ -247,13 +239,11 @@ export async function POST(request: Request) {
 
         mailResults.push({
           status: "fulfilled",
-          value: assignment.userEmail,
-        });
+          value: assignment.userEmail});
       } catch (error: unknown) {
         mailResults.push({
           status: "rejected",
-          reason: error,
-        });
+          reason: error});
       }
     }
 
@@ -265,8 +255,7 @@ export async function POST(request: Request) {
       const assignment = result.assignments[index];
       return [{
         email: assignment?.userEmail || "unknown",
-        error: mailResult.reason instanceof Error ? mailResult.reason.message : String(mailResult.reason),
-      }];
+        error: mailResult.reason instanceof Error ? mailResult.reason.message : String(mailResult.reason)}];
     });
 
     return NextResponse.json({
@@ -276,8 +265,7 @@ export async function POST(request: Request) {
           ? `Issued to ${result.issued} customer(s), resent ${result.resent} email(s), but ${emailFailures.length} email(s) failed`
           : `Issued to ${result.issued} customer(s)${result.resent > 0 ? ` and resent ${result.resent} email(s)` : ""}`,
       ...result,
-      emailFailures,
-    });
+      emailFailures});
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     const status = message === "Coupon not found" ? 404 : 400;

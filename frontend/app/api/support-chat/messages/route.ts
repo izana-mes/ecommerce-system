@@ -3,10 +3,6 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_BASE_URL = backendApiBaseUrl().replace(/\/+$/, "");
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getCookieHeader(request: Request) {
   return request.headers.get("cookie");
 }
@@ -35,10 +31,8 @@ export async function GET(request: Request) {
         "Content-Type": "application/json",
         ...(getAuthHeader(request) ? { Authorization: getAuthHeader(request)! } : {}),
         ...(getCookieHeader(request) ? { Cookie: getCookieHeader(request)! } : {}),
-        ...(getGuestIdHeader(request) ? { "x-guest-id": getGuestIdHeader(request)! } : {}),
-      },
-      cache: "no-store",
-    });
+        ...(getGuestIdHeader(request) ? { "x-guest-id": getGuestIdHeader(request)! } : {})},
+      cache: "no-store"});
 
     const data = await parseJsonOrText(response);
     if (!response.ok) {
@@ -60,11 +54,9 @@ export async function POST(request: Request) {
         "Content-Type": "application/json",
         ...(getAuthHeader(request) ? { Authorization: getAuthHeader(request)! } : {}),
         ...(getCookieHeader(request) ? { Cookie: getCookieHeader(request)! } : {}),
-        ...(getGuestIdHeader(request) ? { "x-guest-id": getGuestIdHeader(request)! } : {}),
-      },
+        ...(getGuestIdHeader(request) ? { "x-guest-id": getGuestIdHeader(request)! } : {})},
       body: JSON.stringify(body),
-      cache: "no-store",
-    });
+      cache: "no-store"});
 
     const data = await parseJsonOrText(response);
     if (!response.ok) {

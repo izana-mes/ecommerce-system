@@ -35,8 +35,8 @@ export default function SupplierFinancePage() {
 
     try {
       const [balRes, txRes] = await Promise.all([
-        fetch("/api/v1/supplier/finance/balance", { headers: { Authorization: `Bearer ${token}` } }),
-        fetch("/api/v1/supplier/finance/transactions?size=50", { headers: { Authorization: `Bearer ${token}` } })
+        fetch("/api/v1/supplier/finance/balance", { headers: { } }),
+        fetch("/api/v1/supplier/finance/transactions?size=50", { headers: { } })
       ]);
 
       const balData = await balRes.json();

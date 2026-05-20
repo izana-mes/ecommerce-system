@@ -64,12 +64,8 @@ export default function SupportChatPage() {
     const response = await fetch(`/api/support-chat/messages${query}`, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(guestId ? { "x-guest-id": guestId } : {}),
-      },
-      cache: "no-store",
-    });
+        "Content-Type": "application/json",        ...(guestId ? { "x-guest-id": guestId } : {})},
+      cache: "no-store"});
 
     const data = (await response.json().catch(() => ({}))) as SupportChatResponse;
     if (!response.ok) {
@@ -121,8 +117,7 @@ export default function SupportChatPage() {
       },
       onSocketError: () => {
         setSocketConnected(false);
-      },
-    });
+      }});
 
     clientRef.current = client;
     client.activate();
@@ -184,9 +179,7 @@ export default function SupportChatPage() {
           headers: guestId ? { "x-guest-id": guestId } : {},
           body: JSON.stringify({
             conversationId: conversationId || undefined,
-            message: text,
-          }),
-        });
+            message: text})});
         setDraft("");
         setError("");
         return;
@@ -195,15 +188,10 @@ export default function SupportChatPage() {
       const response = await fetch("/api/support-chat/messages", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(guestId ? { "x-guest-id": guestId } : {}),
-        },
+          "Content-Type": "application/json",          ...(guestId ? { "x-guest-id": guestId } : {})},
         body: JSON.stringify({
           conversationId: conversationId || undefined,
-          message: text,
-        }),
-      });
+          message: text})});
 
       const data = (await response.json().catch(() => ({}))) as SupportChatResponse;
       if (!response.ok) {

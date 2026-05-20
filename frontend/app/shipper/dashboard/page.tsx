@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   MdLocalShipping, MdCheckCircle, MdTimer, MdWarning,
-  MdRefresh, MdTrendingUp, MdLocationOn, MdAssignment, MdBarChart,
-} from "react-icons/md";
+  MdRefresh, MdTrendingUp, MdLocationOn, MdAssignment, MdBarChart} from "react-icons/md";
 import { getToken, getUser } from "@/lib/auth";
 import { useShipperSocket } from "@/hooks/useShipperSocket";
 
@@ -69,11 +68,10 @@ export default function ShipperDashboardPage() {
       from.setDate(from.getDate() - 30);
       const params = new URLSearchParams({
         from: from.toISOString().slice(0, 19),
-        to: new Date().toISOString().slice(0, 19),
-      });
+        to: new Date().toISOString().slice(0, 19)});
       const res = await fetch(
         `/api/v1/shipper/shippers/${shipperUserId}/performance?${params.toString()}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { } }
       );
       const data = await res.json();
       if (res.ok && data?.data) setStats(data.data);
@@ -85,8 +83,7 @@ export default function ShipperDashboardPage() {
     if (!token) return;
     try {
       const res = await fetch(`/api/v1/shipper/orders?activeOnly=true&limit=1`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        headers: { }});
       const data = await res.json();
       if (!res.ok) return;
       const first: AssignedOrderItem | undefined = Array.isArray(data?.data) ? data.data[0] : undefined;
@@ -97,8 +94,7 @@ export default function ShipperDashboardPage() {
         orderStatus: first.orderStatus,
         expectedDeliveryAt: first.expectedDeliveryAt,
         pickedUpAt: first.pickedUpAt,
-        deliveredAt: first.deliveredAt,
-      });
+        deliveredAt: first.deliveredAt});
     } catch { /* silent */ }
   }, []);
 

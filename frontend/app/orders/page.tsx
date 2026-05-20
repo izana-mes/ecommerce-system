@@ -44,8 +44,7 @@ function formatMoney(value: number, currency: string): string {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: (currency || "USD").toUpperCase(),
-      maximumFractionDigits: 2,
-    }).format(Number(value || 0));
+      maximumFractionDigits: 2}).format(Number(value || 0));
   } catch {
     return `${Number(value || 0).toFixed(2)} ${currency || "USD"}`;
   }
@@ -83,10 +82,7 @@ export default function OrdersPage() {
         method: "GET",
         credentials: "include",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
+          "Content-Type": "application/json"}});
       const data = (await response.json()) as Partial<HistoryResponse> & {
         message?: string;
         error?: string;
@@ -117,10 +113,7 @@ export default function OrdersPage() {
       const response = await fetch(`/api/orders/${orderNumber}/cancel`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
+          "Content-Type": "application/json"}});
 
       if (!response.ok) {
         const data = await response.json();
@@ -151,10 +144,7 @@ export default function OrdersPage() {
         method: "GET",
         credentials: "include",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
+          "Content-Type": "application/json"}});
       const json = (await response.json()) as { success?: boolean; data?: { items?: Record<string, unknown>[] } };
       if (!response.ok || !json?.success || !Array.isArray(json.data?.items)) {
         throw new Error("Could not load order lines for reorder");
@@ -170,8 +160,7 @@ export default function OrdersPage() {
           productID,
           productName,
           productPrice,
-          productReviews: "0",
-        };
+          productReviews: "0"};
         for (let i = 0; i < quantity; i += 1) {
           if (token || user) {
             await dispatch(addToCartAsync(payload)).unwrap();
@@ -210,8 +199,7 @@ export default function OrdersPage() {
                 borderRadius: 8,
                 padding: 16,
                 marginBottom: 14,
-                background: "#fff",
-              }}
+                background: "#fff"}}
             >
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                 <strong>{order.order_number}</strong>
@@ -230,8 +218,7 @@ export default function OrdersPage() {
                       color: "white",
                       borderRadius: 4,
                       textDecoration: "none",
-                      fontSize: 14,
-                    }}
+                      fontSize: 14}}
                   >
                     {t("orders_track")}
                   </Link>
@@ -244,8 +231,7 @@ export default function OrdersPage() {
                       color: "white",
                       borderRadius: 4,
                       textDecoration: "none",
-                      fontSize: 14,
-                    }}
+                      fontSize: 14}}
                   >
                     {t("orders_track_auth")}
                   </Link>
@@ -258,8 +244,7 @@ export default function OrdersPage() {
                     borderRadius: 4,
                     textDecoration: "none",
                     color: "#111",
-                    fontSize: 14,
-                  }}
+                    fontSize: 14}}
                 >
                   {t("orders_support")}
                 </Link>
@@ -274,8 +259,7 @@ export default function OrdersPage() {
                     border: "none",
                     borderRadius: 4,
                     cursor: "pointer",
-                    fontSize: 14,
-                  }}
+                    fontSize: 14}}
                 >
                   {reorderingOrderNumber === order.order_number ? t("orders_reorder_loading") : t("orders_reorder")}
                 </button>
@@ -290,8 +274,7 @@ export default function OrdersPage() {
                         color: "white",
                         border: "none",
                         borderRadius: 4,
-                        cursor: "pointer",
-                      }}
+                        cursor: "pointer"}}
                     >
                       {processingOrderId === order.order_number ? t("orders_cancelling") : t("orders_cancel")}
                     </button>
@@ -304,8 +287,7 @@ export default function OrdersPage() {
                         color: "white",
                         border: "none",
                         borderRadius: 4,
-                        cursor: "pointer",
-                      }}
+                        cursor: "pointer"}}
                     >
                       {t("orders_edit")}
                     </button>
@@ -367,8 +349,7 @@ function EditOrderModal({
   token,
   onClose,
   onSuccess,
-  t,
-}: {
+  t}: {
   order: Order;
   token: string | null;
   onClose: () => void;
@@ -383,8 +364,7 @@ function EditOrderModal({
     shippingCountry: "",
     shippingPostalCode: "",
     customerPhone: "",
-    notes: "",
-  });
+    notes: ""});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -393,11 +373,8 @@ function EditOrderModal({
       const response = await fetch(`/api/orders/${order.order_number}`, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(formData),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify(formData)});
 
       if (!response.ok) {
         const data = await response.json();
@@ -424,8 +401,7 @@ function EditOrderModal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: 1000,
-      }}
+        zIndex: 1000}}
     >
       <div
         style={{
@@ -435,8 +411,7 @@ function EditOrderModal({
           width: "100%",
           maxWidth: 500,
           maxHeight: "90vh",
-          overflowY: "auto",
-        }}
+          overflowY: "auto"}}
       >
         <h2 style={{ marginBottom: 20 }}>{t("orders_edit")}</h2>
         <form onSubmit={handleSubmit}>
@@ -516,8 +491,7 @@ function EditOrderModal({
                 border: "none",
                 backgroundColor: "#1890ff",
                 color: "white",
-                cursor: "pointer",
-              }}
+                cursor: "pointer"}}
             >
               {loading ? t("orders_updating") : t("shop_save")}
             </button>

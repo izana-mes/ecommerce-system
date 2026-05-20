@@ -4,14 +4,12 @@ import {
   addToCartAsync,
   cartProduct,
   removeFromCartAsync,
-  updateQuantityAsync,
-} from "@/store/cartSlice";
+  updateQuantityAsync} from "@/store/cartSlice";
 import {
   addToWishlistAsync,
   removeFromWishlistAsync,
   clearWishList,
-  wishListProduct,
-} from "@/store/wishListSlice";
+  wishListProduct} from "@/store/wishListSlice";
 import { useAppDispatch, useAppSelector } from "@/store/index";
 import toast from "react-hot-toast";
 import Link from "next/link";
@@ -50,8 +48,7 @@ function getPriceChangeInfo(product: DataStore) {
     oldPrice,
     newPrice,
     label: `${delta > 0 ? "+" : ""}${Math.round(delta)}%`,
-    className: delta > 0 ? "priceChangeBadgeUp" : "priceChangeBadgeDown",
-  };
+    className: delta > 0 ? "priceChangeBadgeUp" : "priceChangeBadgeDown"};
 }
 
 export default function LimitedEdition() {
@@ -77,9 +74,7 @@ export default function LimitedEdition() {
         duration: 2000,
         style: {
           backgroundColor: "#fb0404",
-          color: "#fff",
-        },
-      });
+          color: "#fff"}});
       return;
     }
 
@@ -88,13 +83,10 @@ export default function LimitedEdition() {
         duration: 2000,
         style: {
           backgroundColor: "#fb0404",
-          color: "#fff",
-        },
+          color: "#fff"},
         iconTheme: {
           primary: "#fff",
-          secondary: "#fb0404",
-        },
-      });
+          secondary: "#fb0404"}});
       return;
     }
     
@@ -104,8 +96,7 @@ export default function LimitedEdition() {
         productName: product.productName,
         productPrice: product.productPrice,
         productReviews: product.productReviews,
-        stockQuantity: availableStock,
-      })
+        stockQuantity: availableStock})
     )
       .unwrap()
       .then(() => {
@@ -113,13 +104,10 @@ export default function LimitedEdition() {
           duration: 2000,
           style: {
             backgroundColor: "#07bc0c",
-            color: "#fff",
-          },
+            color: "#fff"},
           iconTheme: {
             primary: "#fff",
-            secondary: "#07bc0c",
-          },
-        });
+            secondary: "#07bc0c"}});
       })
       .catch((error: unknown) => {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -127,9 +115,7 @@ export default function LimitedEdition() {
           duration: 2000,
           style: {
             backgroundColor: "#fb0404",
-            color: "#fff",
-          },
-        });
+            color: "#fff"}});
       });
   };
 
@@ -146,13 +132,10 @@ export default function LimitedEdition() {
             duration: 2000,
             style: {
               backgroundColor: "#fb0404",
-              color: "#fff",
-            },
+              color: "#fff"},
             iconTheme: {
               primary: "#fff",
-              secondary: "#fb0404",
-            },
-          });
+              secondary: "#fb0404"}});
         })
         .catch((error: unknown) => {
           const errorMessage = error instanceof Error ? error.message : String(error);
@@ -160,9 +143,7 @@ export default function LimitedEdition() {
             duration: 2000,
             style: {
               backgroundColor: "#fb0404",
-              color: "#fff",
-            },
-          });
+              color: "#fff"}});
         });
     } else {
       dispatch(
@@ -170,8 +151,7 @@ export default function LimitedEdition() {
           productID: product.productID,
           productName: product.productName,
           productPrice: product.productPrice,
-          productReviews: product.productReviews,
-        })
+          productReviews: product.productReviews})
       )
         .unwrap()
         .then(() => {
@@ -179,13 +159,10 @@ export default function LimitedEdition() {
             duration: 2000,
             style: {
               backgroundColor: "#07bc0c",
-              color: "#fff",
-            },
+              color: "#fff"},
             iconTheme: {
               primary: "#fff",
-              secondary: "#07bc0c",
-            },
-          });
+              secondary: "#07bc0c"}});
         })
         .catch((error: unknown) => {
           const errorMessage = error instanceof Error ? error.message : String(error);
@@ -193,9 +170,7 @@ export default function LimitedEdition() {
             duration: 2000,
             style: {
               backgroundColor: "#fb0404",
-              color: "#fff",
-            },
-          });
+              color: "#fff"}});
         });
     }
   };
@@ -203,8 +178,7 @@ export default function LimitedEdition() {
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: "smooth",
-    });
+      behavior: "smooth"});
   };
 
   return (
@@ -227,31 +201,25 @@ export default function LimitedEdition() {
             loop={true}
             navigation={{
               nextEl: ".image-swiper-button-next",
-              prevEl: ".image-swiper-button-prev",
-            }}
+              prevEl: ".image-swiper-button-prev"}}
             autoplay={{
               delay: 2500,
               disableOnInteraction: false,
-              pauseOnMouseEnter: true,
-            }}
+              pauseOnMouseEnter: true}}
             modules={[Navigation, Autoplay]}
             breakpoints={{
               320: {
                 slidesPerView: 2,
                 slidesPerGroup: 1,
-                spaceBetween: 14,
-              },
+                spaceBetween: 14},
               768: {
                 slidesPerView: 3,
                 slidesPerGroup: 1,
-                spaceBetween: 24,
-              },
+                spaceBetween: 24},
               1024: {
                 slidesPerView: 4,
                 slidesPerGroup: 1,
-                spaceBetween: 30,
-              },
-            }}
+                spaceBetween: 30}}}
           >
             {products.slice(8, 13).map((product: DataStore) => {
               const priceChange = getPriceChangeInfo(product);

@@ -1,5 +1,6 @@
 package com.example.shop.modules.auth.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,10 +13,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AuthenticationResponse {
 
-    @JsonProperty("access_token")
+    @JsonIgnore
     private String accessToken;
 
-    @JsonProperty("refresh_token")
+    @JsonIgnore
     private String refreshToken;
 
     @JsonProperty("token_type")
@@ -23,4 +24,6 @@ public class AuthenticationResponse {
 
     @JsonProperty("expires_in")
     private Long expiresIn;
+
+    private String status;
 }

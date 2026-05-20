@@ -12,8 +12,7 @@ import {
   MdLocalShipping,
   MdLogout,
   MdPerson,
-  MdMail,
-} from "react-icons/md";
+  MdMail} from "react-icons/md";
 
 type ShipperNavItem = {
   label: string;
@@ -29,8 +28,7 @@ const NAV_ITEMS: ShipperNavItem[] = [
     label: "Inbox",
     icon: <MdMail />,
     href: "/staff/support-chat",
-    highlight: true,
-  },
+    highlight: true},
   { label: "My Orders", icon: <MdLocalShipping />, href: "/shipper/orders" },
   { label: "Live Tracking", icon: <MdLocationOn />, href: "/shipper/tracking" },
   { label: "Issues & Help", icon: <MdWarning />, href: "/shipper/issues" },

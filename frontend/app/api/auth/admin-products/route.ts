@@ -16,10 +16,6 @@ type ProductPayload = {
   active?: boolean;
 };
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -32,19 +28,15 @@ function toOptionalNumber(value: number | string | undefined): number | undefine
 
 export async function GET(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const { searchParams } = new URL(request.url);
+        const { searchParams } = new URL(request.url);
     const q = searchParams.get("q");
     const endpoint = q ? `${API_URL}/products?q=${encodeURIComponent(q)}` : `${API_URL}/products`;
 
     const response = await fetch(endpoint, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-      cache: "no-store",
-    });
+        "Content-Type": "application/json"},
+      cache: "no-store"});
 
     const data = await response.json();
     if (!response.ok) {
@@ -63,15 +55,12 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const body = (await request.json()) as ProductPayload;
+        const body = (await request.json()) as ProductPayload;
 
     const response = await fetch(`${API_URL}/products/single`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
+        "Content-Type": "application/json"},
       body: JSON.stringify({
         productID: body.productID,
         frontImg: body.frontImg,
@@ -82,9 +71,7 @@ export async function POST(request: Request) {
         category: body.category,
         sizes: Array.isArray(body.sizes) ? body.sizes : [],
         stockQuantity: toOptionalNumber(body.stockQuantity),
-        active: body.active !== false,
-      }),
-    });
+        active: body.active !== false})});
 
     const data = await response.json();
     if (!response.ok) {
@@ -102,8 +89,7 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const body = (await request.json()) as ProductPayload;
+        const body = (await request.json()) as ProductPayload;
 
     if (!body.productID) {
       return NextResponse.json({ error: "Missing productID" }, { status: 400 });
@@ -112,9 +98,7 @@ export async function PUT(request: Request) {
     const response = await fetch(`${API_URL}/products/${body.productID}`, {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
+        "Content-Type": "application/json"},
       body: JSON.stringify({
         productID: body.productID,
         frontImg: body.frontImg,
@@ -125,9 +109,7 @@ export async function PUT(request: Request) {
         category: body.category,
         sizes: Array.isArray(body.sizes) ? body.sizes : [],
         stockQuantity: toOptionalNumber(body.stockQuantity),
-        active: body.active !== false,
-      }),
-    });
+        active: body.active !== false})});
 
     const data = await response.json();
     if (!response.ok) {
@@ -145,8 +127,7 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const body = (await request.json()) as ProductPayload;
+        const body = (await request.json()) as ProductPayload;
 
     if (!body.productID) {
       return NextResponse.json({ error: "Missing productID" }, { status: 400 });
@@ -155,10 +136,7 @@ export async function DELETE(request: Request) {
     const response = await fetch(`${API_URL}/products/${body.productID}`, {
       method: "DELETE",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-    });
+        "Content-Type": "application/json"}});
 
     if (!response.ok) {
       try {

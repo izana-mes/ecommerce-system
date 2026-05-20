@@ -99,11 +99,8 @@ export default function StaffSupportChatPage() {
         const response = await fetch("/api/auth/me", {
           method: "GET",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          cache: "no-store",
-        });
+            "Content-Type": "application/json"},
+          cache: "no-store"});
 
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
@@ -141,11 +138,8 @@ export default function StaffSupportChatPage() {
     const response = await fetch("/api/support-chat/conversations?limit=50", {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      cache: "no-store",
-    });
+        "Content-Type": "application/json"},
+      cache: "no-store"});
 
     const data = (await response.json().catch(() => ({}))) as ConversationListResponse;
     if (!response.ok) {
@@ -175,11 +169,8 @@ export default function StaffSupportChatPage() {
       const response = await fetch(`/api/support-chat/conversations/${encodeURIComponent(conversationId)}/messages`, {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        cache: "no-store",
-      });
+          "Content-Type": "application/json"},
+        cache: "no-store"});
 
       const data = (await response.json().catch(() => ({}))) as ConversationMessagesResponse;
       if (!response.ok) {
@@ -235,8 +226,7 @@ export default function StaffSupportChatPage() {
       },
       onSocketError: () => {
         setSocketConnected(false);
-      },
-    });
+      }});
 
     clientRef.current = client;
     client.activate();
@@ -334,9 +324,7 @@ export default function StaffSupportChatPage() {
           destination: "/app/support-chat.send",
           body: JSON.stringify({
             conversationId: activeConversationId,
-            message: text,
-          }),
-        });
+            message: text})});
         setDraft("");
         setError("");
         return;
@@ -345,11 +333,8 @@ export default function StaffSupportChatPage() {
       const response = await fetch(`/api/support-chat/conversations/${encodeURIComponent(activeConversationId)}/messages`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ message: text }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ message: text })});
 
       const data = (await response.json().catch(() => ({}))) as ConversationMessagesResponse;
       if (!response.ok) {
@@ -375,11 +360,8 @@ export default function StaffSupportChatPage() {
       const response = await fetch(`/api/support-chat/conversations/${encodeURIComponent(activeConversationId)}`, {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(payload),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify(payload)});
 
       const data = (await response.json().catch(() => ({}))) as ConversationMessagesResponse;
       if (!response.ok) {

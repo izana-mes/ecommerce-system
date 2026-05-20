@@ -44,8 +44,7 @@ const StoreData: DataStore[] = [
     productPrice: 29,
     productReviews: "8k+ reviews",
     category: "Jackets",
-    sizes: ["XS", "S", "M", "L", "XL"],
-  },
+    sizes: ["XS", "S", "M", "L", "XL"]},
   {
     productID: "2",
     frontImg: Product_2,
@@ -54,8 +53,7 @@ const StoreData: DataStore[] = [
     productPrice: 62,
     productReviews: "2k+ reviews",
     category: "Shorts",
-    sizes: ["S", "M", "L"],
-  },
+    sizes: ["S", "M", "L"]},
   {
     productID: "3",
     frontImg: Product_3,
@@ -64,8 +62,7 @@ const StoreData: DataStore[] = [
     productPrice: 60,
     productReviews: "7k+ reviews",
     category: "Tops",
-    sizes: ["S", "M", "L", "XL"],
-  },
+    sizes: ["S", "M", "L", "XL"]},
   {
     productID: "4",
     frontImg: Product_4,
@@ -74,8 +71,7 @@ const StoreData: DataStore[] = [
     productPrice: 17,
     productReviews: "5k+ reviews",
     category: "Tops",
-    sizes: ["XS", "S", "M", "L"],
-  },
+    sizes: ["XS", "S", "M", "L"]},
   {
     productID: "5",
     frontImg: Product_5,
@@ -84,8 +80,7 @@ const StoreData: DataStore[] = [
     productPrice: 100,
     productReviews: "9k+ reviews",
     category: "Knitwear",
-    sizes: ["M", "L", "XL"],
-  },
+    sizes: ["M", "L", "XL"]},
   {
     productID: "6",
     frontImg: Product_6,
@@ -94,8 +89,7 @@ const StoreData: DataStore[] = [
     productPrice: 69,
     productReviews: "1k+ reviews",
     category: "Jackets",
-    sizes: ["S", "M", "L", "XL", "XXL"],
-  },
+    sizes: ["S", "M", "L", "XL", "XXL"]},
   {
     productID: "7",
     frontImg: Product_7,
@@ -104,8 +98,7 @@ const StoreData: DataStore[] = [
     productPrice: 99,
     productReviews: "3k+ reviews",
     category: "Dresses",
-    sizes: ["XS", "S", "M", "L"],
-  },
+    sizes: ["XS", "S", "M", "L"]},
   {
     productID: "8",
     frontImg: Product_8,
@@ -114,8 +107,7 @@ const StoreData: DataStore[] = [
     productPrice: 37,
     productReviews: "4k+ reviews",
     category: "Tops",
-    sizes: ["S", "M", "L", "XL"],
-  },
+    sizes: ["S", "M", "L", "XL"]},
   {
     productID: "9",
     frontImg: limited1,
@@ -123,8 +115,7 @@ const StoreData: DataStore[] = [
     productPrice: 29,
     productReviews: "8k+ reviews",
     category: "Home Decor",
-    sizes: ["One Size"],
-  },
+    sizes: ["One Size"]},
   {
     productID: "10",
     frontImg: limited2,
@@ -132,8 +123,7 @@ const StoreData: DataStore[] = [
     productPrice: 92,
     productReviews: "5k+ reviews",
     category: "Home Decor",
-    sizes: ["One Size"],
-  },
+    sizes: ["One Size"]},
   {
     productID: "11",
     frontImg: limited3,
@@ -141,8 +131,7 @@ const StoreData: DataStore[] = [
     productPrice: 25,
     productReviews: "1k+ reviews",
     category: "Knitwear",
-    sizes: ["One Size"],
-  },
+    sizes: ["One Size"]},
   {
     productID: "12",
     frontImg: limited4,
@@ -150,8 +139,7 @@ const StoreData: DataStore[] = [
     productPrice: 27,
     productReviews: "7k+ reviews",
     category: "Home Decor",
-    sizes: ["One Size"],
-  },
+    sizes: ["One Size"]},
   {
     productID: "13",
     frontImg: limited5,
@@ -159,8 +147,7 @@ const StoreData: DataStore[] = [
     productPrice: 39,
     productReviews: "71+ reviews",
     category: "Accessories",
-    sizes: ["One Size"],
-  },
+    sizes: ["One Size"]},
 ];
 
 export default StoreData;

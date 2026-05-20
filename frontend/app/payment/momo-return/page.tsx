@@ -29,10 +29,7 @@ function MomoReturnContent() {
         method: "DELETE",
         credentials: "include",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      })
+          "Content-Type": "application/json"}})
         .catch(() => null)
         .then(() => {
           dispatch(clearCart());

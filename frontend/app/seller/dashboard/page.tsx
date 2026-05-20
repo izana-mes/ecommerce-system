@@ -97,7 +97,7 @@ export default function SellerDashboardPage() {
     try {
       const res = await fetch(
         `/api/v1/seller/dashboard?days=${daysParam}&lowStockThreshold=5`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { } }
       );
       const resData = await res.json();
       if (!res.ok) throw new Error(resData?.message || "Failed to load dashboard");
@@ -164,8 +164,7 @@ export default function SellerDashboardPage() {
                 color: days === d ? "#fff" : "#475569",
                 fontWeight: 600,
                 fontSize: 13,
-                cursor: "pointer",
-              }}
+                cursor: "pointer"}}
             >
               {d}d
             </button>

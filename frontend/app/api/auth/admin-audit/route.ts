@@ -9,13 +9,8 @@ function toPositiveNumber(value: string | null, fallback: number): number {
   return Math.floor(parsed);
 }
 
-function getAuthHeader(request: Request): string | null {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 export async function GET(request: Request) {
-  const authHeader = getAuthHeader(request);
-
+  
   try {
     const { searchParams } = new URL(request.url);
     // Convert 1-indexed page from client to 0-indexed for backend
@@ -32,17 +27,13 @@ export async function GET(request: Request) {
       ...(eventType ? { eventType } : {}),
       ...(entityType ? { entityType } : {}),
       ...(dateFrom ? { dateFrom } : {}),
-      ...(dateTo ? { dateTo } : {}),
-    });
+      ...(dateTo ? { dateTo } : {})});
 
     const response = await fetch(`${API_URL}/v1/admin/audit-events?${query}`, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-      cache: "no-store",
-    });
+        "Content-Type": "application/json"},
+      cache: "no-store"});
 
     const raw = await response.text();
     const payload = raw ? JSON.parse(raw) : null;

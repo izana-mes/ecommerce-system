@@ -14,19 +14,14 @@ type AttendancePostRequest = {
 };
 
 async function proxyAttendance(request: Request, init?: RequestInit) {
-  const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
-  const cookieHeader = request.headers.get("cookie");
+    const cookieHeader = request.headers.get("cookie");
 
   const response = await fetch(`${backendApiBaseUrl()}/attendance`, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
-      ...(authHeader ? { Authorization: authHeader } : {}),
-      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      ...(init?.headers || {}),
-    },
-    cache: "no-store",
-  });
+      "Content-Type": "application/json",      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      ...(init?.headers || {})},
+    cache: "no-store"});
 
   const payload = await response.json().catch(() => ({}));
   return NextResponse.json(payload, { status: response.status });
@@ -47,8 +42,7 @@ export async function POST(request: Request) {
     const body = (await request.json().catch(() => ({}))) as AttendancePostRequest;
     return await proxyAttendance(request, {
       method: "POST",
-      body: JSON.stringify(body),
-    });
+      body: JSON.stringify(body)});
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Attendance action failed.";
     console.error("POST /api/attendance error:", message);

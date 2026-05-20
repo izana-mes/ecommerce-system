@@ -30,8 +30,7 @@ export function createSupportChatStompClient(options: {
     },
     onWebSocketError: () => {
       options.onSocketError?.();
-    },
-  });
+    }});
 
   return client;
 }

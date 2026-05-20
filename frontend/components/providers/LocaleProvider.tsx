@@ -46,8 +46,7 @@ export default function LocaleProvider({ children }: { children: React.ReactNode
     () => ({
       locale,
       setLocale,
-      t: (key: TranslationKey) => getTranslation(locale, key),
-    }),
+      t: (key: TranslationKey) => getTranslation(locale, key)}),
     [locale]
   );
 

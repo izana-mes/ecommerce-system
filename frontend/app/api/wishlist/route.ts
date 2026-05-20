@@ -3,12 +3,6 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_URL = backendApiBaseUrl();
 
-function getAuthHeader(request: Request) {
-  return (
-    request.headers.get("authorization") || request.headers.get("Authorization")
-  );
-}
-
 function getCookieHeader(request: Request) {
   return request.headers.get("cookie");
 }
@@ -25,16 +19,11 @@ async function parseJsonOrText(response: Response) {
 
 export async function GET(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const cookieHeader = getCookieHeader(request);
+        const cookieHeader = getCookieHeader(request);
     const response = await fetch(`${API_URL}/wishlist`, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
-    });
+        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})}});
 
     const data = await parseJsonOrText(response);
 
@@ -51,8 +40,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to fetch wishlist",
-        details: error?.message || String(error),
-      },
+        details: error?.message || String(error)},
       { status: 500 }
     );
   }
@@ -61,18 +49,13 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const authHeader = getAuthHeader(request);
-    const cookieHeader = getCookieHeader(request);
+        const cookieHeader = getCookieHeader(request);
 
     const response = await fetch(`${API_URL}/wishlist`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
-      body: JSON.stringify(body),
-    });
+        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})},
+      body: JSON.stringify(body)});
 
     const data = await parseJsonOrText(response);
 
@@ -86,8 +69,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to add item to wishlist",
-        details: error?.message || String(error),
-      },
+        details: error?.message || String(error)},
       { status: 500 }
     );
   }
@@ -97,8 +79,7 @@ export async function DELETE(request: Request) {
   try {
     const body = await request.json();
     const { productID } = body;
-    const authHeader = getAuthHeader(request);
-    const cookieHeader = getCookieHeader(request);
+        const cookieHeader = getCookieHeader(request);
 
     if (!productID) {
       return NextResponse.json(
@@ -110,11 +91,7 @@ export async function DELETE(request: Request) {
     const response = await fetch(`${API_URL}/wishlist/${productID}`, {
       method: "DELETE",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
-    });
+        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})}});
 
     const data = await parseJsonOrText(response);
 
@@ -128,8 +105,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to remove item from wishlist",
-        details: error?.message || String(error),
-      },
+        details: error?.message || String(error)},
       { status: 500 }
     );
   }

@@ -33,8 +33,7 @@ function formatMoney(value: number, currency: string): string {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: (currency || "USD").toUpperCase(),
-      maximumFractionDigits: 2,
-    }).format(Number(value || 0));
+      maximumFractionDigits: 2}).format(Number(value || 0));
   } catch {
     return `${Number(value || 0).toFixed(2)} ${currency || "USD"}`;
   }
@@ -103,8 +102,7 @@ function TrackPageInner() {
       try {
         if (token) {
           const res = await fetch(`/api/orders/track?token=${encodeURIComponent(token)}`, {
-            cache: "no-store",
-          });
+            cache: "no-store"});
           const json = await res.json().catch(() => null);
           if (!res.ok || !json?.success) {
             throw new Error(json?.message || json?.error || "Not found");
@@ -120,10 +118,8 @@ function TrackPageInner() {
             credentials: "include",
             headers: {
               "Content-Type": "application/json",
-              ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-            },
-            cache: "no-store",
-          });
+              ...(authToken ? { } : {})},
+            cache: "no-store"});
           const json = await res.json().catch(() => null);
           if (!res.ok || !json?.success) {
             throw new Error(json?.message || json?.error || "Not found");
@@ -181,8 +177,7 @@ function TrackPageInner() {
               borderRadius: 8,
               padding: 16,
               marginBottom: 16,
-              background: "#fff",
-            }}
+              background: "#fff"}}
           >
             <p style={{ margin: "0 0 6px" }}>
               <strong>{t("track_order_number")}:</strong> {data.orderNumber}
@@ -267,8 +262,7 @@ function normalizeTracking(raw: Record<string, unknown>): TrackingPayload {
     productName: String(row.productName ?? row.product_name ?? ""),
     quantity: Number(row.quantity ?? 0) || 0,
     unitPrice: Number(row.unitPrice ?? row.unit_price ?? 0) || 0,
-    lineTotal: Number(row.lineTotal ?? row.line_total ?? 0) || 0,
-  }));
+    lineTotal: Number(row.lineTotal ?? row.line_total ?? 0) || 0}));
   const lat = Number(raw.deliveryLatitude ?? raw.delivery_latitude ?? NaN);
   const lon = Number(raw.deliveryLongitude ?? raw.delivery_longitude ?? NaN);
   const acc = Number(raw.deliveryLocationAccuracyMeters ?? raw.delivery_location_accuracy_meters ?? NaN);
@@ -284,8 +278,7 @@ function normalizeTracking(raw: Record<string, unknown>): TrackingPayload {
     deliveryLongitude: Number.isFinite(lon) ? lon : null,
     deliveryLocationLabel: (raw.deliveryLocationLabel ?? raw.delivery_location_label) as string | null | undefined,
     deliveryLocationAccuracyMeters: Number.isFinite(acc) ? acc : null,
-    items,
-  };
+    items};
 }
 
 export default function TrackPage() {

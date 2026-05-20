@@ -22,8 +22,7 @@ function createMessage(role: "user" | "assistant", text: string): Message {
     id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     role,
     text,
-    timestamp: new Date().toISOString(),
-  };
+    timestamp: new Date().toISOString()};
 }
 
 const STARTER_QUESTIONS = [
@@ -61,11 +60,8 @@ export default function StaffChatbotPage() {
         const response = await fetch("/api/auth/me", {
           method: "GET",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          cache: "no-store",
-        });
+            "Content-Type": "application/json"},
+          cache: "no-store"});
 
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
@@ -114,11 +110,8 @@ export default function StaffChatbotPage() {
       const response = await fetch("/api/chatbot/stream", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ question: trimmed }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ question: trimmed })});
       if (!response.ok || !response.body) {
         const data = (await response.json().catch(() => ({}))) as ChatbotResponse;
         const message = data?.error || `Request failed (${response.status})`;

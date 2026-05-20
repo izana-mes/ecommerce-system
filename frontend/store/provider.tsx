@@ -6,8 +6,7 @@ import { fetchWishlistAsync } from "./wishListSlice";
 import store from "./index";
 
 export default function ReduxProvider({
-  children,
-}: {
+  children}: {
   children: React.ReactNode;
 }) {
   // Hydrate the Redux cart and wishlist state from the database when the app loads

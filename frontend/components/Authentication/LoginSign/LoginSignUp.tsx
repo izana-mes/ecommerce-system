@@ -82,13 +82,10 @@ const LoginSignUp = () => {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           email: loginEmail,
-          password: loginPassword,
-        }),
-      });
+          password: loginPassword})});
 
       let data;
       try {
@@ -109,12 +106,9 @@ const LoginSignUp = () => {
         throw new Error(errorMessage);
       }
 
-      // Spring wraps success in ApiResponse: { success: true, data: { access_token, refresh_token, ... } }
       const authData = data?.data;
-      const accessToken = authData?.access_token;
-
-      if (!accessToken) {
-        throw new Error("Invalid response: Missing access token");
+      if (!response.ok || authData?.status !== "AUTHENTICATED") {
+        throw new Error(data?.message || "Login failed");
       }
 
       let resolvedUser = {
@@ -122,17 +116,13 @@ const LoginSignUp = () => {
         role: "user" as "user" | "admin" | "employee" | "supplier" | "shipper",
         firstName: undefined as string | undefined,
         lastName: undefined as string | undefined,
-        id: undefined as string | number | undefined,
-      };
+        id: undefined as string | number | undefined};
 
       try {
         const meResponse = await fetch("/api/auth/me", {
           method: "GET",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
+            "Content-Type": "application/json"}});
         const meData = await meResponse.json();
         const profile = meData?.data;
         if (meResponse.ok && profile?.email) {
@@ -142,15 +132,14 @@ const LoginSignUp = () => {
             role,
             firstName: profile.firstName || undefined,
             lastName: profile.lastName || undefined,
-            id: profile.id,
-          };
+            id: profile.id};
         }
       } catch {
         // Keep fallback resolvedUser when profile endpoint is temporarily unavailable.
       }
 
       // Store token and user data using shared auth helper
-      setAuth(accessToken, resolvedUser, rememberMe);
+      setAuth("", resolvedUser, rememberMe);
 
       // Load cart and wishlist for the newly logged-in user
       dispatch(fetchCartAsync());
@@ -160,21 +149,17 @@ const LoginSignUp = () => {
         duration: 2000,
         style: {
           backgroundColor: "#07bc0c",
-          color: "#fff",
-        },
+          color: "#fff"},
         iconTheme: {
           primary: "#fff",
-          secondary: "#07bc0c",
-        },
-      });
+          secondary: "#07bc0c"}});
 
       // Confetti effect for successful login
       confetti({
         particleCount: 150,
         spread: 80,
         origin: { y: 0.6 },
-        zIndex: 9999,
-      });
+        zIndex: 9999});
 
       // Redirect to home page immediately after successful login
       router.replace(returnTo);
@@ -189,9 +174,7 @@ const LoginSignUp = () => {
         duration: 3000,
         style: {
           backgroundColor: "#fb0404",
-          color: "#fff",
-        },
-      });
+          color: "#fff"}});
     } finally {
       setLoading(false);
     }
@@ -205,16 +188,13 @@ const LoginSignUp = () => {
       const response = await fetch("/api/auth/users", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           username: registerUsername,
           email: registerEmail,
           password: registerPassword,
           firstName: registerFirstName || null,
-          lastName: registerLastName || null,
-        }),
-      });
+          lastName: registerLastName || null})});
 
       const data = await response.json();
 
@@ -226,13 +206,10 @@ const LoginSignUp = () => {
         duration: 2000,
         style: {
           backgroundColor: "#07bc0c",
-          color: "#fff",
-        },
+          color: "#fff"},
         iconTheme: {
           primary: "#fff",
-          secondary: "#07bc0c",
-        },
-      });
+          secondary: "#07bc0c"}});
 
       // Move user directly to email verification screen
       setVerifyEmail(registerEmail);
@@ -246,9 +223,7 @@ const LoginSignUp = () => {
         duration: 2000,
         style: {
           backgroundColor: "#fb0404",
-          color: "#fff",
-        },
-      });
+          color: "#fff"}});
     } finally {
       setLoading(false);
     }
@@ -262,13 +237,10 @@ const LoginSignUp = () => {
       const response = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           email: verifyEmail,
-          otp: verifyOtp,
-        }),
-      });
+          otp: verifyOtp})});
 
       const data = await response.json();
 
@@ -280,9 +252,7 @@ const LoginSignUp = () => {
         duration: 2000,
         style: {
           backgroundColor: "#07bc0c",
-          color: "#fff",
-        },
-      });
+          color: "#fff"}});
 
       setLoginEmail(verifyEmail);
       setVerifyOtp("");
@@ -292,9 +262,7 @@ const LoginSignUp = () => {
         duration: 2500,
         style: {
           backgroundColor: "#fb0404",
-          color: "#fff",
-        },
-      });
+          color: "#fff"}});
     } finally {
       setLoading(false);
     }
@@ -310,10 +278,8 @@ const LoginSignUp = () => {
       const response = await fetch("/api/auth/resend-otp", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email: verifyEmail }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ email: verifyEmail })});
 
       const data = await response.json();
       if (!response.ok) {

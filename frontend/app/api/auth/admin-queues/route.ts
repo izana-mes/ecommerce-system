@@ -30,40 +30,27 @@ type AuditPayload = {
   content?: Array<{ created_at?: string }>;
 };
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 export async function GET(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const auth = Buffer.from(`${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}`).toString("base64");
+        const auth = Buffer.from(`${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}`).toString("base64");
 
     const [response, dashboardResponse, auditResponse] = await Promise.all([
       fetch(`${RABBITMQ_MANAGEMENT_URL}/api/queues/%2F`, {
         method: "GET",
         headers: {
           Authorization: `Basic ${auth}`,
-          "Content-Type": "application/json",
-        },
-        cache: "no-store",
-      }),
+          "Content-Type": "application/json"},
+        cache: "no-store"}),
       fetch(`${API_URL}/v1/admin/dashboard?days=7&recentLimit=8&lowStockThreshold=5`, {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          ...(authHeader ? { Authorization: authHeader } : {}),
-        },
-        cache: "no-store",
-      }),
+          "Content-Type": "application/json"},
+        cache: "no-store"}),
       fetch(`${API_URL}/v1/admin/audit-events?page=0&size=1`, {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          ...(authHeader ? { Authorization: authHeader } : {}),
-        },
-        cache: "no-store",
-      }),
+          "Content-Type": "application/json"},
+        cache: "no-store"}),
     ]);
 
     const dashboardPayload = (await dashboardResponse.json()) as DashboardPayload;
@@ -75,8 +62,7 @@ export async function GET(request: Request) {
           pendingOrders: Number(dashboardPayload?.data?.pendingOrders ?? 0),
           lowStockProducts: Number(dashboardPayload?.data?.lowStockProducts ?? 0),
           totalAuditEvents: Number(auditPayload?.totalElements ?? 0),
-          latestAuditEventAt: auditPayload?.content?.[0]?.created_at || null,
-        }
+          latestAuditEventAt: auditPayload?.content?.[0]?.created_at || null}
       : null;
 
     if (!response.ok) {
@@ -89,12 +75,10 @@ export async function GET(request: Request) {
           totalQueues: 0,
           totalMessages: 0,
           totalConsumers: 0,
-          totalDlqMessages: 0,
-        },
+          totalDlqMessages: 0},
         databaseContext,
         unavailable: true,
-        details: `RabbitMQ API responded with ${response.status}`,
-      });
+        details: `RabbitMQ API responded with ${response.status}`});
     }
 
     const data = (await response.json()) as RabbitQueue[];
@@ -106,8 +90,7 @@ export async function GET(request: Request) {
       messagesUnacked: q.messages_unacknowledged || 0,
       consumers: q.consumers || 0,
       state: q.state || "unknown",
-      isDlq: q.name.endsWith(".dlq"),
-    }));
+      isDlq: q.name.endsWith(".dlq")}));
 
     // Separate main queues from DLQs
     const mainQueues = queues.filter((q) => !q.isDlq && !q.name.includes("retry"));
@@ -126,10 +109,8 @@ export async function GET(request: Request) {
         totalQueues: queues.length,
         totalMessages,
         totalConsumers,
-        totalDlqMessages,
-      },
-      databaseContext,
-    });
+        totalDlqMessages},
+      databaseContext});
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("Error fetching RabbitMQ queues:", message);
@@ -142,10 +123,8 @@ export async function GET(request: Request) {
         totalQueues: 0,
         totalMessages: 0,
         totalConsumers: 0,
-        totalDlqMessages: 0,
-      },
+        totalDlqMessages: 0},
       unavailable: true,
-      details: message,
-    });
+      details: message});
   }
 }

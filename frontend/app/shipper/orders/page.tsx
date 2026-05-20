@@ -39,8 +39,7 @@ const STATUS_BADGE: Record<string, string> = {
   completed: "sh-badge-green",
   cancelled: "sh-badge-red",
   pending: "sh-badge-amber",
-  pending_payment: "sh-badge-amber",
-};
+  pending_payment: "sh-badge-amber"};
 
 export default function ShipperOrdersPage() {
   const user = getUser();
@@ -65,8 +64,7 @@ export default function ShipperOrdersPage() {
     setLoading(true);
     try {
       const res = await fetch(`/api/v1/shipper/orders/${id}/tracking`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        headers: { }});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Order not found");
       setOrder(data.data ?? null);
@@ -84,8 +82,7 @@ export default function ShipperOrdersPage() {
     setLoadingAssigned(true);
     try {
       const res = await fetch(`/api/v1/shipper/orders?activeOnly=true&limit=50`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        headers: { }});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed to load assigned orders");
       setAssignedOrders(Array.isArray(data?.data) ? data.data : []);
@@ -110,9 +107,8 @@ export default function ShipperOrdersPage() {
 
       const res = await fetch(`/api/v1/shipper/orders/${order.orderId}/status`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(body),
-      });
+        headers: { "Content-Type": "application/json"},
+        body: JSON.stringify(body)});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed to update status");
       toast.success(`✅ Status updated to ${statusValue}`);
@@ -130,8 +126,7 @@ export default function ShipperOrdersPage() {
     if (!iso) return "—";
     return new Date(iso).toLocaleString("en-US", {
       month: "short", day: "numeric",
-      hour: "2-digit", minute: "2-digit",
-    });
+      hour: "2-digit", minute: "2-digit"});
   };
 
   const statusIcon = (s: string) => {
@@ -318,8 +313,7 @@ export default function ShipperOrdersPage() {
                       background: new Date(order.expectedDeliveryAt) > new Date() ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
                       border: `1px solid ${new Date(order.expectedDeliveryAt) > new Date() ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)"}`,
                       fontSize: 13,
-                      color: "#f1f5f9",
-                    }}
+                      color: "#f1f5f9"}}
                   >
                     {new Date(order.expectedDeliveryAt) > new Date()
                       ? `✅ On time — due ${fmt(order.expectedDeliveryAt)}`

@@ -47,7 +47,7 @@ export function useShipperSocket(
     const client = new Client({
       webSocketFactory: () =>
         new SockJS(`${publicBackendOriginUrl()}/ws`) as WebSocket,
-      connectHeaders: { Authorization: `Bearer ${token}` },
+      connectHeaders: { },
       reconnectDelay: 5000,
       heartbeatIncoming: 15000,
       heartbeatOutgoing: 15000,
@@ -67,8 +67,7 @@ export function useShipperSocket(
       },
       onDisconnect: () => setConnected(false),
       onStompError: () => setConnected(false),
-      onWebSocketError: () => setConnected(false),
-    });
+      onWebSocketError: () => setConnected(false)});
 
     client.activate();
     clientRef.current = client;

@@ -96,8 +96,7 @@ export default function Navbar() {
       const response = await fetch("/api/products/search-history?limit=8", {
         method: "GET",
         credentials: "include",
-        cache: "no-store",
-      });
+        cache: "no-store"});
       if (!response.ok) {
         setSearchHistory([]);
         return;
@@ -187,8 +186,7 @@ export default function Navbar() {
     const timeoutId = setTimeout(() => {
       void fetch(`/api/products/suggest?q=${encodeURIComponent(query)}&limit=8`, {
         method: "GET",
-        cache: "no-store",
-      })
+        cache: "no-store"})
         .then(async (response) => {
           if (!response.ok) {
             return [];
@@ -232,8 +230,7 @@ export default function Navbar() {
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: "smooth",
-    });
+      behavior: "smooth"});
   };
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
@@ -360,8 +357,7 @@ export default function Navbar() {
     try {
       const response = await fetch(`/api/products?q=${encodeURIComponent(value)}`, {
         method: "GET",
-        cache: "no-store",
-      });
+        cache: "no-store"});
       const data = await response.json().catch(() => []);
       const products = Array.isArray(data) ? data : [];
 
@@ -536,8 +532,7 @@ export default function Navbar() {
                     color="primary"
                     anchorOrigin={{
                       vertical: "bottom",
-                      horizontal: "right",
-                    }}
+                      horizontal: "right"}}
                   >
                     <RiShoppingBagLine size={22} onClick={scrollToTop} />
                   </Badge>

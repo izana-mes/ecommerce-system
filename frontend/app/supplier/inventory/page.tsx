@@ -31,8 +31,7 @@ export default function SupplierInventoryPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/v1/supplier/inventory?lowStockThreshold=8", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        headers: { }});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed to load inventory");
       const fetched: InventoryItem[] = data.data || [];
@@ -71,9 +70,8 @@ export default function SupplierInventoryPage() {
     try {
       const res = await fetch(`/api/v1/supplier/inventory/${productId}/stock`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ productId, newQuantity: qty }),
-      });
+        headers: { "Content-Type": "application/json"},
+        body: JSON.stringify({ productId, newQuantity: qty })});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Update failed");
       toast.success(`Stock updated to ${qty}`);
@@ -99,13 +97,11 @@ export default function SupplierInventoryPage() {
     try {
       const res = await fetch("/api/v1/supplier/inventory/restock-request", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json"},
         body: JSON.stringify({
           productId: restockForm.productId,
           requestedQuantity: qty,
-          note: restockForm.note.trim() || null,
-        }),
-      });
+          note: restockForm.note.trim() || null})});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || data?.error || "Restock request failed");
       toast.success(data?.message || "Restock request submitted for admin review");
@@ -176,8 +172,7 @@ export default function SupplierInventoryPage() {
             style={{
               ...pillStyle,
               background: filterMode === mode ? "#0f172a" : "#f1f5f9",
-              color: filterMode === mode ? "#fff" : "#475569",
-            }}
+              color: filterMode === mode ? "#fff" : "#475569"}}
           >
             {mode === "all" ? "All" : mode === "low" ? "⚠ Low Stock" : "🚫 Out of Stock"}
           </button>
@@ -276,8 +271,7 @@ export default function SupplierInventoryPage() {
                         style={{
                           ...qtyInputStyle,
                           borderColor: edited ? "#14b8a6" : "#e2e8f0",
-                          boxShadow: edited ? "0 0 0 3px rgba(20,184,166,0.15)" : "none",
-                        }}
+                          boxShadow: edited ? "0 0 0 3px rgba(20,184,166,0.15)" : "none"}}
                       />
                     </td>
                     <td style={tdStyle}>

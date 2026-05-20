@@ -1,5 +1,6 @@
 package com.example.shop.common.web;
 
+import com.example.shop.modules.security.RequestIdHolder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -7,8 +8,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -16,8 +21,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
 
 @Component
 @RequiredArgsConstructor
@@ -26,16 +29,23 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private final ObjectMapper objectMapper;
     private final ClientIpExtractor clientIpExtractor;
-    private final ConcurrentHashMap<String, ConcurrentLinkedDeque<Long>> buckets = new ConcurrentHashMap<>();
+    private final StringRedisTemplate redisTemplate;
 
     private static final List<RateLimitRule> RULES = List.of(
-            new RateLimitRule("POST", "/api/v1/auth/authenticate", 12, 60_000L, "login"),
-            new RateLimitRule("POST", "/api/v1/auth/forgot-password", 6, 15 * 60_000L, "forgot_password"),
-            new RateLimitRule("POST", "/api/v1/auth/reset-password", 12, 15 * 60_000L, "reset_password"),
-            new RateLimitRule("POST", "/api/v1/auth/resend-otp", 8, 15 * 60_000L, "resend_otp"),
-            new RateLimitRule("POST", "/api/v1/auth/verify-otp", 20, 15 * 60_000L, "verify_otp"),
-            new RateLimitRule("POST", "/api/internal/notifications/order-paid", 60, 60_000L, "order_paid_notify"),
-            new RateLimitRule("POST", "/api/internal/notifications/coupon-issued", 120, 60_000L, "coupon_issued_notify")
+            new RateLimitRule("POST", "/api/v1/auth/authenticate", 10, 60, "login"),
+            new RateLimitRule("POST", "/api/v1/auth/register", 8, 60, "register"),
+            new RateLimitRule("POST", "/api/v1/auth/forgot-password", 6, 900, "forgot_password"),
+            new RateLimitRule("POST", "/api/v1/auth/reset-password", 10, 900, "reset_password"),
+            new RateLimitRule("POST", "/api/payments", 30, 60, "payments"),
+            new RateLimitRule("POST", "/api/chatbot", 50, 60, "chatbot"),
+            new RateLimitRule("/api/v1/admin", 100, 60, "admin")
+    );
+
+    private static final DefaultRedisScript<Long> LUA = new DefaultRedisScript<>(
+            "local current = redis.call('INCR', KEYS[1]); " +
+                    "if current == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]); end; " +
+                    "return current;",
+            Long.class
     );
 
     @Override
@@ -47,53 +57,47 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        String clientKey = extractClientIdentifier(request);
-        String bucketKey = rule.name() + "::" + clientKey;
-        if (isExceeded(bucketKey, rule)) {
-            int retryAfterSeconds = Math.max(1, (int) Math.ceil(rule.windowMs() / 1000.0));
+        String key = "rl:" + rule.name() + ":" + keyDimension(request);
+        Long count = redisTemplate.execute(LUA, List.of(key), String.valueOf(rule.windowSeconds()));
+        if (count != null && count > rule.limit()) {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            response.setHeader("Retry-After", String.valueOf(retryAfterSeconds));
+            response.setHeader("Retry-After", String.valueOf(rule.windowSeconds()));
             response.getWriter().write(objectMapper.writeValueAsString(Map.of(
                     "success", false,
-                    "message", "Too many requests. Please retry later."
+                    "message", "Too many requests. Please retry later.",
+                    "requestId", RequestIdHolder.getOrDefault()
             )));
-            log.warn("rate_limit_exceeded rule={} ip={} method={} path={}",
-                    rule.name(), clientKey, request.getMethod(), request.getRequestURI());
+            log.warn("rate_limit_exceeded rule={} key={} path={}", rule.name(), key, request.getRequestURI());
             return;
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private boolean isExceeded(String bucketKey, RateLimitRule rule) {
-        long now = System.currentTimeMillis();
-        ConcurrentLinkedDeque<Long> deque = buckets.computeIfAbsent(bucketKey, key -> new ConcurrentLinkedDeque<>());
-        synchronized (deque) {
-            while (!deque.isEmpty() && now - deque.peekFirst() >= rule.windowMs()) {
-                deque.pollFirst();
-            }
-            if (deque.size() >= rule.limit()) {
-                return true;
-            }
-            deque.addLast(now);
-            return false;
+    private String keyDimension(HttpServletRequest request) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && StringUtils.hasText(auth.getName())) {
+            return "user:" + auth.getName();
         }
+        return "ip:" + clientIpExtractor.extractClientIp(request);
     }
 
     private RateLimitRule findRule(String method, String path) {
         for (RateLimitRule rule : RULES) {
-            if (rule.method().equalsIgnoreCase(method) && rule.path().equals(path)) {
+            if (!rule.method().isBlank() && rule.method().equalsIgnoreCase(method) && rule.pathPrefix().equals(path)) {
+                return rule;
+            }
+            if (rule.method().isBlank() && path.startsWith(rule.pathPrefix())) {
                 return rule;
             }
         }
         return null;
     }
 
-    private String extractClientIdentifier(HttpServletRequest request) {
-        return clientIpExtractor.extractClientIp(request);
-    }
-
-    private record RateLimitRule(String method, String path, int limit, long windowMs, String name) {
+    private record RateLimitRule(String method, String pathPrefix, int limit, int windowSeconds, String name) {
+        private RateLimitRule(String pathPrefix, int limit, int windowSeconds, String name) {
+            this("", pathPrefix, limit, windowSeconds, name);
+        }
     }
 }

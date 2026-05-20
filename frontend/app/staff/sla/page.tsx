@@ -35,8 +35,8 @@ export default function StaffSlaPage() {
       const token = getToken();
 
       const [lateRes, nearRes] = await Promise.all([
-        fetch(`/api/v1/staff/sla/late`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`/api/v1/staff/sla/near-late?thresholdMinutes=30`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`/api/v1/staff/sla/late`, { headers: { } }),
+        fetch(`/api/v1/staff/sla/near-late?thresholdMinutes=30`, { headers: { } }),
       ]);
 
       if (!lateRes.ok || !nearRes.ok) throw new Error("Failed to load SLA tracking data");

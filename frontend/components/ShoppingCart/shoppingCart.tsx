@@ -14,8 +14,7 @@ import {
   removeFromCart,
   removeFromCartAsync,
   selectCartTotalAmount,
-  updateQuantityAsync,
-} from "@/store/cartSlice";
+  updateQuantityAsync} from "@/store/cartSlice";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { getToken, getUser, refreshCurrentUserFromServer } from "@/lib/auth";
 import { useLocale } from "@/components/providers/LocaleProvider";
@@ -29,8 +28,7 @@ function shippingEstimateKey(country: string): TranslationKey {
     Canada: "checkout_shipping_est_canada",
     "United Kingdom": "checkout_shipping_est_uk",
     "United States": "checkout_shipping_est_us",
-    Turkey: "checkout_shipping_est_turkey",
-  };
+    Turkey: "checkout_shipping_est_turkey"};
   return map[country] ?? "checkout_shipping_est_default";
 }
 
@@ -159,8 +157,7 @@ export default function ShoppingCart() {
     email: "",
     createAccount: false,
     shipToDifferentAddress: false,
-    notes: "",
-  });
+    notes: ""});
   const [checkoutErrors, setCheckoutErrors] = useState<CheckoutErrorFields>({});
   const [checkoutLocation, setCheckoutLocation] = useState<CapturedLocation | null>(null);
   const [locationLoading, setLocationLoading] = useState(false);
@@ -181,8 +178,7 @@ export default function ShoppingCart() {
     vat: 0,
     couponDiscount: 0,
     pointsDiscount: 0,
-    total: 0,
-  });
+    total: 0});
   const requestedStep = (searchParams.get("step") || "").trim().toLowerCase();
   const requestedBuyNow = (searchParams.get("buyNow") || "").trim();
   const requestedPayment = (searchParams.get("payment") || "").trim().toLowerCase();
@@ -211,8 +207,7 @@ export default function ShoppingCart() {
       ...prev,
       firstName: prev.firstName || user.firstName || "",
       lastName: prev.lastName || user.lastName || "",
-      email: prev.email || user.email || "",
-    }));
+      email: prev.email || user.email || ""}));
   }, []);
 
   useEffect(() => {
@@ -272,12 +267,10 @@ export default function ShoppingCart() {
   const handleCheckoutFieldChange = (field: keyof CheckoutForm, value: string | boolean) => {
     setCheckoutForm((prev) => ({
       ...prev,
-      [field]: value,
-    }));
+      [field]: value}));
     setCheckoutErrors((prev) => ({
       ...prev,
-      [field]: undefined,
-    }));
+      [field]: undefined}));
   };
 
   const validateCheckoutForm = (): boolean => {
@@ -370,8 +363,7 @@ export default function ShoppingCart() {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy,
           timeout: 15_000,
-          maximumAge: 0,
-        });
+          maximumAge: 0});
       });
 
     let position: GeolocationPosition;
@@ -417,20 +409,17 @@ export default function ShoppingCart() {
             prev.streetAddress2 || streetAddress2 || `Lat ${latitude.toFixed(5)}, Lng ${longitude.toFixed(5)}`,
           city: prev.city || city,
           postalCode: prev.postalCode || postalCode,
-          country: prev.country || country,
-        }));
+          country: prev.country || country}));
         label = displayName || streetAddress1 || label;
       } else {
         setCheckoutForm((prev) => ({
           ...prev,
-          streetAddress2: prev.streetAddress2 || `Lat ${latitude.toFixed(5)}, Lng ${longitude.toFixed(5)}`,
-        }));
+          streetAddress2: prev.streetAddress2 || `Lat ${latitude.toFixed(5)}, Lng ${longitude.toFixed(5)}`}));
       }
     } catch {
       setCheckoutForm((prev) => ({
         ...prev,
-        streetAddress2: prev.streetAddress2 || `Lat ${latitude.toFixed(5)}, Lng ${longitude.toFixed(5)}`,
-      }));
+        streetAddress2: prev.streetAddress2 || `Lat ${latitude.toFixed(5)}, Lng ${longitude.toFixed(5)}`}));
     }
 
     setCheckoutErrors((prev) => ({
@@ -438,16 +427,14 @@ export default function ShoppingCart() {
       streetAddress1: undefined,
       city: undefined,
       postalCode: undefined,
-      country: undefined,
-    }));
+      country: undefined}));
 
     return {
       latitude,
       longitude,
       accuracyMeters,
       label,
-      capturedAt,
-    };
+      capturedAt};
   }, []);
 
   const handleUseCurrentLocation = useCallback(async () => {
@@ -501,22 +488,19 @@ export default function ShoppingCart() {
       streetAddress1: result.streetAddress1 || prev.streetAddress1,
       streetAddress2: result.streetAddress2 || prev.streetAddress2,
       city: result.city || prev.city,
-      postalCode: result.postalCode || prev.postalCode,
-    }));
+      postalCode: result.postalCode || prev.postalCode}));
     setCheckoutErrors((prev) => ({
       ...prev,
       streetAddress1: undefined,
       city: undefined,
       postalCode: undefined,
-      country: undefined,
-    }));
+      country: undefined}));
     setCheckoutLocation({
       latitude: result.latitude,
       longitude: result.longitude,
       accuracyMeters: null,
       label: result.displayName || result.streetAddress1,
-      capturedAt: Date.now(),
-    });
+      capturedAt: Date.now()});
     setAddressResults([]);
     setAddressQuery(result.displayName || result.streetAddress1);
     toast.success("Address selected");
@@ -549,10 +533,7 @@ export default function ShoppingCart() {
       const checkoutHealthResponse = await fetch("/api/cart/checkout-health", {
         method: "GET",
         credentials: "include",
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
+        headers: {        }});
       if (checkoutHealthResponse.ok) {
         const checkoutHealth = (await checkoutHealthResponse.json()) as CheckoutHealthResponse;
         const invalidItems = checkoutHealth.invalidItems ?? [];
@@ -580,9 +561,7 @@ export default function ShoppingCart() {
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           customerEmail: checkoutForm.email.trim().toLowerCase() || user?.email || "guest@example.com",
           customerFirstName: checkoutForm.firstName.trim() || user?.firstName || "",
@@ -612,10 +591,7 @@ export default function ShoppingCart() {
             productID: item.productID,
             productName: item.productName,
             productPrice: item.productPrice,
-            quantity: item.quantity ?? 1,
-          })),
-        }),
-      });
+            quantity: item.quantity ?? 1}))})});
 
       const data = await response.json();
       if (!response.ok) {
@@ -639,14 +615,12 @@ export default function ShoppingCart() {
         vat: vatAmount,
         couponDiscount: discountAmount,
         pointsDiscount: Math.max(0, serverPointsDiscountAmount),
-        total: checkoutGrandTotal,
-      });
+        total: checkoutGrandTotal});
       setLastLoyaltySnapshot({
         redeemed: Math.max(0, pointsRedeemed),
         earned: Math.max(0, pointsEarned),
         remaining: Math.max(0, remainingPoints),
-        discountAmount: Math.max(0, serverPointsDiscountAmount),
-      });
+        discountAmount: Math.max(0, serverPointsDiscountAmount)});
       setAvailablePoints(Math.max(0, remainingPoints));
       setPointsToRedeemInput("0");
 
@@ -654,15 +628,11 @@ export default function ShoppingCart() {
         const paymentResponse = await fetch("/api/vnpay/create-payment", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
+            "Content-Type": "application/json"},
           body: JSON.stringify({
             orderId,
             orderNumber,
-            amount: checkoutGrandTotal,
-          }),
-        });
+            amount: checkoutGrandTotal})});
         const paymentData = await paymentResponse.json();
         if (!paymentResponse.ok) {
           throw new Error(paymentData?.error || "Cannot create VNPAY payment URL");
@@ -681,15 +651,11 @@ export default function ShoppingCart() {
         const paymentResponse = await fetch("/api/momo/create-payment", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
+            "Content-Type": "application/json"},
           body: JSON.stringify({
             orderId,
             orderNumber,
-            amount: checkoutGrandTotal,
-          }),
-        });
+            amount: checkoutGrandTotal})});
         const paymentData = await paymentResponse.json();
         if (!paymentResponse.ok) {
           throw new Error(paymentData?.error || "Cannot create MOMO payment URL");
@@ -712,10 +678,7 @@ export default function ShoppingCart() {
         await fetch("/api/cart/clear", {
           method: "DELETE",
           headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        }).catch(() => null);
+            "Content-Type": "application/json"}}).catch(() => null);
         dispatch(clearCart());
       }
       dispatch(fetchCartAsync());
@@ -751,14 +714,10 @@ export default function ShoppingCart() {
         method: "POST",
         credentials: "include",
         headers: {
-          "Content-Type": "application/json",
-          ...(authorizationHeader ? { Authorization: authorizationHeader } : {}),
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           code: normalizedCode,
-          subtotal: checkoutSubtotal,
-        }),
-      });
+          subtotal: checkoutSubtotal})});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.error || "Coupon is not valid");

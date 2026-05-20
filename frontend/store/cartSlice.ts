@@ -26,8 +26,7 @@ interface cartState {
 const initialState: cartState = {
   itemsById: {},
   itemIds: [],
-  totalAmount: 0,
-};
+  totalAmount: 0};
 
 const MAX_QUANTITY = 20;
 
@@ -57,11 +56,8 @@ export const addToCartAsync = createAsyncThunk(
         method: "POST",
         credentials: "include",
         headers: {
-          "Content-Type": "application/json",
-          ...(authorizationHeader ? { Authorization: authorizationHeader } : {}),
-        },
-        body: JSON.stringify(product),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify(product)});
 
       if (!response.ok) {
         const error = await response.json().catch(() => null);
@@ -93,11 +89,8 @@ export const removeFromCartAsync = createAsyncThunk(
         method: "DELETE",
         credentials: "include",
         headers: {
-          "Content-Type": "application/json",
-          ...(authorizationHeader ? { Authorization: authorizationHeader } : {}),
-        },
-        body: JSON.stringify({ productID }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ productID })});
 
       if (!response.ok) {
         const error = await response.json().catch(() => null);
@@ -131,11 +124,8 @@ export const updateQuantityAsync = createAsyncThunk(
         method: "PUT",
         credentials: "include",
         headers: {
-          "Content-Type": "application/json",
-          ...(authorizationHeader ? { Authorization: authorizationHeader } : {}),
-        },
-        body: JSON.stringify({ productID, quantity }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ productID, quantity })});
 
       if (!response.ok) {
         const error = await response.json().catch(() => null);
@@ -169,10 +159,7 @@ export const fetchCartAsync = createAsyncThunk(
       const authorizationHeader = normalizeAuthorizationHeader(getToken());
       const response = await fetch("/api/cart", {
         credentials: "include",
-        headers: {
-          ...(authorizationHeader ? { Authorization: authorizationHeader } : {}),
-        },
-      });
+        headers: {        }});
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
@@ -225,8 +212,7 @@ const cartSlice = createSlice({
       if (quantity <= 0) {
         cartSlice.caseReducers.removeFromCart(state, {
           payload: productID,
-          type: "",
-        });
+          type: ""});
         return;
       }
 
@@ -263,13 +249,11 @@ const cartSlice = createSlice({
       action.payload.forEach((item) => {
         state.itemsById[item.productID] = {
           ...item,
-          quantity: item.quantity || 1,
-        };
+          quantity: item.quantity || 1};
         state.itemIds.push(item.productID);
         state.totalAmount += item.productPrice * (item.quantity || 1);
       });
-    },
-  },
+    }},
   extraReducers: (builder) => {
     // Handle addToCartAsync
     builder
@@ -345,8 +329,7 @@ const cartSlice = createSlice({
       .addCase(fetchCartAsync.rejected, (state, action) => {
         console.error("Failed to fetch cart:", action.payload);
       });
-  },
-});
+  }});
 
 // Selector should accept RootState, not cartState
 export const selectCartTotalAmount = (state: { cart: cartState }) =>

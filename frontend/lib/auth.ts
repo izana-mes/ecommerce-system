@@ -1,5 +1,3 @@
-// Auth utility functions
-
 export interface User {
   id?: number | string;
   username?: string;
@@ -11,6 +9,7 @@ export interface User {
 }
 
 const AUTH_STATE_EVENT = "auth-state-changed";
+let cachedUser: User | null = null;
 
 function notifyAuthStateChanged(): void {
   if (typeof window === "undefined") return;
@@ -18,123 +17,44 @@ function notifyAuthStateChanged(): void {
 }
 
 export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("token") || sessionStorage.getItem("token");
+  return null;
 }
 
 export function getUser(): User | null {
+  return cachedUser;
+}
+
+async function resolveMe(): Promise<User | null> {
+  const res = await fetch("/api/auth/me", { credentials: "include", cache: "no-store" });
+  if (!res.ok) return null;
+  const payload = await res.json();
+  const profile = payload?.data;
+  if (!profile?.email) return null;
+  return {
+    id: profile.id,
+    email: profile.email,
+    role: profile.role || "user",
+    firstName: profile.firstName || undefined,
+    lastName: profile.lastName || undefined,
+    loyaltyPoints: Number(profile.loyaltyPoints ?? 0)};
+}
+
+export async function refreshCurrentUserFromServer(): Promise<User | null> {
   if (typeof window === "undefined") return null;
-  const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
-  if (!userStr) return null;
   try {
-    return JSON.parse(userStr);
+    const user = await resolveMe();
+    cachedUser = user;
+    notifyAuthStateChanged();
+    return user;
   } catch {
+    cachedUser = null;
+    notifyAuthStateChanged();
     return null;
   }
 }
 
-function getUserStorage(): Storage | null {
-  if (typeof window === "undefined") return null;
-  if (localStorage.getItem("user")) return localStorage;
-  if (sessionStorage.getItem("user")) return sessionStorage;
-  if (localStorage.getItem("token")) return localStorage;
-  if (sessionStorage.getItem("token")) return sessionStorage;
-  return null;
-}
-
-function setStoredUser(user: User): void {
-  const storage = getUserStorage();
-  if (!storage) return;
-  storage.setItem("user", JSON.stringify(user));
-}
-
-async function resolveRoleFromServer(
-  token: string
-): Promise<"user" | "admin" | "employee" | "supplier" | "seller" | "shipper"> {
-  try {
-    const meResponse = await fetch("/api/auth/me", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    const meData = await meResponse.json();
-    const profile = meData?.data;
-
-    if (profile?.role === "admin") return "admin";
-    if (profile?.role === "employee") return "employee";
-    if (profile?.role === "supplier") return "supplier";
-    if (profile?.role === "seller") return "seller";
-    if (profile?.role === "shipper") return "shipper";
-    if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_ADMIN")) return "admin";
-    if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_EMPLOYEE")) return "employee";
-    if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_SUPPLIER")) return "supplier";
-    if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_SELLER")) return "seller";
-    if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_SHIPPER")) return "shipper";
-  } catch {
-    // If profile lookup fails, keep default user role.
-    return "user";
-  }
-
-  return "user";
-}
-
-export async function refreshCurrentUserFromServer(): Promise<User | null> {
-  const token = getToken();
-  const existingUser = getUser();
-
-  if (!token || !existingUser) {
-    return existingUser;
-  }
-
-  try {
-    const meResponse = await fetch("/api/auth/me", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    const meData = await meResponse.json();
-    const profile = meData?.data;
-
-    if (!meResponse.ok || !profile?.email) {
-      return existingUser;
-    }
-
-    const role = await resolveRoleFromServer(token);
-    const nextUser: User = {
-      id: profile.id ?? existingUser.id,
-      username: existingUser.username,
-      email: profile.email ?? existingUser.email,
-      role,
-      firstName: profile.firstName ?? existingUser.firstName,
-      lastName: profile.lastName ?? existingUser.lastName,
-      loyaltyPoints: Number(profile.loyaltyPoints ?? existingUser.loyaltyPoints ?? 0),
-    };
-
-    const unchanged =
-      existingUser.email === nextUser.email &&
-      existingUser.role === nextUser.role &&
-      existingUser.firstName === nextUser.firstName &&
-      existingUser.lastName === nextUser.lastName &&
-      existingUser.id === nextUser.id &&
-      Number(existingUser.loyaltyPoints ?? 0) === Number(nextUser.loyaltyPoints ?? 0);
-
-    if (!unchanged) {
-      setStoredUser(nextUser);
-      notifyAuthStateChanged();
-    }
-
-    return nextUser;
-  } catch {
-    return existingUser;
-  }
-}
-
 export function isAuthenticated(): boolean {
-  return getToken() !== null || getUser() !== null;
+  return getUser() !== null;
 }
 
 export function isAdmin(): boolean {
@@ -143,11 +63,7 @@ export function isAdmin(): boolean {
 }
 
 export function logout(): void {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  sessionStorage.removeItem("token");
-  sessionStorage.removeItem("user");
+  cachedUser = null;
   notifyAuthStateChanged();
 }
 
@@ -157,57 +73,25 @@ export async function logoutServerSession(): Promise<void> {
     await fetch("/api/auth/logout", {
       method: "POST",
       credentials: "include",
-      keepalive: true,
-    });
-  } catch {
-    // Logout cleanup is best effort; local logout has already been done.
-  }
+      keepalive: true});
+  } catch {}
 }
 
-export function setAuth(token: string, user: User, remember: boolean = false): void {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  sessionStorage.removeItem("token");
-  sessionStorage.removeItem("user");
-
-  if (remember) {
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(user));
-  } else {
-    sessionStorage.setItem("token", token);
-    sessionStorage.setItem("user", JSON.stringify(user));
-  }
-
+export function setAuth(_token: string, user: User, _remember: boolean = false): void {
+  cachedUser = user;
   notifyAuthStateChanged();
 }
 
-export function setUserFromCookieSession(user: User, remember: boolean = false): void {
-  if (typeof window === "undefined") return;
-
-  localStorage.removeItem("user");
-  sessionStorage.removeItem("user");
-
-  if (remember) {
-    localStorage.setItem("user", JSON.stringify(user));
-  } else {
-    sessionStorage.setItem("user", JSON.stringify(user));
-  }
-
+export function setUserFromCookieSession(user: User, _remember: boolean = false): void {
+  cachedUser = user;
   notifyAuthStateChanged();
 }
 
 export function subscribeToAuthChanges(callback: () => void): () => void {
-  if (typeof window === "undefined") {
-    return () => {};
-  }
-
+  if (typeof window === "undefined") return () => {};
   const handleChange = () => callback();
   window.addEventListener(AUTH_STATE_EVENT, handleChange);
-  window.addEventListener("storage", handleChange);
-
   return () => {
     window.removeEventListener(AUTH_STATE_EVENT, handleChange);
-    window.removeEventListener("storage", handleChange);
   };
 }

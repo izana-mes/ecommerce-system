@@ -65,15 +65,13 @@ export async function POST(request: NextRequest) {
       lang: "vi",
       extraData,
       requestType,
-      signature,
-    };
+      signature};
 
     const momoEndpoint = "https://test-payment.momo.vn/v2/gateway/api/create";
     const response = await fetch(momoEndpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(requestBody),
-    });
+      body: JSON.stringify(requestBody)});
 
     const data = await response.json();
     if (data.resultCode !== 0) {

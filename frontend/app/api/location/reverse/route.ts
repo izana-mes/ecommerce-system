@@ -25,10 +25,8 @@ export async function GET(request: NextRequest) {
       {
         headers: {
           Accept: "application/json",
-          "User-Agent": "ecommerce-system-location-helper/1.0",
-        },
-        cache: "no-store",
-      }
+          "User-Agent": "ecommerce-system-location-helper/1.0"},
+        cache: "no-store"}
     );
 
     const payload = await response.json().catch(() => ({}));
@@ -50,8 +48,7 @@ export async function GET(request: NextRequest) {
       streetAddress2: [address.neighbourhood, address.suburb, address.state].filter(Boolean).join(", "),
       city: String(locality),
       postalCode: String(address.postcode || ""),
-      country: String(address.country || ""),
-    });
+      country: String(address.country || "")});
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to resolve location";
     return NextResponse.json({ error: message }, { status: 400 });

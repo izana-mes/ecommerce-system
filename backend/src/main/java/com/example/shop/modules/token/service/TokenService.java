@@ -25,20 +25,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Service for managing all token types: refresh, email verification, password reset.
- *
- * What this class does:
- * - Creates, validates, and revokes tokens
- * - No business logic beyond token lifecycle
- * - Uses HashUtil to hash tokens before storing (except refresh - stored as-is for lookup)
- *
- * Why it exists:
- * - Single responsibility: token management
- * - Decouples AuthService from token storage details
- *
- * @Transactional: All methods that modify DB are transactional
- */
 @Service
 @RequiredArgsConstructor
 public class TokenService {
@@ -59,8 +45,6 @@ public class TokenService {
 
     @Transactional
     public RefreshToken createRefreshToken(User user) {
-        refreshTokenRepository.deleteByUser_Id(user.getId());
-
         String token = UUID.randomUUID().toString();
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
@@ -69,6 +53,14 @@ public class TokenService {
                 .isRevoked(false)
                 .build();
         return refreshTokenRepository.save(refreshToken);
+    }
+
+    @Transactional
+    public RefreshToken verifyAndRotateRefreshToken(String token) {
+        RefreshToken current = verifyRefreshToken(token);
+        current.setRevoked(true);
+        refreshTokenRepository.save(current);
+        return createRefreshToken(current.getUser());
     }
 
     public RefreshToken verifyRefreshToken(String token) {
@@ -93,6 +85,14 @@ public class TokenService {
     @Transactional
     public void revokeRefreshToken(User user) {
         refreshTokenRepository.deleteByUser_Id(user.getId());
+    }
+
+    @Transactional
+    public void revokeRefreshTokenValue(String refreshToken) {
+        refreshTokenRepository.findByRefreshTokenHash(refreshToken).ifPresent(token -> {
+            token.setRevoked(true);
+            refreshTokenRepository.save(token);
+        });
     }
 
     @Transactional
@@ -161,11 +161,6 @@ public class TokenService {
         passwordResetTokenRepository.save(token);
     }
 
-    // ==================== SESSION MANAGEMENT ====================
-
-    /**
-     * Get all active sessions for current user.
-     */
     @Transactional(readOnly = true)
     public List<ActiveSessionResponse> getUserSessions(String email, String currentToken) {
         User user = userRepository.findByEmail(email)
@@ -177,9 +172,6 @@ public class TokenService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Revoke a specific session (logout from device).
-     */
     @Transactional
     public void revokeSession(String email, UUID sessionId) {
         User user = userRepository.findByEmail(email)
@@ -188,7 +180,6 @@ public class TokenService {
         RefreshToken token = refreshTokenRepository.findById(sessionId)
                 .orElseThrow(() -> new BusinessException("Session not found", HttpStatus.NOT_FOUND));
 
-        // Ensure user can only revoke their own sessions
         if (!token.getUser().getId().equals(user.getId())) {
             throw new BusinessException("Session not found", HttpStatus.NOT_FOUND);
         }
@@ -197,9 +188,6 @@ public class TokenService {
         refreshTokenRepository.save(token);
     }
 
-    /**
-     * Revoke all sessions except current (logout from all devices).
-     */
     @Transactional
     public void revokeAllSessionsExceptCurrent(String email, String currentToken) {
         User user = userRepository.findByEmail(email)
@@ -213,28 +201,17 @@ public class TokenService {
                 });
     }
 
-    /**
-     * Revoke all sessions for user (admin or logout from all).
-     */
     @Transactional
     public void revokeAllUserSessions(UUID userId) {
         refreshTokenRepository.deleteByUser_Id(userId);
     }
 
-    // ==================== ADMIN TOKEN MANAGEMENT ====================
-
-    /**
-     * Get all active refresh tokens (admin only).
-     */
     @Transactional(readOnly = true)
     public Page<RefreshTokenResponse> getAllActiveTokens(Pageable pageable) {
         return refreshTokenRepository.findByIsRevokedFalseAndExpiresAtAfter(LocalDateTime.now(), pageable)
                 .map(RefreshTokenResponse::fromEntity);
     }
 
-    /**
-     * Revoke refresh token by ID (admin only).
-     */
     @Transactional
     public void revokeTokenById(UUID tokenId) {
         RefreshToken token = refreshTokenRepository.findById(tokenId)

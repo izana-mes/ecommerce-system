@@ -87,8 +87,7 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
                   fontSize: 14,
                   transition: "all 0.15s ease",
                   marginBottom: 2,
-                  borderLeft: active ? "3px solid #818cf8" : "3px solid transparent",
-                }}
+                  borderLeft: active ? "3px solid #818cf8" : "3px solid transparent"}}
               >
                 <span style={{ fontSize: 16 }}>{item.icon}</span>
                 {item.name}
@@ -139,15 +138,13 @@ const sidebarStyle: CSSProperties = {
   position: "sticky",
   top: 0,
   height: "100vh",
-  flexShrink: 0,
-};
+  flexShrink: 0};
 
 const brandStyle: CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: 12,
-  padding: "0 20px 20px",
-};
+  padding: "0 20px 20px"};
 
 const brandIconStyle: CSSProperties = {
   width: 36,
@@ -158,14 +155,12 @@ const brandIconStyle: CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   fontSize: 18,
-  flexShrink: 0,
-};
+  flexShrink: 0};
 
 const dividerStyle: CSSProperties = {
   height: 1,
   background: "rgba(255,255,255,0.06)",
-  margin: "0 12px 16px",
-};
+  margin: "0 12px 16px"};
 
 const userCardStyle: CSSProperties = {
   display: "flex",
@@ -174,8 +169,7 @@ const userCardStyle: CSSProperties = {
   padding: "10px 12px",
   background: "rgba(255,255,255,0.04)",
   borderRadius: 10,
-  marginBottom: 8,
-};
+  marginBottom: 8};
 
 const avatarStyle: CSSProperties = {
   width: 32,
@@ -188,8 +182,7 @@ const avatarStyle: CSSProperties = {
   fontSize: 14,
   fontWeight: 700,
   color: "#fff",
-  flexShrink: 0,
-};
+  flexShrink: 0};
 
 const logoutButtonStyle: CSSProperties = {
   width: "100%",
@@ -204,5 +197,4 @@ const logoutButtonStyle: CSSProperties = {
   fontSize: 13,
   fontWeight: 500,
   cursor: "pointer",
-  transition: "all 0.15s ease",
-};
+  transition: "all 0.15s ease"};

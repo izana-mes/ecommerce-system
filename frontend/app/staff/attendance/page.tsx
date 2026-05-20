@@ -155,11 +155,8 @@ export default function StaffAttendancePage() {
       const response = await fetch("/api/attendance", {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        cache: "no-store",
-      });
+          "Content-Type": "application/json"},
+        cache: "no-store"});
 
       const payload = (await response.json().catch(() => ({}))) as AttendanceSnapshot & { error?: string };
       if (!response.ok) {
@@ -182,11 +179,8 @@ export default function StaffAttendancePage() {
       const response = await fetch(`/api/attendance/reviews${query}`, {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        cache: "no-store",
-      });
+          "Content-Type": "application/json"},
+        cache: "no-store"});
 
       const payload = (await response.json().catch(() => ({}))) as EmployeePerformanceReviewsResponse;
       if (!response.ok) {
@@ -216,11 +210,8 @@ export default function StaffAttendancePage() {
         const response = await fetch("/api/auth/me", {
           method: "GET",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          cache: "no-store",
-        });
+            "Content-Type": "application/json"},
+          cache: "no-store"});
 
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
@@ -332,8 +323,7 @@ export default function StaffAttendancePage() {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy,
           timeout: 15_000,
-          maximumAge: 0,
-        });
+          maximumAge: 0});
       });
 
     let position: GeolocationPosition;
@@ -384,11 +374,8 @@ export default function StaffAttendancePage() {
       const response = await fetch("/api/attendance", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ action, note, location }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ action, note, location })});
 
       const payload = (await response.json().catch(() => ({}))) as AttendanceSnapshot & { error?: string };
       if (!response.ok) {
@@ -413,11 +400,8 @@ export default function StaffAttendancePage() {
       const response = await fetch(`/api/attendance/reviews/${encodeURIComponent(reviewId)}`, {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ status }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ status })});
       const payload = (await response.json().catch(() => ({}))) as EmployeePerformanceReview & { error?: string };
       if (!response.ok) {
         throw new Error(payload.error || `Failed to update review (${response.status}).`);
@@ -431,8 +415,7 @@ export default function StaffAttendancePage() {
           totalReviews: nextReviews.length,
           openReviews: nextReviews.filter((review) => review.status === "OPEN").length,
           acknowledgedReviews: nextReviews.filter((review) => review.status === "ACKNOWLEDGED").length,
-          resolvedReviews: nextReviews.filter((review) => review.status === "RESOLVED").length,
-        };
+          resolvedReviews: nextReviews.filter((review) => review.status === "RESOLVED").length};
       });
       setError("");
       await fetchReviews(reviewFilter);

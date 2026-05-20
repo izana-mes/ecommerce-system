@@ -15,8 +15,7 @@ export default function AuthRequiredModal({
   open,
   onClose,
   onLogin,
-  message = "You need to log in before adding products to your cart.",
-}: AuthRequiredModalProps) {
+  message = "You need to log in before adding products to your cart."}: AuthRequiredModalProps) {
   useEffect(() => {
     if (!open) return;
 

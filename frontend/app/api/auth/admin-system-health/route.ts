@@ -14,8 +14,7 @@ export async function GET() {
     const response = await fetch(`${apiBase}/products?limit=1`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
-      cache: "no-store",
-    });
+      cache: "no-store"});
     dbLatencyMs = Date.now() - dbStart;
     if (!response.ok) {
       dbStatus = "error";
@@ -37,26 +36,21 @@ export async function GET() {
     database: {
       status: dbStatus,
       latencyMs: dbLatencyMs,
-      error: dbError || undefined,
-    },
+      error: dbError || undefined},
     memory: {
       heapUsedMB: Math.round((mem.heapUsed / 1024 / 1024) * 100) / 100,
       heapTotalMB: Math.round((mem.heapTotal / 1024 / 1024) * 100) / 100,
       rssMB: Math.round((mem.rss / 1024 / 1024) * 100) / 100,
-      externalMB: Math.round((mem.external / 1024 / 1024) * 100) / 100,
-    },
+      externalMB: Math.round((mem.external / 1024 / 1024) * 100) / 100},
     process: {
       uptimeSeconds: Math.round(uptimeSeconds),
       uptimeFormatted: formatUptime(uptimeSeconds),
       nodeVersion: process.version,
       platform: process.platform,
-      pid: process.pid,
-    },
+      pid: process.pid},
     environment: {
       nodeEnv: process.env.NODE_ENV || "development",
-      backendApiBase: apiBase,
-    },
-  });
+      backendApiBase: apiBase}});
 }
 
 function formatUptime(seconds: number): string {

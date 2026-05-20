@@ -33,8 +33,7 @@ export default function SupplierBulkUploadPage() {
     if (!token) return;
     try {
       const res = await fetch("/api/v1/supplier/catalog/csv-template", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        headers: { }});
       if (!res.ok) throw new Error("Failed to download template");
       const text = await res.text();
       const blob = new Blob([text], { type: "text/csv" });
@@ -66,9 +65,8 @@ export default function SupplierBulkUploadPage() {
       form.append("file", selectedFile);
       const res = await fetch("/api/v1/supplier/catalog/csv-bulk", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: form,
-      });
+        headers: { },
+        body: form});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || data?.error || "Upload failed");
       toast.success(data?.message || "Bulk upload submitted for admin approval");
@@ -121,8 +119,7 @@ export default function SupplierBulkUploadPage() {
         style={{
           ...dropZoneStyle,
           borderColor: dragOver ? "#14b8a6" : selectedFile ? "#14b8a6" : "#e2e8f0",
-          background: dragOver ? "#f0fdfa" : selectedFile ? "#f0fdfa" : "#fafafa",
-        }}
+          background: dragOver ? "#f0fdfa" : selectedFile ? "#f0fdfa" : "#fafafa"}}
         onDragOver={e => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={e => {
@@ -162,8 +159,7 @@ export default function SupplierBulkUploadPage() {
           style={{
             ...uploadButtonStyle,
             opacity: !selectedFile || uploading ? 0.6 : 1,
-            cursor: !selectedFile || uploading ? "not-allowed" : "pointer",
-          }}
+            cursor: !selectedFile || uploading ? "not-allowed" : "pointer"}}
         >
           {uploading ? "Uploading…" : "🚀 Submit Bulk Upload for Approval"}
         </button>

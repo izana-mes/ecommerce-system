@@ -31,8 +31,7 @@ export default function SupplierReviewsPage() {
 
     try {
       const response = await fetch("/api/v1/supplier/inventory", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        headers: { }});
       const res = await response.json();
       if (!response.ok) throw new Error(res?.message || "Failed to load products");
       setProducts(res.data || []);
@@ -53,8 +52,7 @@ export default function SupplierReviewsPage() {
 
     try {
       const response = await fetch(`/api/v1/supplier/reviews/${selectedProductId}?limit=50`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        headers: { }});
       if (response.ok) {
         const res = await response.json();
         setSummary(res); // Doesn't use standard ApiResponse wrapper in backend ProductReviewSummaryDto
@@ -89,11 +87,8 @@ export default function SupplierReviewsPage() {
       const response = await fetch(`/api/v1/supplier/reviews/${selectedProductId}/${reviewId}/reply`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ content: replyContent }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ content: replyContent })});
       
       if (!response.ok) {
         const res = await response.json().catch(() => ({}));

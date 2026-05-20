@@ -23,8 +23,7 @@ export default function Banner() {
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: "smooth",
-    });
+      behavior: "smooth"});
   };
   return (
     <>

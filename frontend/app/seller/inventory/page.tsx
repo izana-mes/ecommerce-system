@@ -47,8 +47,7 @@ export default function SellerInventoryPage() {
     setLoading(true);
     try {
       const res = await fetch(`/api/v1/seller/inventory?lowStockThreshold=${threshold}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        headers: { }});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed to load inventory");
       const fetched: InventoryItem[] = data.data || [];
@@ -92,9 +91,8 @@ export default function SellerInventoryPage() {
     try {
       const res = await fetch(`/api/v1/seller/inventory/${productId}/stock`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ productId, newQuantity: qty, lowStockThreshold: threshold }),
-      });
+        headers: { "Content-Type": "application/json"},
+        body: JSON.stringify({ productId, newQuantity: qty, lowStockThreshold: threshold })});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Update failed");
       toast.success(`${productId} stock updated to ${qty}`);
@@ -122,9 +120,8 @@ export default function SellerInventoryPage() {
     try {
       const res = await fetch("/api/v1/seller/inventory/bulk-update", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ updates }),
-      });
+        headers: { "Content-Type": "application/json"},
+        body: JSON.stringify({ updates })});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Bulk update failed");
       toast.success(data?.message || `Updated ${updates.length} products`);
@@ -224,8 +221,7 @@ export default function SellerInventoryPage() {
             style={{
               ...pillStyle,
               background: filterMode === mode ? "#0f172a" : "#f1f5f9",
-              color: filterMode === mode ? "#fff" : "#475569",
-            }}
+              color: filterMode === mode ? "#fff" : "#475569"}}
           >
             {mode === "all" ? "All" : mode === "low" ? "⚠ Low Stock" : "🚫 Out of Stock"}
           </button>
@@ -276,8 +272,7 @@ export default function SellerInventoryPage() {
                       <span style={{
                         ...badgeBase,
                         background: item.active ? "#dcfce7" : "#f3f4f6",
-                        color: item.active ? "#166534" : "#374151",
-                      }}>
+                        color: item.active ? "#166534" : "#374151"}}>
                         {item.active ? "Active" : "Inactive"}
                       </span>
                     </td>
@@ -285,8 +280,7 @@ export default function SellerInventoryPage() {
                       <span style={{
                         fontSize: 16,
                         fontWeight: 700,
-                        color: item.stockQuantity === 0 ? "#ef4444" : item.lowStock ? "#f59e0b" : "#0f172a",
-                      }}>
+                        color: item.stockQuantity === 0 ? "#ef4444" : item.lowStock ? "#f59e0b" : "#0f172a"}}>
                         {item.stockQuantity}
                       </span>
                       {item.lowStock && item.stockQuantity > 0 && (
@@ -305,8 +299,7 @@ export default function SellerInventoryPage() {
                         style={{
                           ...qtyInputStyle,
                           borderColor: edited ? "#6366f1" : "#e2e8f0",
-                          boxShadow: edited ? "0 0 0 3px rgba(99,102,241,0.12)" : "none",
-                        }}
+                          boxShadow: edited ? "0 0 0 3px rgba(99,102,241,0.12)" : "none"}}
                       />
                     </td>
                     <td style={tdStyle}>
@@ -317,8 +310,7 @@ export default function SellerInventoryPage() {
                         style={{
                           ...saveButtonStyle,
                           opacity: !edited || saving[item.productId] ? 0.4 : 1,
-                          cursor: !edited || saving[item.productId] ? "not-allowed" : "pointer",
-                        }}
+                          cursor: !edited || saving[item.productId] ? "not-allowed" : "pointer"}}
                       >
                         {saving[item.productId] ? "Saving…" : "Save"}
                       </button>

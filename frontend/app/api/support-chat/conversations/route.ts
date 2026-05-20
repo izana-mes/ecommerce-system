@@ -3,10 +3,6 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_BASE_URL = backendApiBaseUrl().replace(/\/+$/, "");
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getCookieHeader(request: Request) {
   return request.headers.get("cookie");
 }
@@ -30,10 +26,8 @@ export async function GET(request: Request) {
       headers: {
         "Content-Type": "application/json",
         ...(getAuthHeader(request) ? { Authorization: getAuthHeader(request)! } : {}),
-        ...(getCookieHeader(request) ? { Cookie: getCookieHeader(request)! } : {}),
-      },
-      cache: "no-store",
-    });
+        ...(getCookieHeader(request) ? { Cookie: getCookieHeader(request)! } : {})},
+      cache: "no-store"});
 
     const data = await parseJsonOrText(response);
     if (!response.ok) {

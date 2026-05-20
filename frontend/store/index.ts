@@ -8,9 +8,7 @@ import wishListReducer from "./wishListSlice";
 const store = configureStore({
   reducer: {
     cart: cartReducer,
-    wishList: wishListReducer,
-  },
-});
+    wishList: wishListReducer}});
 
 export default store;
 export type RootState = ReturnType<typeof store.getState>;

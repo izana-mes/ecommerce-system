@@ -33,8 +33,7 @@ const cardStyle: CSSProperties = {
   borderRadius: 12,
   padding: 24,
   boxShadow: "0 1px 3px rgba(15,23,42,0.08)",
-  border: "1px solid #e2e8f0",
-};
+  border: "1px solid #e2e8f0"};
 
 const labelStyle: CSSProperties = { display: "block", fontSize: 13, fontWeight: 600, color: "#334155", marginBottom: 6 };
 
@@ -44,8 +43,7 @@ const inputStyle: CSSProperties = {
   padding: "10px 12px",
   borderRadius: 8,
   border: "1px solid #cbd5e1",
-  fontSize: 14,
-};
+  fontSize: 14};
 
 const btnPrimary: CSSProperties = {
   padding: "10px 18px",
@@ -55,8 +53,7 @@ const btnPrimary: CSSProperties = {
   color: "#fff",
   fontWeight: 600,
   cursor: "pointer",
-  fontSize: 14,
-};
+  fontSize: 14};
 
 const btnGhost: CSSProperties = {
   padding: "8px 14px",
@@ -64,16 +61,14 @@ const btnGhost: CSSProperties = {
   border: "1px solid #cbd5e1",
   background: "#fff",
   cursor: "pointer",
-  fontSize: 13,
-};
+  fontSize: 13};
 
 function formatMoney(value: number, currency: string): string {
   try {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: (currency || "USD").toUpperCase(),
-      maximumFractionDigits: 2,
-    }).format(Number(value || 0));
+      maximumFractionDigits: 2}).format(Number(value || 0));
   } catch {
     return `${Number(value || 0).toFixed(2)} ${currency || "USD"}`;
   }
@@ -108,9 +103,7 @@ export default function ExpensesPage() {
   const authHeaders = useCallback(() => {
     const token = getToken();
     return {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
+      "Content-Type": "application/json"};
   }, []);
 
   const load = useCallback(async () => {
@@ -125,8 +118,7 @@ export default function ExpensesPage() {
         method: "GET",
         credentials: "include",
         headers: authHeaders(),
-        cache: "no-store",
-      });
+        cache: "no-store"});
       const json = await res.json();
       if (!res.ok) {
         throw new Error((json as { message?: string })?.message || "Failed to load expenses");
@@ -192,9 +184,7 @@ export default function ExpensesPage() {
             currency: "USD",
             category: category.trim() || "Other",
             description: description.trim() || null,
-            spentOn,
-          }),
-        });
+            spentOn})});
         const json = await res.json();
         if (!res.ok) throw new Error((json as { message?: string })?.message || "Update failed");
         parseApiEnvelope(json);
@@ -209,9 +199,7 @@ export default function ExpensesPage() {
             currency: "USD",
             category: category.trim() || "Other",
             description: description.trim() || undefined,
-            spentOn: spentOn || undefined,
-          }),
-        });
+            spentOn: spentOn || undefined})});
         const json = await res.json();
         if (!res.ok) throw new Error((json as { message?: string })?.message || "Save failed");
         parseApiEnvelope(json);
@@ -232,8 +220,7 @@ export default function ExpensesPage() {
       const res = await fetch(`/api/me/expenses/${id}`, {
         method: "DELETE",
         credentials: "include",
-        headers: authHeaders(),
-      });
+        headers: authHeaders()});
       const json = await res.json();
       if (!res.ok) throw new Error((json as { message?: string })?.message || "Delete failed");
       if ((json as { success?: boolean }).success === false) {

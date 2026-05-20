@@ -24,8 +24,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to start Google OAuth",
-        details,
-      },
+        details},
       { status: 500 }
     );
   }

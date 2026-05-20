@@ -657,8 +657,7 @@ export const translations: Record<Locale, Dictionary> = {
     checkout_shipping_est_turkey: "Turkey: typically 5–9 business days after dispatch.",
     order_track_link: "Track this order anytime",
     order_track_copy_hint: "Bookmark this page or check your email for the same link.",
-    contact_prefill_order: "Regarding my order ",
-  },
+    contact_prefill_order: "Regarding my order "},
   ja: {
     announcement_bar: "80ドル以上のご注文は送料無料、30日間の返品保証。",
     nav_home: "ホーム",
@@ -986,10 +985,7 @@ export const translations: Record<Locale, Dictionary> = {
     checkout_shipping_est_turkey: "トルコ: 発送後おおむね5〜9営業日。",
     order_track_link: "いつでもこの注文を追跡",
     order_track_copy_hint: "このページをブックマークするか、同じリンクが記載されたメールをご確認ください。",
-    contact_prefill_order: "次の注文について: ",
-  },
-
-};
+    contact_prefill_order: "次の注文について: "}};
 
 export function getTranslation(locale: Locale, key: TranslationKey): string {
   return translations[locale]?.[key] ?? translations.en[key];

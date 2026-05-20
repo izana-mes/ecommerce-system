@@ -3,10 +3,6 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_URL = backendApiBaseUrl();
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getCookieHeader(request: Request) {
   return request.headers.get("cookie");
 }
@@ -24,17 +20,12 @@ async function parseJsonOrText(response: Response) {
 
 export async function DELETE(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const cookieHeader = getCookieHeader(request);
+        const cookieHeader = getCookieHeader(request);
 
     const response = await fetch(`${API_URL}/cart/clear`, {
       method: "DELETE",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
-    });
+        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})}});
 
     const data = await parseJsonOrText(response);
 
@@ -48,8 +39,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to clear cart",
-        details: error?.message || String(error),
-      },
+        details: error?.message || String(error)},
       { status: 500 }
     );
   }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 export async function POST(request: Request) {
+  const cookieHeader = request.headers.get("cookie");
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
@@ -12,19 +13,16 @@ export async function POST(request: Request) {
   const question = String(body.question || "").trim();
   if (!question) return NextResponse.json({ error: "Question is required" }, { status: 400 });
 
-  const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
-  if (!authHeader) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    if (!cookieHeader) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
 
   const upstream = await fetch(`${backendApiBaseUrl()}/chatbot/staff/stream`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: authHeader,
-      Accept: "text/event-stream",
-    },
+      Accept: "text/event-stream"},
     body: JSON.stringify({ question }),
-    cache: "no-store",
-  });
+    cache: "no-store"});
 
   if (!upstream.ok || !upstream.body) {
     const data = await upstream.text().catch(() => "Backend error");
@@ -36,7 +34,5 @@ export async function POST(request: Request) {
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
-  });
+      Connection: "keep-alive"}});
 }

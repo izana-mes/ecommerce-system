@@ -36,8 +36,7 @@ function sortAndEncodeParams(params: VnpParams): Record<string, string> {
 
 export function buildVnpHashData(params: VnpParams): string {
   return qs.stringify(sortAndEncodeParams(params), {
-    encode: false,
-  });
+    encode: false});
 }
 
 export function createVnpSecureHash(params: VnpParams, secret: string): string {

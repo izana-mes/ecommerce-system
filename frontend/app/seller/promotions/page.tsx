@@ -29,8 +29,7 @@ export default function SellerPromotionsPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/v1/seller/inventory", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        headers: { }});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed to load products");
       setProducts(data.data || []);
@@ -55,9 +54,8 @@ export default function SellerPromotionsPage() {
     try {
       const res = await fetch(`/api/v1/seller/products/${productId}/promotion`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ salePrice: Number(raw) }),
-      });
+        headers: { "Content-Type": "application/json"},
+        body: JSON.stringify({ salePrice: Number(raw) })});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || data?.error || "Failed to apply promotion");
       toast.success(data?.message || "Promotion applied!");
@@ -76,8 +74,7 @@ export default function SellerPromotionsPage() {
     try {
       const res = await fetch(`/api/v1/seller/products/${productId}/promotion`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        headers: { }});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || data?.error || "Failed to clear promotion");
       toast.success(data?.message || "Promotion cleared, original price restored");

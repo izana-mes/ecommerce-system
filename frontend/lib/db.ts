@@ -117,8 +117,7 @@ function resolvePgConfig() {
       /^(1|true|required|require)$/i.test((process.env.PGSSLMODE || "").trim());
     return {
       connectionString,
-      ...(sslModeRequired ? { ssl: { rejectUnauthorized: false } } : {}),
-    };
+      ...(sslModeRequired ? { ssl: { rejectUnauthorized: false } } : {})};
   }
 
   return {
@@ -126,8 +125,7 @@ function resolvePgConfig() {
     port: Number(process.env.DB_PORT || process.env.PGPORT || 5432),
     user: process.env.DB_USER || process.env.PGUSER || "postgres",
     password: process.env.DB_PASSWORD || process.env.PGPASSWORD || "",
-    database: process.env.DB_NAME || process.env.PGDATABASE || "postgres",
-  };
+    database: process.env.DB_NAME || process.env.PGDATABASE || "postgres"};
 }
 
 export function getDbRuntimeInfo(): { client: DbClient; host: string; port: string; user: string } {
@@ -178,8 +176,7 @@ function createPostgresAdapter(client: PoolClient): DbConnection {
     },
     async end() {
       client.release();
-    },
-  };
+    }};
 }
 
 function createMysqlAdapter(conn: mysql.Connection): DbConnection {
@@ -199,8 +196,7 @@ function createMysqlAdapter(conn: mysql.Connection): DbConnection {
     },
     async end() {
       await conn.end();
-    },
-  };
+    }};
 }
 
 let pgPool: Pool | null = null;
@@ -236,8 +232,7 @@ export async function getConnection(): Promise<DbConnection> {
       port: Number(process.env.DB_PORT || 3306),
       user: process.env.DB_USER || "root",
       password: process.env.DB_PASSWORD || "Password@123456",
-      database: process.env.DB_NAME || "mydb",
-    });
+      database: process.env.DB_NAME || "mydb"});
     return createMysqlAdapter(mysqlConn);
   } catch (error: any) {
     const { host, port, user } = getDbRuntimeInfo();

@@ -21,8 +21,7 @@ function ProgressRow({
   value,
   max,
   color,
-  suffix = "",
-}: {
+  suffix = ""}: {
   label: string;
   value: number;
   max: number;
@@ -74,11 +73,10 @@ export default function ShipperPerformancePage() {
       };
       const params = new URLSearchParams({
         from: toIsoParam(from),
-        to: toIsoParam(to),
-      });
+        to: toIsoParam(to)});
       const res = await fetch(
         `/api/v1/shipper/shippers/${shipperUserId}/performance?${params}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { } }
       );
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message || "Failed to fetch performance");
@@ -251,8 +249,7 @@ export default function ShipperPerformancePage() {
                         : data.successRatePercent >= 70
                         ? "rgba(245, 158, 11, 0.2)"
                         : "rgba(239, 68, 68, 0.2)"
-                    }`,
-                  }}
+                    }`}}
                 >
                   <p style={{ margin: 0, fontSize: 14, color: "#f1f5f9" }}>
                     {data.successRatePercent >= 90

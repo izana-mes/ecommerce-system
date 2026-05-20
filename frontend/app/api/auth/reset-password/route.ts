@@ -16,10 +16,8 @@ export async function POST(request: Request) {
     const response = await fetch(`${API_URL}/v1/auth/reset-password`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+        "Content-Type": "application/json"},
+      body: JSON.stringify(body)});
 
     const data = await response.json().catch(() => null);
 
@@ -36,8 +34,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to reset password",
-        details: error instanceof Error ? error.message : String(error),
-      },
+        details: error instanceof Error ? error.message : String(error)},
       { status: 500 }
     );
   }

@@ -51,9 +51,6 @@ export type AuthUser = {
 
 const API_URL = backendApiBaseUrl();
 
-function getAuthHeader(request: Request): string | null {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
 
 function getCookieHeader(request: Request): string | null {
   return request.headers.get("cookie");
@@ -77,23 +74,17 @@ function parseTimestampMs(value: string | null): number | null {
   return Number.isFinite(timestamp) ? timestamp : null;
 }
 
-export async function requireAuthUser(request: Request): Promise<AuthUser | null> {
-  const authHeader = getAuthHeader(request);
-  const cookieHeader = getCookieHeader(request);
+export async function requireAuthUser(request: Request): Promise<AuthUser | null> {  const cookieHeader = getCookieHeader(request);
 
-  if (!authHeader && !cookieHeader) {
+  if (!cookieHeader) {
     return null;
   }
 
   const response = await fetch(`${API_URL}/v1/auth/me`, {
     method: "GET",
     headers: {
-      "Content-Type": "application/json",
-      ...(authHeader ? { Authorization: authHeader } : {}),
-      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-    },
-    cache: "no-store",
-  });
+      "Content-Type": "application/json",      ...(cookieHeader ? { Cookie: cookieHeader } : {})},
+    cache: "no-store"});
 
   if (!response.ok) {
     return null;
@@ -121,8 +112,7 @@ export async function requireAuthUser(request: Request): Promise<AuthUser | null
     email: String(data.email).trim().toLowerCase(),
     role: data.role,
     firstName: data.firstName ?? null,
-    lastName: data.lastName ?? null,
-  };
+    lastName: data.lastName ?? null};
 }
 
 export async function requireAdminUser(request: Request): Promise<AuthUser | null> {
@@ -703,8 +693,7 @@ export async function validateCouponCode(
       title: coupon.title,
       discountType: coupon.discount_type,
       discountValue: Number(coupon.discount_value),
-      discountAmount,
-    };
+      discountAmount};
   });
 }
 
@@ -762,6 +751,5 @@ export async function finalizeCouponRedemption(
     couponId: validated.couponId,
     assignmentId: validated.assignmentId,
     code: validated.code,
-    discountAmount: validated.discountAmount,
-  };
+    discountAmount: validated.discountAmount};
 }

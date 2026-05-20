@@ -42,10 +42,8 @@ const ResetPass: React.FC = () => {
       const response = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ email })});
 
       const data = await response.json().catch(() => null);
 
@@ -79,13 +77,10 @@ const ResetPass: React.FC = () => {
       const response = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           token,
-          newPassword,
-        }),
-      });
+          newPassword})});
 
       const data = await response.json().catch(() => null);
 

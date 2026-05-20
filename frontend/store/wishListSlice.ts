@@ -18,8 +18,7 @@ interface wishListState {
 
 const initialState: wishListState = {
   itemsById: {},
-  itemIds: [],
-};
+  itemIds: []};
 
 // Async thunks for database operations
 export const addToWishlistAsync = createAsyncThunk(
@@ -28,16 +27,13 @@ export const addToWishlistAsync = createAsyncThunk(
     try {
       const token =
         typeof window !== "undefined"
-          ? localStorage.getItem("token") || sessionStorage.getItem("token")
+          ? null
           : null;
       const response = await fetch("/api/wishlist", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(product),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify(product)});
 
       if (!response.ok) {
         const error = await response.json().catch(() => null);
@@ -62,16 +58,13 @@ export const removeFromWishlistAsync = createAsyncThunk(
     try {
       const token =
         typeof window !== "undefined"
-          ? localStorage.getItem("token") || sessionStorage.getItem("token")
+          ? null
           : null;
       const response = await fetch("/api/wishlist", {
         method: "DELETE",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ productID }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ productID })});
 
       if (!response.ok) {
         const error = await response.json().catch(() => null);
@@ -100,13 +93,10 @@ export const fetchWishlistAsync = createAsyncThunk(
     try {
       const token =
         typeof window !== "undefined"
-          ? localStorage.getItem("token") || sessionStorage.getItem("token")
+          ? null
           : null;
       const response = await fetch("/api/wishlist", {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
+        headers: {        }});
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
@@ -164,8 +154,7 @@ const wishListSlice = createSlice({
         state.itemsById[item.productID] = item;
         state.itemIds.push(item.productID);
       });
-    },
-  },
+    }},
   extraReducers: (builder) => {
     // Handle addToWishlistAsync
     builder
@@ -207,8 +196,7 @@ const wishListSlice = createSlice({
       .addCase(fetchWishlistAsync.rejected, (state, action) => {
         console.error("Failed to fetch wishlist:", action.payload);
       });
-  },
-});
+  }});
 
 export const { addToWishlist, removeFromWishList, clearWishList, setWishlist } =
   wishListSlice.actions;

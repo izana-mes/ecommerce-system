@@ -3,10 +3,6 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_BASE = backendApiBaseUrl().replace(/\/+$/, "");
 
-function getAuthHeader(request: Request): string | null {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getCookieHeader(request: Request): string | null {
   return request.headers.get("cookie");
 }
@@ -22,9 +18,8 @@ async function parseJsonOrText(response: Response) {
 }
 
 export async function GET(request: Request) {
-  const authHeader = getAuthHeader(request);
-  const cookieHeader = getCookieHeader(request);
-  if (!authHeader && !cookieHeader) {
+    const cookieHeader = getCookieHeader(request);
+  if (!cookieHeader) {
     return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
   }
 
@@ -37,21 +32,16 @@ export async function GET(request: Request) {
     {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
-      cache: "no-store",
-    }
+        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})},
+      cache: "no-store"}
   );
   const data = await parseJsonOrText(response);
   return NextResponse.json(data ?? { success: false, message: "Empty response" }, { status: response.status });
 }
 
 export async function POST(request: Request) {
-  const authHeader = getAuthHeader(request);
-  const cookieHeader = getCookieHeader(request);
-  if (!authHeader && !cookieHeader) {
+    const cookieHeader = getCookieHeader(request);
+  if (!cookieHeader) {
     return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
   }
 
@@ -59,13 +49,9 @@ export async function POST(request: Request) {
   const response = await fetch(`${API_BASE}/v1/me/expenses`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
-      ...(authHeader ? { Authorization: authHeader } : {}),
-      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-    },
+      "Content-Type": "application/json",      ...(cookieHeader ? { Cookie: cookieHeader } : {})},
     body,
-    cache: "no-store",
-  });
+    cache: "no-store"});
   const data = await parseJsonOrText(response);
   return NextResponse.json(data ?? { success: false, message: "Empty response" }, { status: response.status });
 }

@@ -3,10 +3,6 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_URL = backendApiBaseUrl();
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -21,17 +17,13 @@ export async function PUT(
 ) {
   const { productId } = await params;
   try {
-    const authHeader = getAuthHeader(request);
-    const body = await request.json();
+        const body = await request.json();
     const response = await fetch(`${API_URL}/v1/seller/products/${productId}/promotion`, {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
+        "Content-Type": "application/json"},
       body: JSON.stringify(body),
-      cache: "no-store",
-    });
+      cache: "no-store"});
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });
   } catch (error: unknown) {
@@ -48,15 +40,11 @@ export async function DELETE(
 ) {
   const { productId } = await params;
   try {
-    const authHeader = getAuthHeader(request);
-    const response = await fetch(`${API_URL}/v1/seller/products/${productId}/promotion`, {
+        const response = await fetch(`${API_URL}/v1/seller/products/${productId}/promotion`, {
       method: "DELETE",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-      cache: "no-store",
-    });
+        "Content-Type": "application/json"},
+      cache: "no-store"});
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });
   } catch (error: unknown) {

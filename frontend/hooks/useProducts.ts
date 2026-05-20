@@ -17,8 +17,7 @@ const normalizeProducts = (items: DataStore[]): DataStore[] =>
     oldPrice:
       Number.isFinite(Number(product?.oldPrice)) && Number(product?.oldPrice) > 0
         ? Number(product.oldPrice)
-        : undefined,
-  }));
+        : undefined}));
 
 const getFallbackProducts = (q: string): DataStore[] => {
   const lowered = q.trim().toLowerCase();

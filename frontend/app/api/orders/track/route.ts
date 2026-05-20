@@ -25,8 +25,7 @@ export async function GET(request: NextRequest) {
       {
         method: "GET",
         headers: { "Content-Type": "application/json" },
-        cache: "no-store",
-      }
+        cache: "no-store"}
     );
     const data = await parseJsonOrText(response);
     return NextResponse.json(data ?? { success: response.ok }, { status: response.status });

@@ -38,8 +38,7 @@ export default function SupplierDashboardPage() {
     if (!token) return;
     try {
       const response = await fetch("/api/v1/supplier/dashboard?days=30&lowStockThreshold=8", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        headers: { }});
       const res = await response.json();
       if (!response.ok) throw new Error(res?.message || "Failed to load supplier dashboard");
       setData(res.data);

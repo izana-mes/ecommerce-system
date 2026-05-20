@@ -3,10 +3,6 @@ import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
 const API_BASE_URL = backendApiBaseUrl().replace(/\/+$/, "");
 
-function getAuthHeader(request: Request) {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getCookieHeader(request: Request) {
   return request.headers.get("cookie");
 }
@@ -37,11 +33,9 @@ export async function PATCH(request: Request, context: RouteParams) {
       headers: {
         "Content-Type": "application/json",
         ...(getAuthHeader(request) ? { Authorization: getAuthHeader(request)! } : {}),
-        ...(getCookieHeader(request) ? { Cookie: getCookieHeader(request)! } : {}),
-      },
+        ...(getCookieHeader(request) ? { Cookie: getCookieHeader(request)! } : {})},
       body: JSON.stringify(body),
-      cache: "no-store",
-    });
+      cache: "no-store"});
 
     const data = await parseJsonOrText(response);
     return NextResponse.json(data, { status: response.status });

@@ -17,11 +17,8 @@ export async function POST(request: Request) {
     const response = await fetch(`${backendOrigin()}/api/orders/status-changed`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        Authorization: token,
-      },
-      body: JSON.stringify(body),
-    });
+        "Content-Type": "application/json"},
+      body: JSON.stringify(body)});
 
     const data = await response.json();
 

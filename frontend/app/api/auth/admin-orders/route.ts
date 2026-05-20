@@ -29,10 +29,6 @@ function toPositiveNumber(value: string | null, fallback: number): number {
   return Math.floor(parsed);
 }
 
-function getAuthHeader(request: Request): string | null {
-  return request.headers.get("authorization") || request.headers.get("Authorization");
-}
-
 function getCookieHeader(request: Request): string | null {
   return request.headers.get("cookie");
 }
@@ -73,15 +69,13 @@ function normalizeOrder(item: BackendOrder) {
     shipped_at:
       item.shipped_at != null || item.shippedAt != null
         ? String(item.shipped_at ?? item.shippedAt ?? "").trim() || null
-        : null,
-  };
+        : null};
 }
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const authHeader = getAuthHeader(request);
-    const cookieHeader = getCookieHeader(request);
+        const cookieHeader = getCookieHeader(request);
     const page = Math.max(0, toPositiveNumber(searchParams.get("page"), 1) - 1);
     const size = Math.min(100, toPositiveNumber(searchParams.get("size"), 10));
     const q = (searchParams.get("q") || "").trim();
@@ -94,12 +88,8 @@ export async function GET(request: Request) {
     const response = await fetch(`${API_URL}/orders/fulfillment-queue?limit=${limit}`, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
-      cache: "no-store",
-    });
+        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})},
+      cache: "no-store"});
     const raw = await response.text();
     const payload = raw ? JSON.parse(raw) : null;
     if (!response.ok) {
@@ -108,8 +98,7 @@ export async function GET(request: Request) {
           error:
             payload?.message ||
             payload?.error ||
-            "Failed to fetch orders from backend",
-        },
+            "Failed to fetch orders from backend"},
         { status: response.status }
       );
     }
@@ -150,8 +139,7 @@ export async function GET(request: Request) {
       number: page,
       size,
       allowedOrderStatuses: ALLOWED_ORDER_STATUSES,
-      allowedPaymentStatuses: ALLOWED_PAYMENT_STATUSES,
-    });
+      allowedPaymentStatuses: ALLOWED_PAYMENT_STATUSES});
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("Error fetching admin orders:", message);
@@ -163,8 +151,7 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const authHeader = getAuthHeader(request);
-  try {
+    try {
     const body = await request.json().catch(() => null);
     if (!body || typeof body !== "object") {
       return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
@@ -175,8 +162,7 @@ export async function PATCH(request: Request) {
       orderStatus,
       paymentStatus,
       carrier,
-      trackingNumber,
-    } = body as Record<string, unknown>;
+      trackingNumber} = body as Record<string, unknown>;
 
     if (!orderId || typeof orderId !== "number" || !Number.isFinite(orderId) || orderId <= 0) {
       return NextResponse.json({ error: "Missing or invalid orderId" }, { status: 400 });
@@ -202,11 +188,8 @@ export async function PATCH(request: Request) {
     const response = await fetch(`${API_URL}/v1/admin/orders/${orderId}`, {
       method: "PATCH",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-      body: JSON.stringify(patchBody),
-    });
+        "Content-Type": "application/json"},
+      body: JSON.stringify(patchBody)});
 
     const raw = await response.text();
     const payload = raw ? JSON.parse(raw) : null;

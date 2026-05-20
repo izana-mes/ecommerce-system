@@ -3,8 +3,7 @@
 import { useProducts } from "@/hooks/useProducts";
 import {
   wishListProduct,
-  removeFromWishlistAsync,
-} from "@/store/wishListSlice";
+  removeFromWishlistAsync} from "@/store/wishListSlice";
 import { useEffect, useState } from "react";
 import { RootState, useAppDispatch, useAppSelector } from "@/store/index";
 import { fetchWishlistAsync } from "@/store/wishListSlice";
@@ -37,8 +36,7 @@ export default function WishList() {
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: "smooth",
-    });
+      behavior: "smooth"});
   };
 
   const handleRemoveFromWishlist = (productID: string) => {
@@ -63,8 +61,7 @@ export default function WishList() {
     if (itemInCart && (itemInCart.quantity ?? 0) >= 20) {
       toast.error("Product reached limit", {
         duration: 2000,
-        style: { backgroundColor: "#fb0404", color: "#fff" },
-      });
+        style: { backgroundColor: "#fb0404", color: "#fff" }});
       return;
     }
 
@@ -74,15 +71,13 @@ export default function WishList() {
       dispatch(
         updateQuantityAsync({
           productID: product.productID,
-          quantity: (itemInCart.quantity ?? 0) + quantityToAdd,
-        })
+          quantity: (itemInCart.quantity ?? 0) + quantityToAdd})
       )
         .unwrap()
         .then(() =>
           toast.success("Updated quantity", {
             duration: 2000,
-            style: { backgroundColor: "#07bc0c", color: "#fff" },
-          })
+            style: { backgroundColor: "#07bc0c", color: "#fff" }})
         )
         .catch((err: any) => toast.error(err.toString()));
     } else {
@@ -91,15 +86,13 @@ export default function WishList() {
           productID: product.productID,
           productName: product.productName,
           productPrice: product.productPrice,
-          productReviews: product.productReviews,
-        })
+          productReviews: product.productReviews})
       )
         .unwrap()
         .then(() =>
           toast.success("Added to cart", {
             duration: 2000,
-            style: { backgroundColor: "#07bc0c", color: "#fff" },
-          })
+            style: { backgroundColor: "#07bc0c", color: "#fff" }})
         )
         .catch((err) => toast.error(err.toString()));
     }

@@ -2,21 +2,21 @@ package com.example.shop.modules.auth.service;
 
 import com.example.shop.common.exception.BusinessException;
 import com.example.shop.common.exception.UnauthorizedException;
-import com.example.shop.modules.messaging.email.EmailMessage;
-import com.example.shop.modules.messaging.email.EmailMessagePublisher;
-import com.example.shop.modules.auth.security.JwtProvider;
-import com.example.shop.modules.auth.dto.response.AuthenticationResponse;
 import com.example.shop.modules.auth.dto.request.LoginRequest;
 import com.example.shop.modules.auth.dto.request.RegisterRequest;
 import com.example.shop.modules.auth.dto.request.ResetPasswordRequest;
 import com.example.shop.modules.auth.dto.request.VerifyOtpRequest;
+import com.example.shop.modules.auth.dto.response.AuthenticationResponse;
+import com.example.shop.modules.auth.security.JwtProvider;
+import com.example.shop.modules.messaging.email.EmailMessage;
+import com.example.shop.modules.messaging.email.EmailMessagePublisher;
+import com.example.shop.modules.otp.service.OtpService;
 import com.example.shop.modules.role.entity.Role;
 import com.example.shop.modules.role.repository.RoleRepository;
 import com.example.shop.modules.token.entity.EmailVerificationToken;
 import com.example.shop.modules.token.entity.PasswordResetToken;
 import com.example.shop.modules.token.entity.RefreshToken;
 import com.example.shop.modules.token.service.TokenService;
-import com.example.shop.modules.otp.service.OtpService;
 import com.example.shop.modules.user.entity.User;
 import com.example.shop.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -69,8 +69,6 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         User savedUser = userRepository.save(user);
-
-        // Send OTP verification code via RabbitMQ
         String otp = otpService.generateAndStoreOtp(savedUser.getEmail());
         emailMessagePublisher.publish(EmailMessage.builder()
                 .to(savedUser.getEmail())
@@ -79,11 +77,7 @@ public class AuthServiceImpl implements AuthService {
                 .emailType(EmailMessage.EmailType.OTP)
                 .build());
 
-        // Do not issue tokens until email/OTP is verified.
-        return AuthenticationResponse.builder()
-                .tokenType("Bearer")
-                .expiresIn(jwtExpiration)
-                .build();
+        return AuthenticationResponse.builder().status("PENDING_VERIFICATION").build();
     }
 
     @Override
@@ -106,21 +100,22 @@ public class AuthServiceImpl implements AuthService {
                 .refreshToken(refreshToken.getRefreshTokenHash())
                 .tokenType("Bearer")
                 .expiresIn(jwtExpiration)
+                .status("AUTHENTICATED")
                 .build();
     }
 
     @Override
     public AuthenticationResponse refreshToken(String refreshTokenStr) {
-        RefreshToken refreshToken = tokenService.verifyRefreshToken(refreshTokenStr);
-        User user = refreshToken.getUser();
-
+        RefreshToken rotated = tokenService.verifyAndRotateRefreshToken(refreshTokenStr);
+        User user = rotated.getUser();
         String accessToken = jwtProvider.generateAccessToken(user);
 
         return AuthenticationResponse.builder()
                 .accessToken(accessToken)
-                .refreshToken(refreshTokenStr)
+                .refreshToken(rotated.getRefreshTokenHash())
                 .tokenType("Bearer")
                 .expiresIn(jwtExpiration)
+                .status("REFRESHED")
                 .build();
     }
 
@@ -221,8 +216,12 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void logout(String email) {
+    public void logout(String email, String refreshToken) {
         User user = findUserByEmailOrThrow(email);
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            tokenService.revokeRefreshTokenValue(refreshToken);
+            return;
+        }
         tokenService.revokeRefreshToken(user);
     }
 

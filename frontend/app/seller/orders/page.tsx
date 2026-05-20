@@ -47,8 +47,7 @@ export default function SellerOrdersPage() {
     try {
       const qs = status && status !== "ALL" ? `?status=${status}` : "";
       const response = await fetch(`/api/v1/seller/orders${qs}`, {
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      });
+        headers: { "Content-Type": "application/json"}});
       const data = await response.json();
       if (!response.ok) throw new Error(data?.message || data?.error || "Failed to fetch orders");
       setOrders(data?.data || []);
@@ -174,8 +173,7 @@ export default function SellerOrdersPage() {
                 fontWeight: 600,
                 fontSize: 12,
                 cursor: "pointer",
-                whiteSpace: "nowrap",
-              }}
+                whiteSpace: "nowrap"}}
             >
               {s === "ALL" ? "All" : s.replace(/_/g, " ")}
             </button>

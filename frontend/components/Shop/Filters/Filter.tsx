@@ -41,8 +41,7 @@ const Filter: React.FC<FilterProps> = ({
   availableSizes,
   brandsData: brandsDataProp,
   minPrice = 0,
-  maxPrice = 300,
-}) => {
+  maxPrice = 300}) => {
   const [searchTerm, setSearchTerm] = useState<string>("");
 
   const brandsData = useMemo<Brand[]>(
@@ -90,8 +89,7 @@ const Filter: React.FC<FilterProps> = ({
   const handlePriceChange = (_: Event, newValue: number | number[]) => {
     onChange({
       ...filters,
-      priceRange: newValue as [number, number],
-    });
+      priceRange: newValue as [number, number]});
   };
 
   const filteredBrands = brandsData.filter((brand) =>
@@ -144,8 +142,7 @@ const Filter: React.FC<FilterProps> = ({
       colors: [],
       sizes: [],
       brands: [],
-      priceRange: [sliderMin, sliderMax],
-    });
+      priceRange: [sliderMin, sliderMax]});
   };
 
   return (

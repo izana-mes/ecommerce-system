@@ -33,11 +33,8 @@ export default function SupplierCatalogPage() {
         const response = await fetch("/api/auth/me", {
           method: "GET",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          cache: "no-store",
-        });
+            "Content-Type": "application/json"},
+          cache: "no-store"});
         const data = await response.json().catch(() => ({}));
         if (cancelled) return;
         const profile = data?.data;
@@ -62,11 +59,8 @@ export default function SupplierCatalogPage() {
     setError(null);
     try {
       const response = await fetch("/api/products/supplier/mine", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        cache: "no-store",
-      });
+        headers: {        },
+        cache: "no-store"});
       const data = await response.json().catch(() => null);
       if (!response.ok) {
         throw new Error(typeof data?.error === "string" ? data.error : "Failed to load catalog");

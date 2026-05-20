@@ -65,8 +65,7 @@ export default function AdminCouponsPage() {
     discount_value: "",
     min_order_amount: "",
     usage_limit: "",
-    expires_at: "",
-  });
+    expires_at: ""});
 
   useEffect(() => {
     setToken(getToken() || "");
@@ -78,8 +77,7 @@ export default function AdminCouponsPage() {
     try {
       const response = await fetch("/api/auth/admin-coupons", {
         cache: "no-store",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
+        headers: token ? { } : undefined});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.error || "Failed to load coupons");
@@ -108,8 +106,7 @@ export default function AdminCouponsPage() {
     try {
       const response = await fetch("/api/auth/admin?page=0&size=100", {
         cache: "no-store",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
+        headers: token ? { } : undefined});
       const data = await response.json() as AdminUsersResponse;
       if (!response.ok) {
         throw new Error((data as { error?: string })?.error || "Failed to load customers");
@@ -124,8 +121,7 @@ export default function AdminCouponsPage() {
               firstName: entry.firstName ?? null,
               lastName: entry.lastName ?? null,
               role: String(entry.role),
-              active: entry.active !== false,
-            }))
+              active: entry.active !== false}))
         : [];
 
       setCustomers(nextCustomers);
@@ -194,9 +190,7 @@ export default function AdminCouponsPage() {
       const response = await fetch("/api/auth/admin-coupons", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           code: form.code,
           title: form.title,
@@ -205,9 +199,7 @@ export default function AdminCouponsPage() {
           min_order_amount: Number(form.min_order_amount || 0),
           usage_limit: form.usage_limit ? Number(form.usage_limit) : null,
           expires_at: form.expires_at || null,
-          is_active: true,
-        }),
-      });
+          is_active: true})});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.details || data?.error || "Failed to create coupon");
@@ -220,8 +212,7 @@ export default function AdminCouponsPage() {
         discount_value: "",
         min_order_amount: "",
         usage_limit: "",
-        expires_at: "",
-      });
+        expires_at: ""});
       await fetchCoupons();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Failed to create coupon";
@@ -236,11 +227,8 @@ export default function AdminCouponsPage() {
       const response = await fetch("/api/auth/admin-coupons", {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ id: coupon.id, is_active: !coupon.is_active }),
-      });
+          "Content-Type": "application/json"},
+        body: JSON.stringify({ id: coupon.id, is_active: !coupon.is_active })});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.error || "Failed to update coupon");
@@ -278,22 +266,17 @@ export default function AdminCouponsPage() {
           userId: customer.id,
           email: customer.email,
           firstName: customer.firstName,
-          lastName: customer.lastName,
-        }));
+          lastName: customer.lastName}));
 
       const response = await fetch("/api/auth/admin-coupons/issue", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           couponId: selectedCoupon.id,
           recipients,
           notificationTitle,
-          notificationMessage,
-        }),
-      });
+          notificationMessage})});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.details || data?.error || "Failed to issue coupon");
@@ -348,15 +331,11 @@ export default function AdminCouponsPage() {
       const response = await fetch("/api/auth/admin-coupons", {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+          "Content-Type": "application/json"},
         body: JSON.stringify({
           id: selectedCoupon.id,
           expires_at: reactivationDate,
-          is_active: true,
-        }),
-      });
+          is_active: true})});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.details || data?.error || "Failed to reactivate coupon");
@@ -388,8 +367,7 @@ export default function AdminCouponsPage() {
           marginTop: 18,
           padding: 14,
           border: "1px solid #d7d7d7",
-          borderRadius: 10,
-        }}
+          borderRadius: 10}}
       >
         <input placeholder="Code (WELCOME10)" value={form.code} onChange={(e) => setForm((p) => ({ ...p, code: e.target.value }))} required />
         <input placeholder="Title" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} required />
@@ -410,8 +388,7 @@ export default function AdminCouponsPage() {
           gridTemplateColumns: "minmax(0, 2fr) minmax(280px, 1fr)",
           gap: 20,
           marginTop: 20,
-          alignItems: "start",
-        }}
+          alignItems: "start"}}
       >
         <div style={{ display: "grid", gap: 18 }}>
         <div style={{ border: "1px solid #d7d7d7", borderRadius: 10, overflowX: "auto" }}>
@@ -439,8 +416,7 @@ export default function AdminCouponsPage() {
                     onClick={() => setSelectedCouponId(coupon.id)}
                     style={{
                       background: selectedCouponId === coupon.id ? "#f8fbff" : undefined,
-                      cursor: "pointer",
-                    }}
+                      cursor: "pointer"}}
                   >
                     <td style={{ padding: 10, borderTop: "1px solid #efefef" }}>{coupon.code}</td>
                     <td style={{ padding: 10, borderTop: "1px solid #efefef" }}>{coupon.title}</td>
@@ -512,8 +488,7 @@ export default function AdminCouponsPage() {
                     onClick={() => setSelectedCouponId(coupon.id)}
                     style={{
                       background: selectedCouponId === coupon.id ? "#fff7ed" : undefined,
-                      cursor: "pointer",
-                    }}
+                      cursor: "pointer"}}
                   >
                     <td style={{ padding: 10, borderTop: "1px solid #efefef" }}>{coupon.code}</td>
                     <td style={{ padding: 10, borderTop: "1px solid #efefef" }}>{coupon.title}</td>
@@ -609,8 +584,7 @@ export default function AdminCouponsPage() {
               borderRadius: 8,
               padding: 10,
               marginBottom: 12,
-              background: customers.length === 0 ? "#fafafa" : "#fff",
-            }}
+              background: customers.length === 0 ? "#fafafa" : "#fff"}}
           >
             {customersLoading ? <p style={{ margin: 0, color: "#666" }}>Loading customers...</p> : null}
             {!customersLoading && customers.length === 0 ? (
@@ -628,8 +602,7 @@ export default function AdminCouponsPage() {
                     gap: 10,
                     padding: "8px 4px",
                     borderBottom: "1px solid #f0f0f0",
-                    cursor: "pointer",
-                  }}
+                    cursor: "pointer"}}
                 >
                   <input
                     type="checkbox"

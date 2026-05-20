@@ -5,12 +5,6 @@ export const dynamic = "force-dynamic";
 
 const API_URL = backendApiBaseUrl();
 
-function getAuthHeader(request: Request) {
-  return (
-    request.headers.get("authorization") || request.headers.get("Authorization")
-  );
-}
-
 function getCookieHeader(request: Request) {
   return request.headers.get("cookie");
 }
@@ -19,8 +13,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const q = (searchParams.get("q") || "").trim();
-    const authHeader = getAuthHeader(request);
-    const cookieHeader = getCookieHeader(request);
+        const cookieHeader = getCookieHeader(request);
     const endpoint = q
       ? `${API_URL}/products?q=${encodeURIComponent(q)}`
       : `${API_URL}/products`;
@@ -28,12 +21,8 @@ export async function GET(request: Request) {
     const response = await fetch(endpoint, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      },
-      cache: "no-store",
-    });
+        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})},
+      cache: "no-store"});
 
     if (!response.ok) {
       if (q) {
@@ -42,8 +31,7 @@ export async function GET(request: Request) {
       return NextResponse.json(
         {
           error: "Failed to fetch products from backend",
-          status: response.status,
-        },
+          status: response.status},
         { status: 502 }
       );
     }
@@ -63,8 +51,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "Backend connection failed while fetching products",
-        details: message,
-      },
+        details: message},
       { status: 502 }
     );
   }
@@ -72,8 +59,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const authHeader = getAuthHeader(request);
-    const requestBody = await request.json().catch(() => null);
+        const requestBody = await request.json().catch(() => null);
     if (!Array.isArray(requestBody) || requestBody.length === 0) {
       return NextResponse.json({ error: "Request body must be a non-empty product array" }, { status: 400 });
     }
@@ -81,12 +67,9 @@ export async function POST(request: Request) {
     const response = await fetch(`${API_URL}/products`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
+        "Content-Type": "application/json"},
       body: JSON.stringify(requestBody),
-      cache: "no-store",
-    });
+      cache: "no-store"});
 
     const data = await response.json();
 
@@ -101,8 +84,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to add products",
-        details: message,
-      },
+        details: message},
       { status: 500 }
     );
   }
@@ -115,8 +97,7 @@ export async function PUT(request: Request) {
     const body = await request.json();
     const productID = body.productID;
 
-    const authHeader = getAuthHeader(request);
-
+    
     if (!productID) {
       return NextResponse.json({ error: "Missing productID" }, { status: 400 });
     }
@@ -124,11 +105,8 @@ export async function PUT(request: Request) {
     const response = await fetch(`${API_URL}/products/${productID}`, {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-      body: JSON.stringify(body),
-    });
+        "Content-Type": "application/json"},
+      body: JSON.stringify(body)});
 
     const data = await response.json();
 
@@ -143,8 +121,7 @@ export async function PUT(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to update product",
-        details: message,
-      },
+        details: message},
       { status: 500 }
     );
   }
@@ -156,8 +133,7 @@ export async function DELETE(request: Request) {
     const body = await request.json();
     const productID = body.productID;
 
-    const authHeader = getAuthHeader(request);
-
+    
     if (!productID) {
       return NextResponse.json({ error: "Missing productID" }, { status: 400 });
     }
@@ -165,10 +141,7 @@ export async function DELETE(request: Request) {
     const response = await fetch(`${API_URL}/products/${productID}`, {
       method: "DELETE",
       headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-    });
+        "Content-Type": "application/json"}});
 
     if (!response.ok) {
       try {
@@ -186,8 +159,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to delete product",
-        details: message,
-      },
+        details: message},
       { status: 500 }
     );
   }
