@@ -76,6 +76,7 @@ function formatDateTime(value?: string | null): string {
 
 export default function StaffShippingPage() {
   const router = useRouter();
+  const token = getUser();
   const [loadingAccess, setLoadingAccess] = useState(true);
   const [allowed, setAllowed] = useState(false);
   const [orders, setOrders] = useState<OrderRow[]>([]);

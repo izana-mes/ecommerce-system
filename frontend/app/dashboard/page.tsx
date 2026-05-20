@@ -48,6 +48,7 @@ function formatMoney(value: number, currency: string): string {
 
 export default function UserDashboardPage() {
   const router = useRouter();
+  const token = getUser();
   const [loading, setLoading] = useState(true);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [couponsLoading, setCouponsLoading] = useState(false);

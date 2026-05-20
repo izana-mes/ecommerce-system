@@ -50,6 +50,7 @@ services:
   backend:
     build: ./backend
     restart: unless-stopped
+    # network_mode: host  # Removed to use bridge network for proper isolation
     env_file:
       - ./.env
     environment:

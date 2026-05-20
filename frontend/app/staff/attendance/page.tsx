@@ -133,6 +133,7 @@ function mapGeolocationError(error: GeolocationPositionError): string {
 
 export default function StaffAttendancePage() {
   const router = useRouter();
+  const token = getUser();
   const [loadingAccess, setLoadingAccess] = useState(true);
   const [allowed, setAllowed] = useState(false);
   const [snapshot, setSnapshot] = useState<AttendanceSnapshot | null>(null);

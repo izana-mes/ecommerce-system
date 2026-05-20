@@ -7,6 +7,10 @@ function getCookieHeader(request: Request) {
   return request.headers.get("cookie");
 }
 
+function getAuthHeader(request: Request) {
+  return request.headers.get("authorization") || request.headers.get("Authorization");
+}
+
 function getGuestIdHeader(request: Request) {
   return request.headers.get("x-guest-id");
 }

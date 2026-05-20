@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import {}  from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import toast from "react-hot-toast";
 import { CSSProperties } from "react";
 
@@ -33,6 +33,7 @@ type TransactionPage = {
 };
 
 export default function SellerFinancePage() {
+  const token = getUser();
   const [balance, setBalance] = useState<Balance | null>(null);
   const [txPage, setTxPage] = useState<TransactionPage | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);

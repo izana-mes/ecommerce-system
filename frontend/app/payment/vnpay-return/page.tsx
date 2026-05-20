@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useAppDispatch } from "@/store";
 import { clearCart, fetchCartAsync, removeFromCartAsync } from "@/store/cartSlice";
-import {}  from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import styles from "./vnpay-return.module.css";
 
 type ReturnedOrderItem = {
@@ -411,6 +411,7 @@ function VnpayReturnContent() {
 }
 
 export default function VnpayReturnPage() {
+  const token = getUser();
   return (
     <Suspense
       fallback={

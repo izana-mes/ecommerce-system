@@ -28,6 +28,7 @@ interface LogEntry {
 }
 
 export default function ShipperTrackingPage() {
+  const token = getUser();
   const user = getUser();
   const shipperUserId = user?.id as string | undefined;
 

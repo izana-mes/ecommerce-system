@@ -35,6 +35,7 @@ const STARTER_QUESTIONS = [
 
 export default function StaffChatbotPage() {
   const router = useRouter();
+  const token = getUser();
   const [loadingAccess, setLoadingAccess] = useState(true);
   const [isAllowed, setIsAllowed] = useState(false);
   const [question, setQuestion] = useState("");

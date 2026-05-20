@@ -3,7 +3,7 @@
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
-import { setAuth, setUserFromCookieSession } from "@/lib/auth";
+import { setAuth, setUserFromCookieSession , getUser } from "@/lib/auth";
 import { useAppDispatch } from "@/store";
 import { fetchCartAsync } from "@/store/cartSlice";
 import { fetchWishlistAsync } from "@/store/wishListSlice";
@@ -25,6 +25,7 @@ function resolveRole(
 
 function OAuthCallbackContent() {
   const router = useRouter();
+  const token = getUser();
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
 

@@ -12,6 +12,8 @@ export function backendApiBaseUrl(): string {
   return raw.replace(/\/+$/, "");
 }
 
+export const API_BASE_URL = backendApiBaseUrl();
+
 /** Browser-facing Spring origin without `/api` (SockJS, OAuth, etc.). */
 export function publicBackendOriginUrl(): string {
   const direct = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();

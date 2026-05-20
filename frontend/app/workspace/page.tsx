@@ -42,6 +42,7 @@ function canUseWorkspace(role?: string): boolean {
 
 export default function WorkspacePage() {
   const router = useRouter();
+  const token = getUser();
   const user = getUser();
 
   const [tasks, setTasks] = useState<Task[]>([]);

@@ -18,6 +18,7 @@ type EditMap = Record<string, string>; // productId → input value
 
 export default function SellerInventoryPage() {
   const router = useRouter();
+  const token = getUser();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editMap, setEditMap] = useState<EditMap>({});

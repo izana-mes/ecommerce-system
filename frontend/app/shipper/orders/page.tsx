@@ -42,6 +42,7 @@ const STATUS_BADGE: Record<string, string> = {
   pending_payment: "sh-badge-amber"};
 
 export default function ShipperOrdersPage() {
+  const token = getUser();
   const user = getUser();
   const shipperUserId = user?.id as string | undefined;
 

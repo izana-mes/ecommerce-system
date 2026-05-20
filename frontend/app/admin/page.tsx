@@ -713,6 +713,7 @@ function buildRatingAnalytics(reviews: AdminReview[]): RatingAnalyticsSummary {
 
 export default function AdminPage() {
   const router = useRouter();
+  const token = getUser();
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [dashboard, setDashboard] = useState<DashboardSummary>(INITIAL_DASHBOARD);
   const [loadingDashboard, setLoadingDashboard] = useState(true);

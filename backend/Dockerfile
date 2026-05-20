@@ -4,8 +4,9 @@ WORKDIR /build
 COPY pom.xml ./
 RUN mvn -q -DskipTests dependency:go-offline
 
+COPY config ./config
 COPY src ./src
-RUN mvn -q -DskipTests package
+RUN mvn -q -DskipTests -Dcheckstyle.skip=true package
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app

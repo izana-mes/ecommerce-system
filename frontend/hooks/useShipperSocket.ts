@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Client, IMessage } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
-import {}  from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { publicBackendOriginUrl } from "@/lib/backendApiBase";
 
 /** Mirrors the backend ShipperDtos.OrderStatusEvent payload. */
@@ -31,6 +31,7 @@ export function useShipperSocket(
   shipperUserId: string | undefined,
   onOrderEvent: (event: OrderStatusEvent) => void
 ): { connected: boolean } {
+  const token = getUser();
   const [connected, setConnected] = useState(false);
   const clientRef = useRef<Client | null>(null);
   // Keep a stable ref to the callback so we don't re-subscribe on every render.

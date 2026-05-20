@@ -1,7 +1,7 @@
 "use client";
 
 import { CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
-import {}  from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import toast from "react-hot-toast";
 
 type InventoryItem = {
@@ -16,6 +16,7 @@ type InventoryItem = {
 type RestockForm = { productId: string; quantity: string; note: string } | null;
 
 export default function SupplierInventoryPage() {
+  const token = getUser();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editMap, setEditMap] = useState<Record<string, string>>({});

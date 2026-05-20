@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import {}  from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import "./chatbot.css";
 
 type Message = {
@@ -58,6 +58,7 @@ const QUICK_PROMPTS = [
 ];
 
 export default function CustomerChatbotPage() {
+  const token = getUser();
   const [question, setQuestion] = useState("");
   const [sending, setSending] = useState(false);
   const [guestId, setGuestId] = useState("");

@@ -35,7 +35,7 @@ export async function POST(request: Request) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: authHeader},
+        cookie: cookieHeader},
       body: JSON.stringify({ question }),
       signal: controller.signal,
       cache: "no-store"});

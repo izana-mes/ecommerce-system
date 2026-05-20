@@ -88,6 +88,7 @@ function parseApiEnvelope<T>(raw: unknown): T {
 
 export default function ExpensesPage() {
   const router = useRouter();
+  const token = getUser();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [rows, setRows] = useState<ExpenseRow[]>([]);

@@ -9,7 +9,7 @@ import {getUser,
   logoutServerSession,
   refreshCurrentUserFromServer,
   subscribeToAuthChanges,
-  User} from "@/lib/auth";
+  User } from "@/lib/auth";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { clearCart } from "@/store/cartSlice";
 import { clearWishList } from "@/store/wishListSlice";
@@ -101,6 +101,7 @@ function parseSupplierProductPayload(requestPayload?: string | null): SupplierPr
 export default function ProfilePage() {
   const { t } = useLocale();
   const router = useRouter();
+  const token = getUser();
   const dispatch = useAppDispatch();
   const [user, setUser] = useState<User | null>(null);
   const [couponItems, setCouponItems] = useState<

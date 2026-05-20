@@ -104,6 +104,7 @@ function parseRequestPayload(request: ProductChangeRequest): ProductRequestPaylo
 
 export default function SupplierPage() {
   const router = useRouter();
+  const token = getUser();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [requestsLoading, setRequestsLoading] = useState(false);

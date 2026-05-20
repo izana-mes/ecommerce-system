@@ -40,6 +40,11 @@ spring:
           connectiontimeout: ${SPRING_MAIL_CONNECTION_TIMEOUT:10000}
           timeout: ${SPRING_MAIL_TIMEOUT:10000}
           writetimeout: ${SPRING_MAIL_WRITE_TIMEOUT:10000}
+    provider: ${MAIL_PROVIDER:smtp}
+    resend:
+      api-key: ${RESEND_API_KEY:}
+      from-email: ${RESEND_FROM_EMAIL:}
+      from-name: ${RESEND_FROM_NAME:Shop}
 
   # Google OAuth: credentials are read from SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID / _SECRET.
   # When these are blank the OAuth route simply won't work, but the app still starts.
@@ -85,12 +90,7 @@ spring:
       admin-dashboard-seconds: ${CACHE_TTL_ADMIN_DASHBOARD_SECONDS:30}
   internal:
     notify-token: ${INTERNAL_NOTIFY_TOKEN:}
-  mail:
-    provider: ${MAIL_PROVIDER:smtp}
-    resend:
-      api-key: ${RESEND_API_KEY:}
-      from-email: ${RESEND_FROM_EMAIL:}
-      from-name: ${RESEND_FROM_NAME:Shop}
+
   reviews:
     max-entries: ${REVIEWS_MAX_ENTRIES:200}
     ttl-days: ${REVIEWS_TTL_DAYS:180}

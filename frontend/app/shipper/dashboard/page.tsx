@@ -54,6 +54,7 @@ function StatCard({ label, value, icon, color, suffix = "" }: {
 
 export default function ShipperDashboardPage() {
   const router = useRouter();
+  const token = getUser();
   const user = getUser();
   const [stats, setStats] = useState<PerformanceStats | null>(null);
   const [activeOrder, setActiveOrder] = useState<OrderTracking | null>(null);

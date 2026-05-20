@@ -49,6 +49,7 @@ function ProgressRow({
 }
 
 export default function ShipperPerformancePage() {
+  const token = getUser();
   const user = getUser();
   const shipperUserId = user?.id as string | undefined;
 

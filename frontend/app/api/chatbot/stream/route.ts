@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: authHeader,
+      cookie: cookieHeader,
       Accept: "text/event-stream"},
     body: JSON.stringify({ question }),
     cache: "no-store"});

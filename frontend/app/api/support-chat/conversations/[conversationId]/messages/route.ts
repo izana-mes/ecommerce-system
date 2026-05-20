@@ -7,6 +7,10 @@ function getCookieHeader(request: Request) {
   return request.headers.get("cookie");
 }
 
+function getAuthHeader(request: Request) {
+  return request.headers.get("authorization") || request.headers.get("Authorization");
+}
+
 async function parseJsonOrText(response: Response) {
   const text = await response.text();
   if (!text) return { details: "Empty response from backend" };

@@ -1,7 +1,7 @@
 "use client";
 
 import { CSSProperties, useCallback, useEffect, useState } from "react";
-import {}  from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import toast from "react-hot-toast";
 
 type InventoryItem = {
@@ -16,6 +16,7 @@ type InventoryItem = {
 type PromoState = Record<string, string>; // productId → salePrice input
 
 export default function SellerPromotionsPage() {
+  const token = getUser();
   const [products, setProducts] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [promoInput, setPromoInput] = useState<PromoState>({});

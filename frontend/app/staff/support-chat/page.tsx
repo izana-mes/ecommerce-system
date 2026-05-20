@@ -67,6 +67,7 @@ function formatRelativeTime(value: string | null | undefined): string {
 
 export default function StaffSupportChatPage() {
   const router = useRouter();
+  const token = getUser();
   const [loadingAccess, setLoadingAccess] = useState(true);
   const [allowed, setAllowed] = useState(false);
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
@@ -215,7 +216,6 @@ export default function StaffSupportChatPage() {
     if (!allowed) return;
 
     const client = createSupportChatStompClient({
-      token,
       onConnect: () => {
         setSocketConnected(true);
         setError("");

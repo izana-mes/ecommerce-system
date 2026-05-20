@@ -30,6 +30,7 @@ type CouponNotificationItem = {
 
 function CouponRedeemContent() {
   const router = useRouter();
+  const token = getUser();
   const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [couponItems, setCouponItems] = useState<CouponNotificationItem[]>([]);

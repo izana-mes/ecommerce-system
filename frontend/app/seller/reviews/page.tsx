@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import {}  from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import toast from "react-hot-toast";
 import { CSSProperties } from "react";
 
@@ -24,6 +24,7 @@ type ReviewSummary = {
 };
 
 export default function SellerReviewsPage() {
+  const token = getUser();
   const [products, setProducts] = useState<ProductSummary[]>([]);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [summary, setSummary] = useState<ReviewSummary | null>(null);

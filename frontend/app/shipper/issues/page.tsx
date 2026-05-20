@@ -41,6 +41,7 @@ const PRIORITY_COLORS: Record<Priority, string> = {
   URGENT: "sh-badge-red"};
 
 export default function ShipperIssuesPage() {
+  const token = getUser();
   const user = getUser();
   const shipperUserId = user?.id as string | undefined;
 

@@ -2,7 +2,7 @@
 
 import { CSSProperties, useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import {}  from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 
 type TopProduct = { productId: string; productName: string; soldQty: number; revenue: number };
 type RestockSuggestion = {
@@ -30,6 +30,7 @@ type DashboardData = {
 };
 
 export default function SupplierDashboardPage() {
+  const token = getUser();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 

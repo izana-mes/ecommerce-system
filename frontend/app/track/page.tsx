@@ -280,6 +280,7 @@ function normalizeTracking(raw: Record<string, unknown>): TrackingPayload {
 }
 
 export default function TrackPage() {
+  const token = getUser();
   return (
     <Suspense fallback={<div style={{ padding: 40 }}>…</div>}>
       <TrackPageInner />

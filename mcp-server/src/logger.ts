@@ -5,7 +5,7 @@ const redact = winston.format((info) => {
   const raw = JSON.stringify(info);
   const scrubbed = raw
     .replace(/(authorization|token|secret|api[_-]?key|password)\":\"[^\"]+\"/gi, '$1\":\"[REDACTED]\"')
-    .replace(/(bearer\\s+)[A-Za-z0-9\\-._~+/]+=*/gi, '$1[REDACTED]');
+    .replace(/(bearer\s+)[A-Za-z0-9._~+/=-]+/gi, '$1[REDACTED]');
   return JSON.parse(scrubbed);
 });
 

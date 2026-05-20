@@ -39,6 +39,7 @@ function getGuestId(): string {
 }
 
 export default function SupportChatPage() {
+  const token = getUser();
   const [conversationId, setConversationId] = useState<string>("");
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [draft, setDraft] = useState("");
@@ -105,7 +106,6 @@ export default function SupportChatPage() {
     if (!guestId) return;
 
     const client = createSupportChatStompClient({
-      token,
       onConnect: () => {
         setSocketConnected(true);
         setError("");

@@ -14,6 +14,7 @@ type Row = {
 
 export default function SupplierCatalogPage() {
   const router = useRouter();
+  const token = getUser();
   const [allowed, setAllowed] = useState(false);
   const [loadingAccess, setLoadingAccess] = useState(true);
   const [loading, setLoading] = useState(true);

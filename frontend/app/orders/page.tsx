@@ -54,6 +54,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 export default function OrdersPage() {
   const { t } = useLocale();
   const router = useRouter();
+  const token = getUser();
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -329,7 +330,6 @@ export default function OrdersPage() {
       {isEditModalOpen && editingOrder && (
         <EditOrderModal
           order={editingOrder}
-          token={token}
           onClose={() => setIsEditModalOpen(false)}
           onSuccess={() => {
             setIsEditModalOpen(false);
@@ -344,12 +344,10 @@ export default function OrdersPage() {
 
 function EditOrderModal({
   order,
-  token,
   onClose,
   onSuccess,
   t}: {
   order: Order;
-  token: string | null;
   onClose: () => void;
   onSuccess: () => void;
   t: (key: any) => string;

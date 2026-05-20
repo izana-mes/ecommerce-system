@@ -1,7 +1,7 @@
 "use client";
 
 import { CSSProperties, useRef, useState } from "react";
-import {}  from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import toast from "react-hot-toast";
 
 type UploadResult = {
@@ -12,6 +12,7 @@ type UploadResult = {
 };
 
 export default function SupplierBulkUploadPage() {
+  const token = getUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);

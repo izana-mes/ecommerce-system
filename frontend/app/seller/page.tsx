@@ -71,6 +71,7 @@ function normalizeFormState(source?: SellerCatalogProduct | null): ProductFormSt
 
 export default function SellerPage() {
   const router = useRouter();
+  const token = getUser();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [catalogLoading, setCatalogLoading] = useState(false);

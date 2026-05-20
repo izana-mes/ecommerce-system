@@ -36,6 +36,7 @@ function StatusBadge({ status, palette }: { status: string; palette: "order" | "
 
 export default function SellerOrdersPage() {
   const router = useRouter();
+  const token = getUser();
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<SellerOrder[]>([]);
   const [statusFilter, setStatusFilter] = useState("ALL");
