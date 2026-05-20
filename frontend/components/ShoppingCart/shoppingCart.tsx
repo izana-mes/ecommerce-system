@@ -17,6 +17,7 @@ import {
   updateQuantityAsync} from "@/store/cartSlice";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {getUser, refreshCurrentUserFromServer } from "@/lib/auth";
+import { secureApiRequest } from "@/lib/secure-api";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import type { TranslationKey } from "@/lib/i18n";
 
@@ -547,11 +548,21 @@ export default function ShoppingCart() {
         .filter(Boolean)
         .join("\n");
 
-      const response = await fetch("/api/orders", {
+      const data = await secureApiRequest<{
+        data?: {
+          orderId?: number;
+          orderNumber?: string;
+          trackingSecret?: string;
+          pointsRedeemed?: number;
+          pointsEarned?: number;
+          remainingPoints?: number;
+          pointsDiscountAmount?: number;
+        };
+        error?: string;
+        message?: string;
+      }>("/api/orders", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"},
-        body: JSON.stringify({
+        body: {
           customerEmail: checkoutForm.email.trim().toLowerCase() || user?.email || "guest@example.com",
           customerFirstName: checkoutForm.firstName.trim() || user?.firstName || "",
           customerLastName: checkoutForm.lastName.trim() || user?.lastName || "",
@@ -569,7 +580,6 @@ export default function ShoppingCart() {
           notes: combinedNotes || undefined,
           paymentMethod: selectedPayment,
           orderSource: buyNowProductId ? "buy-now" : "checkout-ui",
-          // Product prices in cart are USD-based; server converts to VND for VNPAY.
           currency: "USD",
           shippingFee: checkoutSubtotal === 0 ? 0 : 5,
           vat: checkoutSubtotal === 0 ? 0 : 11,
@@ -580,12 +590,7 @@ export default function ShoppingCart() {
             productID: item.productID,
             productName: item.productName,
             productPrice: item.productPrice,
-            quantity: item.quantity ?? 1}))})});
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data?.error || data?.message || "Failed to place order");
-      }
+            quantity: item.quantity ?? 1}))}});
 
       const orderId = data?.data?.orderId as number | undefined;
       const orderNumber = data?.data?.orderNumber as string | undefined;
@@ -664,10 +669,7 @@ export default function ShoppingCart() {
         dispatch(removeFromCart(buyNowProductId));
         setBuyNowProductId(null);
       } else {
-        await fetch("/api/cart/clear", {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json"}}).catch(() => null);
+        await secureApiRequest("/api/cart/clear", { method: "DELETE" }).catch(() => null);
         dispatch(clearCart());
       }
       dispatch(fetchCartAsync());

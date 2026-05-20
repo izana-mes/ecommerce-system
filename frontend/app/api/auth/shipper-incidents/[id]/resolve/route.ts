@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
 
@@ -8,8 +9,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         const { id } = await context.params;
     const response = await fetch(`${API_URL}/shipper/incidents/${encodeURIComponent(id)}/resolve`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json"}});
+      headers: backendAuthHeaders(request)});
     const raw = await response.text();
     const payload = raw ? JSON.parse(raw) : null;
     if (!response.ok) {

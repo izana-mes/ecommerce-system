@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
 
@@ -7,8 +8,7 @@ export async function GET(request: Request) {
   try {
         const response = await fetch(`${API_URL}/v1/staff/order-insights`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json"},
+      headers: backendAuthHeaders(request),
       cache: "no-store"});
 
     const data = await response.json().catch(() => null);

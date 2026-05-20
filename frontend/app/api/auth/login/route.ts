@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { forwardSetCookies } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
 
@@ -12,8 +13,6 @@ export async function POST(request: Request) {
 
   const data = await response.json().catch(() => ({}));
   const out = NextResponse.json(data, { status: response.status });
-
-  const setCookie = response.headers.get("set-cookie");
-  if (setCookie) out.headers.set("set-cookie", setCookie);
+  forwardSetCookies(response, out);
   return out;
 }

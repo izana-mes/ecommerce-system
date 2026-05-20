@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { forwardSetCookies } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
 
@@ -15,7 +16,6 @@ export async function POST(request: NextRequest) {
       ...(csrf ? { "X-XSRF-TOKEN": csrf } : {})}});
 
   const out = NextResponse.json({ success: response.ok }, { status: response.status });
-  const setCookie = response.headers.get("set-cookie");
-  if (setCookie) out.headers.set("set-cookie", setCookie);
+  forwardSetCookies(response, out);
   return out;
 }

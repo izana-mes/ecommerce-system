@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
-
-function getCookieHeader(request: Request) {
-  return request.headers.get("cookie");
-}
 
 async function parseJsonOrText(response: Response) {
   const text = await response.text();
@@ -20,12 +17,9 @@ async function parseJsonOrText(response: Response) {
 
 export async function DELETE(request: Request) {
   try {
-        const cookieHeader = getCookieHeader(request);
-
     const response = await fetch(`${API_URL}/cart/clear`, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})}});
+      headers: backendAuthHeaders(request)});
 
     const data = await parseJsonOrText(response);
 

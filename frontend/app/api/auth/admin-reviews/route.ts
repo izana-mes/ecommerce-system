@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
 
@@ -23,8 +24,7 @@ export async function GET(request: Request) {
 
     const response = await fetch(`${API_URL}/v1/admin/reviews?${query.toString()}`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json"},
+      headers: backendAuthHeaders(request),
       cache: "no-store"});
 
     const data = await response.json();
@@ -58,8 +58,7 @@ export async function PUT(request: Request) {
       `${API_URL}/v1/admin/reviews/${encodeURIComponent(body.productID)}/${encodeURIComponent(body.reviewID)}`,
       {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json"},
+        headers: backendAuthHeaders(request),
         body: JSON.stringify({
           rating: body.rating,
           comment: body.comment})}
@@ -95,8 +94,7 @@ export async function DELETE(request: Request) {
       `${API_URL}/v1/admin/reviews/${encodeURIComponent(body.productID)}/${encodeURIComponent(body.reviewID)}`,
       {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json"}}
+        headers: backendAuthHeaders(request)}
     );
 
     const data = await response.json();

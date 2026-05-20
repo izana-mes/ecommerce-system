@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
 
@@ -10,8 +11,7 @@ export async function GET(request: Request) {
     const query = status ? `?status=${encodeURIComponent(status)}` : "";
     const response = await fetch(`${API_URL}/v1/shipper/incidents${query}`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json"},
+      headers: backendAuthHeaders(request),
       cache: "no-store"});
     const raw = await response.text();
     const payload = raw ? JSON.parse(raw) : null;
@@ -33,8 +33,7 @@ export async function POST(request: Request) {
         const body = await request.json();
     const response = await fetch(`${API_URL}/v1/shipper/incidents`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"},
+      headers: backendAuthHeaders(request),
       body: JSON.stringify(body)});
     const raw = await response.text();
     const payload = raw ? JSON.parse(raw) : null;

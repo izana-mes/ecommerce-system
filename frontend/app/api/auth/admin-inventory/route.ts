@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
 
@@ -55,21 +56,19 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
     const lowStockThreshold = Math.max(1, Number(searchParams.get("lowStockThreshold") ?? 5) || 5);
 
+    const authHeaders = backendAuthHeaders(request);
     const [productResponse, inventoryHealthResponse, dashboardResponse] = await Promise.all([
       fetch(`${API_URL}/products`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json"},
+        headers: authHeaders,
         cache: "no-store"}),
       fetch(`${API_URL}/products/inventory-health?lowStockThreshold=${lowStockThreshold}`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json"},
+        headers: authHeaders,
         cache: "no-store"}),
       fetch(`${API_URL}/v1/admin/dashboard?days=30&recentLimit=10&lowStockThreshold=${lowStockThreshold}`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json"},
+        headers: authHeaders,
         cache: "no-store"}),
     ]);
 

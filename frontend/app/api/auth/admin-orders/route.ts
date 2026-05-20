@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 type OrderStatus = "pending" | "processing" | "paid" | "shipped" | "completed" | "cancelled";
 type PaymentStatus = "pending" | "authorized" | "paid" | "failed" | "refunded";
@@ -29,9 +30,6 @@ function toPositiveNumber(value: string | null, fallback: number): number {
   return Math.floor(parsed);
 }
 
-function getCookieHeader(request: Request): string | null {
-  return request.headers.get("cookie");
-}
 
 function normalizeOrder(item: BackendOrder) {
   const rawId = Number(item.id);
@@ -75,7 +73,6 @@ function normalizeOrder(item: BackendOrder) {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-        const cookieHeader = getCookieHeader(request);
     const page = Math.max(0, toPositiveNumber(searchParams.get("page"), 1) - 1);
     const size = Math.min(100, toPositiveNumber(searchParams.get("size"), 10));
     const q = (searchParams.get("q") || "").trim();
@@ -87,8 +84,7 @@ export async function GET(request: Request) {
 
     const response = await fetch(`${API_URL}/orders/fulfillment-queue?limit=${limit}`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})},
+      headers: backendAuthHeaders(request),
       cache: "no-store"});
     const raw = await response.text();
     const payload = raw ? JSON.parse(raw) : null;
@@ -187,8 +183,7 @@ export async function PATCH(request: Request) {
 
     const response = await fetch(`${API_URL}/v1/admin/orders/${orderId}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json"},
+      headers: backendAuthHeaders(request),
       body: JSON.stringify(patchBody)});
 
     const raw = await response.text();

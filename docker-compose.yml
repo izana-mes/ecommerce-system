@@ -72,6 +72,7 @@ services:
       APPLICATION_SERVER_URL: ${APPLICATION_SERVER_URL:-http://localhost:8080}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
       MOMO_IPN_URL: ${MOMO_IPN_URL:-http://localhost:8080/api/payments/momo/ipn}
       CHATBOT_AI_REFERER: ${CHATBOT_AI_REFERER:-http://localhost:3000}
       MCP_SERVICE_TOKEN: ${MCP_SERVICE_TOKEN}
@@ -119,6 +120,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       RABBITMQ_MANAGEMENT_URL: ${RABBITMQ_MANAGEMENT_URL:-http://rabbitmq:15672}
       MOMO_REDIRECT_URL: ${MOMO_REDIRECT_URL:-http://localhost:3000/payment/momo-return}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
       MOMO_IPN_URL: ${MOMO_IPN_URL:-http://localhost:8080/api/payments/momo/ipn}
       VNPAY_RETURN_URL: ${VNPAY_RETURN_URL:-http://localhost:3000/payment/vnpay-return}
     ports:

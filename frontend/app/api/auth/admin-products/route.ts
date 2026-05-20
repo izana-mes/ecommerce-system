@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
 
@@ -34,8 +35,7 @@ export async function GET(request: Request) {
 
     const response = await fetch(endpoint, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json"},
+      headers: backendAuthHeaders(request),
       cache: "no-store"});
 
     const data = await response.json();
@@ -59,8 +59,7 @@ export async function POST(request: Request) {
 
     const response = await fetch(`${API_URL}/products/single`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"},
+      headers: backendAuthHeaders(request),
       body: JSON.stringify({
         productID: body.productID,
         frontImg: body.frontImg,
@@ -97,8 +96,7 @@ export async function PUT(request: Request) {
 
     const response = await fetch(`${API_URL}/products/${body.productID}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json"},
+      headers: backendAuthHeaders(request),
       body: JSON.stringify({
         productID: body.productID,
         frontImg: body.frontImg,
@@ -135,8 +133,7 @@ export async function DELETE(request: Request) {
 
     const response = await fetch(`${API_URL}/products/${body.productID}`, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json"}});
+      headers: backendAuthHeaders(request)});
 
     if (!response.ok) {
       try {

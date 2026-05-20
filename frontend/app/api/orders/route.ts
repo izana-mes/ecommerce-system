@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
 import { validateCouponCode } from "@/lib/coupons";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
 
@@ -13,10 +14,6 @@ type OrderRequestBody = Record<string, unknown> & {
   items?: OrderRequestItem[];
   couponCode?: string | null;
 };
-
-function getCookieHeader(request: NextRequest): string | null {
-  return request.headers.get("cookie");
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,12 +53,9 @@ export async function POST(request: NextRequest) {
       couponAssignmentId: validatedCoupon?.assignmentId ?? null,
       couponDiscount: validatedCoupon?.discountAmount ?? 0};
 
-        const cookieHeader = getCookieHeader(request);
-
     const backendResponse = await fetch(`${API_URL}/orders`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})},
+      headers: backendAuthHeaders(request),
       body: JSON.stringify(sanitizedBody)});
 
     const rawText = await backendResponse.text();

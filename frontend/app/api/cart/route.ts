@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
-
-function getCookieHeader(request: Request) {
-  return request.headers.get("cookie");
-}
 
 async function parseJsonOrText(response: Response) {
   const text = await response.text();
@@ -19,11 +16,9 @@ async function parseJsonOrText(response: Response) {
 
 export async function GET(request: Request) {
   try {
-        const cookieHeader = getCookieHeader(request);
     const response = await fetch(`${API_URL}/cart`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})}});
+      headers: backendAuthHeaders(request)});
 
     const data = await parseJsonOrText(response);
 
@@ -49,12 +44,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-        const cookieHeader = getCookieHeader(request);
-
     const response = await fetch(`${API_URL}/cart`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})},
+      headers: backendAuthHeaders(request),
       body: JSON.stringify(body)});
 
     const data = await parseJsonOrText(response);
@@ -79,8 +71,6 @@ export async function PUT(request: Request) {
   try {
     const body = await request.json();
     const { productID, quantity } = body;
-        const cookieHeader = getCookieHeader(request);
-
     if (!productID || quantity === undefined) {
       return NextResponse.json(
         { error: "Missing required fields: productID, quantity" },
@@ -90,8 +80,7 @@ export async function PUT(request: Request) {
 
     const response = await fetch(`${API_URL}/cart/${productID}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})},
+      headers: backendAuthHeaders(request),
       body: JSON.stringify({ quantity })});
 
     const data = await parseJsonOrText(response);
@@ -116,8 +105,6 @@ export async function DELETE(request: Request) {
   try {
     const body = await request.json();
     const { productID } = body;
-        const cookieHeader = getCookieHeader(request);
-
     if (!productID) {
       return NextResponse.json(
         { error: "Missing required field: productID" },
@@ -127,8 +114,7 @@ export async function DELETE(request: Request) {
 
     const response = await fetch(`${API_URL}/cart/${productID}`, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})}});
+      headers: backendAuthHeaders(request)});
 
     const data = await parseJsonOrText(response);
 

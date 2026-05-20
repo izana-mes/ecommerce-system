@@ -24,9 +24,9 @@ class SecurityIntegrationTest {
 
     @Test
     void csrf_protectedMutationWithoutTokenShouldFail() throws Exception {
-        mockMvc.perform(post("/api/cart")
+        mockMvc.perform(post("/api/wishlist")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productID\":\"P1\",\"quantity\":1}"))
+                        .content("{\"productID\":\"P1\"}"))
                 .andExpect(status().isForbidden());
     }
 

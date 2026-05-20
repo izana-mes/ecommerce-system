@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
 
@@ -23,8 +24,7 @@ export async function GET(request: Request) {
     // Call the Spring backend to get users
     const response = await fetch(usersUrl, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json"}});
+      headers: backendAuthHeaders(request)});
 
     const data = await response.json();
 
@@ -64,8 +64,7 @@ export async function PATCH(request: Request) {
 
     const response = await fetch(endpoint, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"}});
+      headers: backendAuthHeaders(request)});
 
     const data = await response.json();
 
@@ -94,9 +93,7 @@ export async function POST(request: Request) {
     // Call the Spring backend register endpoint
     const response = await fetch(`${API_URL}/v1/auth/register`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"},
-      // Admin creation can use the same register mechanics for now depending on role implementation
+      headers: backendAuthHeaders(request),
       body: JSON.stringify(body)});
 
     const data = await response.json();
@@ -134,8 +131,7 @@ export async function PUT(request: Request) {
     // Call the Spring backend
     const response = await fetch(`${API_URL}/v1/users/${userId}/role`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json"},
+      headers: backendAuthHeaders(request),
       body: JSON.stringify({ role })});
 
     const data = await response.json();
@@ -173,8 +169,7 @@ export async function DELETE(request: Request) {
     // Call the Spring backend
     const response = await fetch(`${API_URL}/v1/users/${userId}`, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json"}});
+      headers: backendAuthHeaders(request)});
 
     if (!response.ok) {
       try {
