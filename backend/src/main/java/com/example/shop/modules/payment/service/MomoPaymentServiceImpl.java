@@ -1,5 +1,6 @@
 package com.example.shop.modules.payment.service;
 
+import com.example.shop.common.observability.ObservabilityMetrics;
 import com.example.shop.modules.coupon.service.CouponService;
 import com.example.shop.modules.messaging.notification.OrderPaidEmailMessagePublisher;
 import com.example.shop.modules.messaging.order.OrderStatusChangedEvent;
@@ -37,6 +38,7 @@ public class MomoPaymentServiceImpl implements MomoPaymentService {
     private final OrderPaidEmailMessagePublisher orderPaidEmailMessagePublisher;
     private final OrderStatusChangedPublisher orderStatusChangedPublisher;
     private final CouponService couponService;
+    private final ObservabilityMetrics observabilityMetrics;
 
     @Value("${application.payment.momo.secret-key:}")
     private String secretKey;
@@ -50,10 +52,14 @@ public class MomoPaymentServiceImpl implements MomoPaymentService {
     @Override
     @Transactional
     public void processIpn(Map<String, Object> payload) {
-        if (!StringUtils.hasText(secretKey)) {
-            log.warn("Momo IPN: Missing secretKey config");
-            return;
-        }
+        long startedAt = System.currentTimeMillis();
+        String metricStatus = "error";
+        try {
+            if (!StringUtils.hasText(secretKey)) {
+                metricStatus = "missing_config";
+                log.warn("Momo IPN: Missing secretKey config");
+                return;
+            }
 
         String signature = safeString(payload.get("signature"));
         String orderIdStr = safeString(payload.get("orderId"));
@@ -62,6 +68,7 @@ public class MomoPaymentServiceImpl implements MomoPaymentService {
         String transId = safeString(payload.get("transId"));
 
         if (!StringUtils.hasText(signature) || !StringUtils.hasText(orderIdStr)) {
+            metricStatus = "invalid_request";
             log.warn("Momo IPN: Invalid payload (missing signature or orderId)");
             return;
         }
@@ -99,17 +106,20 @@ public class MomoPaymentServiceImpl implements MomoPaymentService {
             }
             computedHash = hexString.toString();
         } catch (Exception e) {
+            metricStatus = "hash_error";
             log.error("Failed to compute MoMo hash", e);
             return;
         }
 
         if (!computedHash.equals(signature)) {
+            metricStatus = "invalid_signature";
             log.warn("Momo IPN: Invalid signature for order {}", orderIdStr);
             return;
         }
 
         OrderSnapshot order = findOrderByOrderNumber(orderIdStr);
         if (order == null) {
+            metricStatus = "order_not_found";
             log.warn("Momo IPN: Order not found {}", orderIdStr);
             return;
         }
@@ -127,24 +137,28 @@ public class MomoPaymentServiceImpl implements MomoPaymentService {
         }
 
         if (expectedVndAmount != amount) {
+            metricStatus = "amount_mismatch";
             log.warn("Momo IPN: amount mismatch for order {} – expected {} VND, got {}",
                     orderIdStr, expectedVndAmount, amount);
             return;
         }
 
         if ("paid".equalsIgnoreCase(order.paymentStatus())) {
+             metricStatus = "already_paid";
              log.warn("Momo IPN: Order already paid {}", orderIdStr);
              return;
         }
 
         String eventKey = StringUtils.hasText(transId) ? transId : orderIdStr + "-" + resultCode;
         if (!tryAcquireWebhookIdempotency("momo", eventKey, orderIdStr, payload)) {
+             metricStatus = "duplicate_event";
              log.warn("Momo IPN: Event already processed {}", eventKey);
              return;
         }
 
         boolean paid = (resultCode == 0);
         String paymentStatus = paid ? "paid" : "failed";
+        metricStatus = paymentStatus;
         String orderStatus = paid ? "paid" : "cancelled";
 
         jdbcTemplate.update(
@@ -173,6 +187,9 @@ public class MomoPaymentServiceImpl implements MomoPaymentService {
         publishStatusChangedEvent(order, orderStatus, paymentStatus);
         
         log.info("Momo IPN: successfully processed order {} with status {}", orderIdStr, paymentStatus);
+        } finally {
+            observabilityMetrics.recordPaymentIpn("momo", metricStatus, System.currentTimeMillis() - startedAt);
+        }
     }
 
     private OrderSnapshot findOrderByOrderNumber(String orderNumber) {

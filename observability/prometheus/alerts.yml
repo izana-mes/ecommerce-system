@@ -1,0 +1,50 @@
+groups:
+  - name: ecommerce-platform-alerts
+    rules:
+      - alert: HighHttp5xxErrorRate
+        expr: sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) / sum(rate(http_server_requests_seconds_count[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: High backend HTTP 5xx rate
+
+      - alert: PaymentFailureSpike
+        expr: sum(rate(payment_ipn_events_total{status="failed"}[10m])) > 0.2
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: Payment IPN failures are elevated
+
+      - alert: AiToolCrashRate
+        expr: sum(rate(ai_tool_executions_total{status="failure"}[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: AI tool execution failures increasing
+
+      - alert: SlowDatabaseQueries
+        expr: histogram_quantile(0.95, sum by (le)(rate(hikaricp_connections_acquire_seconds_bucket[5m]))) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: DB connection acquisition latency is high
+
+      - alert: HighJvmMemoryUsage
+        expr: (jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"}) > 0.9
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: JVM heap usage above 90%
+
+      - alert: RateLimitAbuse
+        expr: sum(rate(rate_limit_requests_total{blocked="true"}[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Rate-limit abuse detected

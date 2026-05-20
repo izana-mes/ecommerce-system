@@ -1,7 +1,10 @@
 package com.example.shop.modules.chatbot.service;
 
+import com.example.shop.common.observability.ObservabilityMetrics;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.micrometer.tracing.Span;
+import io.micrometer.tracing.Tracer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -43,6 +46,8 @@ public class ChatbotAiClient {
     private final int maxTokens;
     private final String mcpServerUrl;
     private final String mcpServiceToken;
+    private final ObservabilityMetrics observabilityMetrics;
+    private final Tracer tracer;
 
     public ChatbotAiClient(
             @Value("${application.chatbot.ai.enabled:false}") boolean enabled,
@@ -53,7 +58,9 @@ public class ChatbotAiClient {
             @Value("${application.chatbot.ai.max-tokens:600}") int maxTokens,
             @Value("${application.mcp.server-url:http://localhost:3100}") String mcpServerUrl,
             @Value("${application.mcp.service-token:}") String mcpServiceToken,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            ObservabilityMetrics observabilityMetrics,
+            Tracer tracer
     ) {
         this.enabled = enabled;
         this.apiKey = apiKey == null ? "" : apiKey.trim();
@@ -64,6 +71,8 @@ public class ChatbotAiClient {
         this.mcpServerUrl = (mcpServerUrl == null ? "" : mcpServerUrl.trim()).replaceAll("/+$", "");
         this.mcpServiceToken = mcpServiceToken == null ? "" : mcpServiceToken.trim();
         this.objectMapper = objectMapper.copy().registerModule(new JavaTimeModule());
+        this.observabilityMetrics = observabilityMetrics;
+        this.tracer = tracer;
         this.restClient = RestClient.builder().build();
     }
 
@@ -114,36 +123,56 @@ public class ChatbotAiClient {
             List<Map<String, Object>> tools,
             String customerEmail
     ) {
-        Map<String, Object> response = callResponses(null, List.of(
-                Map.of("role", "system", "content", systemPrompt),
-                Map.of("role", "user", "content", userPrompt)
-        ), tools);
-        if (response == null) return Optional.empty();
+        long startedAt = System.currentTimeMillis();
+        String status = "success";
+        observabilityMetrics.recordAiContextSize(model, userPrompt == null ? 0 : userPrompt.length());
+        try {
+            Map<String, Object> response = callResponses(null, List.of(
+                    Map.of("role", "system", "content", systemPrompt),
+                    Map.of("role", "user", "content", userPrompt)
+            ), tools);
+            if (response == null) {
+                status = "empty_response";
+                return Optional.empty();
+            }
+            recordTokenUsage(response);
 
-        for (int round = 0; round < MAX_TOOL_ROUNDS; round++) {
-            List<Map<String, Object>> toolCalls = extractFunctionCalls(response);
-            if (toolCalls.isEmpty()) {
-                return extractOutputText(response);
+            for (int round = 0; round < MAX_TOOL_ROUNDS; round++) {
+                List<Map<String, Object>> toolCalls = extractFunctionCalls(response);
+                if (toolCalls.isEmpty()) {
+                    return extractOutputText(response);
+                }
+
+                List<Map<String, Object>> outputs = new ArrayList<>();
+                for (Map<String, Object> call : toolCalls) {
+                    String callId = String.valueOf(call.getOrDefault("call_id", ""));
+                    String toolName = String.valueOf(call.getOrDefault("name", ""));
+                    String argsJson = String.valueOf(call.getOrDefault("arguments", "{}"));
+                    String toolResult = executeTool(toolName, argsJson, customerEmail);
+                    outputs.add(Map.of(
+                            "type", "function_call_output",
+                            "call_id", callId,
+                            "output", toolResult
+                    ));
+                }
+
+                response = callResponses(String.valueOf(response.get("id")), outputs, tools);
+                if (response == null) {
+                    status = "empty_response";
+                    return Optional.empty();
+                }
+                recordTokenUsage(response);
             }
 
-            List<Map<String, Object>> outputs = new ArrayList<>();
-            for (Map<String, Object> call : toolCalls) {
-                String callId = String.valueOf(call.getOrDefault("call_id", ""));
-                String toolName = String.valueOf(call.getOrDefault("name", ""));
-                String argsJson = String.valueOf(call.getOrDefault("arguments", "{}"));
-                String toolResult = executeTool(toolName, argsJson, customerEmail);
-                outputs.add(Map.of(
-                        "type", "function_call_output",
-                        "call_id", callId,
-                        "output", toolResult
-                ));
-            }
-
-            response = callResponses(String.valueOf(response.get("id")), outputs, tools);
-            if (response == null) return Optional.empty();
+            status = "max_rounds_reached";
+            return extractOutputText(response);
+        } catch (Exception ex) {
+            status = "error";
+            observabilityMetrics.recordAiModelError(model, "responses_loop_exception");
+            throw ex;
+        } finally {
+            observabilityMetrics.recordAiRequest(model, status, System.currentTimeMillis() - startedAt);
         }
-
-        return extractOutputText(response);
     }
 
     @SuppressWarnings("unchecked")
@@ -174,6 +203,7 @@ public class ChatbotAiClient {
                     .body(Map.class);
         } catch (Exception e) {
             log.warn("openai_responses_call_failed model={} error={}", model, e.getMessage());
+            observabilityMetrics.recordAiModelError(model, "provider_call_failed");
             return null;
         }
     }
@@ -221,7 +251,16 @@ public class ChatbotAiClient {
 
     @SuppressWarnings("unchecked")
     private String executeTool(String toolName, String argsJson, String customerEmail) {
+        long startedAt = System.currentTimeMillis();
+        Span span = tracer.nextSpan().name("ai.tool.execute:" + toolName).start();
+        String metricStatus = "success";
         try {
+            if (!allowedToolNames().contains(toolName)) {
+                metricStatus = "hallucinated";
+                observabilityMetrics.recordAiHallucinatedToolCall(toolName);
+                return "{\"error\":\"Unknown tool requested by model\"}";
+            }
+
             Map<String, Object> args = parseJson(argsJson);
             if (args == null) args = Map.of();
 
@@ -241,9 +280,43 @@ public class ChatbotAiClient {
 
             return toolResponse == null ? "{\"error\":\"Tool returned no result\"}" : toJson(toolResponse);
         } catch (Exception e) {
+            metricStatus = "failure";
+            observabilityMetrics.recordAiModelError(model, "tool_execution_failed");
             log.warn("mcp_tool_execute_error tool={} error={}", toolName, e.getMessage());
             return "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}";
+        } finally {
+            observabilityMetrics.recordAiToolExecution(toolName, metricStatus, System.currentTimeMillis() - startedAt);
+            span.end();
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void recordTokenUsage(Map<String, Object> response) {
+        Object usageObj = response.get("usage");
+        if (!(usageObj instanceof Map<?, ?> usage)) {
+            return;
+        }
+        recordUsageCounter(usage, "input_tokens", "input");
+        recordUsageCounter(usage, "output_tokens", "output");
+        recordUsageCounter(usage, "total_tokens", "total");
+    }
+
+    private void recordUsageCounter(Map<?, ?> usage, String key, String type) {
+        Object value = usage.get(key);
+        if (value instanceof Number number && number.doubleValue() > 0) {
+            observabilityMetrics.recordAiTokens(model, type, number.doubleValue());
+        }
+    }
+
+    private Set<String> allowedToolNames() {
+        return Set.of(
+                "getUserOrders",
+                "getOrderDetail",
+                "searchProducts",
+                "recommendProducts",
+                "cancelOrder",
+                "createReturnRequest"
+        );
     }
 
     private List<Map<String, Object>> buildToolSchemas(String customerEmail) {

@@ -156,3 +156,27 @@ spring:
   mcp:
     server-url: ${MCP_SERVER_URL:http://localhost:3100}
     service-token: ${MCP_SERVICE_TOKEN:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+  metrics:
+    tags:
+      service: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        ai.request.latency: true
+        mcp.tool.execution.latency: true
+        payment.ipn.processing.latency: true
+  tracing:
+    sampling:
+      probability: ${OTEL_TRACES_SAMPLER_PROBABILITY:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://tempo:4318}/v1/traces

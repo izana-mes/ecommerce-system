@@ -1,5 +1,6 @@
 package com.example.shop.modules.payment.service;
 
+import com.example.shop.common.observability.ObservabilityMetrics;
 import com.example.shop.modules.coupon.service.CouponService;
 import com.example.shop.modules.messaging.notification.OrderPaidEmailMessagePublisher;
 import com.example.shop.modules.messaging.order.OrderStatusChangedEvent;
@@ -42,6 +43,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
     private final OrderPaidEmailMessagePublisher orderPaidEmailMessagePublisher;
     private final OrderStatusChangedPublisher orderStatusChangedPublisher;
     private final CouponService couponService;
+    private final ObservabilityMetrics observabilityMetrics;
 
     @Value("${application.payment.vnpay.hash-secret:}")
     private String hashSecret;
@@ -67,9 +69,13 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
     @Override
     @Transactional
     public VnpayIpnResponse processIpn(Map<String, String> params) {
-        if (!StringUtils.hasText(hashSecret)) {
-            return new VnpayIpnResponse("99", "Missing config");
-        }
+        long startedAt = System.currentTimeMillis();
+        String metricStatus = "error";
+        try {
+            if (!StringUtils.hasText(hashSecret)) {
+                metricStatus = "missing_config";
+                return new VnpayIpnResponse("99", "Missing config");
+            }
 
         String secureHash = params.get("vnp_SecureHash");
         String txnRef = params.get("vnp_TxnRef");
@@ -82,6 +88,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
                 txnRef, responseCode, transactionStatus);
 
         if (!StringUtils.hasText(secureHash) || !StringUtils.hasText(txnRef)) {
+            metricStatus = "invalid_request";
             return new VnpayIpnResponse("99", "Invalid request");
         }
         
@@ -96,15 +103,18 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
             computedHash = createVnpSecureHash(payload, hashSecret);
         } catch (Exception e) {
             log.error("Failed to compute VNPAY hash", e);
+            metricStatus = "hash_error";
             return new VnpayIpnResponse("99", "Hash error");
         }
 
         if (!computedHash.equalsIgnoreCase(secureHash)) {
+            metricStatus = "invalid_signature";
             return new VnpayIpnResponse("97", "Invalid signature");
         }
 
         OrderSnapshot order = findOrderByOrderNumber(txnRef);
         if (order == null) {
+            metricStatus = "order_not_found";
             return new VnpayIpnResponse("01", "Order not found");
         }
 
@@ -132,6 +142,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
         }
 
         if ("paid".equalsIgnoreCase(order.paymentStatus())) {
+            metricStatus = "already_paid";
             return new VnpayIpnResponse("02", "Order already confirmed");
         }
 
@@ -141,6 +152,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
         }
 
         if (!tryAcquireWebhookIdempotency("vnpay", eventKey, txnRef, payload)) {
+            metricStatus = "duplicate_event";
             return new VnpayIpnResponse("02", "Event already processed");
         }
 
@@ -183,6 +195,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
         );
 
         if (paid) {
+            metricStatus = "paid";
             log.info("VNPAY payment successful for order {}", order.id());
             try {
                 couponService.redeemCouponForPaidOrder(order.id());
@@ -201,6 +214,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
                 log.error("VNPAY status-change event publish failed for order {}", order.id(), ex);
             }
         } else {
+            metricStatus = "failed";
             log.warn("VNPAY payment failed or pending for order {}: responseCode={}, transactionStatus={}",
                     order.id(), responseCode, transactionStatus);
             try {
@@ -210,7 +224,10 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
             }
         }
 
-        return new VnpayIpnResponse("00", "Confirm Success");
+            return new VnpayIpnResponse("00", "Confirm Success");
+        } finally {
+            observabilityMetrics.recordPaymentIpn("vnpay", metricStatus, System.currentTimeMillis() - startedAt);
+        }
     }
 
     private OrderSnapshot findOrderByOrderNumber(String orderNumber) {

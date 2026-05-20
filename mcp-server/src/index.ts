@@ -3,9 +3,26 @@ import rateLimit from 'express-rate-limit';
 import { logger } from './logger';
 import { backendClient } from './backend';
 import { z } from 'zod';
+import client from 'prom-client';
+import crypto from 'crypto';
 
 const app = express();
 app.use(express.json());
+const registry = new client.Registry();
+client.collectDefaultMetrics({ register: registry, prefix: 'mcp_' });
+const toolExecutions = new client.Counter({
+  name: 'mcp_tool_executions_total',
+  help: 'Count of MCP tool executions',
+  labelNames: ['tool', 'status'] as const,
+  registers: [registry],
+});
+const toolLatency = new client.Histogram({
+  name: 'mcp_tool_execution_latency_seconds',
+  help: 'Latency of MCP tool executions',
+  labelNames: ['tool', 'status'] as const,
+  buckets: [0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10],
+  registers: [registry],
+});
 
 const PORT = parseInt(process.env.PORT || '3100', 10);
 const MCP_SERVICE_TOKEN = process.env.MCP_SERVICE_TOKEN || '';
@@ -51,8 +68,14 @@ app.use('/tools', limiter, authMiddleware);
 // -------------------------------------------------------------------------
 app.use((req, res, next) => {
   const start = Date.now();
+  const requestId = String(req.headers['x-request-id'] || crypto.randomUUID());
+  const correlationId = String(req.headers['x-correlation-id'] || requestId);
+  res.setHeader('x-request-id', requestId);
+  res.setHeader('x-correlation-id', correlationId);
   res.on('finish', () => {
     logger.info('request', {
+      requestId,
+      correlationId,
       method: req.method,
       path: req.path,
       status: res.statusCode,
@@ -82,8 +105,11 @@ const getUserOrdersSchema = z.object({
 });
 
 app.post('/tools/getUserOrders', async (req, res) => {
+  const end = toolLatency.startTimer({ tool: 'getUserOrders', status: 'ok' });
   const parsed = getUserOrdersSchema.safeParse(req.body);
   if (!parsed.success) {
+    end({ tool: 'getUserOrders', status: 'validation_error' });
+    toolExecutions.inc({ tool: 'getUserOrders', status: 'validation_error' });
     res.status(400).json({ success: false, message: parsed.error.message });
     return;
   }
@@ -92,8 +118,12 @@ app.post('/tools/getUserOrders', async (req, res) => {
     const response = await backendClient.get('/orders', {
       params: { email: sanitizeString(email, 320), limit },
     });
+    end({ tool: 'getUserOrders', status: 'success' });
+    toolExecutions.inc({ tool: 'getUserOrders', status: 'success' });
     res.json(response.data);
   } catch (err: any) {
+    end({ tool: 'getUserOrders', status: 'failure' });
+    toolExecutions.inc({ tool: 'getUserOrders', status: 'failure' });
     logger.error('tool_error', { tool: 'getUserOrders', error: err.message });
     res.status(err.response?.status || 500).json(
       err.response?.data || { success: false, message: err.message }
@@ -110,8 +140,11 @@ const getOrderDetailSchema = z.object({
 });
 
 app.post('/tools/getOrderDetail', async (req, res) => {
+  const end = toolLatency.startTimer({ tool: 'getOrderDetail', status: 'ok' });
   const parsed = getOrderDetailSchema.safeParse(req.body);
   if (!parsed.success) {
+    end({ tool: 'getOrderDetail', status: 'validation_error' });
+    toolExecutions.inc({ tool: 'getOrderDetail', status: 'validation_error' });
     res.status(400).json({ success: false, message: parsed.error.message });
     return;
   }
@@ -120,8 +153,12 @@ app.post('/tools/getOrderDetail', async (req, res) => {
     const response = await backendClient.get(`/orders/${encodeURIComponent(sanitizeString(orderNumber, 80))}`, {
       params: { email: sanitizeString(email, 320) },
     });
+    end({ tool: 'getOrderDetail', status: 'success' });
+    toolExecutions.inc({ tool: 'getOrderDetail', status: 'success' });
     res.json(response.data);
   } catch (err: any) {
+    end({ tool: 'getOrderDetail', status: 'failure' });
+    toolExecutions.inc({ tool: 'getOrderDetail', status: 'failure' });
     logger.error('tool_error', { tool: 'getOrderDetail', error: err.message });
     res.status(err.response?.status || 500).json(
       err.response?.data || { success: false, message: err.message }
@@ -142,8 +179,11 @@ const searchProductsSchema = z.object({
 });
 
 app.post('/tools/searchProducts', async (req, res) => {
+  const end = toolLatency.startTimer({ tool: 'searchProducts', status: 'ok' });
   const parsed = searchProductsSchema.safeParse(req.body);
   if (!parsed.success) {
+    end({ tool: 'searchProducts', status: 'validation_error' });
+    toolExecutions.inc({ tool: 'searchProducts', status: 'validation_error' });
     res.status(400).json({ success: false, message: parsed.error.message });
     return;
   }
@@ -155,8 +195,12 @@ app.post('/tools/searchProducts', async (req, res) => {
     if (maxPrice !== undefined) params['maxPrice'] = maxPrice;
 
     const response = await backendClient.get('/products', { params });
+    end({ tool: 'searchProducts', status: 'success' });
+    toolExecutions.inc({ tool: 'searchProducts', status: 'success' });
     res.json(response.data);
   } catch (err: any) {
+    end({ tool: 'searchProducts', status: 'failure' });
+    toolExecutions.inc({ tool: 'searchProducts', status: 'failure' });
     logger.error('tool_error', { tool: 'searchProducts', error: err.message });
     res.status(err.response?.status || 500).json(
       err.response?.data || { success: false, message: err.message }
@@ -172,8 +216,11 @@ const recommendProductsSchema = z.object({
 });
 
 app.post('/tools/recommendProducts', async (req, res) => {
+  const end = toolLatency.startTimer({ tool: 'recommendProducts', status: 'ok' });
   const parsed = recommendProductsSchema.safeParse(req.body);
   if (!parsed.success) {
+    end({ tool: 'recommendProducts', status: 'validation_error' });
+    toolExecutions.inc({ tool: 'recommendProducts', status: 'validation_error' });
     res.status(400).json({ success: false, message: parsed.error.message });
     return;
   }
@@ -182,8 +229,12 @@ app.post('/tools/recommendProducts', async (req, res) => {
     const response = await backendClient.get('/products/recommend', {
       params: email ? { email: sanitizeString(email, 320) } : {},
     });
+    end({ tool: 'recommendProducts', status: 'success' });
+    toolExecutions.inc({ tool: 'recommendProducts', status: 'success' });
     res.json(response.data);
   } catch (err: any) {
+    end({ tool: 'recommendProducts', status: 'failure' });
+    toolExecutions.inc({ tool: 'recommendProducts', status: 'failure' });
     logger.error('tool_error', { tool: 'recommendProducts', error: err.message });
     res.status(err.response?.status || 500).json(
       err.response?.data || { success: false, message: err.message }
@@ -200,8 +251,11 @@ const cancelOrderSchema = z.object({
 });
 
 app.post('/tools/cancelOrder', async (req, res) => {
+  const end = toolLatency.startTimer({ tool: 'cancelOrder', status: 'ok' });
   const parsed = cancelOrderSchema.safeParse(req.body);
   if (!parsed.success) {
+    end({ tool: 'cancelOrder', status: 'validation_error' });
+    toolExecutions.inc({ tool: 'cancelOrder', status: 'validation_error' });
     res.status(400).json({ success: false, message: parsed.error.message });
     return;
   }
@@ -211,8 +265,12 @@ app.post('/tools/cancelOrder', async (req, res) => {
       `/orders/${encodeURIComponent(sanitizeString(orderNumber, 80))}/cancel`,
       { email: sanitizeString(email, 320) }
     );
+    end({ tool: 'cancelOrder', status: 'success' });
+    toolExecutions.inc({ tool: 'cancelOrder', status: 'success' });
     res.json(response.data);
   } catch (err: any) {
+    end({ tool: 'cancelOrder', status: 'failure' });
+    toolExecutions.inc({ tool: 'cancelOrder', status: 'failure' });
     logger.error('tool_error', { tool: 'cancelOrder', error: err.message });
     res.status(err.response?.status || 500).json(
       err.response?.data || { success: false, message: err.message }
@@ -230,8 +288,11 @@ const createReturnRequestSchema = z.object({
 });
 
 app.post('/tools/createReturnRequest', async (req, res) => {
+  const end = toolLatency.startTimer({ tool: 'createReturnRequest', status: 'ok' });
   const parsed = createReturnRequestSchema.safeParse(req.body);
   if (!parsed.success) {
+    end({ tool: 'createReturnRequest', status: 'validation_error' });
+    toolExecutions.inc({ tool: 'createReturnRequest', status: 'validation_error' });
     res.status(400).json({ success: false, message: parsed.error.message });
     return;
   }
@@ -244,8 +305,12 @@ app.post('/tools/createReturnRequest', async (req, res) => {
         reason: sanitizeString(reason, 2000),
       }
     );
+    end({ tool: 'createReturnRequest', status: 'success' });
+    toolExecutions.inc({ tool: 'createReturnRequest', status: 'success' });
     res.json(response.data);
   } catch (err: any) {
+    end({ tool: 'createReturnRequest', status: 'failure' });
+    toolExecutions.inc({ tool: 'createReturnRequest', status: 'failure' });
     logger.error('tool_error', { tool: 'createReturnRequest', error: err.message });
     res.status(err.response?.status || 500).json(
       err.response?.data || { success: false, message: err.message }
@@ -277,6 +342,12 @@ app.get('/tools', (_req, res) => {
     ],
   });
 });
+
+app.get('/metrics', async (_req, res) => {
+  res.set('Content-Type', registry.contentType);
+  res.end(await registry.metrics());
+});
+
 
 // -------------------------------------------------------------------------
 // Global error handler

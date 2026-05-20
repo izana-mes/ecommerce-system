@@ -1,5 +1,6 @@
 package com.example.shop.common.web;
 
+import com.example.shop.common.observability.ObservabilityMetrics;
 import com.example.shop.modules.security.RequestIdHolder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
@@ -30,6 +31,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper;
     private final ClientIpExtractor clientIpExtractor;
     private final StringRedisTemplate redisTemplate;
+    private final ObservabilityMetrics observabilityMetrics;
 
     private static final List<RateLimitRule> RULES = List.of(
             new RateLimitRule("POST", "/api/v1/auth/authenticate", 10, 60, "login"),
@@ -60,6 +62,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String key = "rl:" + rule.name() + ":" + keyDimension(request);
         Long count = redisTemplate.execute(LUA, List.of(key), String.valueOf(rule.windowSeconds()));
         if (count != null && count > rule.limit()) {
+            observabilityMetrics.recordRateLimit(rule.name(), true);
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setHeader("Retry-After", String.valueOf(rule.windowSeconds()));
@@ -72,6 +75,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
+        observabilityMetrics.recordRateLimit(rule.name(), false);
         filterChain.doFilter(request, response);
     }
 

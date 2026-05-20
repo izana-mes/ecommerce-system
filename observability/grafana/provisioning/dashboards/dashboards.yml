@@ -1,0 +1,9 @@
+apiVersion: 1
+
+providers:
+  - name: ecommerce-observability
+    orgId: 1
+    folder: Ecommerce
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

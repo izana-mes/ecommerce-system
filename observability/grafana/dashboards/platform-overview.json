@@ -1,0 +1,46 @@
+{
+  "title": "Platform Observability Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "API Request Rate",
+      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+      "targets": [{"expr": "sum(rate(http_server_requests_seconds_count[1m]))", "legendFormat": "req/s"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "API P95 Latency",
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+      "targets": [{"expr": "histogram_quantile(0.95, sum by (le)(rate(http_server_requests_seconds_bucket[5m])))", "legendFormat": "p95"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Payment Failures",
+      "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+      "targets": [{"expr": "sum(rate(payment_ipn_events_total{status=\"failed\"}[5m]))", "legendFormat": "failed/s"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "AI Token Usage",
+      "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+      "targets": [{"expr": "sum by (type)(rate(ai_tokens_usage_total[5m]))", "legendFormat": "{{type}}"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "AI Tool Failures",
+      "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
+      "targets": [{"expr": "sum(rate(ai_tool_executions_total{status=\"failure\"}[5m]))", "legendFormat": "tool failures/s"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Rate Limit Blocks",
+      "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
+      "targets": [{"expr": "sum(rate(rate_limit_requests_total{blocked=\"true\"}[5m]))", "legendFormat": "blocked/s"}]
+    }
+  ],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"}
+}
