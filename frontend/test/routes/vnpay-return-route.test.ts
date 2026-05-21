@@ -19,7 +19,12 @@ describe("GET /api/vnpay/return", () => {
   });
 
   it("returns success for valid signature and paid code", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response("ok", { status: 200 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({ RspCode: "00", Message: "Confirm Success" }, { status: 200 })
+      )
+    );
 
     const params = {
       vnp_TxnRef: "ORD-1001",

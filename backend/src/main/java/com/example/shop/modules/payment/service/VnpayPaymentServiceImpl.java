@@ -60,10 +60,14 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
         if (!StringUtils.hasText(params.get("vnp_TxnRef")) || !StringUtils.hasText(params.get("vnp_SecureHash"))) {
             return new VnpayIpnResponse("99", "Invalid request");
         }
-        paymentIpnMessagePublisher.publish(VnpayIpnMessage.builder()
+        boolean queued = paymentIpnMessagePublisher.tryPublish(VnpayIpnMessage.builder()
                 .params(new HashMap<>(params))
                 .build());
-        return new VnpayIpnResponse("00", "Accepted");
+        if (queued) {
+            return new VnpayIpnResponse("00", "Accepted");
+        }
+        log.info("RabbitMQ unavailable; processing VNPAY IPN synchronously for {}", params.get("vnp_TxnRef"));
+        return processIpn(params);
     }
 
     @Override
