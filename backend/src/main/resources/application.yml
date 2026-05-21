@@ -100,7 +100,7 @@ application:
       ttl-days: ${REVIEWS_TTL_DAYS:180}
     payment:
       vnpay:
-        hash-secret: ${VNPAY_HASH_SECRET:BVJUNHLRJVJ5U6MQSL1WHVCHN1V2J1D4}
+        hash-secret: ${VNPAY_HASH_SECRET:}
         usd-to-vnd-rate: ${VNPAY_USD_TO_VND_RATE:26000}
       momo:
         access-key: ${MOMO_ACCESS_KEY:}

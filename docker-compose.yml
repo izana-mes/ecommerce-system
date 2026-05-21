@@ -54,19 +54,20 @@ services:
     env_file:
       - ./.env
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-shop}}
-      DB_HOST: ${DB_HOST:-postgres}
-      DB_PORT: ${DB_PORT:-5432}
+      # Pin compose service hostnames so host/.env cloud URLs (Upstash, etc.) do not override them.
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-shop}
+      DB_HOST: postgres
+      DB_PORT: "5432"
       DB_NAME: ${DB_NAME:-shop}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      SPRING_DATA_REDIS_URL: ${SPRING_DATA_REDIS_URL:-redis://redis:6379}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      REDIS_PORT: ${REDIS_PORT:-6379}
-      SPRING_RABBITMQ_ENABLED: ${SPRING_RABBITMQ_ENABLED:-true}
-      SPRING_RABBITMQ_URI: ${SPRING_RABBITMQ_URI:-amqp://${RABBITMQ_USERNAME:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672}
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      SPRING_DATA_REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      SPRING_RABBITMQ_ENABLED: "true"
+      SPRING_RABBITMQ_URI: amqp://${RABBITMQ_USERNAME:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
       APPLICATION_SERVER_URL: ${APPLICATION_SERVER_URL:-http://localhost:8080}
@@ -77,8 +78,7 @@ services:
       CHATBOT_AI_REFERER: ${CHATBOT_AI_REFERER:-http://localhost:3000}
       MCP_SERVICE_TOKEN: ${MCP_SERVICE_TOKEN}
       MCP_SERVER_URL: http://mcp-server:3100
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4318}
-      OTEL_TRACES_SAMPLER_PROBABILITY: ${OTEL_TRACES_SAMPLER_PROBABILITY:-1.0}
+      MANAGEMENT_TRACING_ENABLED: "false"
     ports:
       - "8080:8080"
     healthcheck:

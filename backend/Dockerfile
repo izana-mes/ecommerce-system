@@ -11,11 +11,13 @@ RUN mvn -q -DskipTests -Dcheckstyle.skip=true package
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-RUN addgroup -S spring && adduser -S -G spring spring
+RUN apk add --no-cache wget \
+    && addgroup -S spring && adduser -S -G spring spring
 
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:InitialRAMPercentage=25 -Djava.security.egd=file:/dev/urandom"
 
-COPY --from=build /build/target/shop-backend-1.0.0.jar /app/app.jar
+# spring-boot-maven-plugin uses classifier "exec" for the runnable fat jar.
+COPY --from=build /build/target/shop-backend-1.0.0-exec.jar /app/app.jar
 
 USER spring
 EXPOSE 8080
