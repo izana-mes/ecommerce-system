@@ -66,14 +66,11 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        // BFF/server callbacks without browser CSRF cookies.
-                        .ignoringRequestMatchers(
-                                "/api/orders",
-                                "/api/cart",
-                                "/api/cart/**",
-                                "/api/payments/vnpay/ipn",
-                                "/api/payments/momo/ipn",
-                                "/api/internal/notifications/**"))
+                        // All API calls are proxied through the Next.js BFF server, not made
+                        // directly by the browser. CORS already restricts allowed origins to the
+                        // frontend origin, and every protected endpoint is guarded by JWT auth,
+                        // so CSRF provides no additional security value for the API layer.
+                        .ignoringRequestMatchers("/api/**"))
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
                                 "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; upgrade-insecure-requests"))

@@ -8,7 +8,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   const correlationId = request.headers.get("x-correlation-id") ?? requestId;
-  const hasSessionCookie = Boolean(request.cookies.get("access_token")?.value || request.cookies.get("refresh_token")?.value);
+  const hasSessionCookie = Boolean(request.cookies.get("access_token")?.value);
 
   const protectedPath = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   if (protectedPath && !hasSessionCookie) {

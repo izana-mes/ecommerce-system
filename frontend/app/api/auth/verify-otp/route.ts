@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rateLimit";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
 
@@ -15,9 +16,9 @@ export async function POST(request: Request) {
 
     const response = await fetch(`${API_URL}/v1/auth/verify-otp`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"},
-      body: JSON.stringify(body)});
+      headers: backendAuthHeaders(request),
+      body: JSON.stringify(body),
+    });
 
     const data = await response.json();
 

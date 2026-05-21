@@ -92,11 +92,16 @@ export default function Navbar() {
   };
 
   const fetchSearchHistory = useCallback(async () => {
+    if (!getUser()) {
+      setSearchHistory([]);
+      return;
+    }
     try {
       const response = await fetch("/api/products/search-history?limit=8", {
         method: "GET",
         credentials: "include",
-        cache: "no-store"});
+        cache: "no-store",
+      });
       if (!response.ok) {
         setSearchHistory([]);
         return;

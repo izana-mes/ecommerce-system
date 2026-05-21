@@ -2146,6 +2146,7 @@ export default function AdminPage() {
     try {
       const response = await fetch("/api/auth/admin-product-requests", {
         method: "PATCH",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json"},
         body: JSON.stringify({ requestId: request.id, action })});
@@ -2184,6 +2185,7 @@ export default function AdminPage() {
     try {
       const response = await fetch("/api/auth/admin-supplier-requests", {
         method: "PATCH",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json"},
         body: JSON.stringify({ requestId: request.id, action })});

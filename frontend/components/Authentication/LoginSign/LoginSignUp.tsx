@@ -9,6 +9,7 @@ import { useAppDispatch } from "@/store";
 import { clearCart, fetchCartAsync } from "@/store/cartSlice";
 import { clearWishList, fetchWishlistAsync } from "@/store/wishListSlice";
 import { logout as clearAuth, setAuth } from "@/lib/auth";
+import { csrfHeader, ensureCsrfToken } from "@/lib/csrf";
 import confetti from "canvas-confetti";
 import { useLocale } from "@/components/providers/LocaleProvider";
 
@@ -79,13 +80,19 @@ const LoginSignUp = () => {
       dispatch(clearCart());
       dispatch(clearWishList());
 
+      await ensureCsrfToken();
       const response = await fetch("/api/auth/login", {
         method: "POST",
+        credentials: "include",
         headers: {
-          "Content-Type": "application/json"},
+          "Content-Type": "application/json",
+          ...csrfHeader(),
+        },
         body: JSON.stringify({
           email: loginEmail,
-          password: loginPassword})});
+          password: loginPassword,
+        }),
+      });
 
       let data;
       try {
@@ -185,16 +192,22 @@ const LoginSignUp = () => {
     setLoading(true);
 
     try {
+      await ensureCsrfToken();
       const response = await fetch("/api/auth/users", {
         method: "POST",
+        credentials: "include",
         headers: {
-          "Content-Type": "application/json"},
+          "Content-Type": "application/json",
+          ...csrfHeader(),
+        },
         body: JSON.stringify({
           username: registerUsername,
           email: registerEmail,
           password: registerPassword,
           firstName: registerFirstName || null,
-          lastName: registerLastName || null})});
+          lastName: registerLastName || null,
+        }),
+      });
 
       const data = await response.json();
 
@@ -234,13 +247,19 @@ const LoginSignUp = () => {
     setLoading(true);
 
     try {
+      await ensureCsrfToken();
       const response = await fetch("/api/auth/verify-otp", {
         method: "POST",
+        credentials: "include",
         headers: {
-          "Content-Type": "application/json"},
+          "Content-Type": "application/json",
+          ...csrfHeader(),
+        },
         body: JSON.stringify({
           email: verifyEmail,
-          otp: verifyOtp})});
+          otp: verifyOtp,
+        }),
+      });
 
       const data = await response.json();
 
@@ -275,11 +294,16 @@ const LoginSignUp = () => {
     }
     setLoading(true);
     try {
+      await ensureCsrfToken();
       const response = await fetch("/api/auth/resend-otp", {
         method: "POST",
+        credentials: "include",
         headers: {
-          "Content-Type": "application/json"},
-        body: JSON.stringify({ email: verifyEmail })});
+          "Content-Type": "application/json",
+          ...csrfHeader(),
+        },
+        body: JSON.stringify({ email: verifyEmail }),
+      });
 
       const data = await response.json();
       if (!response.ok) {

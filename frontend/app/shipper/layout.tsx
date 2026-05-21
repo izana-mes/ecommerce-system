@@ -4,7 +4,7 @@ import "./shipper.css";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { getUser, logout, logoutServerSession, subscribeToAuthChanges } from "@/lib/auth";
+import { getUser, logoutServerSession, subscribeToAuthChanges } from "@/lib/auth";
 import {
   MdDashboard,
   MdLocationOn,
@@ -54,7 +54,6 @@ export default function ShipperLayout({ children }: { children: React.ReactNode 
   }, [syncUser]);
 
   const handleLogout = async () => {
-    logout();
     await logoutServerSession();
     router.replace("/login");
   };

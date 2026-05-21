@@ -1,22 +1,18 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
-
-function getCookieHeader(request: Request) {
-  return request.headers.get("cookie");
-}
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const limit = Math.max(1, Number(searchParams.get("limit") ?? 8) || 8);
-        const cookieHeader = getCookieHeader(request);
     const response = await fetch(`${API_URL}/products/search-history?limit=${limit}`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})},
-      cache: "no-store"});
+      headers: backendAuthHeaders(request),
+      cache: "no-store",
+    });
 
     const data = await response.json().catch(() => []);
     if (!response.ok) {
@@ -30,11 +26,10 @@ export async function GET(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-        const cookieHeader = getCookieHeader(request);
     const response = await fetch(`${API_URL}/products/search-history`, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",        ...(cookieHeader ? { Cookie: cookieHeader } : {})}});
+      headers: backendAuthHeaders(request),
+    });
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({ error: "Failed to clear history" }));
@@ -47,7 +42,8 @@ export async function DELETE(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to clear search history",
-        details: message},
+        details: message,
+      },
       { status: 500 }
     );
   }

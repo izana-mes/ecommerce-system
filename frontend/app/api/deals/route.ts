@@ -1,14 +1,21 @@
+import { readFile } from "fs/promises";
+import path from "path";
 import { NextResponse } from "next/server";
-import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
-// Route segment config
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-const API_URL = backendApiBaseUrl();
+type DealRecord = {
+  id: number;
+  name: string;
+  price: number;
+  discount_price: number;
+  end_time: string;
+  image: string;
+};
 
-function fallbackDeals() {
-  const end = new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(); // +3 days
+function fallbackDeals(): DealRecord[] {
+  const end = new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString();
   return [
     {
       id: 1,
@@ -20,123 +27,46 @@ function fallbackDeals() {
   ];
 }
 
-// GET - Proxy to backend deals endpoint
+async function loadLocalDeals(): Promise<DealRecord[]> {
+  try {
+    const file = path.join(process.cwd(), "data", "deals.json");
+    const raw = await readFile(file, "utf-8");
+    const parsed = JSON.parse(raw) as Array<Record<string, unknown>>;
+    if (!Array.isArray(parsed)) return fallbackDeals();
+    return parsed.map((item, index) => ({
+      id: Number(item.id ?? index + 1),
+      name: String(item.name ?? "Deal"),
+      price: Number(item.price ?? 0),
+      discount_price: Number(item.discount_price ?? item.price ?? 0),
+      end_time: String(item.end_time ?? item.endTime ?? new Date().toISOString()),
+      image: String(item.image ?? "/placeholder.png")}));
+  } catch {
+    return fallbackDeals();
+  }
+}
+
 export async function GET() {
-  try {
-    const response = await fetch(`${API_URL}/deals`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json"}});
-
-    if (response.status === 404) {
-      return NextResponse.json(fallbackDeals());
-    }
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return NextResponse.json(fallbackDeals());
-    }
-
-    return NextResponse.json(data);
-  } catch (error: any) {
-    console.error("Error fetching deals:", error?.message || error);
-    return NextResponse.json(fallbackDeals());
-  }
+  const deals = await loadLocalDeals();
+  return NextResponse.json(deals);
 }
 
-// POST - Proxy to backend deals endpoint
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    
-    const response = await fetch(`${API_URL}/deals`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"},
-      body: JSON.stringify(body)});
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return NextResponse.json(data, { status: response.status });
-    }
-
-    return NextResponse.json(data);
-  } catch (error: any) {
-    console.error("Error creating deal:", error?.message || error);
-    return NextResponse.json(
-      { error: "Failed to create deal", details: error?.message || String(error) },
-      { status: 500 }
-    );
-  }
+export async function POST() {
+  return NextResponse.json(
+    { error: "Deals are managed locally; backend endpoint is not configured." },
+    { status: 501 }
+  );
 }
 
-// PUT - Proxy to backend deals endpoint
-export async function PUT(request: Request) {
-  try {
-    const body = await request.json();
-    const { id } = body;
-    
-    if (!id) {
-      return NextResponse.json(
-        { error: "Missing required field: id" },
-        { status: 400 }
-      );
-    }
-
-    const response = await fetch(`${API_URL}/deals/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json"},
-      body: JSON.stringify(body)});
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return NextResponse.json(data, { status: response.status });
-    }
-
-    return NextResponse.json(data);
-  } catch (error: any) {
-    console.error("Error updating deal:", error?.message || error);
-    return NextResponse.json(
-      { error: "Failed to update deal", details: error?.message || String(error) },
-      { status: 500 }
-    );
-  }
+export async function PUT() {
+  return NextResponse.json(
+    { error: "Deals are managed locally; backend endpoint is not configured." },
+    { status: 501 }
+  );
 }
 
-// DELETE - Proxy to backend deals endpoint
-export async function DELETE(request: Request) {
-  try {
-    const body = await request.json();
-    const { id } = body;
-    
-    if (!id) {
-      return NextResponse.json(
-        { error: "Missing required field: id" },
-        { status: 400 }
-      );
-    }
-
-    const response = await fetch(`${API_URL}/deals/${id}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json"}});
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return NextResponse.json(data, { status: response.status });
-    }
-
-    return NextResponse.json(data);
-  } catch (error: any) {
-    console.error("Error deleting deal:", error?.message || error);
-    return NextResponse.json(
-      { error: "Failed to delete deal", details: error?.message || String(error) },
-      { status: 500 }
-    );
-  }
+export async function DELETE() {
+  return NextResponse.json(
+    { error: "Deals are managed locally; backend endpoint is not configured." },
+    { status: 501 }
+  );
 }

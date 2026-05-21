@@ -46,7 +46,7 @@ public class ProductController {
     }
 
     @GetMapping("/search-history")
-    @PreAuthorize("isFullyAuthenticated()")
+    @PreAuthorize("!isAnonymous()")
     public ResponseEntity<List<String>> getSearchHistory(
             @RequestParam(value = "limit", required = false, defaultValue = "10") int limit,
             @AuthenticationPrincipal User user) {
@@ -74,7 +74,7 @@ public class ProductController {
     }
 
     @DeleteMapping("/search-history")
-    @PreAuthorize("isFullyAuthenticated()")
+    @PreAuthorize("!isAnonymous()")
     public ResponseEntity<Void> clearSearchHistory(@AuthenticationPrincipal User user) {
         searchHistoryService.clearHistory(user);
         return ResponseEntity.noContent().build();

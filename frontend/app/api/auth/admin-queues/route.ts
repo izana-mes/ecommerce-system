@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const RABBITMQ_MANAGEMENT_URL =
   process.env.RABBITMQ_MANAGEMENT_URL || "http://localhost:15672";
@@ -33,6 +34,7 @@ type AuditPayload = {
 export async function GET(request: Request) {
   try {
         const auth = Buffer.from(`${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}`).toString("base64");
+    const backendHeaders = backendAuthHeaders(request);
 
     const [response, dashboardResponse, auditResponse] = await Promise.all([
       fetch(`${RABBITMQ_MANAGEMENT_URL}/api/queues/%2F`, {
@@ -43,13 +45,11 @@ export async function GET(request: Request) {
         cache: "no-store"}),
       fetch(`${API_URL}/v1/admin/dashboard?days=7&recentLimit=8&lowStockThreshold=5`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json"},
+        headers: backendHeaders,
         cache: "no-store"}),
       fetch(`${API_URL}/v1/admin/audit-events?page=0&size=1`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json"},
+        headers: backendHeaders,
         cache: "no-store"}),
     ]);
 
