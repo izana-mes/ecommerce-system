@@ -107,6 +107,10 @@ application:
         access-key: ${MOMO_ACCESS_KEY:}
         secret-key: ${MOMO_SECRET_KEY:}
         usd-to-vnd-rate: ${MOMO_USD_TO_VND_RATE:26000}
+      paypal:
+        client-id: ${PAYPAL_CLIENT_ID:}
+        client-secret: ${PAYPAL_CLIENT_SECRET:}
+        mode: ${PAYPAL_MODE:sandbox}
     messaging:
       exchange: ${MESSAGING_EXCHANGE:shop.events}
       queue:

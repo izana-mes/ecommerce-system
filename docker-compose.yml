@@ -75,6 +75,10 @@ services:
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
       AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
       MOMO_IPN_URL: ${MOMO_IPN_URL:-http://localhost:8080/api/payments/momo/ipn}
+      # PayPal — sourced from .env or host environment
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
+      PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:-}
+      PAYPAL_MODE: ${PAYPAL_MODE:-sandbox}
       CHATBOT_AI_REFERER: ${CHATBOT_AI_REFERER:-http://localhost:3000}
       MCP_SERVICE_TOKEN: ${MCP_SERVICE_TOKEN}
       MCP_SERVER_URL: http://mcp-server:3100
@@ -123,6 +127,8 @@ services:
       AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
       MOMO_IPN_URL: ${MOMO_IPN_URL:-http://localhost:8080/api/payments/momo/ipn}
       VNPAY_RETURN_URL: ${VNPAY_RETURN_URL:-http://localhost:3000/payment/vnpay-return}
+      # PayPal — only the public client ID is needed in the frontend
+      NEXT_PUBLIC_PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
     ports:
       - "3000:3000"
     depends_on:
