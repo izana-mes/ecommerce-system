@@ -12,6 +12,7 @@ import com.example.shop.modules.order.dto.OrderCreateResponse;
 import com.example.shop.modules.order.dto.OrderHistoryItemDto;
 import com.example.shop.modules.order.dto.OrderTrackingDto;
 import com.example.shop.modules.order.dto.OrderTrackingLineDto;
+import com.example.shop.modules.ordercheckouthistory.service.OrderCheckoutHistoryService;
 import com.example.shop.modules.product.entity.Product;
 import com.example.shop.modules.product.repository.ProductRepository;
 import com.example.shop.modules.user.entity.User;
@@ -51,6 +52,7 @@ public class OrderServiceImpl implements OrderService {
     private final JdbcTemplate jdbcTemplate;
     private final OrderCreatedEventPublisher orderCreatedEventPublisher;
     private final LowStockAlertPublisher lowStockAlertPublisher;
+    private final OrderCheckoutHistoryService orderCheckoutHistoryService;
 
     @Value("${application.inventory.low-stock-threshold:5}")
     private int lowStockThreshold;
@@ -177,6 +179,7 @@ public class OrderServiceImpl implements OrderService {
 
         clearPurchasedCartItems(user, orderLines);
         long remainingPoints = applyLoyaltyChanges(user, redemption.pointsRedeemed(), pointsEarned);
+        orderCheckoutHistoryService.saveCheckoutInfo(user, request, effectiveEmail);
 
         // Publish order created event for async notification
         try {

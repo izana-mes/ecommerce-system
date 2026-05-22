@@ -5,6 +5,8 @@ import com.example.shop.modules.order.dto.OrderCreateRequest;
 import com.example.shop.modules.order.dto.OrderCreateResponse;
 import com.example.shop.modules.order.dto.OrderHistoryItemDto;
 import com.example.shop.modules.order.dto.OrderTrackingDto;
+import com.example.shop.modules.ordercheckouthistory.dto.CheckoutHistoryEntryDto;
+import com.example.shop.modules.ordercheckouthistory.service.OrderCheckoutHistoryService;
 import com.example.shop.modules.order.service.OrderService;
 import com.example.shop.modules.user.entity.User;
 import jakarta.validation.Valid;
@@ -24,6 +26,7 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final OrderCheckoutHistoryService orderCheckoutHistoryService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<OrderCreateResponse>> createOrder(
@@ -41,6 +44,22 @@ public class OrderController {
             @RequestParam(value = "limit", required = false, defaultValue = "20") int limit
     ) {
         return ResponseEntity.ok(ApiResponse.success(orderService.getMyOrders(user, limit)));
+    }
+
+    @GetMapping("/checkout-history")
+    @PreAuthorize("!isAnonymous()")
+    public ResponseEntity<ApiResponse<List<CheckoutHistoryEntryDto>>> getCheckoutHistory(
+            @AuthenticationPrincipal User user,
+            @RequestParam(value = "limit", required = false, defaultValue = "8") int limit
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(orderCheckoutHistoryService.getHistory(user, limit)));
+    }
+
+    @DeleteMapping("/checkout-history")
+    @PreAuthorize("!isAnonymous()")
+    public ResponseEntity<Void> clearCheckoutHistory(@AuthenticationPrincipal User user) {
+        orderCheckoutHistoryService.clearHistory(user);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/fulfillment-queue")

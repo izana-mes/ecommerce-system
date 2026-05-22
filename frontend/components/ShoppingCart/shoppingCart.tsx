@@ -99,6 +99,20 @@ type LoyaltySnapshot = {
   remaining: number;
   discountAmount: number;
 };
+type CheckoutHistoryEntry = {
+  firstName?: string | null;
+  lastName?: string | null;
+  companyName?: string | null;
+  country?: string | null;
+  streetAddress1?: string | null;
+  streetAddress2?: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  notes?: string | null;
+  savedAt?: number | null;
+};
 
 const POINTS_PER_USD_DISCOUNT = 100;
 const MAX_POINTS_DISCOUNT_RATE = 0.25;
@@ -168,6 +182,7 @@ export default function ShoppingCart() {
   const [lastLoyaltySnapshot, setLastLoyaltySnapshot] = useState<LoyaltySnapshot | null>(null);
   const [lastPlacedItems, setLastPlacedItems] = useState<cartProduct[]>([]);
   const [lastPlacedTotal, setLastPlacedTotal] = useState(0);
+  const [checkoutHistory, setCheckoutHistory] = useState<CheckoutHistoryEntry[]>([]);
   const [lastOrderPricing, setLastOrderPricing] = useState({
     subtotal: 0,
     shipping: 0,
@@ -236,6 +251,26 @@ export default function ShoppingCart() {
     }
   }, [buyNowProductId, cartItems]);
 
+  useEffect(() => {
+    if (activeTab !== "cartTab2") return;
+    let ignore = false;
+    const fetchCheckoutHistory = async () => {
+      try {
+        const response = await fetch("/api/orders/checkout-history?limit=6", { cache: "no-store" });
+        const payload = await response.json().catch(() => ({ entries: [] }));
+        if (ignore) return;
+        const entries = Array.isArray(payload?.entries) ? (payload.entries as CheckoutHistoryEntry[]) : [];
+        setCheckoutHistory(entries);
+      } catch {
+        if (!ignore) setCheckoutHistory([]);
+      }
+    };
+    void fetchCheckoutHistory();
+    return () => {
+      ignore = true;
+    };
+  }, [activeTab]);
+
   const checkoutItems = useMemo(() => {
     if (!buyNowProductId) return cartItems;
     return cartItems.filter((item) => String(item.productID) === String(buyNowProductId));
@@ -265,6 +300,24 @@ export default function ShoppingCart() {
     setCheckoutErrors((prev) => ({
       ...prev,
       [field]: undefined}));
+  };
+
+  const handleApplyHistoryEntry = (entry: CheckoutHistoryEntry) => {
+    setCheckoutForm((prev) => ({
+      ...prev,
+      firstName: entry.firstName || prev.firstName,
+      lastName: entry.lastName || prev.lastName,
+      companyName: entry.companyName || prev.companyName,
+      country: entry.country || prev.country,
+      streetAddress1: entry.streetAddress1 || prev.streetAddress1,
+      streetAddress2: entry.streetAddress2 || prev.streetAddress2,
+      city: entry.city || prev.city,
+      postalCode: entry.postalCode || prev.postalCode,
+      phone: entry.phone || prev.phone,
+      email: entry.email || prev.email,
+      notes: entry.notes || prev.notes}));
+    setCheckoutErrors({});
+    toast.success("Saved checkout details applied");
   };
 
   const validateCheckoutForm = (): boolean => {
@@ -1264,6 +1317,31 @@ export default function ShoppingCart() {
             <div className="checkoutSection">
               <div className="checkoutDetailsSection">
                 <h4>{t("checkout_billing_details")}</h4>
+                {checkoutHistory.length > 0 ? (
+                  <div className="checkoutHistorySection">
+                    <p className="checkoutHistoryTitle">Use saved checkout details</p>
+                    <div className="checkoutHistoryList">
+                      {checkoutHistory.map((entry, index) => {
+                        const fullName = [entry.firstName, entry.lastName].filter(Boolean).join(" ").trim();
+                        const address = [entry.streetAddress1, entry.city, entry.country]
+                          .filter(Boolean)
+                          .join(", ");
+                        const subtitle = [entry.email, entry.phone, address].filter(Boolean).join(" · ");
+                        return (
+                          <button
+                            key={`${entry.savedAt ?? "saved"}-${index}`}
+                            type="button"
+                            className="checkoutHistoryItem"
+                            onClick={() => handleApplyHistoryEntry(entry)}
+                          >
+                            <span>{fullName || "Saved entry"}</span>
+                            {subtitle ? <small>{subtitle}</small> : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
                 <div className="checkoutDetailsForm">
                   <form>
                     <div className="checkoutDetailsFormRow">
