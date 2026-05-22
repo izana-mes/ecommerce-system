@@ -183,6 +183,8 @@ export default function ShoppingCart() {
   const [lastPlacedItems, setLastPlacedItems] = useState<cartProduct[]>([]);
   const [lastPlacedTotal, setLastPlacedTotal] = useState(0);
   const [checkoutHistory, setCheckoutHistory] = useState<CheckoutHistoryEntry[]>([]);
+  const [isTransientOrderPaymentCheckout, setIsTransientOrderPaymentCheckout] = useState(false);
+  const [transientReorderItems, setTransientReorderItems] = useState<Array<{ productID: string; quantity: number }>>([]);
   const [lastOrderPricing, setLastOrderPricing] = useState({
     subtotal: 0,
     shipping: 0,
@@ -240,6 +242,32 @@ export default function ShoppingCart() {
       setBuyNowProductId(String(requestedBuyNow));
     }
   }, [requestedBuyNow, requestedPayment, requestedStep]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = sessionStorage.getItem("checkoutTransientReorder");
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as {
+        source?: string;
+        items?: Array<{ productID?: string; quantity?: number }>;
+      };
+      const normalizedItems = Array.isArray(parsed?.items)
+        ? parsed.items
+            .map((item) => ({
+              productID: String(item?.productID || "").trim(),
+              quantity: Math.max(1, Number(item?.quantity ?? 1) || 1),
+            }))
+            .filter((item) => item.productID)
+        : [];
+      if (parsed?.source === "order-payment" && normalizedItems.length > 0) {
+        setIsTransientOrderPaymentCheckout(true);
+        setTransientReorderItems(normalizedItems);
+      }
+    } catch {
+      sessionStorage.removeItem("checkoutTransientReorder");
+    }
+  }, []);
 
   useEffect(() => {
     if (!buyNowProductId) return;
@@ -733,6 +761,9 @@ export default function ShoppingCart() {
       void refreshCurrentUserFromServer();
 
       setPayments(true);
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("checkoutTransientReorder");
+      }
       handleTabClick("cartTab3");
       scrollToTop();
       toast.success("Order placed successfully");
@@ -891,10 +922,42 @@ export default function ShoppingCart() {
     void refreshCurrentUserFromServer();
     setPaypalOrderNumber(null);
     setPayments(true);
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("checkoutTransientReorder");
+    }
     handleTabClick("cartTab3");
     scrollToTop();
     toast.success("Payment confirmed! Your order has been placed.");
   };
+
+  useEffect(() => {
+    return () => {
+      if (
+        typeof window === "undefined" ||
+        !isTransientOrderPaymentCheckout ||
+        payments ||
+        transientReorderItems.length === 0
+      ) {
+        return;
+      }
+      for (const transientItem of transientReorderItems) {
+        const currentItem = cartItemsById[transientItem.productID];
+        if (!currentItem) continue;
+        const currentQty = Math.max(1, Number(currentItem.quantity ?? 1) || 1);
+        const rollbackQty = Math.max(0, currentQty - transientItem.quantity);
+        if (rollbackQty <= 0) {
+          void dispatch(removeFromCartAsync(transientItem.productID));
+          dispatch(removeFromCart(transientItem.productID));
+        } else {
+          void dispatch(
+            updateQuantityAsync({ productID: transientItem.productID, quantity: rollbackQty })
+          );
+        }
+      }
+      sessionStorage.removeItem("checkoutTransientReorder");
+      void dispatch(fetchCartAsync());
+    };
+  }, [cartItemsById, dispatch, isTransientOrderPaymentCheckout, payments, transientReorderItems]);
 
   const handleApplyCoupon = useCallback(async (inputCode?: string) => {
     const normalizedCode = (inputCode ?? couponCode).trim().toUpperCase();

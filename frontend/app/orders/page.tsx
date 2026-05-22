@@ -152,12 +152,14 @@ export default function OrdersPage() {
         throw new Error("Could not load order lines for reorder");
       }
       const lines = json.data!.items!;
+      const transientAddedItems: Array<{ productID: string; quantity: number }> = [];
       for (const line of lines) {
         const productID = String(line.productId ?? line.product_id ?? "");
         const productName = String(line.productName ?? line.product_name ?? "");
         const productPrice = Number(line.unitPrice ?? line.unit_price ?? 0) || 0;
         const quantity = Math.min(20, Math.max(1, Number(line.quantity ?? 1) || 1));
         if (!productID) continue;
+        transientAddedItems.push({ productID, quantity });
         const payload = {
           productID,
           productName,
@@ -170,6 +172,17 @@ export default function OrdersPage() {
             dispatch(addToCart(payload));
           }
         }
+      }
+      if (options?.goToCheckout && typeof window !== "undefined" && transientAddedItems.length > 0) {
+        sessionStorage.setItem(
+          "checkoutTransientReorder",
+          JSON.stringify({
+            source: "order-payment",
+            orderNumber,
+            items: transientAddedItems,
+            createdAt: Date.now(),
+          })
+        );
       }
       await dispatch(fetchCartAsync()).unwrap().catch(() => null);
       const payment = String(options?.preferredPayment || "").trim().toLowerCase();
