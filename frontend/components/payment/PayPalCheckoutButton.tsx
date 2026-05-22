@@ -85,7 +85,6 @@ export default function PayPalCheckoutButton({
            * The BFF calls Spring Boot which reads the amount from DB.
            */
           createOrder: async () => {
-            setState("processing");
             try {
               const res = await fetch(
                 `/api/paypal/create-order?orderNumber=${encodeURIComponent(orderNumber)}`,
@@ -110,6 +109,7 @@ export default function PayPalCheckoutButton({
            * We pass paypalOrderId + orderNumber; backend verifies amount and captures.
            */
           onApprove: async (data: { orderID: string }) => {
+            setState("processing");
             try {
               const res = await fetch("/api/paypal/capture-order", {
                 method: "POST",

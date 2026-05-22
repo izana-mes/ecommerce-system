@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import PayPalCheckoutButton from "@/components/payment/PayPalCheckoutButton";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { MdOutlineClose } from "react-icons/md";
@@ -134,6 +135,8 @@ export default function ShoppingCart() {
   const [payments, setPayments] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState("Direct Bank Transfer");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [paypalOrderNumber, setPaypalOrderNumber] = useState<string | null>(null);
+  const [paypalOrderCreating, setPaypalOrderCreating] = useState(false);
   const [lastOrderNumber, setLastOrderNumber] = useState<string | null>(null);
   const [lastTrackingSecret, setLastTrackingSecret] = useState<string | null>(null);
   const [buyNowProductId, setBuyNowProductId] = useState<string | null>(null);
@@ -215,9 +218,9 @@ export default function ShoppingCart() {
     if (requestedStep === "checkout") {
       setActiveTab("cartTab2");
     }
-    if (requestedPayment === "vnpay") {
-      setSelectedPayment("VNPAY");
-    }
+    if (requestedPayment === "vnpay") setSelectedPayment("VNPAY");
+    if (requestedPayment === "paypal") setSelectedPayment("Paypal");
+    if (requestedPayment === "momo") setSelectedPayment("MOMO");
     if (requestedBuyNow) {
       setBuyNowProductId(String(requestedBuyNow));
     }
@@ -339,6 +342,7 @@ export default function ShoppingCart() {
 
   const handlePaymentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedPayment(e.target.value);
+    setPaypalOrderNumber(null); // reset PayPal state when switching payment method
   };
 
   const captureBrowserLocation = useCallback(async (): Promise<CapturedLocation> => {
@@ -685,6 +689,158 @@ export default function ShoppingCart() {
     } finally {
       setIsPlacingOrder(false);
     }
+  };
+
+  /** Phase 1 of PayPal flow: validate form + create backend order, then show SDK button. */
+  const handlePreparePaypalOrder = async () => {
+    if (checkoutItems.length === 0 || paypalOrderCreating) return;
+    if (!validateCheckoutForm()) {
+      toast.error("Please complete billing details before proceeding with PayPal");
+      return;
+    }
+
+    const localInvalidCartItem = checkoutItems.find((item) => {
+      if (item.purchasable === false) return true;
+      const product = products.find((p) => p.productID === item.productID);
+      const stockQuantity = Math.max(0, Number(product?.stockQuantity ?? item.availableStock ?? 25));
+      return stockQuantity <= 0 || (item.quantity ?? 1) > Math.min(20, stockQuantity);
+    });
+    if (localInvalidCartItem) {
+      toast.error(`Please update cart. ${localInvalidCartItem.productName} is out of stock or over limit.`);
+      return;
+    }
+
+    setPaypalOrderCreating(true);
+    try {
+      const checkoutHealthResponse = await fetch("/api/cart/checkout-health", {
+        method: "GET",
+        credentials: "include",
+        headers: {},
+      });
+      if (checkoutHealthResponse.ok) {
+        const checkoutHealth = (await checkoutHealthResponse.json()) as CheckoutHealthResponse;
+        const invalidItems = checkoutHealth.invalidItems ?? [];
+        const blockingInvalidItem = buyNowProductId
+          ? invalidItems.find((item) => String(item.productID) === String(buyNowProductId))
+          : invalidItems[0];
+        if (blockingInvalidItem) {
+          toast.error(`Cannot checkout: ${blockingInvalidItem.productName} has only ${blockingInvalidItem.availableQuantity} item(s) available.`);
+          dispatch(fetchCartAsync());
+          return;
+        }
+      }
+
+      const user = getUser();
+      const normalizedCompany = checkoutForm.companyName.trim();
+      const normalizedNotes = checkoutForm.notes.trim();
+      const combinedNotes = [normalizedCompany ? `Company: ${normalizedCompany}` : "", normalizedNotes]
+        .filter(Boolean)
+        .join("\n");
+
+      const data = await secureApiRequest<{
+        data?: {
+          orderNumber?: string;
+          trackingSecret?: string;
+          pointsRedeemed?: number;
+          pointsEarned?: number;
+          remainingPoints?: number;
+          pointsDiscountAmount?: number;
+        };
+        error?: string;
+        message?: string;
+      }>("/api/orders", {
+        method: "POST",
+        body: {
+          customerEmail: checkoutForm.email.trim().toLowerCase() || user?.email || "guest@example.com",
+          customerFirstName: checkoutForm.firstName.trim() || user?.firstName || "",
+          customerLastName: checkoutForm.lastName.trim() || user?.lastName || "",
+          customerPhone: checkoutForm.phone.trim(),
+          shippingAddressLine1: checkoutForm.streetAddress1.trim(),
+          shippingAddressLine2: checkoutForm.streetAddress2.trim() || undefined,
+          shippingCity: checkoutForm.city.trim(),
+          shippingPostalCode: checkoutForm.postalCode.trim(),
+          shippingCountry: checkoutForm.country.trim(),
+          deliveryLatitude: checkoutLocation?.latitude,
+          deliveryLongitude: checkoutLocation?.longitude,
+          deliveryLocationLabel: checkoutLocation?.label,
+          deliveryLocationAccuracyMeters: checkoutLocation?.accuracyMeters ?? undefined,
+          deliveryLocationCapturedAt: checkoutLocation?.capturedAt,
+          notes: combinedNotes || undefined,
+          paymentMethod: "Paypal",
+          orderSource: buyNowProductId ? "buy-now" : "checkout-ui",
+          currency: "USD",
+          shippingFee: checkoutSubtotal === 0 ? 0 : 5,
+          vat: checkoutSubtotal === 0 ? 0 : 11,
+          couponCode: appliedCoupon?.code,
+          couponDiscount: discountAmount,
+          pointsToRedeem: pointsRedeemApplied,
+          items: checkoutItems.map((item) => ({
+            productID: item.productID,
+            productName: item.productName,
+            productPrice: item.productPrice,
+            quantity: item.quantity ?? 1,
+          })),
+        },
+      });
+
+      const orderNumber = data?.data?.orderNumber as string | undefined;
+      if (!orderNumber) throw new Error("No order number returned from server");
+
+      const trackingSecret = data?.data?.trackingSecret as string | undefined;
+      const pointsRedeemed = Number(data?.data?.pointsRedeemed ?? 0);
+      const pointsEarned = Number(data?.data?.pointsEarned ?? 0);
+      const remainingPoints = Number(data?.data?.remainingPoints ?? availablePoints);
+      const serverPointsDiscountAmount = Number(data?.data?.pointsDiscountAmount ?? pointsDiscountAmount);
+
+      setLastOrderNumber(orderNumber);
+      setLastTrackingSecret(trackingSecret && String(trackingSecret).trim() ? String(trackingSecret).trim() : null);
+      setLastPlacedItems(checkoutItems.map((item) => ({ ...item })));
+      setLastPlacedTotal(checkoutGrandTotal);
+      setLastOrderPricing({
+        subtotal: checkoutSubtotal,
+        shipping: shippingFee,
+        vat: vatAmount,
+        couponDiscount: discountAmount,
+        pointsDiscount: Math.max(0, serverPointsDiscountAmount),
+        total: checkoutGrandTotal,
+      });
+      setLastLoyaltySnapshot({
+        redeemed: Math.max(0, pointsRedeemed),
+        earned: Math.max(0, pointsEarned),
+        remaining: Math.max(0, remainingPoints),
+        discountAmount: Math.max(0, serverPointsDiscountAmount),
+      });
+      setAvailablePoints(Math.max(0, remainingPoints));
+      setPointsToRedeemInput("0");
+
+      // Phase 2: render the PayPal SDK button
+      setPaypalOrderNumber(orderNumber);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to create order";
+      toast.error(message);
+    } finally {
+      setPaypalOrderCreating(false);
+    }
+  };
+
+  /** Phase 2 of PayPal flow: called after PayPal captures payment successfully. */
+  const handlePaypalSuccess = async (captureId: string, paymentStatus: string) => {
+    console.log("[PayPal] Captured:", captureId, paymentStatus);
+    if (buyNowProductId) {
+      await dispatch(removeFromCartAsync(buyNowProductId)).unwrap().catch(() => null);
+      dispatch(removeFromCart(buyNowProductId));
+      setBuyNowProductId(null);
+    } else {
+      await secureApiRequest("/api/cart/clear", { method: "DELETE" }).catch(() => null);
+      dispatch(clearCart());
+    }
+    dispatch(fetchCartAsync());
+    void refreshCurrentUserFromServer();
+    setPaypalOrderNumber(null);
+    setPayments(true);
+    handleTabClick("cartTab3");
+    scrollToTop();
+    toast.success("Payment confirmed! Your order has been placed.");
   };
 
   const handleApplyCoupon = useCallback(async (inputCode?: string) => {
@@ -1478,9 +1634,32 @@ export default function ShoppingCart() {
                   </div>
                 </div>
 
-                <button onClick={handlePlaceOrder} disabled={isPlacingOrder}>
-                  {isPlacingOrder ? t("checkout_placing_order") : t("checkout_place_order")}
-                </button>
+                {selectedPayment === "Paypal" ? (
+                  paypalOrderNumber ? (
+                    <PayPalCheckoutButton
+                      orderNumber={paypalOrderNumber}
+                      amount={checkoutGrandTotal}
+                      currency="USD"
+                      onSuccess={(captureId, paymentStatus) => {
+                        void handlePaypalSuccess(captureId, paymentStatus);
+                      }}
+                      onCancel={() => {
+                        toast("PayPal payment cancelled. Your order is saved — click 'Pay with PayPal' to try again.");
+                      }}
+                      onError={(err) => {
+                        toast.error(`PayPal error: ${err}`);
+                      }}
+                    />
+                  ) : (
+                    <button onClick={() => void handlePreparePaypalOrder()} disabled={paypalOrderCreating}>
+                      {paypalOrderCreating ? "Preparing order…" : "Pay with PayPal"}
+                    </button>
+                  )
+                ) : (
+                  <button onClick={handlePlaceOrder} disabled={isPlacingOrder}>
+                    {isPlacingOrder ? t("checkout_placing_order") : t("checkout_place_order")}
+                  </button>
+                )}
               </div>
             </div>
           )}
