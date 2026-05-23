@@ -3,8 +3,8 @@ package com.example.shop.modules.order.service;
 import com.example.shop.common.exception.BusinessException;
 import com.example.shop.modules.cart.entity.CartItem;
 import com.example.shop.modules.cart.repository.CartItemRepository;
-import com.example.shop.modules.messaging.inventory.LowStockAlertEvent;
-import com.example.shop.modules.messaging.inventory.LowStockAlertPublisher;
+import com.example.shop.modules.inventory.dto.InventoryReservationDtos;
+import com.example.shop.modules.inventory.service.InventoryReservationService;
 import com.example.shop.modules.messaging.order.OrderCreatedEvent;
 import com.example.shop.modules.messaging.order.OrderCreatedEventPublisher;
 import com.example.shop.modules.order.dto.OrderCreateRequest;
@@ -51,15 +51,13 @@ public class OrderServiceImpl implements OrderService {
     private final UserRepository userRepository;
     private final JdbcTemplate jdbcTemplate;
     private final OrderCreatedEventPublisher orderCreatedEventPublisher;
-    private final LowStockAlertPublisher lowStockAlertPublisher;
+    private final InventoryReservationService inventoryReservationService;
     private final OrderCheckoutHistoryService orderCheckoutHistoryService;
-
-    @Value("${application.inventory.low-stock-threshold:5}")
-    private int lowStockThreshold;
 
     private static final int POINTS_PER_USD_DISCOUNT = 100;
     private static final BigDecimal MAX_POINTS_DISCOUNT_RATE = new BigDecimal("0.25");
     private static final BigDecimal EARNING_RATE = new BigDecimal("0.05");
+    private static final int ORDER_PAYMENT_TIMEOUT_MINUTES = 5 * 60;
 
     @Override
     public OrderCreateResponse createOrder(OrderCreateRequest request, User user) {
@@ -155,27 +153,7 @@ public class OrderServiceImpl implements OrderService {
         Long orderId = inserted.id();
         insertOrderItems(orderId, orderLines);
         insertPayment(orderId, orderNumber, request.getPaymentMethod(), totalAmount, currency, request.getOrderSource());
-
-        for (OrderLine line : orderLines) {
-            Product product = line.product();
-            int newStock = Math.max(0, (product.getStockQuantity() == null ? 0 : product.getStockQuantity()) - line.quantity());
-            product.setStockQuantity(newStock);
-            productRepository.save(product);
-
-            // Publish low-stock alert if stock drops below threshold
-            if (newStock <= lowStockThreshold) {
-                try {
-                    lowStockAlertPublisher.publish(LowStockAlertEvent.builder()
-                            .productId(product.getProductID())
-                            .productName(product.getProductName())
-                            .remainingStock(newStock)
-                            .orderNumber(orderNumber)
-                            .build());
-                } catch (Exception e) {
-                    log.error("Failed to publish low stock alert for product {}", product.getProductID(), e);
-                }
-            }
-        }
+        reserveInventory(orderNumber, orderLines, user);
 
         clearPurchasedCartItems(user, orderLines);
         long remainingPoints = applyLoyaltyChanges(user, redemption.pointsRedeemed(), pointsEarned);
@@ -511,21 +489,6 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("Only pending orders can be cancelled", HttpStatus.CONFLICT);
         }
 
-        List<Map<String, Object>> items = jdbcTemplate.queryForList(
-                "SELECT product_id, quantity FROM order_items WHERE order_id = ?",
-                orderId
-        );
-        for (Map<String, Object> item : items) {
-            String productId = (String) item.get("product_id");
-            int quantity = ((Number) item.get("quantity")).intValue();
-            
-            productRepository.findByProductID(productId).ifPresent(product -> {
-                int newStock = (product.getStockQuantity() == null ? 0 : product.getStockQuantity()) + quantity;
-                product.setStockQuantity(newStock);
-                productRepository.save(product);
-            });
-        }
-
         LocalDateTime now = LocalDateTime.now();
         jdbcTemplate.update(
                 "UPDATE orders SET order_status = 'cancelled', payment_status = 'cancelled', updated_at = ? WHERE id = ?",
@@ -535,6 +498,24 @@ public class OrderServiceImpl implements OrderService {
                 "UPDATE payments SET status = 'cancelled', updated_at = ? WHERE order_id = ? AND status = 'pending'",
                 Timestamp.valueOf(now), orderId
         );
+        try {
+            inventoryReservationService.releaseByOrderNumber(orderNumber, "customer_cancelled");
+        } catch (BusinessException ex) {
+            log.warn("No active reservation to release for cancelled order {}: {}", orderNumber, ex.getMessage());
+        }
+    }
+
+    private void reserveInventory(String orderNumber, List<OrderLine> orderLines, User user) {
+        InventoryReservationDtos.ReserveRequest reserveRequest = new InventoryReservationDtos.ReserveRequest();
+        reserveRequest.setOrderNumber(orderNumber);
+        reserveRequest.setTtlMinutes(ORDER_PAYMENT_TIMEOUT_MINUTES);
+        reserveRequest.setItems(orderLines.stream().map(line -> {
+            InventoryReservationDtos.Item item = new InventoryReservationDtos.Item();
+            item.setProductId(line.product().getProductID());
+            item.setQuantity(line.quantity());
+            return item;
+        }).toList());
+        inventoryReservationService.reserve(reserveRequest, user);
     }
 
     @Override

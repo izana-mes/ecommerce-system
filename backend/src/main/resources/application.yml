@@ -142,6 +142,8 @@ application:
         order-status-changed: ${MESSAGING_ROUTING_KEY_ORDER_STATUS_CHANGED:order.status.changed}
         review-submitted: ${MESSAGING_ROUTING_KEY_REVIEW_SUBMITTED:review.submitted}
         audit-event: ${MESSAGING_ROUTING_KEY_AUDIT_EVENT:audit.event}
+        inventory-reserved: ${MESSAGING_ROUTING_KEY_INVENTORY_RESERVED:inventory.reserved}
+        inventory-released: ${MESSAGING_ROUTING_KEY_INVENTORY_RELEASED:inventory.released}
     inventory:
       low-stock-threshold: ${LOW_STOCK_THRESHOLD:5}
     cart:

@@ -2,6 +2,7 @@ package com.example.shop.modules.payment.service;
 
 import com.example.shop.common.observability.ObservabilityMetrics;
 import com.example.shop.modules.coupon.service.CouponService;
+import com.example.shop.modules.inventory.service.InventoryReservationService;
 import com.example.shop.modules.messaging.notification.OrderPaidEmailMessagePublisher;
 import com.example.shop.modules.messaging.order.OrderStatusChangedEvent;
 import com.example.shop.modules.messaging.order.OrderStatusChangedPublisher;
@@ -38,6 +39,7 @@ public class MomoPaymentServiceImpl implements MomoPaymentService {
     private final OrderPaidEmailMessagePublisher orderPaidEmailMessagePublisher;
     private final OrderStatusChangedPublisher orderStatusChangedPublisher;
     private final CouponService couponService;
+    private final InventoryReservationService inventoryReservationService;
     private final ObservabilityMetrics observabilityMetrics;
 
     @Value("${application.payment.momo.secret-key:}")
@@ -181,8 +183,19 @@ public class MomoPaymentServiceImpl implements MomoPaymentService {
         );
 
         if (paid) {
+            try {
+                inventoryReservationService.confirmByOrderNumber(order.orderNumber());
+            } catch (Exception ex) {
+                log.warn("Reservation confirm skipped for order {}: {}", order.orderNumber(), ex.getMessage());
+            }
             couponService.redeemCouponForPaidOrder(order.id());
             sendPaidNotification(order.id());
+        } else {
+            try {
+                inventoryReservationService.releaseByOrderNumber(order.orderNumber(), "payment_failed");
+            } catch (Exception ex) {
+                log.warn("Reservation release skipped for order {}: {}", order.orderNumber(), ex.getMessage());
+            }
         }
         publishStatusChangedEvent(order, orderStatus, paymentStatus);
         

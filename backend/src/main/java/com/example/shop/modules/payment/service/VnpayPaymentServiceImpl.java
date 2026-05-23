@@ -2,6 +2,7 @@ package com.example.shop.modules.payment.service;
 
 import com.example.shop.common.observability.ObservabilityMetrics;
 import com.example.shop.modules.coupon.service.CouponService;
+import com.example.shop.modules.inventory.service.InventoryReservationService;
 import com.example.shop.modules.messaging.notification.OrderPaidEmailMessagePublisher;
 import com.example.shop.modules.messaging.order.OrderStatusChangedEvent;
 import com.example.shop.modules.messaging.order.OrderStatusChangedPublisher;
@@ -43,6 +44,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
     private final OrderPaidEmailMessagePublisher orderPaidEmailMessagePublisher;
     private final OrderStatusChangedPublisher orderStatusChangedPublisher;
     private final CouponService couponService;
+    private final InventoryReservationService inventoryReservationService;
     private final ObservabilityMetrics observabilityMetrics;
 
     @Value("${application.payment.vnpay.hash-secret:}")
@@ -200,6 +202,11 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
 
         if (paid) {
             metricStatus = "paid";
+            try {
+                inventoryReservationService.confirmByOrderNumber(order.orderNumber());
+            } catch (Exception ex) {
+                log.warn("Reservation confirm skipped for order {}: {}", order.orderNumber(), ex.getMessage());
+            }
             log.info("VNPAY payment successful for order {}", order.id());
             try {
                 couponService.redeemCouponForPaidOrder(order.id());
@@ -219,6 +226,11 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
             }
         } else {
             metricStatus = "failed";
+            try {
+                inventoryReservationService.releaseByOrderNumber(order.orderNumber(), "payment_failed");
+            } catch (Exception ex) {
+                log.warn("Reservation release skipped for order {}: {}", order.orderNumber(), ex.getMessage());
+            }
             log.warn("VNPAY payment failed or pending for order {}: responseCode={}, transactionStatus={}",
                     order.id(), responseCode, transactionStatus);
             try {

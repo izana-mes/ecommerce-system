@@ -296,6 +296,20 @@ export default function ShoppingCart() {
   }, [requestedPayOrder]);
 
   useEffect(() => {
+    if (!payNowOrderTarget) return;
+    const rawMethod = String(payNowOrderTarget.paymentMethod || "").trim().toLowerCase();
+    if (rawMethod.includes("vnpay")) {
+      setSelectedPayment("VNPAY");
+      return;
+    }
+    if (rawMethod.includes("momo")) {
+      setSelectedPayment("MOMO");
+      return;
+    }
+    setSelectedPayment("Paypal");
+  }, [payNowOrderTarget]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     const raw = sessionStorage.getItem("checkoutTransientReorder");
     if (!raw) return;
@@ -360,6 +374,10 @@ export default function ShoppingCart() {
         productName: item.productName,
         productPrice: item.productPrice,
         productReviews: "0",
+        stockQuantity: item.quantity,
+        availableStock: item.quantity,
+        active: true,
+        purchasable: true,
         quantity: item.quantity,
       }));
     }
@@ -418,6 +436,10 @@ export default function ShoppingCart() {
   };
 
   const validateCheckoutForm = (): boolean => {
+    if (isPayNowMode) {
+      setCheckoutErrors({});
+      return true;
+    }
     const nextErrors: CheckoutErrorFields = {};
 
     if (!checkoutForm.firstName.trim()) nextErrors.firstName = "First name is required";
@@ -652,7 +674,12 @@ export default function ShoppingCart() {
   }, []);
 
   const handlePlaceOrder = async () => {
-    if (checkoutItems.length === 0 || isPlacingOrder) return;
+    if (isPlacingOrder) return;
+    if (requestedPayOrder && !payNowOrderTarget) {
+      toast.error("Pay now session expired. Please open Pay now again from your Orders page.");
+      return;
+    }
+    if (!isPayNowMode && checkoutItems.length === 0) return;
     if (!validateCheckoutForm()) {
       toast.error("Please complete billing details before placing order");
       return;
@@ -666,6 +693,9 @@ export default function ShoppingCart() {
           return;
         }
         if (selectedPayment === "VNPAY") {
+          if (!payNowOrderTarget.orderNumber) {
+            throw new Error("Missing order number for pay now");
+          }
           const paymentResponse = await fetch("/api/vnpay/create-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -680,10 +710,13 @@ export default function ShoppingCart() {
           }
           const paymentUrl = paymentData?.data?.paymentUrl as string | undefined;
           if (!paymentUrl) throw new Error("Invalid VNPAY payment URL");
-          window.location.href = paymentUrl;
+          window.location.assign(paymentUrl);
           return;
         }
         if (selectedPayment === "MOMO") {
+          if (!payNowOrderTarget.orderNumber) {
+            throw new Error("Missing order number for pay now");
+          }
           const paymentResponse = await fetch("/api/momo/create-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -698,7 +731,7 @@ export default function ShoppingCart() {
           }
           const paymentUrl = paymentData?.data?.paymentUrl as string | undefined;
           if (!paymentUrl) throw new Error("Invalid MOMO payment URL");
-          window.location.href = paymentUrl;
+          window.location.assign(paymentUrl);
           return;
         }
         toast.error("Use PayPal, VNPAY, or MOMO to pay this existing order.");
