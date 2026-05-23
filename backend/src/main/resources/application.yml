@@ -124,6 +124,8 @@ application:
         email-general-dlq: ${MESSAGING_QUEUE_EMAIL_GENERAL_DLQ:email.general.dlq}
         low-stock-alert: ${MESSAGING_QUEUE_LOW_STOCK_ALERT:inventory.low-stock.alert}
         low-stock-alert-dlq: ${MESSAGING_QUEUE_LOW_STOCK_ALERT_DLQ:inventory.low-stock.alert.dlq}
+        cart-abandoned: ${MESSAGING_QUEUE_CART_ABANDONED:cart.abandoned}
+        cart-abandoned-dlq: ${MESSAGING_QUEUE_CART_ABANDONED_DLQ:cart.abandoned.dlq}
         order-status-changed: ${MESSAGING_QUEUE_ORDER_STATUS_CHANGED:order.status.changed}
         order-status-changed-dlq: ${MESSAGING_QUEUE_ORDER_STATUS_CHANGED_DLQ:order.status.changed.dlq}
         review-submitted: ${MESSAGING_QUEUE_REVIEW_SUBMITTED:review.submitted}
@@ -136,11 +138,18 @@ application:
         order-created: ${MESSAGING_ROUTING_KEY_ORDER_CREATED:order.created}
         email-general: ${MESSAGING_ROUTING_KEY_EMAIL_GENERAL:email.general.send}
         low-stock-alert: ${MESSAGING_ROUTING_KEY_LOW_STOCK_ALERT:inventory.low-stock.alert}
+        cart-abandoned: ${MESSAGING_ROUTING_KEY_CART_ABANDONED:cart.abandoned}
         order-status-changed: ${MESSAGING_ROUTING_KEY_ORDER_STATUS_CHANGED:order.status.changed}
         review-submitted: ${MESSAGING_ROUTING_KEY_REVIEW_SUBMITTED:review.submitted}
         audit-event: ${MESSAGING_ROUTING_KEY_AUDIT_EVENT:audit.event}
     inventory:
       low-stock-threshold: ${LOW_STOCK_THRESHOLD:5}
+    cart:
+      reminder:
+        enabled: ${CART_REMINDER_ENABLED:true}
+        fixed-delay-ms: ${CART_REMINDER_FIXED_DELAY_MS:900000}
+        idle-minutes: ${CART_REMINDER_IDLE_MINUTES:120}
+        cooldown-hours: ${CART_REMINDER_COOLDOWN_HOURS:24}
     fulfillment:
       delivery-reminder:
         enabled: ${FULFILLMENT_DELIVERY_REMINDER_ENABLED:true}

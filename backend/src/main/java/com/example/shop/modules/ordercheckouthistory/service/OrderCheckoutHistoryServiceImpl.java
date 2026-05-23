@@ -14,7 +14,10 @@ import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -57,10 +60,24 @@ public class OrderCheckoutHistoryServiceImpl implements OrderCheckoutHistoryServ
 
         String key = buildKey(user.getId());
         try {
-            String serialized = objectMapper.writeValueAsString(entry);
-            redisTemplate.opsForList().remove(key, 0, serialized);
-            redisTemplate.opsForList().leftPush(key, serialized);
-            redisTemplate.opsForList().trim(key, 0, Math.max(0, maxEntries - 1));
+            List<CheckoutHistoryEntryDto> existingEntries = readEntries(key, Math.max(1, maxEntries) * 4);
+            List<CheckoutHistoryEntryDto> merged = new ArrayList<>();
+            Set<String> signatures = new LinkedHashSet<>();
+
+            merged.add(entry);
+            signatures.add(buildDedupSignature(entry));
+            for (CheckoutHistoryEntryDto existing : existingEntries) {
+                String signature = buildDedupSignature(existing);
+                if (signatures.add(signature)) {
+                    merged.add(existing);
+                }
+            }
+
+            redisTemplate.delete(key);
+            int toStore = Math.min(Math.max(1, maxEntries), merged.size());
+            for (int i = 0; i < toStore; i++) {
+                redisTemplate.opsForList().rightPush(key, objectMapper.writeValueAsString(merged.get(i)));
+            }
             redisTemplate.expire(key, Duration.ofDays(Math.max(1, ttlDays)));
         } catch (DataAccessException | IllegalStateException | com.fasterxml.jackson.core.JsonProcessingException ignored) {
             // Checkout history is best-effort and must not block order placement.
@@ -73,22 +90,21 @@ public class OrderCheckoutHistoryServiceImpl implements OrderCheckoutHistoryServ
         int normalizedLimit = Math.max(1, Math.min(limit, Math.max(1, maxEntries)));
         String key = buildKey(userId);
         try {
-            List<String> values = redisTemplate.opsForList().range(key, 0, normalizedLimit - 1);
-            if (values == null || values.isEmpty()) {
+            List<CheckoutHistoryEntryDto> entries = readEntries(key, Math.max(1, maxEntries));
+            if (entries.isEmpty()) {
                 return List.of();
             }
-            List<CheckoutHistoryEntryDto> result = new ArrayList<>();
-            for (String value : values) {
-                if (!StringUtils.hasText(value)) {
-                    continue;
+            List<CheckoutHistoryEntryDto> deduped = new ArrayList<>();
+            Set<String> signatures = new LinkedHashSet<>();
+            for (CheckoutHistoryEntryDto entry : entries) {
+                if (signatures.add(buildDedupSignature(entry))) {
+                    deduped.add(entry);
                 }
-                try {
-                    result.add(objectMapper.readValue(value, CheckoutHistoryEntryDto.class));
-                } catch (com.fasterxml.jackson.core.JsonProcessingException ignored) {
-                    // Skip corrupted item.
+                if (deduped.size() >= normalizedLimit) {
+                    break;
                 }
             }
-            return result;
+            return deduped;
         } catch (DataAccessException | IllegalStateException ignored) {
             return List.of();
         }
@@ -166,5 +182,47 @@ public class OrderCheckoutHistoryServiceImpl implements OrderCheckoutHistoryServ
             }
         }
         return clean(sb.toString());
+    }
+
+    private List<CheckoutHistoryEntryDto> readEntries(String key, int limit) {
+        List<String> values = redisTemplate.opsForList().range(key, 0, Math.max(0, limit - 1));
+        if (values == null || values.isEmpty()) {
+            return List.of();
+        }
+        List<CheckoutHistoryEntryDto> entries = new ArrayList<>();
+        for (String value : values) {
+            if (!StringUtils.hasText(value)) {
+                continue;
+            }
+            try {
+                entries.add(objectMapper.readValue(value, CheckoutHistoryEntryDto.class));
+            } catch (com.fasterxml.jackson.core.JsonProcessingException ignored) {
+                // Skip corrupted item.
+            }
+        }
+        return entries;
+    }
+
+    private String buildDedupSignature(CheckoutHistoryEntryDto entry) {
+        return String.join("|",
+                normalizeForSignature(entry.firstName()),
+                normalizeForSignature(entry.lastName()),
+                normalizeForSignature(entry.companyName()),
+                normalizeForSignature(entry.country()),
+                normalizeForSignature(entry.streetAddress1()),
+                normalizeForSignature(entry.streetAddress2()),
+                normalizeForSignature(entry.city()),
+                normalizeForSignature(entry.postalCode()),
+                normalizeForSignature(entry.phone()),
+                normalizeForSignature(entry.email()),
+                normalizeForSignature(entry.notes())
+        );
+    }
+
+    private String normalizeForSignature(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        return value.trim().toLowerCase(Locale.ROOT);
     }
 }

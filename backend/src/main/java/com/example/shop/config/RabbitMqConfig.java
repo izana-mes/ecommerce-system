@@ -70,6 +70,16 @@ public class RabbitMqConfig {
     @Value("${application.messaging.routing-key.low-stock-alert}")
     private String lowStockAlertRoutingKey;
 
+    // ── Cart Abandoned ───────────────────────────────────────────
+    @Value("${application.messaging.queue.cart-abandoned}")
+    private String cartAbandonedQueue;
+
+    @Value("${application.messaging.queue.cart-abandoned-dlq}")
+    private String cartAbandonedDlq;
+
+    @Value("${application.messaging.routing-key.cart-abandoned}")
+    private String cartAbandonedRoutingKey;
+
     // ── Exchanges ────────────────────────────────────────────────
 
     @Bean
@@ -202,6 +212,30 @@ public class RabbitMqConfig {
         return BindingBuilder.bind(lowStockAlertDlq).to(shopDlqExchange).with(lowStockAlertDlq.getName());
     }
 
+    // ── Cart Abandoned queue/binding ───────────────────────────
+
+    @Bean
+    public Queue cartAbandonedQueue() {
+        return QueueBuilder.durable(cartAbandonedQueue)
+                .withArguments(dlqArgs(cartAbandonedDlq))
+                .build();
+    }
+
+    @Bean
+    public Queue cartAbandonedDlq() {
+        return QueueBuilder.durable(cartAbandonedDlq).build();
+    }
+
+    @Bean
+    public Binding cartAbandonedBinding(Queue cartAbandonedQueue, TopicExchange shopEventsExchange) {
+        return BindingBuilder.bind(cartAbandonedQueue).to(shopEventsExchange).with(cartAbandonedRoutingKey);
+    }
+
+    @Bean
+    public Binding cartAbandonedDlqBinding(Queue cartAbandonedDlq, DirectExchange shopDlqExchange) {
+        return BindingBuilder.bind(cartAbandonedDlq).to(shopDlqExchange).with(cartAbandonedDlq.getName());
+    }
+
     // ── Order Status Changed queue/binding ──────────────────────
 
     @Value("${application.messaging.queue.order-status-changed}")
@@ -325,4 +359,3 @@ public class RabbitMqConfig {
         );
     }
 }
-

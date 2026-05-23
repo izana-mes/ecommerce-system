@@ -51,6 +51,9 @@ jobs:
       - name: Vitest suite with coverage
         run: npm test
 
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
       - name: Playwright smoke tests
         run: npm run test:e2e
 

@@ -37,7 +37,7 @@ public class ChatbotService {
     private final ChatbotAiClient chatbotAiClient;
 
     private static final Pattern ORDER_NUMBER_PATTERN =
-            Pattern.compile("\\b([A-Z]{2,}[A-Z0-9_\\-]{2,})\\b", Pattern.CASE_INSENSITIVE);
+            Pattern.compile("\\b(?=[A-Z0-9_\\-]{4,32}\\b)(?=[A-Z0-9_\\-]*\\d)[A-Z0-9]+(?:[_\\-][A-Z0-9]+)*\\b", Pattern.CASE_INSENSITIVE);
     private static final Set<String> ORDER_KEYWORDS = Set.of(
             "order", "orders", "status", "track", "tracking", "shipment", "shipped",
             "delivered", "delivery status", "my order", "my orders", "recent orders", "order history"
@@ -121,7 +121,8 @@ public class ChatbotService {
         int policyScore = scoreIntent(lower, POLICY_KEYWORDS);
         int catalogScore = scoreIntent(lower, CATALOG_KEYWORDS);
 
-        if (extractOrderNumber(q) != null) {
+        String extractedOrderNumber = extractOrderNumber(q);
+        if (extractedOrderNumber != null && (orderScore > 0 || extractedOrderNumber.startsWith("ORD"))) {
             orderScore += 2;
         }
 

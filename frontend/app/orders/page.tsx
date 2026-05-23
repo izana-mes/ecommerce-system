@@ -197,6 +197,32 @@ export default function OrdersPage() {
     }
   };
 
+  const handlePayNow = (order: Order) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    sessionStorage.setItem(
+      "checkoutPayNowOrder",
+      JSON.stringify({
+        id: order.id,
+        orderNumber: order.order_number,
+        paymentMethod: order.payment_method,
+        currency: order.currency,
+        subtotal: Number(order.subtotal || 0),
+        shippingFee: Number(order.shipping_fee || 0),
+        vat: Number(order.vat || 0),
+        totalAmount: Number(order.total_amount || 0),
+        items: (order.items || []).map((item) => ({
+          productID: item.product_id,
+          productName: item.product_name,
+          productPrice: Number(item.unit_price || 0),
+          quantity: Number(item.quantity || 1),
+        })),
+      })
+    );
+    router.push(`/cart?step=checkout&payment=paypal&payOrder=${encodeURIComponent(order.order_number)}`);
+  };
+
   return (
     <div style={{ maxWidth: 960, margin: "40px auto", padding: "0 16px" }}>
       <h1 style={{ marginBottom: 16 }}>{t("orders_history")}</h1>
@@ -288,13 +314,7 @@ export default function OrdersPage() {
                     {order.payment_method?.toLowerCase() === "paypal" && (
                       <button
                         type="button"
-                        onClick={() =>
-                          void handleReorder(order.order_number, {
-                            goToCheckout: true,
-                            preferredPayment: "paypal",
-                          })
-                        }
-                        disabled={reorderingOrderNumber === order.order_number}
+                        onClick={() => handlePayNow(order)}
                         style={{
                           padding: "6px 14px",
                           backgroundColor: "#f59e0b",
@@ -305,7 +325,7 @@ export default function OrdersPage() {
                           fontWeight: 600,
                           fontSize: 14}}
                       >
-                        {reorderingOrderNumber === order.order_number ? "Preparing checkout..." : "💳 Pay Now"}
+                        💳 Pay Now
                       </button>
                     )}
                     <button

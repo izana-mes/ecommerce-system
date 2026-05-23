@@ -31,6 +31,9 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -62,15 +65,22 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        RequestMatcher csrfProtectedApiSubset = new OrRequestMatcher(
+                new AntPathRequestMatcher("/api/v1/auth/refresh", "POST"),
+                new AntPathRequestMatcher("/api/v1/auth/logout", "POST"),
+                new AntPathRequestMatcher("/api/v1/sessions/**", "DELETE")
+        );
+
+        RequestMatcher apiRequestsExceptProtectedSubset = request ->
+                request.getRequestURI().startsWith("/api/") && !csrfProtectedApiSubset.matches(request);
+
         http
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        // All API calls are proxied through the Next.js BFF server, not made
-                        // directly by the browser. CORS already restricts allowed origins to the
-                        // frontend origin, and every protected endpoint is guarded by JWT auth,
-                        // so CSRF provides no additional security value for the API layer.
-                        .ignoringRequestMatchers("/api/**"))
+                        // Keep current API behavior for most routes, but enforce CSRF on
+                        // selected cookie-auth state-changing endpoints.
+                        .ignoringRequestMatchers(apiRequestsExceptProtectedSubset))
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
                                 "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; upgrade-insecure-requests"))
