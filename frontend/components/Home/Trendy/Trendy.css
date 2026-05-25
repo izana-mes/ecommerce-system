@@ -429,6 +429,24 @@
   cursor: pointer;
 }
 
+/* Make modal action buttons fill the modal column for better UX */
+.trendyProductModalInfo .trendyProductModalCartButton,
+.trendyProductModalInfo .trendyBuyNowButton {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  border-radius: 8px;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.trendyProductModalInfo .trendyBuyNowButton {
+  background: linear-gradient(135deg, var(--foreground), var(--foreground));
+  color: var(--background);
+  font-weight: 700;
+}
+
 .trendyProductModalInfo a {
   color: var(--foreground);
   font-weight: 600;

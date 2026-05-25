@@ -220,7 +220,16 @@ export default function OrdersPage() {
         })),
       })
     );
-    router.push(`/cart?step=checkout&payment=paypal&payOrder=${encodeURIComponent(order.order_number)}`);
+
+    const method = String(order.payment_method || "").toLowerCase();
+    let paymentParam = "";
+    if (method === "paypal") paymentParam = "paypal";
+    else if (method === "vnpay" || method === "vnpayqr") paymentParam = "vnpay";
+    else if (method === "card" || method === "credit_card" || method === "stripe") paymentParam = "card";
+
+    const payQuery = `payOrder=${encodeURIComponent(order.order_number)}`;
+    const paymentQuery = paymentParam ? `&payment=${paymentParam}` : "";
+    router.push(`/cart?step=checkout${paymentQuery}&${payQuery}`);
   };
 
   return (
@@ -308,26 +317,23 @@ export default function OrdersPage() {
                 >
                   {reorderingOrderNumber === order.order_number ? t("orders_reorder_loading") : t("orders_reorder")}
                 </button>
-                {order.order_status === "pending" && order.payment_status === "pending" ? (
+                {(order.order_status === "pending" || ["pending", "unpaid"].includes(String(order.payment_status).toLowerCase())) ? (
                   <>
-                    {/* Pay Now — shown for unpaid PayPal orders */}
-                    {order.payment_method?.toLowerCase() === "paypal" && (
-                      <button
-                        type="button"
-                        onClick={() => handlePayNow(order)}
-                        style={{
-                          padding: "6px 14px",
-                          backgroundColor: "#f59e0b",
-                          color: "#1c1c1c",
-                          border: "none",
-                          borderRadius: 4,
-                          cursor: "pointer",
-                          fontWeight: 600,
-                          fontSize: 14}}
-                      >
-                        💳 Pay Now
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => handlePayNow(order)}
+                      style={{
+                        padding: "6px 14px",
+                        backgroundColor: "#f59e0b",
+                        color: "#1c1c1c",
+                        border: "none",
+                        borderRadius: 4,
+                        cursor: "pointer",
+                        fontWeight: 600,
+                        fontSize: 14}}
+                    >
+                      💳 Pay Now
+                    </button>
                     <button
                       onClick={() => handleCancelOrder(order.order_number)}
                       disabled={processingOrderId === order.order_number}

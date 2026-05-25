@@ -130,6 +130,29 @@ export default function PayPalCheckoutButton({
               onSuccess(result.captureId ?? data.orderID, result.paymentStatus ?? "paid");
             } catch (err) {
               const msg = err instanceof Error ? err.message : "Capture failed";
+              // Sometimes the capture completes on the backend but the BFF timed out or returned
+              // an error. Check server-side order status before marking as failed so the UI
+              // doesn't show a false negative when the payment succeeded.
+              try {
+                const check = await fetch(`/api/orders/number/${encodeURIComponent(orderNumber)}/track`, {
+                  method: "GET",
+                  credentials: "include",
+                });
+                if (check.ok) {
+                  const payload = await check.json().catch(() => null);
+                  // payload is ApiResponse<OrderTrackingDto>
+                  const data = payload?.data ?? payload;
+                  const paymentStatus = (data?.paymentStatus || data?.payment_status || "").toLowerCase();
+                  if (paymentStatus === "paid") {
+                    setState("success");
+                    onSuccess(data?.captureId ?? data?.payment_reference ?? data?.paymentReference ?? data?.payment_reference ?? "", "paid");
+                    return;
+                  }
+                }
+              } catch (e) {
+                // ignore
+              }
+
               setErrorMessage(msg);
               setState("error");
               onError?.(msg);

@@ -64,6 +64,27 @@ function PayPalReturnContent() {
           // Redirect to orders page after 3 s
           setTimeout(() => router.push("/orders"), 3000);
         } else {
+          // If capture endpoint returned an error but payment actually completed
+          // (e.g., webhook or delayed processing), check order status before showing an error.
+          try {
+            const check = await fetch(`/api/orders/number/${encodeURIComponent(orderNumber)}/track`, {
+              method: "GET",
+              credentials: "include",
+            });
+            if (check.ok) {
+              const payload = await check.json().catch(() => null);
+              const d = payload?.data ?? payload;
+              const paymentStatus = (d?.paymentStatus || d?.payment_status || "").toLowerCase();
+              if (paymentStatus === "paid") {
+                setState({ status: "success", orderNumber, captureId: d?.payment_reference ?? paypalOrderId });
+                setTimeout(() => router.push("/orders"), 3000);
+                return;
+              }
+            }
+          } catch (e) {
+            // ignore
+          }
+
           setState({
             status: "error",
             message: data.message ?? "Payment could not be confirmed. Please contact support.",

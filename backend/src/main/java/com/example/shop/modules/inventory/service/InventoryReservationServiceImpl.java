@@ -12,6 +12,8 @@ import com.example.shop.modules.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -36,9 +38,11 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
     private final StringRedisTemplate redisTemplate;
     private final InventoryReservationEventPublisher inventoryReservationEventPublisher;
     private final JdbcTemplate jdbcTemplate;
+    private final CacheManager cacheManager;
 
     private static final int DEFAULT_TTL_MINUTES = 5 * 60;
     private static final int MAX_TTL_MINUTES = 5 * 60;
+    private static final int DEFAULT_STOCK_QUANTITY = 25;
 
     @Override
     @Transactional
@@ -93,6 +97,26 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
                     .build());
         }
 
+        // Decrement product-facing stockQuantity at reservation time so remaining stock
+        // visible to customers reflects the reservation immediately.
+        try {
+            List<Product> products = productRepository.findByProductIDIn(productIds);
+            Map<String, Product> productsMap = products.stream().collect(Collectors.toMap(Product::getProductID, p -> p));
+            for (Map.Entry<String, Integer> entry : qtyByProduct.entrySet()) {
+                Product p = productsMap.get(entry.getKey());
+                if (p != null) {
+                    int newStock = Math.max(0, defaultStock(p.getStockQuantity()) - entry.getValue());
+                    p.setStockQuantity(newStock);
+                }
+            }
+            if (!products.isEmpty()) {
+                productRepository.saveAll(products);
+                evictProductCaches();
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to update product.stockQuantity on reservation {}: {}", reservationCode, ex.getMessage());
+        }
+
         String redisKey = reservationKey(reservationCode);
         try {
             redisTemplate.opsForValue().set(redisKey, "ACTIVE", Duration.ofMinutes(ttlMinutes));
@@ -118,10 +142,48 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
             return toResponse(reservation);
         }
 
+        LocalDateTime now = LocalDateTime.now();
+
+        // Adjust inventory reserved -> confirmed (move out of reserved) and decrement product stockQuantity
+        List<InventoryReservationItem> items = inventoryReservationItemRepository.findByReservation(reservation);
+        if (items != null && !items.isEmpty()) {
+            // Update inventory rows and record transactions (product.stockQuantity
+            // already adjusted at reservation time)
+            for (InventoryReservationItem item : items) {
+                String productId = item.getProductId();
+                int qty = item.getQuantity();
+
+                Inventory inventory = lockOrCreateInventory(productId);
+                int beforeAvailable = nz(inventory.getAvailableStock());
+                int beforeReserved = nz(inventory.getReservedStock());
+                if (beforeReserved < qty) {
+                    throw new BusinessException("Corrupted reserved stock for product " + productId, HttpStatus.CONFLICT);
+                }
+
+                inventory.setReservedStock(beforeReserved - qty);
+                inventory.setPackedStock(nz(inventory.getPackedStock()) + qty);
+                inventory.setUpdatedAt(now);
+                inventoryRepository.save(inventory);
+
+                saveTx(productId, reservation.getReservationCode(), reservation.getOrderNumber(), "CONFIRM",
+                        qty,
+                        beforeAvailable, beforeAvailable, beforeReserved, beforeReserved - qty, now, Map.of());
+            }
+
+        }
+
         reservation.setStatus(InventoryReservationStatus.CONFIRMED);
-        reservation.setUpdatedAt(LocalDateTime.now());
+        reservation.setUpdatedAt(now);
         inventoryReservationRepository.save(reservation);
         safeDeleteRedisMirror(reservationCode);
+        inventoryReservationEventPublisher.publishReserved(InventoryReservationEvent.builder()
+                .eventType("inventory.confirmed")
+                .reservationCode(reservation.getReservationCode())
+                .orderNumber(reservation.getOrderNumber())
+                .status(reservation.getStatus().name())
+                .occurredAt(now)
+                .build());
+
         return toResponse(reservation);
     }
 
@@ -129,7 +191,8 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
     @Transactional
     public InventoryReservationDtos.ReservationResponse release(String reservationCode, String reason) {
         InventoryReservation reservation = findReservationOrThrow(reservationCode);
-        if (reservation.getStatus() != InventoryReservationStatus.ACTIVE) {
+        if (reservation.getStatus() != InventoryReservationStatus.ACTIVE
+                && reservation.getStatus() != InventoryReservationStatus.CONFIRMED) {
             return toResponse(reservation);
         }
         releaseInternal(reservation, reason == null ? "manual_release" : reason, InventoryReservationStatus.RELEASED);
@@ -175,26 +238,75 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
     private void releaseInternal(InventoryReservation reservation, String reason, InventoryReservationStatus targetStatus) {
         LocalDateTime now = LocalDateTime.now();
         List<InventoryReservationItem> items = inventoryReservationItemRepository.findByReservation(reservation);
+        if (items != null && !items.isEmpty()) {
+            // If reservation was ACTIVE -> move reserved -> available
+            // If reservation was CONFIRMED -> move packed -> available and restore product.stockQuantity
+            boolean wasConfirmed = reservation.getStatus() == InventoryReservationStatus.CONFIRMED;
 
-        for (InventoryReservationItem item : items) {
-            Inventory inventory = lockOrCreateInventory(item.getProductId());
-            int qty = item.getQuantity();
-            int beforeAvailable = nz(inventory.getAvailableStock());
-            int beforeReserved = nz(inventory.getReservedStock());
-            if (beforeReserved < qty) {
-                throw new BusinessException("Corrupted reserved stock for product " + item.getProductId(), HttpStatus.CONFLICT);
+            List<String> productIds = items.stream().map(InventoryReservationItem::getProductId).toList();
+            Map<String, Product> products = productRepository.findByProductIDIn(productIds)
+                    .stream().collect(Collectors.toMap(Product::getProductID, p -> p));
+
+            for (InventoryReservationItem item : items) {
+                Inventory inventory = lockOrCreateInventory(item.getProductId());
+                int qty = item.getQuantity();
+
+                if (!wasConfirmed) {
+                    int beforeAvailable = nz(inventory.getAvailableStock());
+                    int beforeReserved = nz(inventory.getReservedStock());
+                    if (beforeReserved < qty) {
+                        throw new BusinessException("Corrupted reserved stock for product " + item.getProductId(), HttpStatus.CONFLICT);
+                    }
+
+                    inventory.setReservedStock(beforeReserved - qty);
+                    inventory.setAvailableStock(beforeAvailable + qty);
+                    inventory.setUpdatedAt(now);
+                    inventoryRepository.save(inventory);
+
+                    saveTx(item.getProductId(), reservation.getReservationCode(), reservation.getOrderNumber(),
+                            targetStatus == InventoryReservationStatus.EXPIRED ? "EXPIRE_RELEASE" : "MANUAL_RELEASE",
+                            qty,
+                            beforeAvailable, beforeAvailable + qty, beforeReserved, beforeReserved - qty, now,
+                            Map.of("reason", reason));
+                    // Restore product-facing stockQuantity (was decremented at reservation time)
+                    Product pRest = products.get(item.getProductId());
+                    if (pRest != null) {
+                        int restored = defaultStock(pRest.getStockQuantity()) + qty;
+                        pRest.setStockQuantity(restored);
+                    }
+                } else {
+                    int beforeAvailable = nz(inventory.getAvailableStock());
+                    int beforePacked = nz(inventory.getPackedStock());
+                    if (beforePacked < qty) {
+                        throw new BusinessException("Corrupted packed stock for product " + item.getProductId(), HttpStatus.CONFLICT);
+                    }
+
+                    inventory.setPackedStock(beforePacked - qty);
+                    inventory.setAvailableStock(beforeAvailable + qty);
+                    inventory.setUpdatedAt(now);
+                    inventoryRepository.save(inventory);
+
+                    saveTx(item.getProductId(), reservation.getReservationCode(), reservation.getOrderNumber(),
+                            "CONFIRMED_RELEASE",
+                            qty,
+                            beforeAvailable, beforeAvailable + qty, beforePacked, beforePacked - qty, now,
+                            Map.of("reason", reason));
+
+                    // Restore product-facing stockQuantity
+                    Product p = products.get(item.getProductId());
+                    if (p != null) {
+                        int restored = defaultStock(p.getStockQuantity()) + qty;
+                        p.setStockQuantity(restored);
+                    }
+                }
             }
 
-            inventory.setReservedStock(beforeReserved - qty);
-            inventory.setAvailableStock(beforeAvailable + qty);
-            inventory.setUpdatedAt(now);
-            inventoryRepository.save(inventory);
-
-            saveTx(item.getProductId(), reservation.getReservationCode(), reservation.getOrderNumber(),
-                    targetStatus == InventoryReservationStatus.EXPIRED ? "EXPIRE_RELEASE" : "MANUAL_RELEASE",
-                    qty,
-                    beforeAvailable, beforeAvailable + qty, beforeReserved, beforeReserved - qty, now,
-                    Map.of("reason", reason));
+            // Persist product stock updates if any
+            List<Product> toSave = products.values().stream().toList();
+            if (!toSave.isEmpty()) {
+                productRepository.saveAll(toSave);
+                evictProductCaches();
+            }
         }
 
         reservation.setStatus(targetStatus);
@@ -283,6 +395,30 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
                 .build());
     }
 
+    private void evictProductCaches() {
+        try {
+            String[] caches = new String[]{
+                    com.example.shop.config.RedisCacheConfig.PRODUCTS_ALL,
+                    com.example.shop.config.RedisCacheConfig.PRODUCTS_SEARCH,
+                    com.example.shop.config.RedisCacheConfig.PRODUCTS_SUGGEST,
+                    com.example.shop.config.RedisCacheConfig.PRODUCTS_INVENTORY_HEALTH,
+                    com.example.shop.config.RedisCacheConfig.ADMIN_DASHBOARD
+            };
+            for (String c : caches) {
+                try {
+                    Cache cache = cacheManager.getCache(c);
+                    if (cache != null) {
+                        cache.clear();
+                    }
+                } catch (Exception inner) {
+                    log.warn("Failed to clear cache {}: {}", c, inner.getMessage());
+                }
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to evict product caches: {}", ex.getMessage());
+        }
+    }
+
     private InventoryReservationDtos.ReservationResponse toResponse(InventoryReservation reservation) {
         InventoryReservationDtos.ReservationResponse response = new InventoryReservationDtos.ReservationResponse();
         response.setReservationCode(reservation.getReservationCode());
@@ -349,5 +485,10 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
 
     private int nz(Integer value) {
         return value == null ? 0 : value;
+    }
+
+    private int defaultStock(Integer value) {
+        if (value == null) return DEFAULT_STOCK_QUANTITY;
+        return Math.max(0, value);
     }
 }

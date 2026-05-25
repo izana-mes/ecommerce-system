@@ -21,6 +21,7 @@ import java.util.UUID;
 public class SellerInventoryServiceImpl implements SellerInventoryService {
 
     private final ProductRepository productRepository;
+    private final com.example.shop.modules.inventory.repository.InventoryRepository inventoryRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -46,12 +47,27 @@ public class SellerInventoryServiceImpl implements SellerInventoryService {
         product.setStockQuantity(request.getNewQuantity());
         productRepository.save(product);
 
+        // Sync inventory.available_stock when seller updates product stock
+        try {
+            inventoryRepository.findByProductId(product.getProductID()).ifPresent(inv -> {
+                int totalOtherOnHands = nz(inv.getReservedStock()) + nz(inv.getPackedStock()) + nz(inv.getInTransitStock()) + nz(inv.getReturnedStock()) + nz(inv.getDamagedStock());
+                int desiredAvailable = Math.max(0, (product.getStockQuantity() == null ? 25 : Math.max(0, product.getStockQuantity())) - totalOtherOnHands);
+                inv.setAvailableStock(desiredAvailable);
+                inv.setUpdatedAt(java.time.LocalDateTime.now());
+                inventoryRepository.save(inv);
+            });
+        } catch (Exception ex) {
+            log.warn("Failed to sync inventory for product {}: {}", request.getProductId(), ex.getMessage());
+        }
+
         int threshold = request.getLowStockThreshold() != null ? request.getLowStockThreshold() : 5;
         log.info("Seller {} updated stock for product {} to {}",
                 sellerUserId, request.getProductId(), request.getNewQuantity());
 
         return toDto(product, threshold);
     }
+
+    private int nz(Integer v) { return v == null ? 0 : v; }
 
     /**
      * Uses a DB-level filter ({@link ProductRepository#findLowStockBySeller}) instead of
