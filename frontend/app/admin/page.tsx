@@ -3268,6 +3268,14 @@ export default function AdminPage() {
                         <span>Manage campaigns</span>
                         <small>Create, issue, and track coupon confirmations.</small>
                       </button>
+                      <button
+                        className="actionItem actionItem-warning"
+                        onClick={() => router.push("/admin/fraud")}
+                      >
+                        <strong>Open Fraud Center</strong>
+                        <span>Review risk queue</span>
+                        <small>Filter assessments and approve or reject flagged orders.</small>
+                      </button>
                     </div>
                   </div>
 

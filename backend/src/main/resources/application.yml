@@ -134,6 +134,10 @@ application:
         order-paid-email-dlq: ${MESSAGING_QUEUE_ORDER_PAID_EMAIL_DLQ:order.paid.email.dlq}
         order-created: ${MESSAGING_QUEUE_ORDER_CREATED:order.created}
         order-created-dlq: ${MESSAGING_QUEUE_ORDER_CREATED_DLQ:order.created.dlq}
+        order-created-analytics: ${MESSAGING_QUEUE_ORDER_CREATED_ANALYTICS:order.created.analytics}
+        order-created-analytics-dlq: ${MESSAGING_QUEUE_ORDER_CREATED_ANALYTICS_DLQ:order.created.analytics.dlq}
+        order-created-fraud-check: ${MESSAGING_QUEUE_ORDER_CREATED_FRAUD_CHECK:order.created.fraud.check}
+        order-created-fraud-check-dlq: ${MESSAGING_QUEUE_ORDER_CREATED_FRAUD_CHECK_DLQ:order.created.fraud.check.dlq}
         email-general: ${MESSAGING_QUEUE_EMAIL_GENERAL:email.general}
         email-general-dlq: ${MESSAGING_QUEUE_EMAIL_GENERAL_DLQ:email.general.dlq}
         low-stock-alert: ${MESSAGING_QUEUE_LOW_STOCK_ALERT:inventory.low-stock.alert}
@@ -150,6 +154,8 @@ application:
         payment-ipn: ${MESSAGING_ROUTING_KEY_PAYMENT_IPN:payment.vnpay.ipn}
         order-paid-email: ${MESSAGING_ROUTING_KEY_ORDER_PAID_EMAIL:notification.order.paid.email}
         order-created: ${MESSAGING_ROUTING_KEY_ORDER_CREATED:order.created}
+        order-created-analytics: ${MESSAGING_ROUTING_KEY_ORDER_CREATED_ANALYTICS:order.created}
+        order-created-fraud-check: ${MESSAGING_ROUTING_KEY_ORDER_CREATED_FRAUD_CHECK:order.created}
         email-general: ${MESSAGING_ROUTING_KEY_EMAIL_GENERAL:email.general.send}
         low-stock-alert: ${MESSAGING_ROUTING_KEY_LOW_STOCK_ALERT:inventory.low-stock.alert}
         cart-abandoned: ${MESSAGING_ROUTING_KEY_CART_ABANDONED:cart.abandoned}
