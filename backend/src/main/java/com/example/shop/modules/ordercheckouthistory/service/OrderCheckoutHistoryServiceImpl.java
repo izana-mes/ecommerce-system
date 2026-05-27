@@ -58,16 +58,17 @@ public class OrderCheckoutHistoryServiceImpl implements OrderCheckoutHistoryServ
             return;
         }
 
-        String key = buildKey(user.getId());
+        UUID userId = user.getId();
+        String key = buildKey(userId);
         try {
             List<CheckoutHistoryEntryDto> existingEntries = readEntries(key, Math.max(1, maxEntries) * 4);
             List<CheckoutHistoryEntryDto> merged = new ArrayList<>();
             Set<String> signatures = new LinkedHashSet<>();
 
             merged.add(entry);
-            signatures.add(buildDedupSignature(entry));
+            signatures.add(buildDedupSignature(userId, entry));
             for (CheckoutHistoryEntryDto existing : existingEntries) {
-                String signature = buildDedupSignature(existing);
+                String signature = buildDedupSignature(userId, existing);
                 if (signatures.add(signature)) {
                     merged.add(existing);
                 }
@@ -97,7 +98,7 @@ public class OrderCheckoutHistoryServiceImpl implements OrderCheckoutHistoryServ
             List<CheckoutHistoryEntryDto> deduped = new ArrayList<>();
             Set<String> signatures = new LinkedHashSet<>();
             for (CheckoutHistoryEntryDto entry : entries) {
-                if (signatures.add(buildDedupSignature(entry))) {
+                if (signatures.add(buildDedupSignature(userId, entry))) {
                     deduped.add(entry);
                 }
                 if (deduped.size() >= normalizedLimit) {
@@ -203,8 +204,9 @@ public class OrderCheckoutHistoryServiceImpl implements OrderCheckoutHistoryServ
         return entries;
     }
 
-    private String buildDedupSignature(CheckoutHistoryEntryDto entry) {
+    private String buildDedupSignature(UUID userId, CheckoutHistoryEntryDto entry) {
         return String.join("|",
+                normalizeForSignature(userId != null ? userId.toString() : null),
                 normalizeForSignature(entry.firstName()),
                 normalizeForSignature(entry.lastName()),
                 normalizeForSignature(entry.companyName()),

@@ -154,6 +154,7 @@ public class OrderServiceImpl implements OrderService {
         insertOrderItems(orderId, orderLines);
         insertPayment(orderId, orderNumber, request.getPaymentMethod(), totalAmount, currency, request.getOrderSource());
         reserveInventory(orderNumber, orderLines, user);
+        confirmInventoryForCodOrder(orderNumber, request.getPaymentMethod());
 
         clearPurchasedCartItems(user, orderLines);
         long remainingPoints = applyLoyaltyChanges(user, redemption.pointsRedeemed(), pointsEarned);
@@ -516,6 +517,19 @@ public class OrderServiceImpl implements OrderService {
             return item;
         }).toList());
         inventoryReservationService.reserve(reserveRequest, user);
+    }
+
+    private void confirmInventoryForCodOrder(String orderNumber, String paymentMethod) {
+        if (!isCashOnDelivery(paymentMethod)) {
+            return;
+        }
+        inventoryReservationService.confirmByOrderNumber(orderNumber);
+    }
+
+    private boolean isCashOnDelivery(String paymentMethod) {
+        String normalized = safe(paymentMethod).toLowerCase(Locale.ROOT);
+        return normalized.equals("cod")
+                || normalized.contains("cash on delivery");
     }
 
     @Override
