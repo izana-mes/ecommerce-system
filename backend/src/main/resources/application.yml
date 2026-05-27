@@ -86,6 +86,14 @@ application:
     search-history:
       max-entries: ${SEARCH_HISTORY_MAX_ENTRIES:10}
       ttl-days: ${SEARCH_HISTORY_TTL_DAYS:30}
+    trending:
+      products:
+        default-limit: ${TRENDING_PRODUCTS_DEFAULT_LIMIT:12}
+        max-limit: ${TRENDING_PRODUCTS_MAX_LIMIT:50}
+        ttl-days: ${TRENDING_PRODUCTS_TTL_DAYS:30}
+    recently-viewed:
+      max-entries: ${RECENTLY_VIEWED_MAX_ENTRIES:20}
+      ttl-days: ${RECENTLY_VIEWED_TTL_DAYS:30}
     cache:
       ttl:
         products-all-seconds: ${CACHE_TTL_PRODUCTS_ALL_SECONDS:300}
@@ -93,6 +101,9 @@ application:
         products-suggest-seconds: ${CACHE_TTL_PRODUCTS_SUGGEST_SECONDS:180}
         products-inventory-health-seconds: ${CACHE_TTL_PRODUCTS_INVENTORY_HEALTH_SECONDS:30}
         admin-dashboard-seconds: ${CACHE_TTL_ADMIN_DASHBOARD_SECONDS:30}
+        staff-dashboard-seconds: ${CACHE_TTL_STAFF_DASHBOARD_SECONDS:30}
+        seller-dashboard-seconds: ${CACHE_TTL_SELLER_DASHBOARD_SECONDS:30}
+        supplier-dashboard-seconds: ${CACHE_TTL_SUPPLIER_DASHBOARD_SECONDS:30}
     internal:
       notify-token: ${INTERNAL_NOTIFY_TOKEN:}
   

@@ -25,6 +25,8 @@ public class RedisCacheConfig {
     public static final String PRODUCTS_INVENTORY_HEALTH = "products:inventory-health";
     public static final String ADMIN_DASHBOARD = "admin:dashboard";
     public static final String STAFF_DASHBOARD = "staff:dashboard";
+    public static final String SELLER_DASHBOARD = "seller:dashboard";
+    public static final String SUPPLIER_DASHBOARD = "supplier:dashboard";
 
     @Value("${application.cache.ttl.products-all-seconds:300}")
     private long productsAllTtlSeconds;
@@ -44,6 +46,12 @@ public class RedisCacheConfig {
     @Value("${application.cache.ttl.staff-dashboard-seconds:30}")
     private long staffDashboardTtlSeconds;
 
+    @Value("${application.cache.ttl.seller-dashboard-seconds:30}")
+    private long sellerDashboardTtlSeconds;
+
+    @Value("${application.cache.ttl.supplier-dashboard-seconds:30}")
+    private long supplierDashboardTtlSeconds;
+
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
         RedisCacheConfiguration base = RedisCacheConfiguration.defaultCacheConfig()
@@ -56,6 +64,8 @@ public class RedisCacheConfig {
         perCacheConfig.put(PRODUCTS_INVENTORY_HEALTH, base.entryTtl(Duration.ofSeconds(normalizeTtl(productsInventoryHealthTtlSeconds))));
         perCacheConfig.put(ADMIN_DASHBOARD, base.entryTtl(Duration.ofSeconds(normalizeTtl(adminDashboardTtlSeconds))));
         perCacheConfig.put(STAFF_DASHBOARD, base.entryTtl(Duration.ofSeconds(normalizeTtl(staffDashboardTtlSeconds))));
+        perCacheConfig.put(SELLER_DASHBOARD, base.entryTtl(Duration.ofSeconds(normalizeTtl(sellerDashboardTtlSeconds))));
+        perCacheConfig.put(SUPPLIER_DASHBOARD, base.entryTtl(Duration.ofSeconds(normalizeTtl(supplierDashboardTtlSeconds))));
 
         return RedisCacheManager.builder(redisConnectionFactory)
                 .cacheDefaults(base)

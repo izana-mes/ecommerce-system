@@ -15,7 +15,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,10 +46,23 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
     private static final int DEFAULT_TTL_MINUTES = 5 * 60;
     private static final int MAX_TTL_MINUTES = 5 * 60;
     private static final int DEFAULT_STOCK_QUANTITY = 25;
+    private static final DefaultRedisScript<Long> LOCK_RELEASE_SCRIPT = new DefaultRedisScript<>(
+            "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) else return 0 end",
+            Long.class
+    );
+
+    @Value("${application.inventory.redis-lock.ttl-seconds:15}")
+    private long lockTtlSeconds;
 
     @Override
     @Transactional
     public InventoryReservationDtos.ReservationResponse reserve(InventoryReservationDtos.ReserveRequest request, User user) {
+        String orderNumber = request == null ? "" : String.valueOf(request.getOrderNumber()).trim();
+        String lockKey = "inv:lock:reserve:" + (orderNumber.isBlank() ? "unknown-order" : orderNumber);
+        return withRedisLock(lockKey, () -> reserveInternal(request, user));
+    }
+
+    private InventoryReservationDtos.ReservationResponse reserveInternal(InventoryReservationDtos.ReserveRequest request, User user) {
         int ttlMinutes = normalizeTtl(request.getTtlMinutes());
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime expiresAt = now.plusMinutes(ttlMinutes);
@@ -137,6 +153,11 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
     @Override
     @Transactional
     public InventoryReservationDtos.ReservationResponse confirm(String reservationCode) {
+        String lockKey = "inv:lock:reservation:" + (reservationCode == null ? "unknown" : reservationCode.trim());
+        return withRedisLock(lockKey, () -> confirmInternal(reservationCode));
+    }
+
+    private InventoryReservationDtos.ReservationResponse confirmInternal(String reservationCode) {
         InventoryReservation reservation = findReservationOrThrow(reservationCode);
         if (reservation.getStatus() != InventoryReservationStatus.ACTIVE) {
             return toResponse(reservation);
@@ -190,6 +211,11 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
     @Override
     @Transactional
     public InventoryReservationDtos.ReservationResponse release(String reservationCode, String reason) {
+        String lockKey = "inv:lock:reservation:" + (reservationCode == null ? "unknown" : reservationCode.trim());
+        return withRedisLock(lockKey, () -> releaseInternalEntry(reservationCode, reason));
+    }
+
+    private InventoryReservationDtos.ReservationResponse releaseInternalEntry(String reservationCode, String reason) {
         InventoryReservation reservation = findReservationOrThrow(reservationCode);
         if (reservation.getStatus() != InventoryReservationStatus.ACTIVE
                 && reservation.getStatus() != InventoryReservationStatus.CONFIRMED) {
@@ -402,7 +428,10 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
                     com.example.shop.config.RedisCacheConfig.PRODUCTS_SEARCH,
                     com.example.shop.config.RedisCacheConfig.PRODUCTS_SUGGEST,
                     com.example.shop.config.RedisCacheConfig.PRODUCTS_INVENTORY_HEALTH,
-                    com.example.shop.config.RedisCacheConfig.ADMIN_DASHBOARD
+                    com.example.shop.config.RedisCacheConfig.ADMIN_DASHBOARD,
+                    com.example.shop.config.RedisCacheConfig.STAFF_DASHBOARD,
+                    com.example.shop.config.RedisCacheConfig.SELLER_DASHBOARD,
+                    com.example.shop.config.RedisCacheConfig.SUPPLIER_DASHBOARD
             };
             for (String c : caches) {
                 try {
@@ -490,5 +519,33 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
     private int defaultStock(Integer value) {
         if (value == null) return DEFAULT_STOCK_QUANTITY;
         return Math.max(0, value);
+    }
+
+    private <T> T withRedisLock(String lockKey, Supplier<T> action) {
+        String token = UUID.randomUUID().toString();
+        Duration ttl = Duration.ofSeconds(Math.max(5, lockTtlSeconds));
+        boolean acquired = false;
+        boolean bypassLock = false;
+        try {
+            try {
+                Boolean ok = redisTemplate.opsForValue().setIfAbsent(lockKey, token, ttl);
+                acquired = Boolean.TRUE.equals(ok);
+            } catch (Exception ex) {
+                bypassLock = true;
+                log.warn("Redis lock unavailable for key {}: {}. Continuing without distributed lock.", lockKey, ex.getMessage());
+            }
+            if (!acquired && !bypassLock) {
+                throw new BusinessException("Inventory operation is busy. Please retry.", HttpStatus.CONFLICT);
+            }
+            return action.get();
+        } finally {
+            if (acquired) {
+                try {
+                    redisTemplate.execute(LOCK_RELEASE_SCRIPT, List.of(lockKey), token);
+                } catch (Exception ex) {
+                    log.warn("Failed to release redis lock {}: {}", lockKey, ex.getMessage());
+                }
+            }
+        }
     }
 }

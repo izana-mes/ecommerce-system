@@ -1,10 +1,12 @@
 package com.example.shop.modules.supplier.dashboard.service;
 
+import com.example.shop.config.RedisCacheConfig;
 import com.example.shop.modules.supplier.dashboard.dto.SupplierDashboardResponse;
 import com.example.shop.modules.supplier.finance.entity.SupplierBalance;
 import com.example.shop.modules.supplier.finance.repository.SupplierBalanceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,10 @@ public class SupplierDashboardServiceImpl implements SupplierDashboardService {
     private final SupplierBalanceRepository supplierBalanceRepository;
 
     @Override
+    @Cacheable(
+            cacheNames = RedisCacheConfig.SUPPLIER_DASHBOARD,
+            key = "#supplierUserId + '::' + T(java.lang.Math).max(1, T(java.lang.Math).min(#days, 365)) + '::' + T(java.lang.Math).max(1, #lowStockThreshold)"
+    )
     public SupplierDashboardResponse getDashboard(UUID supplierUserId, int days, int lowStockThreshold) {
         int safeDays = Math.max(1, Math.min(days, 365));
         int safeThreshold = Math.max(1, lowStockThreshold);
