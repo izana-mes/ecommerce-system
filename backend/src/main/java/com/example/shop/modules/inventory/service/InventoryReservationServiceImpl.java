@@ -1,6 +1,7 @@
 package com.example.shop.modules.inventory.service;
 
 import com.example.shop.common.exception.BusinessException;
+import com.example.shop.config.CacheInvalidationEventPublisher;
 import com.example.shop.modules.inventory.dto.InventoryReservationDtos;
 import com.example.shop.modules.inventory.entity.*;
 import com.example.shop.modules.inventory.messaging.InventoryReservationEvent;
@@ -42,6 +43,7 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
     private final InventoryReservationEventPublisher inventoryReservationEventPublisher;
     private final JdbcTemplate jdbcTemplate;
     private final CacheManager cacheManager;
+    private final CacheInvalidationEventPublisher cacheInvalidationEventPublisher;
 
     private static final int DEFAULT_TTL_MINUTES = 5 * 60;
     private static final int MAX_TTL_MINUTES = 5 * 60;
@@ -423,7 +425,7 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
 
     private void evictProductCaches() {
         try {
-            String[] caches = new String[]{
+            List<String> caches = List.of(
                     com.example.shop.config.RedisCacheConfig.PRODUCTS_ALL,
                     com.example.shop.config.RedisCacheConfig.PRODUCTS_SEARCH,
                     com.example.shop.config.RedisCacheConfig.PRODUCTS_SUGGEST,
@@ -432,7 +434,7 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
                     com.example.shop.config.RedisCacheConfig.STAFF_DASHBOARD,
                     com.example.shop.config.RedisCacheConfig.SELLER_DASHBOARD,
                     com.example.shop.config.RedisCacheConfig.SUPPLIER_DASHBOARD
-            };
+            );
             for (String c : caches) {
                 try {
                     Cache cache = cacheManager.getCache(c);
@@ -443,6 +445,7 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
                     log.warn("Failed to clear cache {}: {}", c, inner.getMessage());
                 }
             }
+            cacheInvalidationEventPublisher.publish(caches);
         } catch (Exception ex) {
             log.warn("Failed to evict product caches: {}", ex.getMessage());
         }

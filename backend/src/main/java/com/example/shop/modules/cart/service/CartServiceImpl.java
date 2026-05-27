@@ -1,6 +1,7 @@
 package com.example.shop.modules.cart.service;
 
 import com.example.shop.common.exception.BusinessException;
+import com.example.shop.config.CacheInvalidationEventPublisher;
 import com.example.shop.config.RedisCacheConfig;
 import com.example.shop.modules.cart.dto.CartAddRequest;
 import com.example.shop.modules.cart.dto.CartCheckoutHealthItemDto;
@@ -33,6 +34,7 @@ public class CartServiceImpl implements CartService {
 
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
+    private final CacheInvalidationEventPublisher cacheInvalidationEventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -82,6 +84,7 @@ public class CartServiceImpl implements CartService {
         item.setQuantity(newQty);
 
         CartItem saved = cartItemRepository.save(item);
+        publishCartCacheInvalidation();
         return toDto(saved, product, maxAllowedByStock);
     }
 
@@ -97,6 +100,7 @@ public class CartServiceImpl implements CartService {
 
             cartItemRepository.delete(item);
             item.setQuantity(0);
+            publishCartCacheInvalidation();
             return toDto(item, null, 0);
         }
 
@@ -120,6 +124,7 @@ public class CartServiceImpl implements CartService {
         item.setProductReviews(product.getProductReviews());
         item.setQuantity(quantity);
         CartItem saved = cartItemRepository.save(item);
+        publishCartCacheInvalidation();
         return toDto(saved, product, maxAllowedByStock);
     }
 
@@ -130,6 +135,7 @@ public class CartServiceImpl implements CartService {
     })
     public void removeFromCart(User user, String productID) {
         cartItemRepository.deleteByUserAndProductID(user, productID);
+        publishCartCacheInvalidation();
     }
 
     @Override
@@ -139,6 +145,7 @@ public class CartServiceImpl implements CartService {
     })
     public void clearCart(User user) {
         cartItemRepository.deleteByUser(user);
+        publishCartCacheInvalidation();
     }
 
     @Override
@@ -281,5 +288,15 @@ public class CartServiceImpl implements CartService {
 
     private int normalizeQuantity(Integer quantity) {
         return Math.max(0, quantity == null ? 0 : quantity);
+    }
+
+    private void publishCartCacheInvalidation() {
+        cacheInvalidationEventPublisher.publish(List.of(
+                RedisCacheConfig.PRODUCTS_INVENTORY_HEALTH,
+                RedisCacheConfig.ADMIN_DASHBOARD,
+                RedisCacheConfig.STAFF_DASHBOARD,
+                RedisCacheConfig.SELLER_DASHBOARD,
+                RedisCacheConfig.SUPPLIER_DASHBOARD
+        ));
     }
 }

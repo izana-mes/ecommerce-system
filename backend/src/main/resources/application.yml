@@ -95,6 +95,9 @@ application:
       max-entries: ${RECENTLY_VIEWED_MAX_ENTRIES:20}
       ttl-days: ${RECENTLY_VIEWED_TTL_DAYS:30}
     cache:
+      invalidation:
+        channel: ${CACHE_INVALIDATION_CHANNEL:cache:invalidate:all}
+        node-id: ${CACHE_INVALIDATION_NODE_ID:${HOSTNAME:node-unknown}}
       ttl:
         products-all-seconds: ${CACHE_TTL_PRODUCTS_ALL_SECONDS:300}
         products-search-seconds: ${CACHE_TTL_PRODUCTS_SEARCH_SECONDS:180}
