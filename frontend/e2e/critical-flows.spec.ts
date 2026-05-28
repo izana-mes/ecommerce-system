@@ -1,10 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const hasEnv = !!process.env.E2E_BASE_URL;
-
 test.describe("critical ecommerce + ai flows", () => {
-  test.skip(!hasEnv, "Set E2E_BASE_URL to run against deployed app");
-
   test("login route is reachable", async ({ page }) => {
     await page.goto("/login");
     await expect(page).toHaveURL(/login/);
