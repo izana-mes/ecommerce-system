@@ -1,0 +1,391 @@
+.socialMessengerShell {
+  min-height: calc(100vh - 120px);
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  background: var(--surface-1);
+  color: var(--foreground);
+  border: 1px solid var(--border-soft);
+}
+
+.socialConversationSidebar {
+  border-right: 1px solid var(--border-soft);
+  background: var(--surface-2);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.socialConversationSidebar header,
+.socialChatHeader,
+.socialThreadHeader {
+  min-height: 64px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.socialConversationSidebar header,
+.socialThreadHeader {
+  justify-content: space-between;
+}
+
+.socialConversationSidebar input,
+.socialThreadHeader select {
+  margin: 12px;
+  min-height: 38px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface-1);
+  color: var(--foreground);
+  padding: 0 12px;
+}
+
+.socialConversationList {
+  overflow: auto;
+}
+
+.socialConversationList button,
+.socialMentionMenu button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  text-align: left;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.socialConversationList button:hover,
+.socialConversationActive {
+  background: color-mix(in srgb, #0f766e 12%, transparent);
+}
+
+.socialConversationList strong,
+.socialConversationList small,
+.socialMentionMenu strong,
+.socialMentionMenu small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.socialConversationList small,
+.socialMentionMenu small,
+.socialMessageMeta span,
+.socialCommentMeta span,
+.socialReceipt {
+  color: var(--muted-text);
+}
+
+.socialConversationList em {
+  min-width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #0f766e;
+  color: white;
+  display: inline-grid;
+  place-items: center;
+  font-style: normal;
+  font-size: 12px;
+}
+
+.socialChatPanel {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: var(--surface-1);
+}
+
+.socialChatHeader {
+  justify-content: flex-start;
+}
+
+.socialChatHeader div:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+}
+
+.socialChatHeader span {
+  color: var(--muted-text);
+  display: block;
+  font-size: 13px;
+}
+
+.socialMessageList {
+  overflow: auto;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.socialMessage,
+.socialCommentNode {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 10px;
+  position: relative;
+}
+
+.socialMessageContent,
+.socialCommentBody {
+  min-width: 0;
+}
+
+.socialMessageContent p,
+.socialCommentBubble p {
+  margin: 6px 0;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.socialMessageMeta,
+.socialCommentMeta,
+.socialInlineActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.socialMessageMeta time,
+.socialCommentMeta time {
+  color: var(--muted-text);
+  font-size: 12px;
+}
+
+.socialMessage blockquote {
+  margin: 6px 0;
+  border-left: 3px solid #0f766e;
+  padding: 7px 10px;
+  background: var(--surface-2);
+  border-radius: 6px;
+  color: var(--muted-text);
+}
+
+.socialAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #233046;
+  color: white;
+  display: inline-grid;
+  place-items: center;
+  font-weight: 700;
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.socialAvatar i,
+.socialMentionMenu i {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #16a34a;
+  border: 2px solid var(--surface-1);
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}
+
+.socialMentioned {
+  outline: 2px solid color-mix(in srgb, #f59e0b 55%, transparent);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.socialInlineActions button,
+.socialReactionButton,
+.socialReactionSummary,
+.socialChatHeader button,
+.socialConversationSidebar header button,
+.socialComposerBar button {
+  border: 1px solid var(--border-soft);
+  background: var(--surface-1);
+  color: var(--foreground);
+  min-height: 30px;
+  border-radius: 8px;
+  padding: 0 10px;
+  cursor: pointer;
+}
+
+.socialInlineActions {
+  margin-top: 6px;
+}
+
+.socialReactionRoot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.socialReactionPopup {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  display: flex;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--surface-1);
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.18);
+  z-index: 5;
+}
+
+.socialReactionOption {
+  border: 0;
+  background: transparent;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  font-size: 22px;
+  cursor: pointer;
+  transition: transform 140ms ease;
+}
+
+.socialReactionOption:hover {
+  transform: translateY(-6px) scale(1.2);
+}
+
+.socialReactionButtonActive {
+  color: #0f766e;
+  border-color: color-mix(in srgb, #0f766e 45%, var(--border-soft));
+}
+
+.socialReactionStack {
+  display: inline-flex;
+  letter-spacing: -4px;
+  margin-right: 4px;
+}
+
+.socialComposer {
+  position: relative;
+  padding: 12px;
+  border-top: 1px solid var(--border-soft);
+  background: var(--surface-1);
+}
+
+.socialComposerBar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 8px;
+}
+
+.socialComposer textarea {
+  min-height: 40px;
+  max-height: 140px;
+  resize: vertical;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--foreground);
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.socialMentionMenu {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: calc(100% - 4px);
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.16);
+  overflow: hidden;
+  z-index: 6;
+}
+
+.socialAttachmentStrip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.socialAttachmentStrip button {
+  border: 1px solid var(--border-soft);
+  background: var(--surface-2);
+  color: inherit;
+  border-radius: 8px;
+  padding: 8px 10px;
+  max-width: 220px;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.socialAttachmentStrip strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.socialCommentThread {
+  max-width: 860px;
+  margin: 0 auto;
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
+}
+
+.socialCommentList {
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.socialCommentBubble {
+  display: inline-block;
+  max-width: 100%;
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.socialCommentReply {
+  margin-top: 12px;
+  margin-left: 6px;
+}
+
+.socialCommentRail {
+  position: absolute;
+  left: 19px;
+  top: 44px;
+  bottom: -12px;
+  width: 2px;
+  background: var(--border-soft);
+}
+
+@media (max-width: 760px) {
+  .socialMessengerShell {
+    grid-template-columns: 1fr;
+  }
+
+  .socialConversationSidebar {
+    max-height: 260px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .socialMessageList {
+    padding: 12px;
+  }
+
+  .socialComposerBar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .socialComposerBar button[type="submit"] {
+    grid-column: 1 / -1;
+  }
+}
