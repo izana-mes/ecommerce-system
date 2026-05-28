@@ -1,5 +1,6 @@
 package com.example.shop.modules.workspace.service;
 
+import com.example.shop.modules.workspace.realtime.WorkspaceRealtimePublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpHeaders;
@@ -22,6 +23,7 @@ import java.util.*;
 public class WorkspaceService {
 
     private final JdbcTemplate jdbcTemplate;
+    private final WorkspaceRealtimePublisher workspaceRealtimePublisher;
     private static final DateTimeFormatter TS_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
     @Transactional
@@ -167,6 +169,7 @@ public class WorkspaceService {
                 WHERE id = ? AND recipient = ?
                 """, id, recipient);
         if (updated == 0) throw new IllegalArgumentException("Notification not found");
+        publishNotificationEvent(recipient, "read");
     }
 
     public List<Map<String, Object>> listAuditEvents(int limit) {
@@ -267,6 +270,15 @@ public class WorkspaceService {
                 INSERT INTO app_notifications (recipient, title, message, channel, source_type, source_id)
                 VALUES (?, ?, ?, 'IN_APP', ?, ?)
                 """, recipient, title, message, sourceType, sourceId);
+        publishNotificationEvent(recipient, "created");
+    }
+
+    private void publishNotificationEvent(String recipient, String eventType) {
+        workspaceRealtimePublisher.publishNotificationChanged(recipient, Map.of(
+                "type", eventType,
+                "recipient", recipient,
+                "at", LocalDateTime.now().format(TS_FORMAT)
+        ));
     }
 
     private Map<String, Object> getTaskById(Long id) {

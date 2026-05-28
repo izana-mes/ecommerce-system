@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {getUser } from "@/lib/auth";
+import { createWorkspaceStompClient } from "@/lib/workspaceSocket";
 import "./workspace.css";
 
 type Task = {
@@ -78,6 +79,22 @@ export default function WorkspacePage() {
     void run();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, user?.role, isAdmin]);
+
+  useEffect(() => {
+    if (!user?.email) return;
+    const recipient = String(user.email).trim().toLowerCase();
+    const client = createWorkspaceStompClient(() => {
+      client.subscribe(`/topic/workspace/notifications/${recipient}`, () => {
+        void fetchNotifications();
+      });
+    });
+
+    client.activate();
+    return () => {
+      client.deactivate();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.email]);
 
   const fetchTasks = async () => {
     if (!token) return;

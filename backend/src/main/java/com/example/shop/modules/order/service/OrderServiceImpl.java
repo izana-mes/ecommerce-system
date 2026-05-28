@@ -24,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -53,6 +54,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderCreatedEventPublisher orderCreatedEventPublisher;
     private final InventoryReservationService inventoryReservationService;
     private final OrderCheckoutHistoryService orderCheckoutHistoryService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     private static final int POINTS_PER_USD_DISCOUNT = 100;
     private static final BigDecimal MAX_POINTS_DISCOUNT_RATE = new BigDecimal("0.25");
@@ -504,6 +506,7 @@ public class OrderServiceImpl implements OrderService {
         } catch (BusinessException ex) {
             log.warn("No active reservation to release for cancelled order {}: {}", orderNumber, ex.getMessage());
         }
+        publishCustomerOrderStatus(orderNumber, user.getEmail(), "cancelled", "cancelled", "CUSTOMER_CANCELLED");
     }
 
     private void reserveInventory(String orderNumber, List<OrderLine> orderLines, User user) {
@@ -1021,6 +1024,20 @@ public class OrderServiceImpl implements OrderService {
 
     private LocalDateTime toLocalDateTime(Timestamp timestamp) {
         return timestamp == null ? null : timestamp.toLocalDateTime();
+    }
+
+    private void publishCustomerOrderStatus(String orderNumber, String customerEmail,
+                                            String orderStatus, String paymentStatus, String action) {
+        if (!StringUtils.hasText(customerEmail)) {
+            return;
+        }
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("orderNumber", orderNumber);
+        payload.put("orderStatus", orderStatus);
+        payload.put("paymentStatus", paymentStatus);
+        payload.put("action", action);
+        payload.put("changedAt", LocalDateTime.now().toString());
+        messagingTemplate.convertAndSend("/topic/orders/customer/" + customerEmail.trim().toLowerCase(Locale.ROOT), payload);
     }
 
     private record InsertOrderResult(long id, String trackingSecret) {

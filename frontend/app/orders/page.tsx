@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getUser } from "@/lib/auth";
+import { createOrdersStompClient } from "@/lib/ordersSocket";
 import { useAppDispatch } from "@/store";
 import { addToCart, addToCartAsync, fetchCartAsync } from "@/store/cartSlice";
 
@@ -103,6 +104,21 @@ export default function OrdersPage() {
   useEffect(() => {
     void fetchHistory();
   }, [page, user]);
+
+  useEffect(() => {
+    if (!user?.email) return;
+    const recipient = String(user.email).trim().toLowerCase();
+    const client = createOrdersStompClient(() => {
+      client.subscribe(`/topic/orders/customer/${recipient}`, () => {
+        void fetchHistory();
+      });
+    });
+    client.activate();
+    return () => {
+      client.deactivate();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.email, page]);
 
   const handleCancelOrder = async (orderNumber: string) => {
     if (!window.confirm(t("orders_cancel_confirm"))) return;

@@ -230,7 +230,7 @@ public class ShipperRealtimeService {
         }
 
         // Broadcast the status change over STOMP so the frontend refreshes instantly.
-        broadcastOrderStatus(orderId, order.getOrderNumber(), order.getOrderStatus(), status, shipperUserId);
+        broadcastOrderStatus(orderId, order.getOrderNumber(), order.getOrderStatus(), status, shipperUserId, order.getCustomerEmail());
     }
 
     @Transactional(readOnly = true)
@@ -356,7 +356,7 @@ public class ShipperRealtimeService {
     }
 
     private void broadcastOrderStatus(long orderId, String orderNumber, String newOrderStatus,
-                                       String shipperAction, UUID shipperUserId) {
+                                       String shipperAction, UUID shipperUserId, String customerEmail) {
         ShipperDtos.OrderStatusEvent event = ShipperDtos.OrderStatusEvent.builder()
                 .orderId(orderId)
                 .orderNumber(orderNumber)
@@ -369,6 +369,10 @@ public class ShipperRealtimeService {
         messagingTemplate.convertAndSend("/topic/shipper/" + shipperUserId + "/orders", event);
         // Per-order topic: future-proofed for admin/customer tracking views.
         messagingTemplate.convertAndSend("/topic/orders/" + orderId + "/status", event);
+        // Per-customer topic: used by customer order history page to live-refresh statuses.
+        if (StringUtils.hasText(customerEmail)) {
+            messagingTemplate.convertAndSend("/topic/orders/customer/" + customerEmail.trim().toLowerCase(Locale.ROOT), event);
+        }
     }
 
     private static LocalDateTime toRecordedAt(Long timestampEpochMs) {
