@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {getUser } from "@/lib/auth";
 import { createWorkspaceStompClient } from "@/lib/workspaceSocket";
 import "./workspace.css";
@@ -226,6 +227,7 @@ export default function WorkspacePage() {
       <section className="workspaceHeader">
         <h1>Workspace Hub</h1>
         <p>Tasks, notifications, audit visibility, and report export in one place.</p>
+        <Link className="workspaceLinkButton" href="/workspace/meetings">Open team calendar</Link>
       </section>
 
       {error ? <p className="workspaceError">{error}</p> : null}
