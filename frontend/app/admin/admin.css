@@ -42,6 +42,12 @@
   margin-bottom: 14px;
 }
 
+.adminTopActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .syncText {
   font-size: 14px;
   color: #33405a;
@@ -300,6 +306,21 @@
 .actionItem-low {
   border-color: #cfe1ff;
   background: #f4f8ff;
+}
+
+.actionItem-info {
+  border-color: #b9d3ff;
+  background: #f3f7ff;
+}
+
+.actionItem-warning {
+  border-color: #f6c97a;
+  background: #fff8eb;
+}
+
+.actionItem-success {
+  border-color: #9fd8b6;
+  background: #f0fbf5;
 }
 
 .trendBars {

@@ -3061,9 +3061,17 @@ export default function AdminPage() {
         </div>
 
         <div className="adminTopBar">
-          <button className="pageButton" onClick={() => void handleRefreshActiveTab()}>
-            Refresh Current Tab
-          </button>
+          <div className="adminTopActions">
+            <button className="pageButton" onClick={() => void handleRefreshActiveTab()}>
+              Refresh Current Tab
+            </button>
+            <button className="pageButton" onClick={() => router.push("/admin/shifts")}>
+              Shift Management
+            </button>
+            <button className="pageButton" onClick={() => router.push("/workspace/meetings")}>
+              Meeting Calendar
+            </button>
+          </div>
           <span className="syncText">
             Last updated: {lastUpdatedAt ? formatDateTime(lastUpdatedAt) : "Not synced yet"}
           </span>
@@ -3275,6 +3283,22 @@ export default function AdminPage() {
                         <strong>Open Fraud Center</strong>
                         <span>Review risk queue</span>
                         <small>Filter assessments and approve or reject flagged orders.</small>
+                      </button>
+                      <button
+                        className="actionItem actionItem-success"
+                        onClick={() => router.push("/admin/shifts")}
+                      >
+                        <strong>Open Shift Management</strong>
+                        <span>Plan staffing</span>
+                        <small>Create shifts, import schedules, and review staffing warnings.</small>
+                      </button>
+                      <button
+                        className="actionItem actionItem-info"
+                        onClick={() => router.push("/workspace/meetings")}
+                      >
+                        <strong>Open Meeting Calendar</strong>
+                        <span>Schedule meetings</span>
+                        <small>Book team meetings, track participants, and manage action items.</small>
                       </button>
                     </div>
                   </div>

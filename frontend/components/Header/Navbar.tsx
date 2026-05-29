@@ -37,6 +37,7 @@ const CUSTOMER_LINKS = [
 
 const STAFF_LINKS = [
   { href: "/staff/attendance", key: "nav_attendance" as TranslationKey },
+  { href: "/workspace", key: "nav_workspace" as TranslationKey },
   { href: "/staff/chatbot", key: "nav_assistant" as TranslationKey },
   { href: "/staff/support-chat", key: "nav_inbox" as TranslationKey },
   { href: "/staff/shipping", key: "nav_fulfillment" as TranslationKey },
@@ -46,6 +47,7 @@ const STAFF_LINKS = [
 const SHIPPER_NAV_LINKS = [
   { href: "/", key: "nav_home" as TranslationKey },
   { href: "/staff/support-chat", key: "nav_inbox" as TranslationKey },
+  { href: "/workspace", key: "nav_workspace" as TranslationKey },
   { href: "/shipper/dashboard", key: "nav_shipper" as TranslationKey },
 ];
 
@@ -332,6 +334,13 @@ export default function Navbar() {
         ...BASE_LINKS,
         ...STAFF_LINKS,
         ...(isAdminUser ? [{ href: "/admin", key: "nav_admin" as TranslationKey }] : []),
+      ];
+    }
+    if (isSupplierUser) {
+      return [
+        ...BASE_LINKS,
+        { href: "/workspace", key: "nav_workspace" as TranslationKey },
+        ...CUSTOMER_LINKS,
       ];
     }
     const isRetailCustomer =

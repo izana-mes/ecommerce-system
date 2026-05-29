@@ -10,6 +10,7 @@ export type TranslationKey =
   | "nav_chatbot"
   | "nav_support"
   | "nav_admin"
+  | "nav_workspace"
   | "nav_shipper"
   | "nav_fulfillment"
   | "nav_assistant"
@@ -341,6 +342,7 @@ export const translations: Record<Locale, Dictionary> = {
     nav_chatbot: "CHATBOT",
     nav_support: "SUPPORT",
     nav_admin: "ADMIN",
+    nav_workspace: "WORKSPACE",
     nav_shipper: "SHIPPER",
     nav_fulfillment: "FULFILLMENT",
     nav_assistant: "ASSISTANT",
@@ -668,6 +670,7 @@ export const translations: Record<Locale, Dictionary> = {
     nav_chatbot: "チャットボット",
     nav_support: "サポート",
     nav_admin: "管理",
+    nav_workspace: "ワークスペース",
     nav_shipper: "配送",
     nav_fulfillment: "発送",
     nav_assistant: "アシスタント",
