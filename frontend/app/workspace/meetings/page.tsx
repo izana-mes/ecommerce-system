@@ -349,7 +349,10 @@ export default function MeetingsPage() {
 
         <section className={`calendarSurface ${view}`}>
           {view !== "timeline" ? (
-            <div className="calendarGrid" style={{ gridTemplateColumns: `72px repeat(${days.length}, minmax(120px, 1fr))` }}>
+            <div
+              className="calendarGrid"
+              style={{ gridTemplateColumns: `72px repeat(${days.length}, minmax(var(--calendar-col-min,120px), 1fr))` }}
+            >
               <div className="calendarCorner" />
               {days.map((day) => <div className="calendarDayHead" key={day.toISOString()}>{day.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</div>)}
               {hours.map((hour) => (

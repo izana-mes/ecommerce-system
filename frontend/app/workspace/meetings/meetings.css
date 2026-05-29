@@ -124,13 +124,14 @@
 }
 
 .calendarSurface {
+  --calendar-col-min: 120px;
   overflow: auto;
   min-height: 720px;
 }
 
 .calendarGrid {
   display: grid;
-  min-width: 780px;
+  min-width: 0;
 }
 
 .calendarCorner,
@@ -290,6 +291,9 @@
   .meetingComposer {
     position: static;
   }
+  .calendarSurface {
+    --calendar-col-min: 100px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -308,5 +312,8 @@
     right: 8px;
     bottom: 8px;
     width: calc(100vw - 16px);
+  }
+  .calendarSurface {
+    --calendar-col-min: 80px;
   }
 }

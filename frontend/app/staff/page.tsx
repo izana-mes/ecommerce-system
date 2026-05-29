@@ -33,7 +33,8 @@ export default function StaffDashboardPage() {
     try {
       setLoading(true);
       const res = await fetch("/api/v1/staff/dashboard", {
-        headers: { }});
+        credentials: 'include',
+        headers: { Accept: "application/json" }});
       if (!res.ok) throw new Error("Failed to fetch staff dashboard");
       const json = await res.json();
       setData(json);
