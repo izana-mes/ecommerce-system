@@ -260,9 +260,12 @@ export default function Trendy() {
   return (
     <>
       <div className="trendyProduct">
-        <h2>
-          {t("home_our_trendy")} <span>{t("home_products")}</span>
-        </h2>
+        <div className="jp-title-wrap">
+          <span className="jp-subtitle">HOT ITEMS / おすすめトレンド商品</span>
+          <h2>
+            {t("home_our_trendy")} <span>{t("home_products")}</span>
+          </h2>
+        </div>
         <div className="trendyTabs">
           <div className="tabs">
             <p
@@ -374,7 +377,7 @@ export default function Trendy() {
                       )}
                       <button
                         type="button"
-                        className="trendyBuyNowButton"
+                        className="trendyBuyNowButton animate-sheen"
                         disabled={(product.active === false ? 0 : Number(product.stockQuantity ?? 25)) <= 0 || buyNowProductId === product.productID}
                         onClick={() => void handleBuyNow(product)}
                       >
@@ -468,7 +471,7 @@ export default function Trendy() {
                         )}
                         <button
                           type="button"
-                          className="trendyBuyNowButton"
+                          className="trendyBuyNowButton animate-sheen"
                           disabled={(product.active === false ? 0 : Number(product.stockQuantity ?? 25)) <= 0 || buyNowProductId === product.productID}
                           onClick={() => void handleBuyNow(product)}
                         >
@@ -562,7 +565,7 @@ export default function Trendy() {
                         )}
                         <button
                           type="button"
-                          className="trendyBuyNowButton"
+                          className="trendyBuyNowButton animate-sheen"
                           disabled={(product.active === false ? 0 : Number(product.stockQuantity ?? 25)) <= 0 || buyNowProductId === product.productID}
                           onClick={() => void handleBuyNow(product)}
                         >
@@ -656,7 +659,7 @@ export default function Trendy() {
                         )}
                         <button
                           type="button"
-                          className="trendyBuyNowButton"
+                          className="trendyBuyNowButton animate-sheen"
                           disabled={(product.active === false ? 0 : Number(product.stockQuantity ?? 25)) <= 0 || buyNowProductId === product.productID}
                           onClick={() => void handleBuyNow(product)}
                         >
@@ -680,8 +683,8 @@ export default function Trendy() {
           </div>
         </div>
         <div className="discoverMore">
-          <Link href="/" onClick={scrollToTop}>
-            <p>Discover More</p>
+          <Link href="/shop" onClick={scrollToTop}>
+            <p>DISCOVER MORE / 商品一覧を見る</p>
           </Link>
         </div>
       </div>
@@ -730,7 +733,7 @@ export default function Trendy() {
                 </button>
                 <button
                   type="button"
-                  className="trendyBuyNowButton"
+                  className="trendyBuyNowButton animate-sheen"
                   disabled={(selectedProduct.active === false ? 0 : Number(selectedProduct.stockQuantity ?? 25)) <= 0 || buyNowProductId === selectedProduct.productID}
                   onClick={() => void handleBuyNow(selectedProduct)}
                 >

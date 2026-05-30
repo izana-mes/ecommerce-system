@@ -341,7 +341,7 @@ export default function AdminCouponsPage() {
   };
 
   return (
-    <section style={{ maxWidth: 1180, margin: "30px auto", padding: "0 16px 40px" }}>
+    <section className="jp-seigaiha-bg" style={{ maxWidth: 1180, margin: "30px auto", padding: "0 16px 40px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
         <h1 style={{ fontSize: 28, fontWeight: 700 }}>Coupons & Discount Vouchers</h1>
         <Link href="/admin" style={{ textDecoration: "underline" }}>Back to Admin</Link>

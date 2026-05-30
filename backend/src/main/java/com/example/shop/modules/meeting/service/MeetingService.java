@@ -24,8 +24,8 @@ import java.util.regex.Pattern;
 public class MeetingService {
 
     private static final Pattern MENTION = Pattern.compile("@([A-Za-z0-9._%+-]+(?:@[A-Za-z0-9.-]+\\.[A-Za-z]{2,})?)");
-    private static final Set<String> PRIVILEGED_ROLES = Set.of("ROLE_ADMIN", "ROLE_MANAGER", "ROLE_STAFF");
-    private static final Set<String> SHIFT_BOUND_ROLES = Set.of("ROLE_EMPLOYEE", "ROLE_SHIPPER");
+    private static final Set<String> PRIVILEGED_ROLES = Set.of("ROLE_ADMIN", "ROLE_MANAGER", "ROLE_EMPLOYEE");
+    private static final Set<String> SHIFT_BOUND_ROLES = Set.of("ROLE_SHIPPER");
 
     private final JdbcTemplate jdbcTemplate;
     private final MeetingRealtimePublisher realtimePublisher;
@@ -40,7 +40,7 @@ public class MeetingService {
                 LEFT JOIN meeting_participants p ON p.meeting_id = m.meeting_id
                 WHERE m.start_at < ? AND m.end_at > ?
                   AND m.status <> 'CANCELLED'
-                  AND (? = TRUE OR m.visibility = 'PUBLIC' OR m.created_by = ? OR lower(p.participant_email) = lower(?))
+                  AND ((? = TRUE AND m.visibility = 'PUBLIC') OR lower(m.created_by) = lower(?) OR lower(p.participant_email) = lower(?))
                 ORDER BY m.start_at ASC
                 """, this::mapMeeting, ts(safeTo), ts(safeFrom), team, actor, actor);
         meetings.forEach(this::hydrateMeeting);

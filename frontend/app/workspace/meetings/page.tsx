@@ -1,9 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { FiBell, FiCalendar, FiCheck, FiClock, FiMessageSquare, FiPlus, FiRefreshCw, FiUsers, FiX } from "react-icons/fi";
-import { getUser } from "@/lib/auth";
+import { getUser, refreshCurrentUserFromServer, subscribeToAuthChanges } from "@/lib/auth";
 import { createMeetingStompClient } from "@/lib/meetingSocket";
 import "./meetings.css";
 
@@ -94,6 +94,8 @@ export default function MeetingsPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [showTeamMeetings, setShowTeamMeetings] = useState(true);
   const [chatBody, setChatBody] = useState("");
   const [commentBody, setCommentBody] = useState("");
   const [actionBody, setActionBody] = useState("");
@@ -124,18 +126,36 @@ export default function MeetingsPage() {
     return { from, to };
   }, [anchor, view]);
 
-  useEffect(() => {
-    if (!user) {
-      router.replace("/login");
-      return;
+  const syncUser = useCallback(async () => {
+    const refreshed = await refreshCurrentUserFromServer();
+    const nextUser = refreshed ?? getUser();
+    if (!nextUser) {
+      router.replace("/login?returnTo=/workspace/meetings");
+      return null;
     }
-    if (!canUseMeetings(user.role)) {
+    if (!canUseMeetings(nextUser.role)) {
       router.replace("/");
-      return;
+      return null;
     }
-    void loadMeetings();
+    return nextUser;
+  }, [router]);
+
+  useEffect(() => {
+    const run = async () => {
+      setLoading(true);
+      const activeUser = await syncUser();
+      if (activeUser) {
+        await loadMeetings();
+      }
+      setLoading(false);
+    };
+
+    void run();
+    return subscribeToAuthChanges(() => {
+      void run();
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.role, visibleRange.from, visibleRange.to, view]);
+  }, [syncUser, visibleRange.from, visibleRange.to, view, showTeamMeetings]);
 
   useEffect(() => {
     if (!user?.email) return;
@@ -152,7 +172,7 @@ export default function MeetingsPage() {
   const loadMeetings = async () => {
     try {
       setError(null);
-      const query = new URLSearchParams({ from: visibleRange.from, to: visibleRange.to, view, team: "true" });
+      const query = new URLSearchParams({ from: visibleRange.from, to: visibleRange.to, view, team: showTeamMeetings ? "true" : "false" });
       const data = await api<Meeting[]>(`?${query}`);
       setMeetings(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -285,12 +305,32 @@ export default function MeetingsPage() {
     return grouped;
   }, [meetings]);
 
+  if (loading) {
+    return <main className="meetingsPage"><p>Loading calendar...</p></main>;
+  }
+
   return (
     <main className="meetingsPage">
       <section className="meetingsToolbar">
         <div>
           <h1><FiCalendar /> Team Calendar</h1>
           <p>Meetings, chat, notes, shifts, action items, and reminders share one schedule.</p>
+        </div>
+        <div className="calendarTypeToggle">
+          <button 
+            className={!showTeamMeetings ? "active" : ""} 
+            onClick={() => setShowTeamMeetings(false)}
+            title="マイカレンダー (My Meetings Only)"
+          >
+            マイカレンダー
+          </button>
+          <button 
+            className={showTeamMeetings ? "active" : ""} 
+            onClick={() => setShowTeamMeetings(true)}
+            title="チームカレンダー (All Team Meetings)"
+          >
+            チームカレンダー
+          </button>
         </div>
         <div className="meetingViewSwitch" role="tablist">
           {(["day", "week", "month", "timeline"] as CalendarView[]).map((mode) => (

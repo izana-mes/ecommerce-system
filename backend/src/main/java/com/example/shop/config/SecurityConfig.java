@@ -93,6 +93,7 @@ public class SecurityConfig {
                         .requestMatchers("/", "/api/health").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/dashboard/stats").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/internal/notifications/order-paid").permitAll()
                         .requestMatchers("/api/internal/notifications/coupon-issued").permitAll()
@@ -142,7 +143,7 @@ public class SecurityConfig {
                 .collect(Collectors.toList());
         config.setAllowedOrigins(origins.isEmpty() ? List.of("http://localhost:3000") : origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Content-Type", "X-XSRF-TOKEN", "X-Requested-With", "X-Request-ID"));
+        config.setAllowedHeaders(List.of("Content-Type", "Authorization", "X-XSRF-TOKEN", "X-Requested-With", "X-Request-ID"));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

@@ -146,7 +146,7 @@ export default function AdminFraudPage() {
   }, [page, size, totalElements]);
 
   return (
-    <main style={{ padding: "24px", maxWidth: 1200, margin: "0 auto" }}>
+    <main className="jp-seigaiha-bg" style={{ padding: "24px", maxWidth: 1200, margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <div>
           <h1 style={{ margin: 0 }}>Fraud Assessments</h1>

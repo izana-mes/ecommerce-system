@@ -872,6 +872,10 @@ export default function Shop() {
           </div>
 
           <div className="shopDetails__right">
+            <div className="jp-title-wrap jp-animate-reveal" style={{ marginBottom: "20px", alignItems: "flex-start", textAlign: "left" }}>
+              <span className="jp-subtitle" style={{ alignSelf: "flex-start" }}>ONLINE STORE / オンラインストア</span>
+              <h2 style={{ fontSize: "32px", textTransform: "uppercase", fontWeight: "600" }}>{t("shop_the_shop")}</h2>
+            </div>
             <div className="shopDetailsSorting" data-floating-banner>
               <div className="shopDetailsBreadcrumbLink">
                 <Link href="/" onClick={scrollToTop}>
@@ -1042,7 +1046,7 @@ export default function Shop() {
                           )}
                           <button
                             type="button"
-                            className="sdBuyNowButton"
+                            className="sdBuyNowButton animate-sheen"
                             disabled={isOutOfStock || isBuyNowBusy}
                             onClick={() => void handleBuyNow(product)}
                           >
@@ -1213,7 +1217,7 @@ export default function Shop() {
                 </div>
                 <button
                   type="button"
-                  className="sdBuyNowButton"
+                  className="sdBuyNowButton animate-sheen"
                   disabled={resolveAvailableStock(selectedProduct) <= 0 || buyNowProductId === selectedProduct.productID}
                   onClick={() => void handleBuyNow(selectedProduct)}
                 >

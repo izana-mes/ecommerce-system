@@ -20,7 +20,7 @@ public class WorkspaceController {
     private final WorkspaceService workspaceService;
 
     @PostMapping("/tasks")
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF','SUPPLIER')")
+    @PreAuthorize("hasAnyRole('ADMIN','EMPLOYEE','SUPPLIER')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> createTask(
             @RequestBody Map<String, Object> body,
             @AuthenticationPrincipal UserDetails principal) {
@@ -42,7 +42,7 @@ public class WorkspaceController {
     }
 
     @PatchMapping("/tasks/{id}/status")
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF','SUPPLIER')")
+    @PreAuthorize("hasAnyRole('ADMIN','EMPLOYEE','SUPPLIER')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> updateStatus(
             @PathVariable Long id,
             @RequestBody Map<String, Object> body,
@@ -53,7 +53,7 @@ public class WorkspaceController {
     }
 
     @PatchMapping("/tasks/{id}/assign")
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','EMPLOYEE')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> assignTask(
             @PathVariable Long id,
             @RequestBody Map<String, Object> body,
@@ -63,7 +63,7 @@ public class WorkspaceController {
     }
 
     @PatchMapping("/tasks/{id}/escalate")
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','EMPLOYEE')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> escalateTask(
             @PathVariable Long id,
             @RequestBody(required = false) Map<String, Object> body,

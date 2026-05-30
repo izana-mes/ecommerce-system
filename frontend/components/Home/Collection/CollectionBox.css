@@ -1,18 +1,18 @@
+.collection-wrapper {
+  margin: 85px 160px;
+}
+
 .collection {
   display: grid;
   grid-template-columns: 1fr 1fr;
   height: 30rem;
   grid-gap: 30px;
-  margin: 85px 0;
   animation: collectionReveal 0.7s ease both;
 }
 
 .collectionLeft {
   position: relative;
   overflow: hidden;
-  background-image: url("/Collection/collection1.jpg");
-  background-size: cover;
-  background-position: center;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -20,17 +20,37 @@
   padding: 30px;
   gap: 10px;
   background-color: var(--surface-2);
-  animation: collectionPanelIn 0.75s ease 0.08s both;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  animation: collectionPanelIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s;
 }
 
-.collectionLeft::before {
-  content: "";
+.collectionLeft:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-strong);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.05);
+}
+
+.col-bg {
   position: absolute;
   inset: 0;
-  background: linear-gradient(120deg, transparent 0%, var(--surface-1) 45%, transparent 70%);
-  transform: translateX(-125%);
-  animation: collectionShimmer 7s ease-in-out 1s infinite;
-  pointer-events: none;
+  background-size: cover;
+  background-position: center;
+  z-index: 1;
+  transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.collectionLeft:hover .col-bg,
+.collectionTop:hover .col-bg,
+.box1:hover .col-bg {
+  transform: scale(1.06);
+}
+
+.col-content {
+  position: relative;
+  z-index: 3;
+  width: 100%;
 }
 
 .col-link {
@@ -40,28 +60,26 @@
 .col-link a {
   position: relative;
   text-decoration: none;
-  transition: transform 0.2s ease;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .col-link a:hover {
-  transform: scale(1.1);
-  transition-delay: 0.2s;
+  transform: scale(1.08);
 }
 
 .col-link a::after {
   content: "";
   position: absolute;
-  bottom: -3px;
   left: 0;
+  bottom: -3px;
   width: 0;
-  height: 3px;
-  background-color: var(--foreground);
-  transition: width 0.2s ease;
+  height: 2.5px;
+  background-color: var(--accent); /* Mercari red border highlight */
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .col-link a:hover::after {
   width: 100%;
-  transition-delay: 0.2s;
 }
 
 .col-p,
@@ -74,15 +92,12 @@
   display: grid;
   grid-template-rows: 1fr 1fr;
   grid-gap: 30px;
-  animation: collectionPanelIn 0.75s ease 0.15s both;
+  animation: collectionPanelIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
 }
 
 .collectionTop {
   position: relative;
   overflow: hidden;
-  background-image: url("/Collection/collection2.jpg");
-  background-size: cover;
-  background-position: center;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -90,7 +105,16 @@
   padding: 30px;
   gap: 5px;
   background-color: var(--surface-2);
-  animation: collectionPanelIn 0.75s ease 0.2s both;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  animation: collectionPanelIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s;
+}
+
+.collectionTop:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-strong);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.05);
 }
 
 .collectionBottom {
@@ -102,9 +126,6 @@
 .box1 {
   position: relative;
   overflow: hidden;
-  background-image: url("/Collection/collection3.jpg");
-  background-size: cover;
-  background-position: center;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -112,7 +133,16 @@
   padding: 30px;
   gap: 5px;
   background-color: var(--surface-2);
-  animation: collectionPanelIn 0.75s ease 0.25s both;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  animation: collectionPanelIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s;
+}
+
+.box1:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-strong);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.05);
 }
 
 .box2 {
@@ -125,7 +155,17 @@
   justify-content: flex-end;
   padding: 30px;
   gap: 5px;
-  animation: collectionPanelIn 0.75s ease 0.3s both;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  animation: collectionPanelIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s, border-color 0.4s;
+}
+
+.box2:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-strong);
+  box-shadow: 0 16px 36px rgba(244, 229, 224, 0.25);
+  background-color: #ebdcd7;
 }
 
 .collectionTop::before,
@@ -134,10 +174,11 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 15% 20%, var(--surface-1), transparent 40%);
-  opacity: 0.6;
+  background: radial-gradient(circle at 15% 20%, var(--surface-1), transparent 45%);
+  opacity: 0.4;
   animation: collectionGlow 6s ease-in-out infinite;
   pointer-events: none;
+  z-index: 2;
 }
 
 .col-p {

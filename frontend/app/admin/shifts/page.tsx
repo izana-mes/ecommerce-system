@@ -182,7 +182,7 @@ export default function AdminShiftsPage() {
   }
 
   return (
-    <main className="shift-admin">
+    <main className="shift-admin jp-seigaiha-bg">
       <section className="shift-toolbar">
         <div>
           <h1>Shift Management</h1>

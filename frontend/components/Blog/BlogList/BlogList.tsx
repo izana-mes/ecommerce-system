@@ -22,9 +22,17 @@ const BlogList: React.FC = () => {
 
   return (
     <div className="blogListSection">
+      {/* VERTICAL SIDE BADGE */}
+      <div className="jp-vertical-badge">BLOG&nbsp;/&nbsp;ブログ</div>
+
       {/* HEADER */}
       <div className="blogListHeaderContainer" data-floating-banner>
-        <div className="blogListHeader">
+        <div className="blogListHeader jp-grid-bg">
+          <div className="jp-title-wrap" style={{ alignItems: "flex-start", marginBottom: "16px" }}>
+            <span className="jp-subtitle" style={{ color: "rgba(255,255,255,0.75)" }}>
+              JOURNAL&nbsp;&nbsp;/&nbsp;&nbsp;新着コラム・ブログ
+            </span>
+          </div>
           <h2>The Blog</h2>
 
           <div className="blogListHeaderCategories">
@@ -81,10 +89,26 @@ const BlogList: React.FC = () => {
         ))}
       </div>
 
+      {/* MARQUEE FOOTER */}
+      <div className="jp-marquee blog-marquee">
+        <div className="jp-marquee-track">
+          {[...Array(2)].map((_, i) =>
+            ["FASHION", "STYLE", "TRENDS", "BEAUTY", "COMPANY", "CULTURE", "ファッション", "スタイル"].map((item) => (
+              <span key={`${i}-${item}`} className="jp-marquee-item">
+                {item} <span>◆</span>
+              </span>
+            ))
+          )}
+        </div>
+      </div>
+
       {/* LOAD MORE */}
-      <p className="blogListShowMore" onClick={scrollToTop}>
-        Show More
-      </p>
+      <div className="blogLoadMoreWrap">
+        <button className="blogListShowMore jp-btn" onClick={scrollToTop}>
+          <span className="blogLoadMoreEn">LOAD MORE</span>
+          <span className="blogLoadMoreJp">もっと見る</span>
+        </button>
+      </div>
     </div>
   );
 };

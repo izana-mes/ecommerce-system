@@ -52,7 +52,7 @@ export default function RootLayout({
             <GlobalScrollReveal />
             <GlobalFloatingBanners />
             <Navbar />
-            <main id="page-content">
+            <main id="page-content" className="jp-seigaiha-bg">
               <PageTransition>{children}</PageTransition>
             </main>
             <FloatingChatButtons />

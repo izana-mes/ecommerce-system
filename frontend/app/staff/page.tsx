@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {}  from "@/lib/auth";
+
 import toast from "react-hot-toast";
 
 type DashboardRevenuePoint = {

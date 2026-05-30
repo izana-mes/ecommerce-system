@@ -8,34 +8,52 @@
 }
 
 .bannerLeft {
-  background-position: center;
-  background-size: cover;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-end;
   padding: 30px;
   gap: 15px;
-  animation: bannerPanelUp 0.7s ease 0.1s both;
+  animation: jpSlideInLeft 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .bannerRight {
-  background-position: center;
-  background-size: cover;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-end;
   padding: 30px;
   gap: 15px;
-  animation: bannerPanelUp 0.7s ease 0.2s both;
+  animation: jpSlideInRight 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .bannerPanel {
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bannerBg {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  z-index: 1;
+  transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bannerPanel:hover .bannerBg {
+  transform: scale(1.06);
+}
+
+.bannerContent {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .bannerPanel::before {

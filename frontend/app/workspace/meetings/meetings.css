@@ -36,6 +36,33 @@
   gap: 8px;
 }
 
+.calendarTypeToggle {
+  display: flex;
+  gap: 4px;
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+  padding: 3px;
+  background: #fff;
+}
+
+.meetingsPage .calendarTypeToggle button {
+  border: 1px solid transparent;
+  background: transparent;
+  min-height: auto;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.meetingsPage .calendarTypeToggle button.active {
+  background: #1f6feb;
+  color: #fff;
+  border-color: #1f6feb;
+}
+
 .meetingViewSwitch {
   border: 1px solid #d8dee8;
   border-radius: 8px;

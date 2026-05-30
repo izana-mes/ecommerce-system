@@ -121,7 +121,7 @@ export default function ShipperLayout({ children }: { children: React.ReactNode 
       </aside>
 
       {/* ── Main content ── */}
-      <main className="sh-main">{children}</main>
+      <main className="sh-main jp-seigaiha-bg">{children}</main>
     </div>
   );
 }

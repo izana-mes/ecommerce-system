@@ -30,6 +30,8 @@
   background: #0f172a;
   font-family: "Inter", "Segoe UI", system-ui, sans-serif;
   color: var(--sh-text);
+  --pattern-color-light: rgba(255, 255, 255, 0.045);
+  --pattern-color-medium: rgba(255, 255, 255, 0.07);
 }
 
 .sh-sidebar {

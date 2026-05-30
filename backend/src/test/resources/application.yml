@@ -62,3 +62,4 @@ application:
       order-status-changed: order.status.changed
       review-submitted: review.submitted
       audit-event: audit.event
+      cart-abandoned: cart.abandoned

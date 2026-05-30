@@ -120,7 +120,7 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
       </aside>
 
       {/* ── Main content ── */}
-      <main style={{ flex: 1, overflowY: "auto", minHeight: "100vh" }}>
+      <main className="jp-seigaiha-bg" style={{ flex: 1, overflowY: "auto", minHeight: "100vh", position: "relative" }}>
         {children}
       </main>
     </div>
