@@ -160,195 +160,94 @@ body {
 
 /* ── CSS Custom Properties for pattern theming ───────────── */
 :root {
-  --pattern-color-light: rgba(0,0,0,0.055);
-  --pattern-color-medium: rgba(0,0,0,0.08);
+  --pattern-color-light: rgba(0,0,0,0.12);
+  --pattern-color-medium: rgba(0,0,0,0.18);
   --pattern-seigaiha-size: 52px;
   --pattern-shippo-size: 40px;
   --pattern-asanoha-size: 48px;
+
+  /* Seigaiha luxury tokens - Enhanced for high visibility */
+  --seigaiha-opacity:       0.26;
+  --seigaiha-size:          200px;
+  --seigaiha-tint:          rgba(99, 112, 255, 0.06);
+  --seigaiha-filter:        none;
 }
 html[data-theme="dark"] {
-  --pattern-color-light: rgba(255,255,255,0.045);
-  --pattern-color-medium: rgba(255,255,255,0.07);
+  --pattern-color-light: rgba(255,255,255,0.10);
+  --pattern-color-medium: rgba(255,255,255,0.15);
+
+  --seigaiha-opacity:       0.18;
+  --seigaiha-size:          200px;
+  --seigaiha-tint:          rgba(148, 163, 255, 0.08);
+  --seigaiha-filter:        invert(1) hue-rotate(200deg);
 }
 
 /* ────────────────────────────────────────────
    青海波 (SEIGAIHA) — Blue Ocean Waves
-   Overlapping arcs arranged like fish scales.
-   Used on: Home page
+   Overlapping arcs — luxury layered implementation.
+   Layer 1 (::before): the pattern texture itself
+   Layer 2 (::after):  a soft colour wash that tints the waves
+   Used on: ALL pages via layout.tsx
    ──────────────────────────────────────────── */
-.jp-seigaiha-bg {
-  position: relative;
-}
-.jp-seigaiha-bg::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-color: transparent;
-  background-image:
-    /* Row 1: full arcs centred at bottom of cell */
-    radial-gradient(
-      ellipse 100% 90% at 50% 100%,
-      transparent 59%,
-      var(--pattern-color-medium) 59.5%,
-      var(--pattern-color-medium) 62%,
-      transparent 62.5%
-    ),
-    /* Row 2 (offset): arcs shifted half a cell */
-    radial-gradient(
-      ellipse 100% 90% at 0% 100%,
-      transparent 59%,
-      var(--pattern-color-light) 59.5%,
-      var(--pattern-color-light) 62%,
-      transparent 62.5%
-    ),
-    radial-gradient(
-      ellipse 100% 90% at 100% 100%,
-      transparent 59%,
-      var(--pattern-color-light) 59.5%,
-      var(--pattern-color-light) 62%,
-      transparent 62.5%
-    );
-  background-size:
-    var(--pattern-seigaiha-size) calc(var(--pattern-seigaiha-size) * 0.62),
-    var(--pattern-seigaiha-size) calc(var(--pattern-seigaiha-size) * 0.62),
-    var(--pattern-seigaiha-size) calc(var(--pattern-seigaiha-size) * 0.62);
-  background-position:
-    0 0,
-    calc(var(--pattern-seigaiha-size) / 2) calc(var(--pattern-seigaiha-size) * 0.31),
-    calc(var(--pattern-seigaiha-size) / -2) calc(var(--pattern-seigaiha-size) * 0.31);
-  pointer-events: none;
-  z-index: 0;
-}
-.jp-seigaiha-bg > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* ────────────────────────────────────────────
-   七宝 (SHIPPO) — Seven Treasures
-   Interlocking circles forming a net of petals.
-   Used on: Shop page
-   ──────────────────────────────────────────── */
-.jp-shippo-bg {
-  position: relative;
-}
-.jp-shippo-bg::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-color: transparent;
-  --s: var(--pattern-shippo-size);
-  --r: calc(var(--s) / 2);
-  background-image:
-    /* Vertical strokes */
-    radial-gradient(
-      circle var(--r) at 0%  50%,
-      transparent calc(100% - 1.5px),
-      var(--pattern-color-medium) calc(100% - 1.5px),
-      var(--pattern-color-medium) 100%,
-      transparent 100%
-    ),
-    radial-gradient(
-      circle var(--r) at 100% 50%,
-      transparent calc(100% - 1.5px),
-      var(--pattern-color-light) calc(100% - 1.5px),
-      var(--pattern-color-light) 100%,
-      transparent 100%
-    ),
-    /* Horizontal strokes */
-    radial-gradient(
-      circle var(--r) at 50%  0%,
-      transparent calc(100% - 1.5px),
-      var(--pattern-color-medium) calc(100% - 1.5px),
-      var(--pattern-color-medium) 100%,
-      transparent 100%
-    ),
-    radial-gradient(
-      circle var(--r) at 50% 100%,
-      transparent calc(100% - 1.5px),
-      var(--pattern-color-light) calc(100% - 1.5px),
-      var(--pattern-color-light) 100%,
-      transparent 100%
-    );
-  background-size: var(--s) var(--s);
-  background-position: 0 0;
-  pointer-events: none;
-  z-index: 0;
-}
-.jp-shippo-bg > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* ────────────────────────────────────────────
-   麻の葉 (ASANOHA) — Hemp Leaves
-   Six-pointed star / snowflake geometry.
-   Built from crossing diagonal lines + a hexagonal grid.
-   Used on: Login / Auth pages
-   ──────────────────────────────────────────── */
-.jp-asanoha-bg {
-  position: relative;
-}
-.jp-asanoha-bg::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-color: transparent;
-  --a: var(--pattern-asanoha-size);
-  background-image:
-    /* Diagonal lines NW–SE */
-    repeating-linear-gradient(
-      60deg,
-      transparent,
-      transparent calc(var(--a) * 0.47),
-      var(--pattern-color-light) calc(var(--a) * 0.47),
-      var(--pattern-color-light) calc(var(--a) * 0.47 + 1px)
-    ),
-    /* Diagonal lines NE–SW */
-    repeating-linear-gradient(
-      -60deg,
-      transparent,
-      transparent calc(var(--a) * 0.47),
-      var(--pattern-color-light) calc(var(--a) * 0.47),
-      var(--pattern-color-light) calc(var(--a) * 0.47 + 1px)
-    ),
-    /* Vertical lines */
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent calc(var(--a) * 0.47),
-      var(--pattern-color-medium) calc(var(--a) * 0.47),
-      var(--pattern-color-medium) calc(var(--a) * 0.47 + 1px)
-    );
-  background-size:
-    calc(var(--a) * 0.866) var(--a),
-    calc(var(--a) * 0.866) var(--a),
-    calc(var(--a) * 0.866) var(--a);
-  pointer-events: none;
-  z-index: 0;
-}
-.jp-asanoha-bg > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* ── Legacy alias (keeps old .jp-pattern-bg working) ────────── */
+.jp-seigaiha-bg,
+.jp-shippo-bg,
+.jp-asanoha-bg,
 .jp-pattern-bg {
   position: relative;
 }
+
+/* — Pattern layer — */
+.jp-seigaiha-bg::before,
+.jp-shippo-bg::before,
+.jp-asanoha-bg::before,
 .jp-pattern-bg::before {
   content: "";
-  position: absolute;
+  position: fixed;          /* fixed so pattern doesn't scroll — gives 'etched' luxury feel */
   inset: 0;
-  background-image:
-    radial-gradient(circle at 0% 100%, transparent 30%, var(--border-soft) 30.5%, transparent 31%),
-    radial-gradient(circle at 100% 100%, transparent 30%, var(--border-soft) 30.5%, transparent 31%),
-    radial-gradient(circle at 50% 0%, transparent 30%, var(--border-soft) 30.5%, transparent 31%);
-  background-size: 40px 20px;
-  opacity: 0.35;
+  background-image: url('/19-Seigaiha-Background-Pattern.jpg');
+  background-repeat: repeat;
+  background-size: var(--seigaiha-size);
+  background-position: 0 0;
+  opacity: var(--seigaiha-opacity);
   pointer-events: none;
   z-index: 0;
+  filter: var(--seigaiha-filter);
+  transition: opacity 0.5s ease, filter 0.5s ease;
+  /* Slow gentle drift — mimics ocean waves */
+  animation: seigahaDrift 90s linear infinite;
+  will-change: background-position;
 }
+
+/* — Colour-wash layer — */
+.jp-seigaiha-bg::after,
+.jp-shippo-bg::after,
+.jp-asanoha-bg::after,
+.jp-pattern-bg::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: var(--seigaiha-tint);
+  pointer-events: none;
+  z-index: 0;
+  transition: background 0.5s ease;
+}
+
+@keyframes seigahaDrift {
+  0%   { background-position: 0 0; }
+  100% { background-position: var(--seigaiha-size) var(--seigaiha-size); }
+}
+
+html[data-theme="dark"] .jp-seigaiha-bg::before,
+html[data-theme="dark"] .jp-shippo-bg::before,
+html[data-theme="dark"] .jp-asanoha-bg::before,
+html[data-theme="dark"] .jp-pattern-bg::before {
+  opacity: var(--seigaiha-opacity);
+  filter: var(--seigaiha-filter);
+}
+
+.jp-seigaiha-bg > *,
+.jp-shippo-bg > *,
+.jp-asanoha-bg > *,
 .jp-pattern-bg > * {
   position: relative;
   z-index: 1;
@@ -801,6 +700,13 @@ html[data-theme="dark"] {
     transform:  none !important;
   }
   .reveal-scroll { opacity: 1; }
+  /* Seigaiha drift: pause cleanly so pattern stays visible but static */
+  .jp-seigaiha-bg::before,
+  .jp-shippo-bg::before,
+  .jp-asanoha-bg::before,
+  .jp-pattern-bg::before {
+    animation-play-state: paused !important;
+  }
 }
 
 /* ─────────────────────────────────────────────

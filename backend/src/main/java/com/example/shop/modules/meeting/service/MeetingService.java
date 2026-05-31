@@ -377,7 +377,7 @@ public class MeetingService {
                     WHERE lower(p.participant_email) = lower(?)
                       AND m.status <> 'CANCELLED'
                       AND m.start_at < ? AND m.end_at > ?
-                      AND (? IS NULL OR m.meeting_id <> ?)
+                      AND (CAST(? AS uuid) IS NULL OR m.meeting_id <> CAST(? AS uuid))
                     """, Integer.class, email, ts(endAt), ts(startAt), excludeId, excludeId);
             if (value(overlaps) > 0) {
                 warnings.add(email + " has another meeting at this time.");

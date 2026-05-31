@@ -93,7 +93,7 @@ export default function AdminShiftsPage() {
     try {
       const params = new URLSearchParams({ from, to, timezone });
       if (status) params.set("status", status);
-      const response = await fetch(`${API_BASE_URL}/api/admin/shifts?${params.toString()}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/shifts?${params.toString()}`, {
         credentials: "include",
         cache: "no-store"});
       const payload = await response.json().catch(() => ({}));
@@ -121,7 +121,7 @@ export default function AdminShiftsPage() {
   async function submitShift(event: FormEvent) {
     event.preventDefault();
     setMessage("");
-    const response = await fetch(`${API_BASE_URL}/api/admin/shifts`, {
+    const response = await fetch(`${API_BASE_URL}/admin/shifts`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -136,7 +136,7 @@ export default function AdminShiftsPage() {
   }
 
   async function deleteShift(id: string) {
-    const response = await fetch(`${API_BASE_URL}/api/admin/shifts/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/admin/shifts/${id}`, {
       method: "DELETE",
       credentials: "include"});
     if (!response.ok) {
@@ -151,7 +151,7 @@ export default function AdminShiftsPage() {
     if (!file) return;
     const data = new FormData();
     data.append("file", file);
-    const response = await fetch(`${API_BASE_URL}/api/admin/shifts/import/preview?timezone=${encodeURIComponent(timezone)}`, {
+    const response = await fetch(`${API_BASE_URL}/admin/shifts/import/preview?timezone=${encodeURIComponent(timezone)}`, {
       method: "POST",
       credentials: "include",
       body: data});
@@ -167,7 +167,7 @@ export default function AdminShiftsPage() {
     if (!file) return;
     const data = new FormData();
     data.append("file", file);
-    const response = await fetch(`${API_BASE_URL}/api/admin/shifts/import?timezone=${encodeURIComponent(timezone)}`, {
+    const response = await fetch(`${API_BASE_URL}/admin/shifts/import?timezone=${encodeURIComponent(timezone)}`, {
       method: "POST",
       credentials: "include",
       body: data});
