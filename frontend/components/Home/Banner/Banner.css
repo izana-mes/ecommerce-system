@@ -2,7 +2,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   height: 24.875rem;
-  margin: 100px 0;
+  margin: 85px 160px;
   grid-gap: 30px;
   animation: bannerReveal 0.65s ease both;
 }
@@ -31,7 +31,9 @@
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s;
 }
 
 .bannerBg {
@@ -85,7 +87,8 @@
 
 .bannerPanel:hover {
   transform: translateY(-4px);
-  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.26);
+  border-color: var(--border-strong);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.05);
 }
 
 .bannerPanel:hover::after {
@@ -201,5 +204,23 @@
     animation: none !important;
     transform: none !important;
     opacity: 1 !important;
+  }
+}
+
+@media (max-width: 1200px) {
+  .banner {
+    margin: 60px 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .banner {
+    margin: 40px 16px;
+    grid-template-columns: 1fr;
+    height: auto;
+    grid-gap: 20px;
+  }
+  .bannerPanel {
+    height: 18rem;
   }
 }

@@ -3,17 +3,26 @@
   background-color: #f4e5e0;
   background-size: cover;
   background-position: center;
-  height: 700px;
-  padding: 0 160px;
-  margin: 85px 0;
+  height: 600px;
+  padding: 0 80px;
+  margin: 85px 160px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s;
   animation: heroFadeUp 0.7s ease both;
   position: relative;
-  overflow: hidden;
   isolation: isolate;
+}
+
+.heroSection:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-strong);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.05);
 }
 
 .heroSection::before {
@@ -209,5 +218,35 @@
   .heroSection::after {
     animation: none !important;
     left: 0;
+  }
+}
+
+@media (max-width: 1200px) {
+  .heroSection {
+    margin: 60px 40px;
+    padding: 0 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .heroSection {
+    margin: 40px 16px;
+    padding: 40px 24px;
+    height: auto;
+    flex-direction: column;
+    gap: 30px;
+  }
+  .sectionLeft,
+  .sectionright {
+    width: 100%;
+  }
+  .sectionLeft h1 {
+    font-size: 40px;
+  }
+  .canvasModel {
+    height: 400px !important;
+  }
+  .heroColorBtn {
+    bottom: 20px;
   }
 }

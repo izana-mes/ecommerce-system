@@ -2,6 +2,7 @@
 import Banner from "@/components/Home/Banner/Banner";
 import CollectionBox from "@/components/Home/Collection/CollectionBox";
 import DealTimer from "@/components/Home/DealTimer/DealTimer";
+import CampaignBanners from "@/components/Home/Campaign/CampaignBanners";
 import HeroSection from "@/components/Home/Hero/HeroSection";
 import Trendy from "@/components/Home/Trendy/Trendy";
 import LimitedEdition from "@/components/Home/Limited/LimitedEdition";
@@ -48,6 +49,7 @@ export default function HomePage() {
 
       <CollectionBox />
       <DealTimer />
+      <CampaignBanners />
       <HeroSection />
       <Trendy />
       <LimitedEdition />
