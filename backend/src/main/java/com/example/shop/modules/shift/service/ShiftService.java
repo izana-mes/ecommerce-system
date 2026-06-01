@@ -209,6 +209,12 @@ public class ShiftService {
         for (Shift shift : shifts) {
             staffingByDay.merge(shift.getShiftDate(), 1L, Long::sum);
         }
+        // Only check for gaps when the schedule has at least some coverage.
+        // An entirely empty schedule produces no staffing warnings to avoid
+        // false positives when no shifts have been created yet.
+        if (staffingByDay.isEmpty()) {
+            return warnings;
+        }
         LocalDate cursor = from;
         while (!cursor.isAfter(to)) {
             if (staffingByDay.getOrDefault(cursor, 0L) < MIN_STAFF_PER_DAY) {

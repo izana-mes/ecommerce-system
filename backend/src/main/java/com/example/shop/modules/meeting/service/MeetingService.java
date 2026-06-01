@@ -40,7 +40,7 @@ public class MeetingService {
                 LEFT JOIN meeting_participants p ON p.meeting_id = m.meeting_id
                 WHERE m.start_at < ? AND m.end_at > ?
                   AND m.status <> 'CANCELLED'
-                  AND ((? = TRUE AND m.visibility = 'PUBLIC') OR lower(m.created_by) = lower(?) OR lower(p.participant_email) = lower(?))
+                  AND ((? AND m.visibility = 'PUBLIC') OR lower(m.created_by) = lower(?) OR lower(p.participant_email) = lower(?))
                 ORDER BY m.start_at ASC
                 """, this::mapMeeting, ts(safeTo), ts(safeFrom), team, actor, actor);
         meetings.forEach(this::hydrateMeeting);
