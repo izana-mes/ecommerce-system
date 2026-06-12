@@ -12,7 +12,7 @@ import { Toaster } from "react-hot-toast";
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isLanding = pathname === "/landing";
+  const isLanding = pathname === "/landing" || pathname === "/experience";
 
   if (isLanding) {
     return (

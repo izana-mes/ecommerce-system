@@ -261,8 +261,9 @@
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <!-- FIX M5: Use <release> instead of <source>/<target> for Java 11+.
+                         This sets --release which enforces consistent cross-compilation. -->
+                    <release>${java.version}</release>
                     <parameters>true</parameters>
                     <annotationProcessorPaths>
                         <path>
@@ -328,6 +329,10 @@
                         <format>JSON</format>
                     </formats>
                     <failBuildOnCVSS>7</failBuildOnCVSS>
+                    <!-- FIX M6: Support NVD API key via env var to avoid rate limits.
+                         Set NVD_API_KEY secret in GitHub Actions for higher limits.
+                         Leave blank for local runs (slower but functional). -->
+                    <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
                 </configuration>
             </plugin>
         </plugins>

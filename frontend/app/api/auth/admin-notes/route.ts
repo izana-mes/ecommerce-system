@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { getConnection } from "@/lib/db";
+import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
+
+const API_URL = backendApiBaseUrl();
 
 function toPositiveNumber(value: string | null, fallback: number): number {
   const parsed = Number(value);
@@ -7,175 +10,134 @@ function toPositiveNumber(value: string | null, fallback: number): number {
   return Math.floor(parsed);
 }
 
-function isMissingTableError(message: string): boolean {
-  const normalized = message.toLowerCase();
-  return normalized.includes("admin_notes") && (
-    normalized.includes("doesn't exist") ||
-    normalized.includes("does not exist") ||
-    normalized.includes("relation") ||
-    normalized.includes("no such table")
-  );
+async function readJson(response: Response) {
+  const raw = await response.text();
+  return raw ? JSON.parse(raw) : null;
+}
+
+function backendError(payload: any, fallback: string) {
+  return payload?.message || payload?.error || fallback;
 }
 
 export async function GET(request: Request) {
-  let conn: Awaited<ReturnType<typeof getConnection>> | undefined;
   try {
-    conn = await getConnection();
     const { searchParams } = new URL(request.url);
-    const page = Math.max(0, toPositiveNumber(searchParams.get("page"), 1) - 1);
-    const size = Math.min(50, toPositiveNumber(searchParams.get("size"), 20));
+    const query = new URLSearchParams({
+      page: String(toPositiveNumber(searchParams.get("page"), 1)),
+      size: String(Math.min(50, toPositiveNumber(searchParams.get("size"), 20))),
+    });
 
-    const [countRows] = await conn.execute<Array<{ total: number }>>(
-      "SELECT COUNT(*) AS total FROM admin_notes"
-    );
-    const totalElements = Number(countRows?.[0]?.total || 0);
-    const totalPages = Math.max(1, Math.ceil(totalElements / size));
+    const response = await fetch(`${API_URL}/v1/admin/notes?${query}`, {
+      method: "GET",
+      headers: backendAuthHeaders(request),
+      cache: "no-store",
+    });
+    const payload = await readJson(response);
 
-    const [rows] = await conn.execute<
-      Array<{
-        id: number;
-        title: string;
-        content: string;
-        is_pinned: boolean;
-        created_at: string;
-        updated_at: string;
-      }>
-    >(
-      `SELECT id, title, content, is_pinned, created_at, updated_at
-       FROM admin_notes
-       ORDER BY is_pinned DESC, updated_at DESC
-       LIMIT ? OFFSET ?`,
-      [size, page * size]
-    );
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: backendError(payload, "Failed to fetch admin notes") },
+        { status: response.status }
+      );
+    }
 
-    return NextResponse.json({
-      content: rows || [],
-      totalElements,
-      totalPages,
-      number: page,
-      size});
+    return NextResponse.json(payload?.data ?? payload);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("Error fetching admin notes:", message);
-    // Return graceful empty list for any DB error (missing table, no env vars, etc.)
-    return NextResponse.json({
-      content: [],
-      totalElements: 0,
-      totalPages: 1,
-      number: 0,
-      size: 20,
-      unavailable: true,
-      details: message});
-  } finally {
-    await conn?.end();
+    return NextResponse.json(
+      { error: "Failed to fetch admin notes", details: message },
+      { status: 502 }
+    );
   }
 }
 
 export async function POST(request: Request) {
-  const conn = await getConnection();
   try {
     const body = await request.json();
-    const title = (body.title || "").trim();
-    const content = (body.content || "").trim();
-    const isPinned = body.is_pinned === true;
+    const response = await fetch(`${API_URL}/v1/admin/notes`, {
+      method: "POST",
+      headers: backendAuthHeaders(request),
+      body: JSON.stringify(body),
+      cache: "no-store",
+    });
+    const payload = await readJson(response);
 
-    if (!title && !content) {
+    if (!response.ok) {
       return NextResponse.json(
-        { error: "Title or content is required" },
-        { status: 400 }
+        { error: backendError(payload, "Failed to create note") },
+        { status: response.status }
       );
     }
 
-    const [result] = await conn.execute(
-      `INSERT INTO admin_notes (title, content, is_pinned, created_at, updated_at)
-       VALUES (?, ?, ?, NOW(), NOW())`,
-      [title, content, isPinned]
-    );
-
     return NextResponse.json({
-      message: "Note created",
-      id: (result as any).insertId ?? (result as any)?.[0]?.id});
+      message: payload?.message ?? "Note created",
+      id: payload?.data?.id,
+    });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("Error creating admin note:", message);
     return NextResponse.json(
       { error: "Failed to create note", details: message },
-      { status: 500 }
+      { status: 502 }
     );
-  } finally {
-    await conn.end();
   }
 }
 
 export async function PUT(request: Request) {
-  const conn = await getConnection();
   try {
     const body = await request.json();
-    const id = Number(body.id);
-    if (!id) {
-      return NextResponse.json({ error: "Note id is required" }, { status: 400 });
+    const response = await fetch(`${API_URL}/v1/admin/notes`, {
+      method: "PUT",
+      headers: backendAuthHeaders(request),
+      body: JSON.stringify(body),
+      cache: "no-store",
+    });
+    const payload = await readJson(response);
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: backendError(payload, "Failed to update note") },
+        { status: response.status }
+      );
     }
 
-    const updates: string[] = [];
-    const params: Array<string | boolean | number> = [];
-
-    if (body.title !== undefined) {
-      updates.push("title = ?");
-      params.push(String(body.title).trim());
-    }
-    if (body.content !== undefined) {
-      updates.push("content = ?");
-      params.push(String(body.content).trim());
-    }
-    if (body.is_pinned !== undefined) {
-      updates.push("is_pinned = ?");
-      params.push(body.is_pinned === true);
-    }
-
-    if (updates.length === 0) {
-      return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
-    }
-
-    updates.push("updated_at = NOW()");
-    params.push(id);
-
-    await conn.execute(
-      `UPDATE admin_notes SET ${updates.join(", ")} WHERE id = ?`,
-      params
-    );
-
-    return NextResponse.json({ message: "Note updated" });
+    return NextResponse.json({ message: payload?.data ?? payload?.message ?? "Note updated" });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("Error updating admin note:", message);
     return NextResponse.json(
       { error: "Failed to update note", details: message },
-      { status: 500 }
+      { status: 502 }
     );
-  } finally {
-    await conn.end();
   }
 }
 
 export async function DELETE(request: Request) {
-  const conn = await getConnection();
   try {
     const body = await request.json();
-    const id = Number(body.id);
-    if (!id) {
-      return NextResponse.json({ error: "Note id is required" }, { status: 400 });
+    const response = await fetch(`${API_URL}/v1/admin/notes`, {
+      method: "DELETE",
+      headers: backendAuthHeaders(request),
+      body: JSON.stringify(body),
+      cache: "no-store",
+    });
+    const payload = await readJson(response);
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: backendError(payload, "Failed to delete note") },
+        { status: response.status }
+      );
     }
 
-    await conn.execute("DELETE FROM admin_notes WHERE id = ?", [id]);
-    return NextResponse.json({ message: "Note deleted" });
+    return NextResponse.json({ message: payload?.data ?? payload?.message ?? "Note deleted" });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("Error deleting admin note:", message);
     return NextResponse.json(
       { error: "Failed to delete note", details: message },
-      { status: 500 }
+      { status: 502 }
     );
-  } finally {
-    await conn.end();
   }
 }

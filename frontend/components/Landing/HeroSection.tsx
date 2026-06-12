@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, Suspense, lazy } from "react";
-import { motion, useScroll, useTransform, useSpring } from "framer-motion";
+import { motion, useScroll, useTransform, useSpring, useMotionValueEvent } from "framer-motion";
 
 const Scene3D = lazy(() => import("./Scene3D"));
 
@@ -24,7 +24,7 @@ export default function HeroSection() {
   const textOpacity = useTransform(smoothProgress, [0, 0.5], [1, 0]);
   const scaleDown = useTransform(smoothProgress, [0, 0.6], [1, 0.88]);
 
-  smoothProgress.on("change", (v) => {
+  useMotionValueEvent(smoothProgress, "change", (v) => {
     scrollProgress.current = v;
   });
 

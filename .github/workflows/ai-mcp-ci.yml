@@ -13,6 +13,10 @@ on:
       - 'ai-chatbot-platform/**'
       - '.github/workflows/ai-mcp-ci.yml'
 
+# FIX H1: Least-privilege permissions.
+permissions:
+  contents: read
+
 jobs:
   mcp-server-ci:
     runs-on: ubuntu-latest
@@ -41,12 +45,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
+          # FIX H2: Add npm cache to avoid re-downloading on every run.
+          cache: npm
+          cache-dependency-path: ai-chatbot-platform/backend/package-lock.json
+      # FIX H3: Fail explicitly if package-lock.json is missing instead of
+      # falling back to non-deterministic `npm install`.
+      - name: Verify lockfile exists
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "ERROR: package-lock.json is missing. Commit it to ensure reproducible builds."
+            exit 1
           fi
+      - run: npm ci
       - run: npx prisma generate
       - run: npm run build
       - run: npm run test --if-present
@@ -70,12 +80,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
+          # FIX H2: Add npm cache.
+          cache: npm
+          cache-dependency-path: ai-chatbot-platform/frontend/package-lock.json
+      # FIX H3: Fail explicitly if package-lock.json is missing.
+      - name: Verify lockfile exists
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "ERROR: package-lock.json is missing. Commit it to ensure reproducible builds."
+            exit 1
           fi
+      - run: npm ci
       - run: npx tsc --noEmit
       - run: npm run build
       - run: npm run test --if-present

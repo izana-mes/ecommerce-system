@@ -6,7 +6,12 @@ RUN mvn -q -DskipTests dependency:go-offline
 
 COPY config ./config
 COPY src ./src
-RUN mvn -q -DskipTests -Dcheckstyle.skip=true package
+RUN mvn -q -DskipTests -Dcheckstyle.skip=true -Dspotbugs.skip=true package
+
+# FIX C6: Instead of hardcoding `shop-backend-1.0.0-exec.jar` (breaks on every
+# version bump), rename the artifact to a fixed name in the package step so the
+# COPY instruction never needs updating.
+RUN mv target/shop-backend-*-exec.jar target/app.jar
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
@@ -16,8 +21,7 @@ RUN apk add --no-cache wget \
 
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:InitialRAMPercentage=25 -Djava.security.egd=file:/dev/urandom"
 
-# spring-boot-maven-plugin uses classifier "exec" for the runnable fat jar.
-COPY --from=build /build/target/shop-backend-1.0.0-exec.jar /app/app.jar
+COPY --from=build /build/target/app.jar /app/app.jar
 
 USER spring
 EXPOSE 8080

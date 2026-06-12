@@ -20,6 +20,8 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Use the repo-level config so allowlisted example files are not flagged.
+          GITLEAKS_CONFIG: .gitleaks.toml
 
   dependency-scan:
     runs-on: ubuntu-latest

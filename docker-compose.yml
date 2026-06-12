@@ -115,7 +115,11 @@ services:
       BACKEND_URL: http://backend:8080
       NEXT_PUBLIC_API_URL: http://localhost:8080/api
       NEXT_PUBLIC_BACKEND_URL: http://localhost:8080
-      DATABASE_URL: ${DATABASE_URL:-postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-shop}}
+      # FIX M2: Docker Compose does NOT evaluate nested variable substitution
+      # (e.g., ${DATABASE_URL:-...${DB_USER:-postgres}...}). The inner variables
+      # are emitted as literal strings. Provide DATABASE_URL as a flat value
+      # sourced from the .env file or the environment instead.
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/shop}
       DB_CLIENT: postgres
       DB_HOST: ${DB_HOST:-postgres}
       DB_PORT: ${DB_PORT:-5432}

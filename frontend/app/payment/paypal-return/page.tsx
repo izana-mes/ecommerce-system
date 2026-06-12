@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import styles from "./paypal-return.module.css";
@@ -26,21 +26,32 @@ type ReturnState =
 function PayPalReturnContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [state, setState] = useState<ReturnState>({ status: "loading" });
-
-  useEffect(() => {
+  const initialState = useMemo<ReturnState>(() => {
     const paypalOrderId = searchParams.get("token");
     const payerId = searchParams.get("PayerID");
     const orderNumber = searchParams.get("orderNumber") ?? "";
 
-    // No PayerID = user cancelled on PayPal
     if (!payerId || !paypalOrderId) {
-      setState({ status: "cancelled", orderNumber });
-      return;
+      return { status: "cancelled", orderNumber };
     }
 
     if (!orderNumber) {
-      setState({ status: "error", message: "Missing order reference. Please contact support." });
+      return { status: "error", message: "Missing order reference. Please contact support." };
+    }
+
+    return { status: "loading" };
+  }, [searchParams]);
+  const [state, setState] = useState<ReturnState>(initialState);
+
+  useEffect(() => {
+    if (state.status !== "loading") {
+      return;
+    }
+
+    const paypalOrderId = searchParams.get("token");
+    const orderNumber = searchParams.get("orderNumber") ?? "";
+
+    if (!paypalOrderId || !orderNumber) {
       return;
     }
 
@@ -97,7 +108,7 @@ function PayPalReturnContent() {
         });
       }
     })();
-  }, [searchParams, router]);
+  }, [searchParams, router, state.status]);
 
   return (
     <div className={styles.page}>
