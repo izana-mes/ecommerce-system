@@ -90,7 +90,7 @@ jobs:
             echo "ERROR: package-lock.json is missing. Commit it to ensure reproducible builds."
             exit 1
           fi
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - run: npx tsc --noEmit
       - run: npm run build
       - run: npm run test --if-present

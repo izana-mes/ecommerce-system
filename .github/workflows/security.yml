@@ -35,9 +35,9 @@ jobs:
       - name: npm audit mcp-server
         run: cd mcp-server && npm ci && npm audit --audit-level=high
       - name: npm audit ai backend
-        run: cd ai-chatbot-platform/backend && ([ -f package-lock.json ] && npm ci || npm install) && npm audit --audit-level=high
+        run: cd ai-chatbot-platform/backend && npm ci && npm audit --audit-level=high
       - name: npm audit ai frontend
-        run: cd ai-chatbot-platform/frontend && ([ -f package-lock.json ] && npm ci || npm install) && npm audit --audit-level=high
+        run: cd ai-chatbot-platform/frontend && npm ci --legacy-peer-deps && npm audit --audit-level=high
 
   trivy-fs:
     runs-on: ubuntu-latest
