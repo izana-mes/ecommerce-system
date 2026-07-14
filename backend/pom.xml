@@ -261,8 +261,7 @@
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <!-- FIX M5: Use <release> instead of <source>/<target> for Java 11+.
-                         This sets --release which enforces consistent cross-compilation. -->
+                    <!-- FIX M5: Use <release> instead of <source>/<target> for Java 11+. -->
                     <release>${java.version}</release>
                     <parameters>true</parameters>
                     <annotationProcessorPaths>
