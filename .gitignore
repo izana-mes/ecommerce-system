@@ -3,8 +3,14 @@
 .vscode/
 
 # Backend secrets (use .env.example as template)
+# FIX C1: Expand to cover all .env files across sub-projects.
+# NEVER commit real credentials — use GitHub Actions secrets instead.
 backend/.env
 .env
+.env.local
+ai-chatbot-platform/backend/.env
+ai-chatbot-platform/frontend/.env
+mcp-server/.env
 
 # Backend build and local Maven caches
 backend/target/
@@ -12,10 +18,12 @@ backend/.m2/
 backend/.m2repo/
 
 # Frontend generated artifacts
-frontend/frontend/.next/
-frontend/frontend/.next.bak-*/
-frontend/frontend/node_modules/
-frontend/frontend/tsconfig.tsbuildinfo
+# FIX M1: Paths were wrong (frontend/frontend/ does not exist).
+# Corrected to match the actual directory structure: frontend/
+frontend/.next/
+frontend/.next.bak-*/
+frontend/node_modules/
+frontend/tsconfig.tsbuildinfo
 
 # General logs
 *.log

@@ -8,11 +8,13 @@ import com.example.shop.modules.user.entity.User;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
@@ -27,6 +29,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ShipperRealtimeService {
 
     private static final String LOCATION_KEY_PREFIX = "shipper:location:";
@@ -39,6 +42,8 @@ public class ShipperRealtimeService {
     private final StringRedisTemplate redisTemplate;
     private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
+    private final com.example.shop.modules.inventory.service.InventoryReservationService inventoryReservationService;
+    private final JdbcTemplate jdbcTemplate;
 
     @Transactional
     public ShipperDtos.LocationPayload updateLocation(User user, ShipperDtos.LocationUpdateRequest req, String source) {
@@ -189,8 +194,43 @@ public class ShipperRealtimeService {
                 .changedBy(safeUserLabel(user))
                 .build());
 
+        // If shipper reported delivery failed -> mark order cancelled and release inventory
+        if ("FAILED".equals(status)) {
+            try {
+                if (order.getOrderNumber() != null && !order.getOrderNumber().isBlank()) {
+                    try {
+                        inventoryReservationService.releaseByOrderNumber(order.getOrderNumber(), "delivery_failed");
+                    } catch (Exception ex) {
+                        // Log but don't fail the shipper update
+                        // use standard logger via slf4j (class is not annotated with logger), print to stderr
+                        System.err.println("Failed to release inventory for order " + order.getOrderNumber() + ": " + ex.getMessage());
+                    }
+
+                    try {
+                        jdbcTemplate.update(
+                                "UPDATE payments SET status = 'cancelled', updated_at = ? WHERE order_id IN (SELECT id FROM orders WHERE order_number = ?) AND LOWER(status) = 'pending'",
+                                java.time.LocalDateTime.now(),
+                                order.getOrderNumber()
+                        );
+                    } catch (Exception ex) {
+                        log.warn("Failed to cancel pending payments for order {}: {}", order.getOrderNumber(), ex.getMessage());
+                    }
+                    try {
+                        jdbcTemplate.update(
+                                "UPDATE orders SET payment_status = 'cancelled', updated_at = ? WHERE order_number = ?",
+                                java.time.LocalDateTime.now(),
+                                order.getOrderNumber()
+                        );
+                    } catch (Exception ex) {
+                        log.warn("Failed to update orders.payment_status for order {}: {}", order.getOrderNumber(), ex.getMessage());
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
         // Broadcast the status change over STOMP so the frontend refreshes instantly.
-        broadcastOrderStatus(orderId, order.getOrderNumber(), order.getOrderStatus(), status, shipperUserId);
+        broadcastOrderStatus(orderId, order.getOrderNumber(), order.getOrderStatus(), status, shipperUserId, order.getCustomerEmail());
     }
 
     @Transactional(readOnly = true)
@@ -316,7 +356,7 @@ public class ShipperRealtimeService {
     }
 
     private void broadcastOrderStatus(long orderId, String orderNumber, String newOrderStatus,
-                                       String shipperAction, UUID shipperUserId) {
+                                       String shipperAction, UUID shipperUserId, String customerEmail) {
         ShipperDtos.OrderStatusEvent event = ShipperDtos.OrderStatusEvent.builder()
                 .orderId(orderId)
                 .orderNumber(orderNumber)
@@ -329,6 +369,10 @@ public class ShipperRealtimeService {
         messagingTemplate.convertAndSend("/topic/shipper/" + shipperUserId + "/orders", event);
         // Per-order topic: future-proofed for admin/customer tracking views.
         messagingTemplate.convertAndSend("/topic/orders/" + orderId + "/status", event);
+        // Per-customer topic: used by customer order history page to live-refresh statuses.
+        if (StringUtils.hasText(customerEmail)) {
+            messagingTemplate.convertAndSend("/topic/orders/customer/" + customerEmail.trim().toLowerCase(Locale.ROOT), event);
+        }
     }
 
     private static LocalDateTime toRecordedAt(Long timestampEpochMs) {

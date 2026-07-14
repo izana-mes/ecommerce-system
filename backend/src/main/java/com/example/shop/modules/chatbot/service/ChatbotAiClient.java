@@ -266,7 +266,7 @@ public class ChatbotAiClient {
 
             if (customerEmail != null && !customerEmail.isBlank()) {
                 args = new LinkedHashMap<>(args);
-                args.putIfAbsent("email", customerEmail);
+                args.put("email", customerEmail);
             }
 
             String mcpUrl = mcpServerUrl + "/tools/" + toolName;
@@ -365,8 +365,7 @@ public class ChatbotAiClient {
                 "type", "function",
                 "name", name,
                 "description", description,
-                "parameters", parameters,
-                "strict", true
+                "parameters", parameters
         );
     }
 

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getUser } from "@/lib/auth";
+import { createOrdersStompClient } from "@/lib/ordersSocket";
 import { useAppDispatch } from "@/store";
 import { addToCart, addToCartAsync, fetchCartAsync } from "@/store/cartSlice";
 
@@ -104,6 +105,21 @@ export default function OrdersPage() {
     void fetchHistory();
   }, [page, user]);
 
+  useEffect(() => {
+    if (!user?.email) return;
+    const recipient = String(user.email).trim().toLowerCase();
+    const client = createOrdersStompClient(() => {
+      client.subscribe(`/topic/orders/customer/${recipient}`, () => {
+        void fetchHistory();
+      });
+    });
+    client.activate();
+    return () => {
+      client.deactivate();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.email, page]);
+
   const handleCancelOrder = async (orderNumber: string) => {
     if (!window.confirm(t("orders_cancel_confirm"))) return;
 
@@ -132,7 +148,10 @@ export default function OrdersPage() {
     setIsEditModalOpen(true);
   };
 
-  const handleReorder = async (orderNumber: string) => {
+  const handleReorder = async (
+    orderNumber: string,
+    options?: { goToCheckout?: boolean; preferredPayment?: string }
+  ) => {
     if (!user) {
       router.push("/login");
       return;
@@ -149,12 +168,14 @@ export default function OrdersPage() {
         throw new Error("Could not load order lines for reorder");
       }
       const lines = json.data!.items!;
+      const transientAddedItems: Array<{ productID: string; quantity: number }> = [];
       for (const line of lines) {
         const productID = String(line.productId ?? line.product_id ?? "");
         const productName = String(line.productName ?? line.product_name ?? "");
         const productPrice = Number(line.unitPrice ?? line.unit_price ?? 0) || 0;
         const quantity = Math.min(20, Math.max(1, Number(line.quantity ?? 1) || 1));
         if (!productID) continue;
+        transientAddedItems.push({ productID, quantity });
         const payload = {
           productID,
           productName,
@@ -168,13 +189,63 @@ export default function OrdersPage() {
           }
         }
       }
+      if (options?.goToCheckout && typeof window !== "undefined" && transientAddedItems.length > 0) {
+        sessionStorage.setItem(
+          "checkoutTransientReorder",
+          JSON.stringify({
+            source: "order-payment",
+            orderNumber,
+            items: transientAddedItems,
+            createdAt: Date.now(),
+          })
+        );
+      }
       await dispatch(fetchCartAsync()).unwrap().catch(() => null);
-      router.push("/cart");
+      const payment = String(options?.preferredPayment || "").trim().toLowerCase();
+      const checkoutUrl = payment === "paypal"
+        ? "/cart?step=checkout&payment=paypal"
+        : "/cart?step=checkout";
+      router.push(options?.goToCheckout ? checkoutUrl : "/cart");
     } catch (err) {
       alert(err instanceof Error ? err.message : "Reorder failed");
     } finally {
       setReorderingOrderNumber(null);
     }
+  };
+
+  const handlePayNow = (order: Order) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    sessionStorage.setItem(
+      "checkoutPayNowOrder",
+      JSON.stringify({
+        id: order.id,
+        orderNumber: order.order_number,
+        paymentMethod: order.payment_method,
+        currency: order.currency,
+        subtotal: Number(order.subtotal || 0),
+        shippingFee: Number(order.shipping_fee || 0),
+        vat: Number(order.vat || 0),
+        totalAmount: Number(order.total_amount || 0),
+        items: (order.items || []).map((item) => ({
+          productID: item.product_id,
+          productName: item.product_name,
+          productPrice: Number(item.unit_price || 0),
+          quantity: Number(item.quantity || 1),
+        })),
+      })
+    );
+
+    const method = String(order.payment_method || "").toLowerCase();
+    let paymentParam = "";
+    if (method === "paypal") paymentParam = "paypal";
+    else if (method === "vnpay" || method === "vnpayqr") paymentParam = "vnpay";
+    else if (method === "card" || method === "credit_card" || method === "stripe") paymentParam = "card";
+
+    const payQuery = `payOrder=${encodeURIComponent(order.order_number)}`;
+    const paymentQuery = paymentParam ? `&payment=${paymentParam}` : "";
+    router.push(`/cart?step=checkout${paymentQuery}&${payQuery}`);
   };
 
   return (
@@ -262,8 +333,23 @@ export default function OrdersPage() {
                 >
                   {reorderingOrderNumber === order.order_number ? t("orders_reorder_loading") : t("orders_reorder")}
                 </button>
-                {order.order_status === "pending" && order.payment_status === "pending" ? (
+                {(order.order_status === "pending" || ["pending", "unpaid"].includes(String(order.payment_status).toLowerCase())) ? (
                   <>
+                    <button
+                      type="button"
+                      onClick={() => handlePayNow(order)}
+                      style={{
+                        padding: "6px 14px",
+                        backgroundColor: "#f59e0b",
+                        color: "#1c1c1c",
+                        border: "none",
+                        borderRadius: 4,
+                        cursor: "pointer",
+                        fontWeight: 600,
+                        fontSize: 14}}
+                    >
+                      💳 Pay Now
+                    </button>
                     <button
                       onClick={() => handleCancelOrder(order.order_number)}
                       disabled={processingOrderId === order.order_number}
@@ -273,8 +359,7 @@ export default function OrdersPage() {
                         color: "white",
                         border: "none",
                         borderRadius: 4,
-                        cursor: "pointer"}}
-                    >
+                        cursor: "pointer"}}>
                       {processingOrderId === order.order_number ? t("orders_cancelling") : t("orders_cancel")}
                     </button>
                     <button
@@ -286,8 +371,7 @@ export default function OrdersPage() {
                         color: "white",
                         border: "none",
                         borderRadius: 4,
-                        cursor: "pointer"}}
-                    >
+                        cursor: "pointer"}}>
                       {t("orders_edit")}
                     </button>
                   </>

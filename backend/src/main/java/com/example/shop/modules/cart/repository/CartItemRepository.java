@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
@@ -27,4 +28,19 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
     @Query("select coalesce(sum(c.quantity), 0) from CartItem c where c.productID = :productID")
     Integer sumReservedQuantityByProductID(@Param("productID") String productID);
+
+    @Query("""
+            select
+                u.id as userId,
+                u.email as email,
+                u.firstName as firstName,
+                count(c.id) as itemCount,
+                coalesce(sum(c.quantity), 0) as totalQuantity,
+                max(coalesce(c.updatedAt, c.createdAt)) as lastActivityAt
+            from CartItem c
+            join c.user u
+            group by u.id, u.email, u.firstName
+            having max(coalesce(c.updatedAt, c.createdAt)) <= :cutoff
+            """)
+    List<AbandonedCartCandidateProjection> findAbandonedCartCandidates(@Param("cutoff") LocalDateTime cutoff);
 }

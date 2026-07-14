@@ -20,6 +20,8 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Use the repo-level config so allowlisted example files are not flagged.
+          GITLEAKS_CONFIG: .gitleaks.toml
 
   dependency-scan:
     runs-on: ubuntu-latest
@@ -33,9 +35,9 @@ jobs:
       - name: npm audit mcp-server
         run: cd mcp-server && npm ci && npm audit --audit-level=high
       - name: npm audit ai backend
-        run: cd ai-chatbot-platform/backend && ([ -f package-lock.json ] && npm ci || npm install) && npm audit --audit-level=high
+        run: cd ai-chatbot-platform/backend && npm ci && npm audit --audit-level=high
       - name: npm audit ai frontend
-        run: cd ai-chatbot-platform/frontend && ([ -f package-lock.json ] && npm ci || npm install) && npm audit --audit-level=high
+        run: cd ai-chatbot-platform/frontend && npm ci --legacy-peer-deps && npm audit --audit-level=high
 
   trivy-fs:
     runs-on: ubuntu-latest
@@ -50,7 +52,10 @@ jobs:
           ignore-unfixed: true
           format: sarif
           output: trivy-fs.sarif
+          exit-code: '1'
       - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v3
+        continue-on-error: true
         with:
           sarif_file: trivy-fs.sarif
+          category: trivy-fs

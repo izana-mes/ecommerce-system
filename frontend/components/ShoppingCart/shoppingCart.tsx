@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import PayPalCheckoutButton from "@/components/payment/PayPalCheckoutButton";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { MdOutlineClose } from "react-icons/md";
@@ -98,6 +99,31 @@ type LoyaltySnapshot = {
   remaining: number;
   discountAmount: number;
 };
+type PayNowOrderTarget = {
+  id: number;
+  orderNumber: string;
+  paymentMethod: string;
+  currency: string;
+  subtotal: number;
+  shippingFee: number;
+  vat: number;
+  totalAmount: number;
+  items: Array<{ productID: string; productName: string; productPrice: number; quantity: number }>;
+};
+type CheckoutHistoryEntry = {
+  firstName?: string | null;
+  lastName?: string | null;
+  companyName?: string | null;
+  country?: string | null;
+  streetAddress1?: string | null;
+  streetAddress2?: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  notes?: string | null;
+  savedAt?: number | null;
+};
 
 const POINTS_PER_USD_DISCOUNT = 100;
 const MAX_POINTS_DISCOUNT_RATE = 0.25;
@@ -134,6 +160,8 @@ export default function ShoppingCart() {
   const [payments, setPayments] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState("Direct Bank Transfer");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [paypalOrderNumber, setPaypalOrderNumber] = useState<string | null>(null);
+  const [paypalOrderCreating, setPaypalOrderCreating] = useState(false);
   const [lastOrderNumber, setLastOrderNumber] = useState<string | null>(null);
   const [lastTrackingSecret, setLastTrackingSecret] = useState<string | null>(null);
   const [buyNowProductId, setBuyNowProductId] = useState<string | null>(null);
@@ -165,6 +193,10 @@ export default function ShoppingCart() {
   const [lastLoyaltySnapshot, setLastLoyaltySnapshot] = useState<LoyaltySnapshot | null>(null);
   const [lastPlacedItems, setLastPlacedItems] = useState<cartProduct[]>([]);
   const [lastPlacedTotal, setLastPlacedTotal] = useState(0);
+  const [checkoutHistory, setCheckoutHistory] = useState<CheckoutHistoryEntry[]>([]);
+  const [isTransientOrderPaymentCheckout, setIsTransientOrderPaymentCheckout] = useState(false);
+  const [transientReorderItems, setTransientReorderItems] = useState<Array<{ productID: string; quantity: number }>>([]);
+  const [payNowOrderTarget, setPayNowOrderTarget] = useState<PayNowOrderTarget | null>(null);
   const [lastOrderPricing, setLastOrderPricing] = useState({
     subtotal: 0,
     shipping: 0,
@@ -176,6 +208,7 @@ export default function ShoppingCart() {
   const requestedBuyNow = (searchParams.get("buyNow") || "").trim();
   const requestedPayment = (searchParams.get("payment") || "").trim().toLowerCase();
   const requestedCoupon = (searchParams.get("coupon") || "").trim().toUpperCase();
+  const requestedPayOrder = (searchParams.get("payOrder") || "").trim();
   const countryOptions = [
     "India",
     "Canada",
@@ -215,13 +248,92 @@ export default function ShoppingCart() {
     if (requestedStep === "checkout") {
       setActiveTab("cartTab2");
     }
-    if (requestedPayment === "vnpay") {
-      setSelectedPayment("VNPAY");
-    }
+    if (requestedPayment === "vnpay") setSelectedPayment("VNPAY");
+    if (requestedPayment === "paypal") setSelectedPayment("Paypal");
+    if (requestedPayment === "momo") setSelectedPayment("MOMO");
     if (requestedBuyNow) {
       setBuyNowProductId(String(requestedBuyNow));
     }
   }, [requestedBuyNow, requestedPayment, requestedStep]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!requestedPayOrder) {
+      setPayNowOrderTarget(null);
+      return;
+    }
+    const raw = sessionStorage.getItem("checkoutPayNowOrder");
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as Partial<PayNowOrderTarget>;
+      const orderNumber = String(parsed?.orderNumber || "").trim();
+      const normalizedRequested = String(requestedPayOrder || "").trim();
+      if (!orderNumber || orderNumber !== normalizedRequested) return;
+      const items = Array.isArray(parsed?.items)
+        ? parsed.items
+            .map((item) => ({
+              productID: String(item?.productID || "").trim(),
+              productName: String(item?.productName || "").trim(),
+              productPrice: Number(item?.productPrice || 0),
+              quantity: Math.max(1, Number(item?.quantity || 1)),
+            }))
+            .filter((item) => item.productID && item.productName)
+        : [];
+      setPayNowOrderTarget({
+        id: Number(parsed?.id || 0),
+        orderNumber,
+        paymentMethod: String(parsed?.paymentMethod || "Paypal"),
+        currency: String(parsed?.currency || "USD"),
+        subtotal: Math.max(0, Number(parsed?.subtotal || 0)),
+        shippingFee: Math.max(0, Number(parsed?.shippingFee || 0)),
+        vat: Math.max(0, Number(parsed?.vat || 0)),
+        totalAmount: Math.max(0, Number(parsed?.totalAmount || 0)),
+        items,
+      });
+    } catch {
+      sessionStorage.removeItem("checkoutPayNowOrder");
+    }
+  }, [requestedPayOrder]);
+
+  useEffect(() => {
+    if (!payNowOrderTarget) return;
+    const rawMethod = String(payNowOrderTarget.paymentMethod || "").trim().toLowerCase();
+    if (rawMethod.includes("vnpay")) {
+      setSelectedPayment("VNPAY");
+      return;
+    }
+    if (rawMethod.includes("momo")) {
+      setSelectedPayment("MOMO");
+      return;
+    }
+    setSelectedPayment("Paypal");
+  }, [payNowOrderTarget]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = sessionStorage.getItem("checkoutTransientReorder");
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as {
+        source?: string;
+        items?: Array<{ productID?: string; quantity?: number }>;
+      };
+      const normalizedItems = Array.isArray(parsed?.items)
+        ? parsed.items
+            .map((item) => ({
+              productID: String(item?.productID || "").trim(),
+              quantity: Math.max(1, Number(item?.quantity ?? 1) || 1),
+            }))
+            .filter((item) => item.productID)
+        : [];
+      if (parsed?.source === "order-payment" && normalizedItems.length > 0) {
+        setIsTransientOrderPaymentCheckout(true);
+        setTransientReorderItems(normalizedItems);
+      }
+    } catch {
+      sessionStorage.removeItem("checkoutTransientReorder");
+    }
+  }, []);
 
   useEffect(() => {
     if (!buyNowProductId) return;
@@ -233,27 +345,68 @@ export default function ShoppingCart() {
     }
   }, [buyNowProductId, cartItems]);
 
+  useEffect(() => {
+    if (activeTab !== "cartTab2") return;
+    let ignore = false;
+    const fetchCheckoutHistory = async () => {
+      try {
+        const response = await fetch("/api/orders/checkout-history?limit=6", { cache: "no-store" });
+        const payload = await response.json().catch(() => ({ entries: [] }));
+        if (ignore) return;
+        const entries = Array.isArray(payload?.entries) ? (payload.entries as CheckoutHistoryEntry[]) : [];
+        setCheckoutHistory(entries);
+      } catch {
+        if (!ignore) setCheckoutHistory([]);
+      }
+    };
+    void fetchCheckoutHistory();
+    return () => {
+      ignore = true;
+    };
+  }, [activeTab]);
+
+  const isPayNowMode = Boolean(payNowOrderTarget && requestedPayOrder);
+
   const checkoutItems = useMemo(() => {
+    if (isPayNowMode && payNowOrderTarget) {
+      return payNowOrderTarget.items.map((item) => ({
+        productID: item.productID,
+        productName: item.productName,
+        productPrice: item.productPrice,
+        productReviews: "0",
+        stockQuantity: item.quantity,
+        availableStock: item.quantity,
+        active: true,
+        purchasable: true,
+        quantity: item.quantity,
+      }));
+    }
     if (!buyNowProductId) return cartItems;
     return cartItems.filter((item) => String(item.productID) === String(buyNowProductId));
-  }, [buyNowProductId, cartItems]);
+  }, [buyNowProductId, cartItems, isPayNowMode, payNowOrderTarget]);
 
-  const checkoutSubtotal = useMemo(
-    () => checkoutItems.reduce((sum, item) => sum + item.productPrice * (item.quantity ?? 1), 0),
-    [checkoutItems]
-  );
-  const shippingFee = checkoutSubtotal === 0 ? 0 : 5;
-  const vatAmount = checkoutSubtotal === 0 ? 0 : 11;
-  const discountAmount = Math.min(checkoutSubtotal, Number(appliedCoupon?.discountAmount || 0));
-  const prePointsTotal = Math.max(0, checkoutSubtotal + shippingFee + vatAmount - discountAmount);
+  const checkoutSubtotal = isPayNowMode
+    ? Math.max(0, Number(payNowOrderTarget?.subtotal || 0))
+    : checkoutItems.reduce((sum, item) => sum + item.productPrice * (item.quantity ?? 1), 0);
+  const shippingFee = isPayNowMode
+    ? Math.max(0, Number(payNowOrderTarget?.shippingFee || 0))
+    : checkoutSubtotal === 0 ? 0 : 5;
+  const vatAmount = isPayNowMode
+    ? Math.max(0, Number(payNowOrderTarget?.vat || 0))
+    : checkoutSubtotal === 0 ? 0 : 11;
+  const discountAmount = isPayNowMode ? 0 : Math.min(checkoutSubtotal, Number(appliedCoupon?.discountAmount || 0));
+  const prePointsTotal = isPayNowMode
+    ? Math.max(0, Number(payNowOrderTarget?.totalAmount || 0))
+    : Math.max(0, checkoutSubtotal + shippingFee + vatAmount - discountAmount);
   const maxRedeemablePointsByRate = Math.floor(prePointsTotal * MAX_POINTS_DISCOUNT_RATE * POINTS_PER_USD_DISCOUNT);
   const requestedPointsToRedeem = Math.max(0, Number.parseInt(pointsToRedeemInput || "0", 10) || 0);
-  const pointsRedeemApplied = Math.max(
-    0,
-    Math.min(requestedPointsToRedeem, availablePoints, maxRedeemablePointsByRate)
-  );
-  const pointsDiscountAmount = pointsRedeemApplied / POINTS_PER_USD_DISCOUNT;
-  const checkoutGrandTotal = Math.max(0, prePointsTotal - pointsDiscountAmount);
+  const pointsRedeemApplied = isPayNowMode
+    ? 0
+    : Math.max(0, Math.min(requestedPointsToRedeem, availablePoints, maxRedeemablePointsByRate));
+  const pointsDiscountAmount = isPayNowMode ? 0 : pointsRedeemApplied / POINTS_PER_USD_DISCOUNT;
+  const checkoutGrandTotal = isPayNowMode
+    ? Math.max(0, Number(payNowOrderTarget?.totalAmount || 0))
+    : Math.max(0, prePointsTotal - pointsDiscountAmount);
 
   const handleCheckoutFieldChange = (field: keyof CheckoutForm, value: string | boolean) => {
     setCheckoutForm((prev) => ({
@@ -264,7 +417,29 @@ export default function ShoppingCart() {
       [field]: undefined}));
   };
 
+  const handleApplyHistoryEntry = (entry: CheckoutHistoryEntry) => {
+    setCheckoutForm((prev) => ({
+      ...prev,
+      firstName: entry.firstName || prev.firstName,
+      lastName: entry.lastName || prev.lastName,
+      companyName: entry.companyName || prev.companyName,
+      country: entry.country || prev.country,
+      streetAddress1: entry.streetAddress1 || prev.streetAddress1,
+      streetAddress2: entry.streetAddress2 || prev.streetAddress2,
+      city: entry.city || prev.city,
+      postalCode: entry.postalCode || prev.postalCode,
+      phone: entry.phone || prev.phone,
+      email: entry.email || prev.email,
+      notes: entry.notes || prev.notes}));
+    setCheckoutErrors({});
+    toast.success("Saved checkout details applied");
+  };
+
   const validateCheckoutForm = (): boolean => {
+    if (isPayNowMode) {
+      setCheckoutErrors({});
+      return true;
+    }
     const nextErrors: CheckoutErrorFields = {};
 
     if (!checkoutForm.firstName.trim()) nextErrors.firstName = "First name is required";
@@ -339,6 +514,7 @@ export default function ShoppingCart() {
 
   const handlePaymentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedPayment(e.target.value);
+    setPaypalOrderNumber(null); // reset PayPal state when switching payment method
   };
 
   const captureBrowserLocation = useCallback(async (): Promise<CapturedLocation> => {
@@ -498,9 +674,73 @@ export default function ShoppingCart() {
   }, []);
 
   const handlePlaceOrder = async () => {
-    if (checkoutItems.length === 0 || isPlacingOrder) return;
+    if (isPlacingOrder) return;
+    if (requestedPayOrder && !payNowOrderTarget) {
+      toast.error("Pay now session expired. Please open Pay now again from your Orders page.");
+      return;
+    }
+    if (!isPayNowMode && checkoutItems.length === 0) return;
     if (!validateCheckoutForm()) {
       toast.error("Please complete billing details before placing order");
+      return;
+    }
+
+    if (isPayNowMode && payNowOrderTarget) {
+      setIsPlacingOrder(true);
+      try {
+        if (selectedPayment === "Paypal") {
+          setPaypalOrderNumber(payNowOrderTarget.orderNumber);
+          return;
+        }
+        if (selectedPayment === "VNPAY") {
+          if (!payNowOrderTarget.orderNumber) {
+            throw new Error("Missing order number for pay now");
+          }
+          const paymentResponse = await fetch("/api/vnpay/create-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderNumber: payNowOrderTarget.orderNumber,
+              amount: checkoutGrandTotal,
+            }),
+          });
+          const paymentData = await paymentResponse.json();
+          if (!paymentResponse.ok) {
+            throw new Error(paymentData?.error || "Cannot create VNPAY payment URL");
+          }
+          const paymentUrl = paymentData?.data?.paymentUrl as string | undefined;
+          if (!paymentUrl) throw new Error("Invalid VNPAY payment URL");
+          window.location.assign(paymentUrl);
+          return;
+        }
+        if (selectedPayment === "MOMO") {
+          if (!payNowOrderTarget.orderNumber) {
+            throw new Error("Missing order number for pay now");
+          }
+          const paymentResponse = await fetch("/api/momo/create-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderNumber: payNowOrderTarget.orderNumber,
+              amount: checkoutGrandTotal,
+            }),
+          });
+          const paymentData = await paymentResponse.json();
+          if (!paymentResponse.ok) {
+            throw new Error(paymentData?.error || "Cannot create MOMO payment URL");
+          }
+          const paymentUrl = paymentData?.data?.paymentUrl as string | undefined;
+          if (!paymentUrl) throw new Error("Invalid MOMO payment URL");
+          window.location.assign(paymentUrl);
+          return;
+        }
+        toast.error("Use PayPal, VNPAY, or MOMO to pay this existing order.");
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Failed to start payment";
+        toast.error(message);
+      } finally {
+        setIsPlacingOrder(false);
+      }
       return;
     }
 
@@ -676,6 +916,9 @@ export default function ShoppingCart() {
       void refreshCurrentUserFromServer();
 
       setPayments(true);
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("checkoutTransientReorder");
+      }
       handleTabClick("cartTab3");
       scrollToTop();
       toast.success("Order placed successfully");
@@ -686,6 +929,216 @@ export default function ShoppingCart() {
       setIsPlacingOrder(false);
     }
   };
+
+  /** Phase 1 of PayPal flow: validate form + create backend order, then show SDK button. */
+  const handlePreparePaypalOrder = async () => {
+    if (checkoutItems.length === 0 || paypalOrderCreating) return;
+    if (!validateCheckoutForm()) {
+      toast.error("Please complete billing details before proceeding with PayPal");
+      return;
+    }
+    if (isPayNowMode && payNowOrderTarget) {
+      setPaypalOrderNumber(payNowOrderTarget.orderNumber);
+      return;
+    }
+
+    const localInvalidCartItem = checkoutItems.find((item) => {
+      if (item.purchasable === false) return true;
+      const product = products.find((p) => p.productID === item.productID);
+      const stockQuantity = Math.max(0, Number(product?.stockQuantity ?? item.availableStock ?? 25));
+      return stockQuantity <= 0 || (item.quantity ?? 1) > Math.min(20, stockQuantity);
+    });
+    if (localInvalidCartItem) {
+      toast.error(`Please update cart. ${localInvalidCartItem.productName} is out of stock or over limit.`);
+      return;
+    }
+
+    setPaypalOrderCreating(true);
+    try {
+      const checkoutHealthResponse = await fetch("/api/cart/checkout-health", {
+        method: "GET",
+        credentials: "include",
+        headers: {},
+      });
+      if (checkoutHealthResponse.ok) {
+        const checkoutHealth = (await checkoutHealthResponse.json()) as CheckoutHealthResponse;
+        const invalidItems = checkoutHealth.invalidItems ?? [];
+        const blockingInvalidItem = buyNowProductId
+          ? invalidItems.find((item) => String(item.productID) === String(buyNowProductId))
+          : invalidItems[0];
+        if (blockingInvalidItem) {
+          toast.error(`Cannot checkout: ${blockingInvalidItem.productName} has only ${blockingInvalidItem.availableQuantity} item(s) available.`);
+          dispatch(fetchCartAsync());
+          return;
+        }
+      }
+
+      const user = getUser();
+      const normalizedCompany = checkoutForm.companyName.trim();
+      const normalizedNotes = checkoutForm.notes.trim();
+      const combinedNotes = [normalizedCompany ? `Company: ${normalizedCompany}` : "", normalizedNotes]
+        .filter(Boolean)
+        .join("\n");
+
+      const data = await secureApiRequest<{
+        data?: {
+          orderNumber?: string;
+          trackingSecret?: string;
+          pointsRedeemed?: number;
+          pointsEarned?: number;
+          remainingPoints?: number;
+          pointsDiscountAmount?: number;
+        };
+        error?: string;
+        message?: string;
+      }>("/api/orders", {
+        method: "POST",
+        body: {
+          customerEmail: checkoutForm.email.trim().toLowerCase() || user?.email || "guest@example.com",
+          customerFirstName: checkoutForm.firstName.trim() || user?.firstName || "",
+          customerLastName: checkoutForm.lastName.trim() || user?.lastName || "",
+          customerPhone: checkoutForm.phone.trim(),
+          shippingAddressLine1: checkoutForm.streetAddress1.trim(),
+          shippingAddressLine2: checkoutForm.streetAddress2.trim() || undefined,
+          shippingCity: checkoutForm.city.trim(),
+          shippingPostalCode: checkoutForm.postalCode.trim(),
+          shippingCountry: checkoutForm.country.trim(),
+          deliveryLatitude: checkoutLocation?.latitude,
+          deliveryLongitude: checkoutLocation?.longitude,
+          deliveryLocationLabel: checkoutLocation?.label,
+          deliveryLocationAccuracyMeters: checkoutLocation?.accuracyMeters ?? undefined,
+          deliveryLocationCapturedAt: checkoutLocation?.capturedAt,
+          notes: combinedNotes || undefined,
+          paymentMethod: "Paypal",
+          orderSource: buyNowProductId ? "buy-now" : "checkout-ui",
+          currency: "USD",
+          shippingFee: checkoutSubtotal === 0 ? 0 : 5,
+          vat: checkoutSubtotal === 0 ? 0 : 11,
+          couponCode: appliedCoupon?.code,
+          couponDiscount: discountAmount,
+          pointsToRedeem: pointsRedeemApplied,
+          items: checkoutItems.map((item) => ({
+            productID: item.productID,
+            productName: item.productName,
+            productPrice: item.productPrice,
+            quantity: item.quantity ?? 1,
+          })),
+        },
+      });
+
+      const orderNumber = data?.data?.orderNumber as string | undefined;
+      if (!orderNumber) throw new Error("No order number returned from server");
+
+      const trackingSecret = data?.data?.trackingSecret as string | undefined;
+      const pointsRedeemed = Number(data?.data?.pointsRedeemed ?? 0);
+      const pointsEarned = Number(data?.data?.pointsEarned ?? 0);
+      const remainingPoints = Number(data?.data?.remainingPoints ?? availablePoints);
+      const serverPointsDiscountAmount = Number(data?.data?.pointsDiscountAmount ?? pointsDiscountAmount);
+
+      setLastOrderNumber(orderNumber);
+      setLastTrackingSecret(trackingSecret && String(trackingSecret).trim() ? String(trackingSecret).trim() : null);
+      setLastPlacedItems(checkoutItems.map((item) => ({ ...item })));
+      setLastPlacedTotal(checkoutGrandTotal);
+      setLastOrderPricing({
+        subtotal: checkoutSubtotal,
+        shipping: shippingFee,
+        vat: vatAmount,
+        couponDiscount: discountAmount,
+        pointsDiscount: Math.max(0, serverPointsDiscountAmount),
+        total: checkoutGrandTotal,
+      });
+      setLastLoyaltySnapshot({
+        redeemed: Math.max(0, pointsRedeemed),
+        earned: Math.max(0, pointsEarned),
+        remaining: Math.max(0, remainingPoints),
+        discountAmount: Math.max(0, serverPointsDiscountAmount),
+      });
+      setAvailablePoints(Math.max(0, remainingPoints));
+      setPointsToRedeemInput("0");
+
+      // Phase 2: render the PayPal SDK button
+      setPaypalOrderNumber(orderNumber);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to create order";
+      toast.error(message);
+    } finally {
+      setPaypalOrderCreating(false);
+    }
+  };
+
+  /** Phase 2 of PayPal flow: called after PayPal captures payment successfully. */
+  const handlePaypalSuccess = async (captureId: string, paymentStatus: string) => {
+    console.log("[PayPal] Captured:", captureId, paymentStatus);
+    if (isPayNowMode && payNowOrderTarget) {
+      setLastOrderNumber(payNowOrderTarget.orderNumber);
+      setLastPlacedItems(checkoutItems.map((item) => ({ ...item })));
+      setLastPlacedTotal(checkoutGrandTotal);
+      setLastOrderPricing({
+        subtotal: checkoutSubtotal,
+        shipping: shippingFee,
+        vat: vatAmount,
+        couponDiscount: 0,
+        pointsDiscount: 0,
+        total: checkoutGrandTotal,
+      });
+      setPaypalOrderNumber(null);
+      setPayments(true);
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("checkoutPayNowOrder");
+      }
+      handleTabClick("cartTab3");
+      scrollToTop();
+      toast.success("Payment confirmed! Your order has been paid.");
+      return;
+    }
+    if (buyNowProductId) {
+      await dispatch(removeFromCartAsync(buyNowProductId)).unwrap().catch(() => null);
+      dispatch(removeFromCart(buyNowProductId));
+      setBuyNowProductId(null);
+    } else {
+      await secureApiRequest("/api/cart/clear", { method: "DELETE" }).catch(() => null);
+      dispatch(clearCart());
+    }
+    dispatch(fetchCartAsync());
+    void refreshCurrentUserFromServer();
+    setPaypalOrderNumber(null);
+    setPayments(true);
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("checkoutTransientReorder");
+    }
+    handleTabClick("cartTab3");
+    scrollToTop();
+    toast.success("Payment confirmed! Your order has been placed.");
+  };
+
+  useEffect(() => {
+    return () => {
+      if (
+        typeof window === "undefined" ||
+        !isTransientOrderPaymentCheckout ||
+        payments ||
+        transientReorderItems.length === 0
+      ) {
+        return;
+      }
+      for (const transientItem of transientReorderItems) {
+        const currentItem = cartItemsById[transientItem.productID];
+        if (!currentItem) continue;
+        const currentQty = Math.max(1, Number(currentItem.quantity ?? 1) || 1);
+        const rollbackQty = Math.max(0, currentQty - transientItem.quantity);
+        if (rollbackQty <= 0) {
+          void dispatch(removeFromCartAsync(transientItem.productID));
+          dispatch(removeFromCart(transientItem.productID));
+        } else {
+          void dispatch(
+            updateQuantityAsync({ productID: transientItem.productID, quantity: rollbackQty })
+          );
+        }
+      }
+      sessionStorage.removeItem("checkoutTransientReorder");
+      void dispatch(fetchCartAsync());
+    };
+  }, [cartItemsById, dispatch, isTransientOrderPaymentCheckout, payments, transientReorderItems]);
 
   const handleApplyCoupon = useCallback(async (inputCode?: string) => {
     const normalizedCode = (inputCode ?? couponCode).trim().toUpperCase();
@@ -1108,6 +1561,31 @@ export default function ShoppingCart() {
             <div className="checkoutSection">
               <div className="checkoutDetailsSection">
                 <h4>{t("checkout_billing_details")}</h4>
+                {checkoutHistory.length > 0 ? (
+                  <div className="checkoutHistorySection">
+                    <p className="checkoutHistoryTitle">Use saved checkout details</p>
+                    <div className="checkoutHistoryList">
+                      {checkoutHistory.map((entry, index) => {
+                        const fullName = [entry.firstName, entry.lastName].filter(Boolean).join(" ").trim();
+                        const address = [entry.streetAddress1, entry.city, entry.country]
+                          .filter(Boolean)
+                          .join(", ");
+                        const subtitle = [entry.email, entry.phone, address].filter(Boolean).join(" · ");
+                        return (
+                          <button
+                            key={`${entry.savedAt ?? "saved"}-${index}`}
+                            type="button"
+                            className="checkoutHistoryItem"
+                            onClick={() => handleApplyHistoryEntry(entry)}
+                          >
+                            <span>{fullName || "Saved entry"}</span>
+                            {subtitle ? <small>{subtitle}</small> : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
                 <div className="checkoutDetailsForm">
                   <form>
                     <div className="checkoutDetailsFormRow">
@@ -1295,6 +1773,11 @@ export default function ShoppingCart() {
                       {t("checkout_buy_now_mode")}
                     </p>
                   ) : null}
+                  {isPayNowMode && payNowOrderTarget ? (
+                    <p style={{ fontSize: "12px", color: "#b45309", marginBottom: "10px" }}>
+                      Paying existing order {payNowOrderTarget.orderNumber}. Amount is fixed to the unpaid order total.
+                    </p>
+                  ) : null}
                   <div className="checkoutItems">
                     <table>
                       <thead>
@@ -1350,23 +1833,25 @@ export default function ShoppingCart() {
                       </tbody>
                     </table>
                   </div>
-                  <div className="loyaltyPanel">
-                    <h4>Loyalty Points</h4>
-                    <p>Available: {availablePoints.toLocaleString()} points</p>
-                    <label htmlFor="pointsToRedeem">Use points</label>
-                    <input
-                      id="pointsToRedeem"
-                      type="number"
-                      min={0}
-                      max={Math.max(0, Math.min(availablePoints, maxRedeemablePointsByRate))}
-                      step={1}
-                      value={pointsToRedeemInput}
-                      onChange={(event) => setPointsToRedeemInput(event.target.value)}
-                    />
-                    <small>
-                      100 points = $1.00, up to 25% of order. Applying {pointsRedeemApplied.toLocaleString()} points.
-                    </small>
-                  </div>
+                  {!isPayNowMode ? (
+                    <div className="loyaltyPanel">
+                      <h4>Loyalty Points</h4>
+                      <p>Available: {availablePoints.toLocaleString()} points</p>
+                      <label htmlFor="pointsToRedeem">Use points</label>
+                      <input
+                        id="pointsToRedeem"
+                        type="number"
+                        min={0}
+                        max={Math.max(0, Math.min(availablePoints, maxRedeemablePointsByRate))}
+                        step={1}
+                        value={pointsToRedeemInput}
+                        onChange={(event) => setPointsToRedeemInput(event.target.value)}
+                      />
+                      <small>
+                        100 points = $1.00, up to 25% of order. Applying {pointsRedeemApplied.toLocaleString()} points.
+                      </small>
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="checkoutPaymentContainer">
@@ -1377,6 +1862,7 @@ export default function ShoppingCart() {
                       value="Direct Bank Transfer"
                       checked={selectedPayment === "Direct Bank Transfer"}
                       onChange={handlePaymentChange}
+                      disabled={isPayNowMode}
                     />
                     <div className="checkoutPaymentMethod">
                       <span>{t("checkout_direct_bank")}</span>
@@ -1391,6 +1877,7 @@ export default function ShoppingCart() {
                       value="Check Payments"
                       checked={selectedPayment === "Check Payments"}
                       onChange={handlePaymentChange}
+                      disabled={isPayNowMode}
                     />
                     <div className="checkoutPaymentMethod">
                       <span>{t("checkout_check_payments")}</span>
@@ -1405,6 +1892,7 @@ export default function ShoppingCart() {
                       value="Cash on delivery"
                       checked={selectedPayment === "Cash on delivery"}
                       onChange={handlePaymentChange}
+                      disabled={isPayNowMode}
                     />
                     <div className="checkoutPaymentMethod">
                       <span>{t("checkout_cod")}</span>
@@ -1478,9 +1966,32 @@ export default function ShoppingCart() {
                   </div>
                 </div>
 
-                <button onClick={handlePlaceOrder} disabled={isPlacingOrder}>
-                  {isPlacingOrder ? t("checkout_placing_order") : t("checkout_place_order")}
-                </button>
+                {selectedPayment === "Paypal" ? (
+                  paypalOrderNumber ? (
+                    <PayPalCheckoutButton
+                      orderNumber={paypalOrderNumber}
+                      amount={checkoutGrandTotal}
+                      currency="USD"
+                      onSuccess={(captureId, paymentStatus) => {
+                        void handlePaypalSuccess(captureId, paymentStatus);
+                      }}
+                      onCancel={() => {
+                        toast("PayPal payment cancelled. Your order is saved — click 'Pay with PayPal' to try again.");
+                      }}
+                      onError={(err) => {
+                        toast.error(`PayPal error: ${err}`);
+                      }}
+                    />
+                  ) : (
+                    <button onClick={() => void handlePreparePaypalOrder()} disabled={paypalOrderCreating}>
+                      {paypalOrderCreating ? "Preparing order…" : "Pay with PayPal"}
+                    </button>
+                  )
+                ) : (
+                  <button onClick={handlePlaceOrder} disabled={isPlacingOrder}>
+                    {isPlacingOrder ? t("checkout_placing_order") : t("checkout_place_order")}
+                  </button>
+                )}
               </div>
             </div>
           )}

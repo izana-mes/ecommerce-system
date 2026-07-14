@@ -16,6 +16,19 @@
   color: #5b6270;
 }
 
+.workspaceLinkButton {
+  display: inline-flex;
+  margin-top: 12px;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #1f6feb;
+  color: #fff;
+  text-decoration: none;
+}
+
 .workspaceCard {
   border: 1px solid #d9dde5;
   border-radius: 12px;

@@ -12,12 +12,18 @@ export async function POST(request: Request) {
   const question = String(body.question || "").trim();
   if (!question) return NextResponse.json({ error: "Question is required" }, { status: 400 });
 
-    const guestId = request.headers.get("x-guest-id");
+  const authHeader =
+    request.headers.get("authorization") || request.headers.get("Authorization");
+  const cookieHeader = request.headers.get("cookie");
+  const guestId = request.headers.get("x-guest-id");
 
   const upstream = await fetch(`${backendApiBaseUrl()}/chatbot/customer/stream`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",      ...(guestId ? { "x-guest-id": guestId } : {}),
+      "Content-Type": "application/json",
+      ...(authHeader ? { Authorization: authHeader } : {}),
+      ...(cookieHeader ? { cookie: cookieHeader } : {}),
+      ...(guestId ? { "x-guest-id": guestId } : {}),
       Accept: "text/event-stream"},
     body: JSON.stringify({
       question,

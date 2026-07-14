@@ -188,29 +188,81 @@
   width: 100%;
 }
 
+.blog-marquee {
+  margin: 0;
+  border-top: 1px solid rgba(15, 61, 173, 0.15);
+  border-bottom: 1px solid rgba(15, 61, 173, 0.15);
+  background: rgba(15, 61, 173, 0.03);
+}
+
+.blog-marquee .jp-marquee-track {
+  animation-direction: reverse;
+}
+
+.blogLoadMoreWrap {
+  display: flex;
+  justify-content: center;
+  padding: 60px 0 80px;
+}
+
 .blogListShowMore {
-  text-align: center;
-  font-size: 14px;
-  font-weight: 700;
-  text-transform: uppercase;
-  margin-top: 20px;
-  margin-bottom: 60px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
   color: #0f3dad;
-  cursor: pointer;
-  display: inline-block;
-  padding: 14px 32px;
-  border: 2px solid #0f3dad;
+  border: 1.5px solid #0f3dad;
   border-radius: 999px;
-  margin-left: auto;
-  margin-right: auto;
-  transition: all 0.3s ease;
+  padding: 16px 52px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.blogLoadMoreEn {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.blogLoadMoreJp {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.blogListShowMore::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #0f3dad, #285ee6);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 0;
+  border-radius: 999px;
+}
+
+.blogListShowMore:hover::before {
+  transform: scaleX(1);
 }
 
 .blogListShowMore:hover {
-  background: #0f3dad;
-  color: var(--background);
+  color: white;
+  border-color: #0f3dad;
+  box-shadow: 0 12px 32px rgba(15, 61, 173, 0.25);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(15, 61, 173, 0.3);
+}
+
+.blogLoadMoreEn, .blogLoadMoreJp {
+  position: relative;
+  z-index: 1;
 }
 
 @keyframes blogHeaderIn {

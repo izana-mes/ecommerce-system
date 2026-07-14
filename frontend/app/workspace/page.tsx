@@ -2,7 +2,10 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {getUser } from "@/lib/auth";
+import Link from "next/link";
+import { useCallback } from "react";
+import { getUser, refreshCurrentUserFromServer, subscribeToAuthChanges } from "@/lib/auth";
+import { createWorkspaceStompClient } from "@/lib/workspaceSocket";
 import "./workspace.css";
 
 type Task = {
@@ -42,8 +45,8 @@ function canUseWorkspace(role?: string): boolean {
 
 export default function WorkspacePage() {
   const router = useRouter();
-  const token = getUser();
   const user = getUser();
+  const token = user;
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [notifications, setNotifications] = useState<Note[]>([]);
@@ -57,27 +60,60 @@ export default function WorkspacePage() {
   const [assignee, setAssignee] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  const isAdmin = String(user?.role || "").toLowerCase() === "admin";
+  const userRole = user?.role;
+  const isAdmin = String(userRole || "").toLowerCase() === "admin";
+
+  const syncUser = useCallback(async () => {
+    const refreshed = await refreshCurrentUserFromServer();
+    const nextUser = refreshed ?? getUser();
+    if (!nextUser) {
+      router.replace("/login?returnTo=/workspace");
+      return null;
+    }
+    if (!canUseWorkspace(nextUser.role)) {
+      router.replace("/");
+      return null;
+    }
+    return nextUser;
+  }, [router]);
 
   useEffect(() => {
-    if (!token || !user) {
-      router.replace("/login");
-      return;
-    }
-    if (!canUseWorkspace(user.role)) {
-      router.replace("/");
-      return;
-    }
-
     const run = async () => {
       setLoading(true);
-      await Promise.all([fetchTasks(), fetchNotifications(), ...(isAdmin ? [fetchAudit()] : [])]);
+      const activeUser = await syncUser();
+      if (activeUser) {
+        const isAdminUser = String(activeUser.role || "").toLowerCase() === "admin";
+        await Promise.all([
+          fetchTasks(),
+          fetchNotifications(),
+          ...(isAdminUser ? [fetchAudit()] : [])
+        ]);
+      }
       setLoading(false);
     };
 
     void run();
+    return subscribeToAuthChanges(() => {
+      void run();
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, user?.role, isAdmin]);
+  }, [syncUser]);
+
+  useEffect(() => {
+    if (!user?.email) return;
+    const recipient = String(user.email).trim().toLowerCase();
+    const client = createWorkspaceStompClient(() => {
+      client.subscribe(`/topic/workspace/notifications/${recipient}`, () => {
+        void fetchNotifications();
+      });
+    });
+
+    client.activate();
+    return () => {
+      client.deactivate();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.email]);
 
   const fetchTasks = async () => {
     if (!token) return;
@@ -209,6 +245,7 @@ export default function WorkspacePage() {
       <section className="workspaceHeader">
         <h1>Workspace Hub</h1>
         <p>Tasks, notifications, audit visibility, and report export in one place.</p>
+        <Link className="workspaceLinkButton" href="/workspace/meetings">Open team calendar</Link>
       </section>
 
       {error ? <p className="workspaceError">{error}</p> : null}

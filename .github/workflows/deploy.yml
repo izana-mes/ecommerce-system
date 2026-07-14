@@ -13,6 +13,9 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
 concurrency:
   group: deploy-${{ github.event.inputs.environment }}
   cancel-in-progress: false
@@ -31,7 +34,7 @@ jobs:
           TARGET_ENV: ${{ github.event.inputs.environment }}
         run: |
           if [ -z "$DEPLOY_CMD" ]; then
-            echo "DEPLOY_CMD is missing"
+            echo "DEPLOY_CMD secret is missing — cannot deploy."
             exit 1
           fi
           sh -c "$DEPLOY_CMD"
@@ -41,18 +44,19 @@ jobs:
           HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
         run: |
           if [ -z "$HEALTHCHECK_URL" ]; then
-            echo "HEALTHCHECK_URL is missing"
+            echo "HEALTHCHECK_URL secret is missing."
             exit 1
           fi
           for i in $(seq 1 15); do
             status=$(curl -sk -o /dev/null -w "%{http_code}" "$HEALTHCHECK_URL")
             if [ "$status" = "200" ]; then
-              echo "Health check passed"
+              echo "Health check passed (attempt $i)"
               exit 0
             fi
+            echo "Attempt $i: status=$status — retrying in 10s..."
             sleep 10
           done
-          echo "Health check failed"
+          echo "Health check failed after 15 attempts"
           exit 1
 
       - name: Smoke tests
@@ -60,8 +64,24 @@ jobs:
           SMOKE_BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
         run: ./.github/scripts/smoke-test.sh "$SMOKE_BASE_URL"
 
+      # FIX M8: Run rollback AND re-verify health after rollback, so a silent
+      # rollback failure is surfaced as a CI failure rather than passing silently.
       - name: Rollback on failure
         if: failure()
         env:
           ROLLBACK_CMD: ${{ secrets.ROLLBACK_CMD }}
-        run: ./.github/scripts/rollback.sh
+          HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
+        run: |
+          ./.github/scripts/rollback.sh
+          echo "Rollback executed. Re-verifying health after rollback..."
+          for i in $(seq 1 10); do
+            status=$(curl -sk -o /dev/null -w "%{http_code}" "$HEALTHCHECK_URL")
+            if [ "$status" = "200" ]; then
+              echo "Service healthy after rollback (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i: status=$status — retrying in 10s..."
+            sleep 10
+          done
+          echo "CRITICAL: Service is NOT healthy even after rollback!"
+          exit 1

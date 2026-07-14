@@ -5,6 +5,8 @@ import com.example.shop.common.exception.UnauthorizedException;
 import com.example.shop.modules.product.dto.ProductDto;
 import com.example.shop.modules.product.dto.StockAdjustmentRequestDto;
 import com.example.shop.modules.product.service.ProductService;
+import com.example.shop.modules.product.service.ProductTrendingService;
+import com.example.shop.modules.product.service.RecentlyViewedProductService;
 import com.example.shop.modules.productapproval.dto.ProductChangeRequestResponseDto;
 import com.example.shop.modules.productapproval.dto.request.ReviewProductChangeRequestDto;
 import com.example.shop.modules.productapproval.service.ProductChangeRequestService;
@@ -28,6 +30,8 @@ import java.util.UUID;
 public class ProductController {
 
     private final ProductService productService;
+    private final ProductTrendingService productTrendingService;
+    private final RecentlyViewedProductService recentlyViewedProductService;
     private final SearchHistoryService searchHistoryService;
     private final AdminAuditLogger adminAuditLogger;
     private final ProductChangeRequestService productChangeRequestService;
@@ -46,7 +50,7 @@ public class ProductController {
     }
 
     @GetMapping("/search-history")
-    @PreAuthorize("isFullyAuthenticated()")
+    @PreAuthorize("!isAnonymous()")
     public ResponseEntity<List<String>> getSearchHistory(
             @RequestParam(value = "limit", required = false, defaultValue = "10") int limit,
             @AuthenticationPrincipal User user) {
@@ -59,6 +63,39 @@ public class ProductController {
             @RequestParam(value = "limit", required = false, defaultValue = "8") int limit
     ) {
         return ResponseEntity.ok(productService.searchSuggestions(query, limit));
+    }
+
+    @PostMapping("/{productID}/view")
+    public ResponseEntity<Void> trackProductView(
+            @PathVariable("productID") String productID,
+            @AuthenticationPrincipal User user
+    ) {
+        productTrendingService.trackProductView(productID);
+        recentlyViewedProductService.track(user, productID);
+        return ResponseEntity.accepted().build();
+    }
+
+    @GetMapping("/trending")
+    public ResponseEntity<List<ProductDto>> getTrendingProducts(
+            @RequestParam(value = "limit", required = false, defaultValue = "12") int limit
+    ) {
+        return ResponseEntity.ok(productTrendingService.getTrendingProducts(limit));
+    }
+
+    @GetMapping("/recently-viewed")
+    @PreAuthorize("!isAnonymous()")
+    public ResponseEntity<List<ProductDto>> getRecentlyViewed(
+            @AuthenticationPrincipal User user,
+            @RequestParam(value = "limit", required = false, defaultValue = "10") int limit
+    ) {
+        return ResponseEntity.ok(recentlyViewedProductService.getRecentlyViewed(user, limit));
+    }
+
+    @DeleteMapping("/recently-viewed")
+    @PreAuthorize("!isAnonymous()")
+    public ResponseEntity<Void> clearRecentlyViewed(@AuthenticationPrincipal User user) {
+        recentlyViewedProductService.clear(user);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/supplier/mine")
@@ -74,7 +111,7 @@ public class ProductController {
     }
 
     @DeleteMapping("/search-history")
-    @PreAuthorize("isFullyAuthenticated()")
+    @PreAuthorize("!isAnonymous()")
     public ResponseEntity<Void> clearSearchHistory(@AuthenticationPrincipal User user) {
         searchHistoryService.clearHistory(user);
         return ResponseEntity.noContent().build();

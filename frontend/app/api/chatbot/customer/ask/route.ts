@@ -19,9 +19,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Question is required" }, { status: 400 });
   }
 
-  // Forward the auth header so logged-in users get order-lookup enrichment.
+  // Forward auth so logged-in users can query their orders.
   const authHeader =
     request.headers.get("authorization") || request.headers.get("Authorization");
+  const cookieHeader = request.headers.get("cookie");
   const guestId = request.headers.get("x-guest-id");
 
   const controller = new AbortController();
@@ -32,7 +33,11 @@ export async function POST(request: Request) {
     const upstream = await fetch(backendUrl, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",        ...(guestId ? { "x-guest-id": guestId } : {})},
+        "Content-Type": "application/json",
+        ...(authHeader ? { Authorization: authHeader } : {}),
+        ...(cookieHeader ? { cookie: cookieHeader } : {}),
+        ...(guestId ? { "x-guest-id": guestId } : {}),
+      },
       body: JSON.stringify({
         question,
         conversationId: typeof body.conversationId === "string" ? body.conversationId : undefined}),

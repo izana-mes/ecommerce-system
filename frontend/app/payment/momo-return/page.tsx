@@ -1,43 +1,81 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useAppDispatch } from "@/store";
 import { clearCart, fetchCartAsync } from "@/store/cartSlice";
-import {}  from "@/lib/auth";
-import { useEffect } from "react";
 import styles from "./momo-return.module.css";
+
+type ReturnState = {
+  loading: boolean;
+  success: boolean;
+  message: string;
+  orderNumber: string;
+};
 
 function MomoReturnContent() {
   const dispatch = useAppDispatch();
   const searchParams = useSearchParams();
+  const query = useMemo(() => searchParams.toString(), [searchParams]);
+  const [state, setState] = useState<ReturnState>({
+    loading: true,
+    success: false,
+    message: "Verifying payment...",
+    orderNumber: "",
+  });
 
-  const resultCode = searchParams.get("resultCode");
-  const message = searchParams.get("message");
-  const orderId = searchParams.get("orderId");
   const orderType = searchParams.get("orderType");
 
-  const isSuccess = resultCode === "0";
-
   useEffect(() => {
-    if (isSuccess) {
-      // Clear the cart on successful payment
-      fetch("/api/cart/clear", {
-        method: "DELETE",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json"}})
-        .catch(() => null)
-        .then(() => {
-          dispatch(clearCart());
-        })
-        .catch(() => null);
+    const verify = async () => {
+      if (!query) {
+        setState({
+          loading: false,
+          success: false,
+          message: "Missing MoMo return data.",
+          orderNumber: "",
+        });
+        return;
+      }
 
-      dispatch(fetchCartAsync());
-    }
-  }, [isSuccess, dispatch]);
+      try {
+        const response = await fetch(`/api/momo/return?${query}`, {
+          method: "GET",
+          credentials: "include",
+        });
+        const data = await response.json();
+        const success = !!data?.success;
+
+        if (success && data?.clearCart) {
+          await fetch("/api/cart/clear", {
+            method: "DELETE",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+          }).catch(() => null);
+          dispatch(clearCart());
+          await dispatch(fetchCartAsync());
+        }
+
+        setState({
+          loading: false,
+          success,
+          message: data?.message || (success ? "Payment successful" : "Payment failed"),
+          orderNumber: String(data?.orderNumber || searchParams.get("orderId") || ""),
+        });
+      } catch {
+        setState({
+          loading: false,
+          success: false,
+          message: "Could not verify payment result.",
+          orderNumber: String(searchParams.get("orderId") || ""),
+        });
+      }
+    };
+
+    void verify();
+  }, [dispatch, query, searchParams]);
 
   const currentDate = new Date();
   const formatDate = (date: Date) => {
@@ -79,24 +117,26 @@ function MomoReturnContent() {
               <div className={styles.orderCompleteMessageImg}>
                 <Image
                   src="/success.png"
-                  alt={isSuccess ? "Success" : "Failed"}
+                  alt={state.success ? "Success" : "Failed"}
                   width={80}
                   height={80}
                 />
               </div>
-              <h3>{isSuccess ? "Your order is completed!" : "Payment failed or cancelled"}</h3>
-              <p>
-                {isSuccess
-                  ? "Thank you! Your MoMo payment was processed successfully."
-                  : (message || "The MoMo transaction was not completed.")}
-              </p>
+              <h3>
+                {state.loading
+                  ? "Checking payment..."
+                  : state.success
+                    ? "Your order is completed!"
+                    : "Payment failed or cancelled"}
+              </h3>
+              <p>{state.message}</p>
             </div>
 
-            {orderId && (
+            {state.orderNumber && (
               <div className={styles.orderInfo}>
                 <div className={styles.orderInfoItem}>
                   <p>Order Number</p>
-                  <h4>{orderId}</h4>
+                  <h4>{state.orderNumber}</h4>
                 </div>
                 <div className={styles.orderInfoItem}>
                   <p>Date</p>

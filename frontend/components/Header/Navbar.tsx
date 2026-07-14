@@ -30,6 +30,25 @@ const BASE_LINKS = [
   { href: "/contact", key: "nav_contact" as TranslationKey },
 ];
 
+/** Japanese kanji/kana labels shown beneath English nav items */
+const JP_LABELS: Partial<Record<TranslationKey, string>> = {
+  nav_home:       "ホーム",
+  nav_shop:       "ショップ",
+  nav_about:      "について",
+  nav_blog:       "ブログ",
+  nav_contact:    "お問合せ",
+  nav_chatbot:    "チャット",
+  nav_support:    "サポート",
+  nav_attendance: "出勤",
+  nav_workspace:  "作業場",
+  nav_assistant:  "助手",
+  nav_inbox:      "受信箱",
+  nav_fulfillment:"発送",
+  nav_expenses:   "支出",
+  nav_admin:      "管理",
+  nav_shipper:    "配送",
+};
+
 const CUSTOMER_LINKS = [
   { href: "/chatbot", key: "nav_chatbot" as TranslationKey },
   { href: "/support-chat", key: "nav_support" as TranslationKey },
@@ -37,6 +56,7 @@ const CUSTOMER_LINKS = [
 
 const STAFF_LINKS = [
   { href: "/staff/attendance", key: "nav_attendance" as TranslationKey },
+  { href: "/workspace", key: "nav_workspace" as TranslationKey },
   { href: "/staff/chatbot", key: "nav_assistant" as TranslationKey },
   { href: "/staff/support-chat", key: "nav_inbox" as TranslationKey },
   { href: "/staff/shipping", key: "nav_fulfillment" as TranslationKey },
@@ -46,6 +66,7 @@ const STAFF_LINKS = [
 const SHIPPER_NAV_LINKS = [
   { href: "/", key: "nav_home" as TranslationKey },
   { href: "/staff/support-chat", key: "nav_inbox" as TranslationKey },
+  { href: "/workspace", key: "nav_workspace" as TranslationKey },
   { href: "/shipper/dashboard", key: "nav_shipper" as TranslationKey },
 ];
 
@@ -92,11 +113,16 @@ export default function Navbar() {
   };
 
   const fetchSearchHistory = useCallback(async () => {
+    if (!getUser()) {
+      setSearchHistory([]);
+      return;
+    }
     try {
       const response = await fetch("/api/products/search-history?limit=8", {
         method: "GET",
         credentials: "include",
-        cache: "no-store"});
+        cache: "no-store",
+      });
       if (!response.ok) {
         setSearchHistory([]);
         return;
@@ -329,6 +355,13 @@ export default function Navbar() {
         ...(isAdminUser ? [{ href: "/admin", key: "nav_admin" as TranslationKey }] : []),
       ];
     }
+    if (isSupplierUser) {
+      return [
+        ...BASE_LINKS,
+        { href: "/workspace", key: "nav_workspace" as TranslationKey },
+        ...CUSTOMER_LINKS,
+      ];
+    }
     const isRetailCustomer =
       hasUser && !isAdminUser && !isStaffUser && !isShipperUser && !isSupplierUser;
     return [
@@ -413,6 +446,9 @@ export default function Navbar() {
           </Link>
         </div>
 
+        {/* Japanese vertical hairline divider — 鎌倉区切り */}
+        <div className="navJpDivider" aria-hidden="true" />
+
         <button
           className="mobileMenuButton"
           type="button"
@@ -434,7 +470,12 @@ export default function Navbar() {
                   }}
                   className={isCurrentLink(link.href) ? "activeLink" : ""}
                 >
-                  {t(link.key)}
+                  <span className="navLinkInner">
+                    <span>{t(link.key)}</span>
+                    {JP_LABELS[link.key] && (
+                      <span className="navJpLabel">{JP_LABELS[link.key]}</span>
+                    )}
+                  </span>
                 </Link>
                 {link.href === "/shop" && shopCategories.length > 0 ? (
                   <div className="shopCategoryDropdown">

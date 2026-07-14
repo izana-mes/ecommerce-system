@@ -4,7 +4,7 @@ import "./shipper.css";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { getUser, logout, logoutServerSession, subscribeToAuthChanges } from "@/lib/auth";
+import { getUser, logoutServerSession, subscribeToAuthChanges } from "@/lib/auth";
 import {
   MdDashboard,
   MdLocationOn,
@@ -48,12 +48,12 @@ export default function ShipperLayout({ children }: { children: React.ReactNode 
   }, [router]);
 
   useEffect(() => {
-    syncUser();
-    return subscribeToAuthChanges(syncUser);
+    const unsubscribe = subscribeToAuthChanges(syncUser);
+    queueMicrotask(syncUser);
+    return unsubscribe;
   }, [syncUser]);
 
   const handleLogout = async () => {
-    logout();
     await logoutServerSession();
     router.replace("/login");
   };
@@ -121,7 +121,7 @@ export default function ShipperLayout({ children }: { children: React.ReactNode 
       </aside>
 
       {/* ── Main content ── */}
-      <main className="sh-main">{children}</main>
+      <main className="sh-main jp-seigaiha-bg">{children}</main>
     </div>
   );
 }

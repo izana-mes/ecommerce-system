@@ -14,6 +14,7 @@ spring:
     driver-class-name: org.postgresql.Driver
 
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: validate
     properties:
@@ -85,13 +86,27 @@ application:
     search-history:
       max-entries: ${SEARCH_HISTORY_MAX_ENTRIES:10}
       ttl-days: ${SEARCH_HISTORY_TTL_DAYS:30}
+    trending:
+      products:
+        default-limit: ${TRENDING_PRODUCTS_DEFAULT_LIMIT:12}
+        max-limit: ${TRENDING_PRODUCTS_MAX_LIMIT:50}
+        ttl-days: ${TRENDING_PRODUCTS_TTL_DAYS:30}
+    recently-viewed:
+      max-entries: ${RECENTLY_VIEWED_MAX_ENTRIES:20}
+      ttl-days: ${RECENTLY_VIEWED_TTL_DAYS:30}
     cache:
+      invalidation:
+        channel: ${CACHE_INVALIDATION_CHANNEL:cache:invalidate:all}
+        node-id: ${CACHE_INVALIDATION_NODE_ID:${HOSTNAME:node-unknown}}
       ttl:
         products-all-seconds: ${CACHE_TTL_PRODUCTS_ALL_SECONDS:300}
         products-search-seconds: ${CACHE_TTL_PRODUCTS_SEARCH_SECONDS:180}
         products-suggest-seconds: ${CACHE_TTL_PRODUCTS_SUGGEST_SECONDS:180}
         products-inventory-health-seconds: ${CACHE_TTL_PRODUCTS_INVENTORY_HEALTH_SECONDS:30}
         admin-dashboard-seconds: ${CACHE_TTL_ADMIN_DASHBOARD_SECONDS:30}
+        staff-dashboard-seconds: ${CACHE_TTL_STAFF_DASHBOARD_SECONDS:30}
+        seller-dashboard-seconds: ${CACHE_TTL_SELLER_DASHBOARD_SECONDS:30}
+        supplier-dashboard-seconds: ${CACHE_TTL_SUPPLIER_DASHBOARD_SECONDS:30}
     internal:
       notify-token: ${INTERNAL_NOTIFY_TOKEN:}
   
@@ -100,12 +115,16 @@ application:
       ttl-days: ${REVIEWS_TTL_DAYS:180}
     payment:
       vnpay:
-        hash-secret: ${VNPAY_HASH_SECRET:BVJUNHLRJVJ5U6MQSL1WHVCHN1V2J1D4}
+        hash-secret: ${VNPAY_HASH_SECRET:}
         usd-to-vnd-rate: ${VNPAY_USD_TO_VND_RATE:26000}
       momo:
         access-key: ${MOMO_ACCESS_KEY:}
         secret-key: ${MOMO_SECRET_KEY:}
         usd-to-vnd-rate: ${MOMO_USD_TO_VND_RATE:26000}
+      paypal:
+        client-id: ${PAYPAL_CLIENT_ID:}
+        client-secret: ${PAYPAL_CLIENT_SECRET:}
+        mode: ${PAYPAL_MODE:sandbox}
     messaging:
       exchange: ${MESSAGING_EXCHANGE:shop.events}
       queue:
@@ -115,10 +134,16 @@ application:
         order-paid-email-dlq: ${MESSAGING_QUEUE_ORDER_PAID_EMAIL_DLQ:order.paid.email.dlq}
         order-created: ${MESSAGING_QUEUE_ORDER_CREATED:order.created}
         order-created-dlq: ${MESSAGING_QUEUE_ORDER_CREATED_DLQ:order.created.dlq}
+        order-created-analytics: ${MESSAGING_QUEUE_ORDER_CREATED_ANALYTICS:order.created.analytics}
+        order-created-analytics-dlq: ${MESSAGING_QUEUE_ORDER_CREATED_ANALYTICS_DLQ:order.created.analytics.dlq}
+        order-created-fraud-check: ${MESSAGING_QUEUE_ORDER_CREATED_FRAUD_CHECK:order.created.fraud.check}
+        order-created-fraud-check-dlq: ${MESSAGING_QUEUE_ORDER_CREATED_FRAUD_CHECK_DLQ:order.created.fraud.check.dlq}
         email-general: ${MESSAGING_QUEUE_EMAIL_GENERAL:email.general}
         email-general-dlq: ${MESSAGING_QUEUE_EMAIL_GENERAL_DLQ:email.general.dlq}
         low-stock-alert: ${MESSAGING_QUEUE_LOW_STOCK_ALERT:inventory.low-stock.alert}
         low-stock-alert-dlq: ${MESSAGING_QUEUE_LOW_STOCK_ALERT_DLQ:inventory.low-stock.alert.dlq}
+        cart-abandoned: ${MESSAGING_QUEUE_CART_ABANDONED:cart.abandoned}
+        cart-abandoned-dlq: ${MESSAGING_QUEUE_CART_ABANDONED_DLQ:cart.abandoned.dlq}
         order-status-changed: ${MESSAGING_QUEUE_ORDER_STATUS_CHANGED:order.status.changed}
         order-status-changed-dlq: ${MESSAGING_QUEUE_ORDER_STATUS_CHANGED_DLQ:order.status.changed.dlq}
         review-submitted: ${MESSAGING_QUEUE_REVIEW_SUBMITTED:review.submitted}
@@ -129,13 +154,24 @@ application:
         payment-ipn: ${MESSAGING_ROUTING_KEY_PAYMENT_IPN:payment.vnpay.ipn}
         order-paid-email: ${MESSAGING_ROUTING_KEY_ORDER_PAID_EMAIL:notification.order.paid.email}
         order-created: ${MESSAGING_ROUTING_KEY_ORDER_CREATED:order.created}
+        order-created-analytics: ${MESSAGING_ROUTING_KEY_ORDER_CREATED_ANALYTICS:order.created}
+        order-created-fraud-check: ${MESSAGING_ROUTING_KEY_ORDER_CREATED_FRAUD_CHECK:order.created}
         email-general: ${MESSAGING_ROUTING_KEY_EMAIL_GENERAL:email.general.send}
         low-stock-alert: ${MESSAGING_ROUTING_KEY_LOW_STOCK_ALERT:inventory.low-stock.alert}
+        cart-abandoned: ${MESSAGING_ROUTING_KEY_CART_ABANDONED:cart.abandoned}
         order-status-changed: ${MESSAGING_ROUTING_KEY_ORDER_STATUS_CHANGED:order.status.changed}
         review-submitted: ${MESSAGING_ROUTING_KEY_REVIEW_SUBMITTED:review.submitted}
         audit-event: ${MESSAGING_ROUTING_KEY_AUDIT_EVENT:audit.event}
+        inventory-reserved: ${MESSAGING_ROUTING_KEY_INVENTORY_RESERVED:inventory.reserved}
+        inventory-released: ${MESSAGING_ROUTING_KEY_INVENTORY_RELEASED:inventory.released}
     inventory:
       low-stock-threshold: ${LOW_STOCK_THRESHOLD:5}
+    cart:
+      reminder:
+        enabled: ${CART_REMINDER_ENABLED:true}
+        fixed-delay-ms: ${CART_REMINDER_FIXED_DELAY_MS:900000}
+        idle-minutes: ${CART_REMINDER_IDLE_MINUTES:120}
+        cooldown-hours: ${CART_REMINDER_COOLDOWN_HOURS:24}
     fulfillment:
       delivery-reminder:
         enabled: ${FULFILLMENT_DELIVERY_REMINDER_ENABLED:true}

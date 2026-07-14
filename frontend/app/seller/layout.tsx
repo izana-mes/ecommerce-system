@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { CSSProperties, useEffect, useState } from "react";
-import { getUser, logout, logoutServerSession, subscribeToAuthChanges } from "@/lib/auth";
+import { getUser, logoutServerSession, subscribeToAuthChanges } from "@/lib/auth";
 
 const NAV_ITEMS = [
   { name: "Catalog Management", path: "/seller", icon: "📦", exact: true },
@@ -38,7 +38,6 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
   }, []);
 
   const handleLogout = async () => {
-    logout();
     await logoutServerSession();
     router.replace("/login");
   };
@@ -122,7 +121,7 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
       </aside>
 
       {/* ── Main content ── */}
-      <main style={{ flex: 1, overflowY: "auto", minHeight: "100vh" }}>
+      <main className="jp-seigaiha-bg" style={{ flex: 1, overflowY: "auto", minHeight: "100vh", position: "relative" }}>
         {children}
       </main>
     </div>

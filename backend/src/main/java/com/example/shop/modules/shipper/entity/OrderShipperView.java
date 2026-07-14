@@ -66,6 +66,9 @@ public class OrderShipperView {
     @Column(name = "customer_phone")
     private String customerPhone;
 
+    @Column(name = "customer_email")
+    private String customerEmail;
+
     @Column(name = "shipping_address_line1")
     private String shippingAddressLine1;
 }

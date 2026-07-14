@@ -20,12 +20,23 @@ public class PaymentIpnMessagePublisher {
     @Value("${application.messaging.routing-key.payment-ipn}")
     private String routingKey;
 
-    public void publish(VnpayIpnMessage message) {
+    public boolean tryPublish(VnpayIpnMessage message) {
         RabbitTemplate rt = rabbitTemplate.getIfAvailable();
         if (rt == null) {
-            log.debug("Skipping payment IPN queue publish (RabbitMQ disabled)");
-            return;
+            return false;
         }
-        rt.convertAndSend(exchange, routingKey, message);
+        try {
+            rt.convertAndSend(exchange, routingKey, message);
+            return true;
+        } catch (Exception e) {
+            log.warn("RabbitMQ publish failed for payment IPN: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    public void publish(VnpayIpnMessage message) {
+        if (!tryPublish(message)) {
+            log.debug("Skipping payment IPN queue publish (RabbitMQ disabled)");
+        }
     }
 }

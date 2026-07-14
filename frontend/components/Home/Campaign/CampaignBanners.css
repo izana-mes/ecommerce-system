@@ -1,0 +1,197 @@
+.campaign-wrapper {
+  margin: 85px 160px;
+}
+
+.campaign-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-gap: 30px;
+  animation: campaignReveal 0.75s ease both;
+}
+
+.campaign-card {
+  position: relative;
+  overflow: hidden;
+  height: 25rem;
+  background-color: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 35px 30px;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s;
+  isolation: isolate;
+}
+
+.campaign-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-strong);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.05);
+}
+
+.coupon-card {
+  background-color: var(--surface-2);
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.card-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  z-index: 1;
+  transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.35) 60%, rgba(0, 0, 0, 0.15) 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.campaign-card:hover .zoom-bg {
+  transform: scale(1.06);
+}
+
+.campaign-card-content {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+}
+
+.content-overlay {
+  color: #ffffff;
+}
+
+.coupon-box-dashed {
+  border: 2px dashed var(--accent);
+  background-color: var(--surface-1);
+  padding: 15px;
+  border-radius: 8px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.coupon-copy-btn {
+  background-color: var(--accent);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.coupon-copy-btn:hover {
+  background-color: var(--brand-hover);
+  transform: scale(1.03);
+}
+
+.card-badge {
+  position: absolute;
+  top: 25px;
+  left: 25px;
+  z-index: 4;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  padding: 4px 10px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.coupon-badge {
+  background-color: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.info-badge {
+  background-color: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(8px);
+}
+
+.sale-badge {
+  background-color: var(--accent);
+  color: #ffffff;
+  border: 1px solid var(--accent);
+}
+
+.campaign-btn-link {
+  position: relative;
+  text-decoration: none;
+  display: inline-flex;
+  transition: transform 0.2s ease;
+}
+
+.campaign-btn-link:hover {
+  transform: scale(1.05);
+}
+
+.campaign-btn-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 0;
+  height: 2px;
+  background-color: #ffffff;
+  transition: width 0.3s ease-out;
+}
+
+.campaign-btn-link:hover::after {
+  width: 100%;
+}
+
+@keyframes campaignReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1200px) {
+  .campaign-wrapper {
+    margin: 60px 40px;
+  }
+}
+
+@media (max-width: 992px) {
+  .campaign-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .outlet-card {
+    grid-column: span 2;
+    height: 18rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .campaign-wrapper {
+    margin: 40px 16px;
+  }
+  .campaign-grid {
+    grid-template-columns: 1fr;
+    grid-gap: 20px;
+  }
+  .outlet-card {
+    grid-column: span 1;
+    height: 25rem;
+  }
+}

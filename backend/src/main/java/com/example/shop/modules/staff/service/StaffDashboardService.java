@@ -1,8 +1,10 @@
 package com.example.shop.modules.staff.service;
 
+import com.example.shop.config.RedisCacheConfig;
 import com.example.shop.modules.staff.dto.StaffDashboardDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ public class StaffDashboardService {
     private final JdbcTemplate jdbcTemplate;
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = RedisCacheConfig.STAFF_DASHBOARD, key = "'default'")
     public StaffDashboardDto getDashboard() {
         long ordersToday = queryLong(
                 "SELECT COUNT(*) FROM orders WHERE DATE(created_at) = CURRENT_DATE", 0L);

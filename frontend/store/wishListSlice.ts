@@ -1,6 +1,7 @@
 "use client";
 
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
+import { csrfHeader, ensureCsrfToken } from "@/lib/csrf";
 
 export interface wishListProduct {
   productID: string;
@@ -25,15 +26,16 @@ export const addToWishlistAsync = createAsyncThunk(
   "wishlist/addToWishlistAsync",
   async (product: wishListProduct, { rejectWithValue }) => {
     try {
-      const token =
-        typeof window !== "undefined"
-          ? null
-          : null;
+      await ensureCsrfToken();
       const response = await fetch("/api/wishlist", {
         method: "POST",
+        credentials: "include",
         headers: {
-          "Content-Type": "application/json"},
-        body: JSON.stringify(product)});
+          "Content-Type": "application/json",
+          ...csrfHeader(),
+        },
+        body: JSON.stringify(product),
+      });
 
       if (!response.ok) {
         const error = await response.json().catch(() => null);
@@ -56,15 +58,16 @@ export const removeFromWishlistAsync = createAsyncThunk(
   "wishlist/removeFromWishlistAsync",
   async (productID: string, { rejectWithValue }) => {
     try {
-      const token =
-        typeof window !== "undefined"
-          ? null
-          : null;
+      await ensureCsrfToken();
       const response = await fetch("/api/wishlist", {
         method: "DELETE",
+        credentials: "include",
         headers: {
-          "Content-Type": "application/json"},
-        body: JSON.stringify({ productID })});
+          "Content-Type": "application/json",
+          ...csrfHeader(),
+        },
+        body: JSON.stringify({ productID }),
+      });
 
       if (!response.ok) {
         const error = await response.json().catch(() => null);
@@ -91,12 +94,10 @@ export const fetchWishlistAsync = createAsyncThunk(
   "wishlist/fetchWishlistAsync",
   async (_, { rejectWithValue }) => {
     try {
-      const token =
-        typeof window !== "undefined"
-          ? null
-          : null;
       const response = await fetch("/api/wishlist", {
-        headers: {        }});
+        credentials: "include",
+        cache: "no-store",
+      });
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {

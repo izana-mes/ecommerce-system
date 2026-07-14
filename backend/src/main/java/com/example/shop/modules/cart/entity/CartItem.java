@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.example.shop.modules.user.entity.User;
 import jakarta.persistence.*;
@@ -12,6 +13,7 @@ import lombok.*;
 @Entity
 @Table(name = "cart_items",
         uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "product_id"}))
+@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @Builder
@@ -50,4 +52,3 @@ public class CartItem {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 }
-

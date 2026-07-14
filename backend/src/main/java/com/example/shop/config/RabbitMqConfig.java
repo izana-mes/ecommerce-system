@@ -50,6 +50,26 @@ public class RabbitMqConfig {
     @Value("${application.messaging.routing-key.order-created}")
     private String orderCreatedRoutingKey;
 
+    // ── Order Created Analytics ──────────────────────────────────
+    @Value("${application.messaging.queue.order-created-analytics}")
+    private String orderCreatedAnalyticsQueue;
+
+    @Value("${application.messaging.queue.order-created-analytics-dlq}")
+    private String orderCreatedAnalyticsDlq;
+
+    @Value("${application.messaging.routing-key.order-created-analytics}")
+    private String orderCreatedAnalyticsRoutingKey;
+
+    // ── Order Created Fraud Check ───────────────────────────────
+    @Value("${application.messaging.queue.order-created-fraud-check}")
+    private String orderCreatedFraudCheckQueue;
+
+    @Value("${application.messaging.queue.order-created-fraud-check-dlq}")
+    private String orderCreatedFraudCheckDlq;
+
+    @Value("${application.messaging.routing-key.order-created-fraud-check}")
+    private String orderCreatedFraudCheckRoutingKey;
+
     // ── Email General ────────────────────────────────────────────
     @Value("${application.messaging.queue.email-general}")
     private String emailGeneralQueue;
@@ -69,6 +89,16 @@ public class RabbitMqConfig {
 
     @Value("${application.messaging.routing-key.low-stock-alert}")
     private String lowStockAlertRoutingKey;
+
+    // ── Cart Abandoned ───────────────────────────────────────────
+    @Value("${application.messaging.queue.cart-abandoned}")
+    private String cartAbandonedQueue;
+
+    @Value("${application.messaging.queue.cart-abandoned-dlq}")
+    private String cartAbandonedDlq;
+
+    @Value("${application.messaging.routing-key.cart-abandoned}")
+    private String cartAbandonedRoutingKey;
 
     // ── Exchanges ────────────────────────────────────────────────
 
@@ -154,6 +184,54 @@ public class RabbitMqConfig {
         return BindingBuilder.bind(orderCreatedDlq).to(shopDlqExchange).with(orderCreatedDlq.getName());
     }
 
+    // ── Order Created Analytics queue/binding ───────────────────
+
+    @Bean
+    public Queue orderCreatedAnalyticsQueue() {
+        return QueueBuilder.durable(orderCreatedAnalyticsQueue)
+                .withArguments(dlqArgs(orderCreatedAnalyticsDlq))
+                .build();
+    }
+
+    @Bean
+    public Queue orderCreatedAnalyticsDlq() {
+        return QueueBuilder.durable(orderCreatedAnalyticsDlq).build();
+    }
+
+    @Bean
+    public Binding orderCreatedAnalyticsBinding(Queue orderCreatedAnalyticsQueue, TopicExchange shopEventsExchange) {
+        return BindingBuilder.bind(orderCreatedAnalyticsQueue).to(shopEventsExchange).with(orderCreatedAnalyticsRoutingKey);
+    }
+
+    @Bean
+    public Binding orderCreatedAnalyticsDlqBinding(Queue orderCreatedAnalyticsDlq, DirectExchange shopDlqExchange) {
+        return BindingBuilder.bind(orderCreatedAnalyticsDlq).to(shopDlqExchange).with(orderCreatedAnalyticsDlq.getName());
+    }
+
+    // ── Order Created Fraud Check queue/binding ─────────────────
+
+    @Bean
+    public Queue orderCreatedFraudCheckQueue() {
+        return QueueBuilder.durable(orderCreatedFraudCheckQueue)
+                .withArguments(dlqArgs(orderCreatedFraudCheckDlq))
+                .build();
+    }
+
+    @Bean
+    public Queue orderCreatedFraudCheckDlq() {
+        return QueueBuilder.durable(orderCreatedFraudCheckDlq).build();
+    }
+
+    @Bean
+    public Binding orderCreatedFraudCheckBinding(Queue orderCreatedFraudCheckQueue, TopicExchange shopEventsExchange) {
+        return BindingBuilder.bind(orderCreatedFraudCheckQueue).to(shopEventsExchange).with(orderCreatedFraudCheckRoutingKey);
+    }
+
+    @Bean
+    public Binding orderCreatedFraudCheckDlqBinding(Queue orderCreatedFraudCheckDlq, DirectExchange shopDlqExchange) {
+        return BindingBuilder.bind(orderCreatedFraudCheckDlq).to(shopDlqExchange).with(orderCreatedFraudCheckDlq.getName());
+    }
+
     // ── Email General queue/binding ─────────────────────────────
 
     @Bean
@@ -200,6 +278,30 @@ public class RabbitMqConfig {
     @Bean
     public Binding lowStockAlertDlqBinding(Queue lowStockAlertDlq, DirectExchange shopDlqExchange) {
         return BindingBuilder.bind(lowStockAlertDlq).to(shopDlqExchange).with(lowStockAlertDlq.getName());
+    }
+
+    // ── Cart Abandoned queue/binding ───────────────────────────
+
+    @Bean
+    public Queue cartAbandonedQueue() {
+        return QueueBuilder.durable(cartAbandonedQueue)
+                .withArguments(dlqArgs(cartAbandonedDlq))
+                .build();
+    }
+
+    @Bean
+    public Queue cartAbandonedDlq() {
+        return QueueBuilder.durable(cartAbandonedDlq).build();
+    }
+
+    @Bean
+    public Binding cartAbandonedBinding(Queue cartAbandonedQueue, TopicExchange shopEventsExchange) {
+        return BindingBuilder.bind(cartAbandonedQueue).to(shopEventsExchange).with(cartAbandonedRoutingKey);
+    }
+
+    @Bean
+    public Binding cartAbandonedDlqBinding(Queue cartAbandonedDlq, DirectExchange shopDlqExchange) {
+        return BindingBuilder.bind(cartAbandonedDlq).to(shopDlqExchange).with(cartAbandonedDlq.getName());
     }
 
     // ── Order Status Changed queue/binding ──────────────────────
@@ -325,4 +427,3 @@ public class RabbitMqConfig {
         );
     }
 }
-

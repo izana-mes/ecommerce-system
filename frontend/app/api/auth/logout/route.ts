@@ -1,21 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
-import { forwardSetCookies } from "@/lib/proxyAuth";
+import {
+  backendAuthHeaders,
+  clearSessionCookies,
+  forwardSetCookies,
+} from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
 
 export async function POST(request: NextRequest) {
-  const cookieHeader = request.headers.get("cookie");
-  const csrf = request.headers.get("x-xsrf-token");
-
   const response = await fetch(`${API_URL}/v1/auth/logout`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      ...(csrf ? { "X-XSRF-TOKEN": csrf } : {})}});
+    headers: backendAuthHeaders(request),
+  });
 
-  const out = NextResponse.json({ success: response.ok }, { status: response.status });
+  const out = NextResponse.json({ success: true }, { status: 200 });
   forwardSetCookies(response, out);
+  clearSessionCookies(out);
   return out;
 }

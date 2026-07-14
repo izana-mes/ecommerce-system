@@ -1,213 +1,875 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&display=swap");
 @import "tailwindcss";
 
+
+/* ─────────────────────────────────────────────
+   DESIGN TOKENS — Light Mode (Japanese SaaS)
+───────────────────────────────────────────── */
 :root {
-  --background: var(--surface-1);
-  --foreground: #101010;
-  --surface-1: #ffffff;
-  --surface-2: #f4f6fb;
-  --border-soft: #dbe2ef;
-  --muted-text: #5f687a;
-  --announcement-bg: linear-gradient(90deg, #1f2937 0%, #111827 100%);
-  --announcement-text: #f9fafb;
+  /* Backgrounds */
+  --background:       #fafaf8;
+  --surface-1:        #ffffff;
+  --surface-2:        #f5f5f3;
+  --surface-3:        #eeede9;
+  --surface-glass:    rgba(255,255,255,0.72);
+
+  /* Foregrounds */
+  --foreground:       #1a1a1a;
+  --foreground-2:     #4a4a4a;
+  --foreground-3:     #7a7a7a;
+  --foreground-muted: #a0a0a0;
+
+  /* Brand */
+  --brand:            #1a56db;
+  --brand-soft:       #e8f0fd;
+  --brand-hover:      #1446c0;
+  --accent:           #ff0211;
+  --accent-soft:      #fff0f0;
+
+  /* Status */
+  --success:          #059669;
+  --success-soft:     #ecfdf5;
+  --warning:          #d97706;
+  --warning-soft:     #fffbeb;
+  --danger:           #dc2626;
+  --danger-soft:      #fef2f2;
+  --info:             #0891b2;
+  --info-soft:        #ecfeff;
+
+  /* Borders */
+  --border:           #e5e5e2;
+  --border-soft:      #f0f0ed;
+  --border-strong:    #d0d0cc;
+
+  /* Shadows */
+  --shadow-xs:        0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm:        0 2px 8px rgba(0,0,0,0.06);
+  --shadow-md:        0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg:        0 8px 32px rgba(0,0,0,0.10);
+
+  /* Announcement */
+  --announcement-bg:   #1a1a1a;
+  --announcement-text: #f5f5f3;
+
+  /* Sidebar */
+  --sidebar-bg:        #1c1f26;
+  --sidebar-text:      #c8cdd8;
+  --sidebar-active:    #ffffff;
+  --sidebar-hover:     rgba(255,255,255,0.08);
+  --sidebar-accent:    #3b82f6;
+  --sidebar-border:    rgba(255,255,255,0.06);
 }
 
+/* ─────────────────────────────────────────────
+   DESIGN TOKENS — Dark Mode
+───────────────────────────────────────────── */
 html[data-theme="dark"] {
   color-scheme: dark;
-  --background: #0e1117;
-  --foreground: #e9edf5;
-  --surface-1: #171c26;
-  --surface-2: #131925;
-  --border-soft: #2a3448;
-  --muted-text: #a8b2c8;
-  --announcement-bg: linear-gradient(90deg, #0d1320 0%, #172037 100%);
-  --announcement-text: #e8ecf5;
+
+  --background:       #111318;
+  --surface-1:        #181c24;
+  --surface-2:        #1e2230;
+  --surface-3:        #252a38;
+  --surface-glass:    rgba(24,28,36,0.80);
+
+  --foreground:       #eaedf5;
+  --foreground-2:     #b8bed0;
+  --foreground-3:     #7a8099;
+  --foreground-muted: #555e74;
+
+  --brand:            #4f8ef5;
+  --brand-soft:       #1a2540;
+  --brand-hover:      #6ba3f7;
+  --accent:           #ff2233;
+  --accent-soft:      #2a1215;
+
+  --success:          #10b981;
+  --success-soft:     #0d2e21;
+  --warning:          #f59e0b;
+  --warning-soft:     #2d1f08;
+  --danger:           #f87171;
+  --danger-soft:      #2d0f0f;
+  --info:             #22d3ee;
+  --info-soft:        #082028;
+
+  --border:           #2a2f3d;
+  --border-soft:      #1f2335;
+  --border-strong:    #363d52;
+
+  --shadow-xs:        0 1px 2px rgba(0,0,0,0.3);
+  --shadow-sm:        0 2px 8px rgba(0,0,0,0.4);
+  --shadow-md:        0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg:        0 8px 32px rgba(0,0,0,0.6);
+
+  --announcement-bg:   #0d1117;
+  --announcement-text: #c8d3e8;
+
+  --sidebar-bg:        #0d1117;
+  --sidebar-text:      #8b95b0;
+  --sidebar-active:    #ffffff;
+  --sidebar-hover:     rgba(255,255,255,0.06);
+  --sidebar-accent:    #4f8ef5;
+  --sidebar-border:    rgba(255,255,255,0.04);
 }
 
 html[data-theme="light"] {
   color-scheme: light;
 }
 
+/* ─────────────────────────────────────────────
+   TAILWIND THEME BRIDGE
+───────────────────────────────────────────── */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans:        "Inter", "Noto Sans JP", system-ui, sans-serif;
+}
+
+/* ─────────────────────────────────────────────
+   BASE RESET & TYPOGRAPHY
+───────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: "Segoe UI", "Trebuchet MS", "Helvetica Neue", sans-serif;
-  transition: background-color 0.25s ease, color 0.25s ease;
+  background:   var(--background);
+  color:        var(--foreground);
+  font-family:  "Inter", "Noto Sans JP", system-ui, sans-serif;
+  line-height:  1.6;
+  transition:   background-color 0.3s ease, color 0.3s ease;
 }
 
 #page-content {
-  background: transparent;
-  color: inherit;
-  overflow-x: clip;
+  background:  transparent;
+  color:       inherit;
+  overflow-x:  clip;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   JAPANESE TRADITIONAL PATTERNS
+   三つの伝統文様: 青海波 · 七宝 · 麻の葉
+═══════════════════════════════════════════════════════════ */
+
+/* ── CSS Custom Properties for pattern theming ───────────── */
+:root {
+  --pattern-color-light: rgba(0,0,0,0.12);
+  --pattern-color-medium: rgba(0,0,0,0.18);
+  --pattern-seigaiha-size: 52px;
+  --pattern-shippo-size: 40px;
+  --pattern-asanoha-size: 48px;
+
+  /* Seigaiha luxury tokens - Enhanced for high visibility */
+  --seigaiha-opacity:       0.26;
+  --seigaiha-size:          200px;
+  --seigaiha-tint:          rgba(99, 112, 255, 0.06);
+  --seigaiha-filter:        none;
+}
+html[data-theme="dark"] {
+  --pattern-color-light: rgba(255,255,255,0.10);
+  --pattern-color-medium: rgba(255,255,255,0.15);
+
+  --seigaiha-opacity:       0.18;
+  --seigaiha-size:          200px;
+  --seigaiha-tint:          rgba(148, 163, 255, 0.08);
+  --seigaiha-filter:        invert(1) hue-rotate(200deg);
+}
+
+/* ────────────────────────────────────────────
+   青海波 (SEIGAIHA) — Blue Ocean Waves
+   Overlapping arcs — luxury layered implementation.
+   Layer 1 (::before): the pattern texture itself
+   Layer 2 (::after):  a soft colour wash that tints the waves
+   Used on: ALL pages via layout.tsx
+   ──────────────────────────────────────────── */
+.jp-seigaiha-bg,
+.jp-shippo-bg,
+.jp-asanoha-bg,
+.jp-pattern-bg {
+  position: relative;
+}
+
+/* — Pattern layer — */
+.jp-seigaiha-bg::before,
+.jp-shippo-bg::before,
+.jp-asanoha-bg::before,
+.jp-pattern-bg::before {
+  content: "";
+  position: fixed;          /* fixed so pattern doesn't scroll — gives 'etched' luxury feel */
+  inset: 0;
+  background-image: url('/19-Seigaiha-Background-Pattern.jpg');
+  background-repeat: repeat;
+  background-size: var(--seigaiha-size);
+  background-position: 0 0;
+  opacity: var(--seigaiha-opacity);
+  pointer-events: none;
+  z-index: 0;
+  filter: var(--seigaiha-filter);
+  transition: opacity 0.5s ease, filter 0.5s ease;
+  /* Slow gentle drift — mimics ocean waves */
+  animation: seigahaDrift 90s linear infinite;
+  will-change: background-position;
+}
+
+/* — Colour-wash layer — */
+.jp-seigaiha-bg::after,
+.jp-shippo-bg::after,
+.jp-asanoha-bg::after,
+.jp-pattern-bg::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: var(--seigaiha-tint);
+  pointer-events: none;
+  z-index: 0;
+  transition: background 0.5s ease;
+}
+
+@keyframes seigahaDrift {
+  0%   { background-position: 0 0; }
+  100% { background-position: var(--seigaiha-size) var(--seigaiha-size); }
+}
+
+html[data-theme="dark"] .jp-seigaiha-bg::before,
+html[data-theme="dark"] .jp-shippo-bg::before,
+html[data-theme="dark"] .jp-asanoha-bg::before,
+html[data-theme="dark"] .jp-pattern-bg::before {
+  opacity: var(--seigaiha-opacity);
+  filter: var(--seigaiha-filter);
+}
+
+.jp-seigaiha-bg > *,
+.jp-shippo-bg > *,
+.jp-asanoha-bg > *,
+.jp-pattern-bg > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Subtle grid pattern */
+.jp-grid-bg {
+  background-image:
+    linear-gradient(var(--border-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-soft) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Dot pattern */
+.jp-dot-bg {
+  background-image: radial-gradient(circle, var(--border-strong) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* ─────────────────────────────────────────────
+   SCROLL REVEAL
+───────────────────────────────────────────── */
+.reveal-scroll {
+  opacity: 0;
+  transform: translate3d(0, 48px, 0) scale(0.985);
+  transition:
+    opacity 1000ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 1000ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.reveal-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+/* ─────────────────────────────────────────────
+   PAGE TRANSITION
+───────────────────────────────────────────── */
+.pageTransition {
+  will-change: opacity, transform;
+}
+.pageTransitionEnter {
+  animation: pageIn 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes pageIn {
+  from { opacity: 0; transform: translate3d(0, 16px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+/* ─────────────────────────────────────────────
+   FLOATING BANNER (keep existing behaviour)
+───────────────────────────────────────────── */
 [data-floating-banner] {
   --floating-banner-offset: 0px;
-  --floating-banner-shadow-opacity: 0.18;
-  --floating-banner-lift: 28px;
+  --floating-banner-shadow-opacity: 0.12;
+  --floating-banner-lift: 20px;
   position: relative;
   z-index: 0;
   translate: 0 var(--floating-banner-offset);
   will-change: translate, filter;
   transition: translate 120ms linear, filter 180ms ease;
-  filter: drop-shadow(
-    0 var(--floating-banner-lift) 36px rgba(15, 23, 42, var(--floating-banner-shadow-opacity))
-  );
+  filter: drop-shadow(0 var(--floating-banner-lift) 28px rgba(15,23,42,var(--floating-banner-shadow-opacity)));
 }
 
-.pageTransition {
-  will-change: opacity, transform, filter;
+/* ─────────────────────────────────────────────
+   ENTERPRISE COMPONENT UTILITIES
+───────────────────────────────────────────── */
+
+/* Cards */
+.jp-card {
+  background:    var(--surface-1);
+  border:        1px solid var(--border);
+  border-radius: 12px;
+  box-shadow:    var(--shadow-sm);
+  transition:    box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+.jp-card:hover {
+  box-shadow:    var(--shadow-md);
+  border-color:  var(--border-strong);
+  transform:     translateY(-1px);
 }
 
-.pageTransitionEnter {
-  animation: pageIn 420ms cubic-bezier(0.22, 1, 0.36, 1);
+.jp-card-glass {
+  background:    var(--surface-glass);
+  backdrop-filter: blur(12px);
+  border:        1px solid var(--border);
+  border-radius: 12px;
+  box-shadow:    var(--shadow-sm);
 }
 
-.keyframePulseSoft {
-  animation: pulseSoft 1.2s ease-in-out infinite;
+/* Buttons */
+.jp-btn {
+  display:         inline-flex;
+  align-items:     center;
+  gap:             6px;
+  padding:         8px 16px;
+  border-radius:   8px;
+  font-size:       14px;
+  font-weight:     500;
+  letter-spacing:  0.01em;
+  transition:      all 0.15s ease;
+  cursor:          pointer;
+  white-space:     nowrap;
+}
+.jp-btn-primary {
+  background:  var(--brand);
+  color:       #fff;
+  border:      1px solid transparent;
+}
+.jp-btn-primary:hover {
+  background:  var(--brand-hover);
+  transform:   translateY(-1px);
+  box-shadow:  0 4px 12px rgba(26,86,219,0.3);
+}
+.jp-btn-secondary {
+  background:  var(--surface-1);
+  color:       var(--foreground-2);
+  border:      1px solid var(--border);
+}
+.jp-btn-secondary:hover {
+  background:  var(--surface-2);
+  border-color: var(--border-strong);
+}
+.jp-btn-ghost {
+  background:  transparent;
+  color:       var(--foreground-2);
+  border:      1px solid transparent;
+}
+.jp-btn-ghost:hover {
+  background:  var(--surface-2);
+}
+.jp-btn-danger {
+  background:  var(--danger-soft);
+  color:       var(--danger);
+  border:      1px solid transparent;
+}
+.jp-btn-danger:hover {
+  background:  var(--danger);
+  color:       #fff;
 }
 
+/* Badges */
+.jp-badge {
+  display:       inline-flex;
+  align-items:   center;
+  gap:           4px;
+  padding:       2px 8px;
+  border-radius: 99px;
+  font-size:     12px;
+  font-weight:   500;
+}
+.jp-badge-blue   { background: var(--brand-soft);   color: var(--brand); }
+.jp-badge-green  { background: var(--success-soft); color: var(--success); }
+.jp-badge-yellow { background: var(--warning-soft); color: var(--warning); }
+.jp-badge-red    { background: var(--danger-soft);  color: var(--danger); }
+.jp-badge-gray   { background: var(--surface-2);    color: var(--foreground-3); }
+
+/* Tags */
+.jp-tag {
+  display:       inline-flex;
+  align-items:   center;
+  padding:       3px 10px;
+  border-radius: 4px;
+  font-size:     11px;
+  font-weight:   600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Divider */
+.jp-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0;
+}
+
+/* Inputs */
+.jp-input {
+  width:         100%;
+  padding:       9px 14px;
+  border:        1px solid var(--border);
+  border-radius: 8px;
+  background:    var(--surface-1);
+  color:         var(--foreground);
+  font-size:     14px;
+  font-family:   inherit;
+  transition:    border-color 0.15s, box-shadow 0.15s;
+  outline:       none;
+}
+.jp-input:focus {
+  border-color:  var(--brand);
+  box-shadow:    0 0 0 3px rgba(26,86,219,0.12);
+}
+.jp-input::placeholder {
+  color:  var(--foreground-muted);
+}
+
+/* Section headers */
+.jp-section-label {
+  font-size:     11px;
+  font-weight:   600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color:         var(--foreground-3);
+}
+
+/* Red accent line — Mercari style */
+.jp-red-line {
+  display:    inline-flex;
+  align-items: center;
+  gap:        12px;
+  font-size:  14px;
+  font-weight: 600;
+  color:      var(--accent);
+}
+.jp-red-line::before {
+  content: "";
+  display: block;
+  width:   32px;
+  height:  2px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+.jp-red-line:hover::before {
+  width: 48px;
+}
+
+/* Table */
+.jp-table {
+  width:           100%;
+  border-collapse: collapse;
+  font-size:       14px;
+}
+.jp-table th {
+  padding:       10px 16px;
+  text-align:    left;
+  font-size:     11px;
+  font-weight:   600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color:         var(--foreground-3);
+  border-bottom: 1px solid var(--border);
+  background:    var(--surface-2);
+}
+.jp-table td {
+  padding:       12px 16px;
+  border-bottom: 1px solid var(--border-soft);
+  color:         var(--foreground-2);
+  vertical-align: middle;
+}
+.jp-table tbody tr:hover td {
+  background: var(--surface-2);
+}
+.jp-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Stat number */
+.jp-stat-val {
+  font-size:   32px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color:       var(--foreground);
+}
+.jp-stat-lbl {
+  font-size:  13px;
+  color:      var(--foreground-3);
+  margin-top: 4px;
+}
+.jp-stat-delta {
+  font-size:  12px;
+  font-weight: 600;
+  padding:    2px 6px;
+  border-radius: 4px;
+}
+.jp-stat-up   { background: var(--success-soft); color: var(--success); }
+.jp-stat-down { background: var(--danger-soft);  color: var(--danger); }
+
+/* Timeline */
+.jp-timeline-dot {
+  width:         10px;
+  height:        10px;
+  border-radius: 50%;
+  border:        2px solid var(--brand);
+  background:    var(--surface-1);
+  flex-shrink:   0;
+  margin-top:    4px;
+}
+.jp-timeline-dot.active {
+  background:  var(--brand);
+}
+.jp-timeline-line {
+  width:       2px;
+  background:  var(--border);
+  flex:        1;
+  margin:      4px auto;
+}
+
+/* Sidebar nav item */
+.sidebar-item {
+  display:       flex;
+  align-items:   center;
+  gap:           10px;
+  padding:       9px 14px;
+  border-radius: 8px;
+  font-size:     14px;
+  font-weight:   500;
+  color:         var(--sidebar-text);
+  transition:    background 0.15s, color 0.15s;
+  cursor:        pointer;
+  white-space:   nowrap;
+  text-decoration: none;
+}
+.sidebar-item:hover {
+  background: var(--sidebar-hover);
+  color:      var(--sidebar-active);
+}
+.sidebar-item.active {
+  background: rgba(59,130,246,0.16);
+  color:      var(--sidebar-accent);
+}
+.sidebar-item .sidebar-dot {
+  width:         6px;
+  height:        6px;
+  border-radius: 50%;
+  background:    currentColor;
+  opacity:       0.5;
+  flex-shrink:   0;
+}
+.sidebar-item.active .sidebar-dot {
+  opacity: 1;
+}
+
+/* Chart bar */
+.jp-bar-track {
+  height:        8px;
+  border-radius: 99px;
+  background:    var(--surface-3);
+  overflow:      hidden;
+}
+.jp-bar-fill {
+  height:        100%;
+  border-radius: 99px;
+  transition:    width 0.8s cubic-bezier(0.22,1,0.36,1);
+}
+
+/* ─────────────────────────────────────────────
+   LEGACY HOME TRUST STRIP
+───────────────────────────────────────────── */
 .homeTrustStrip {
-  margin: 28px 0;
+  margin: 20px 0;
   padding: 0 16px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 12px;
 }
-
 .homeTrustStrip article {
-  border: 1px solid var(--border-soft);
-  border-radius: 14px;
-  padding: 18px;
-  background: linear-gradient(180deg, var(--surface-1) 0%, var(--surface-2) 100%);
+  border:        1px solid var(--border);
+  border-radius: 10px;
+  padding:       16px;
+  background:    var(--surface-1);
 }
-
 .homeTrustStrip h3 {
-  font-size: 16px;
-  font-weight: 700;
-  margin: 0 0 4px;
-  color: var(--foreground);
+  font-size:   15px;
+  font-weight: 600;
+  margin:      0 0 4px;
+  color:       var(--foreground);
 }
-
 .homeTrustStrip p {
-  font-size: 14px;
-  margin: 0;
-  color: var(--muted-text);
+  font-size:  13px;
+  margin:     0;
+  color:      var(--foreground-3);
 }
 
-.reveal-scroll {
-  opacity: 0;
-  transform: translate3d(0, 20px, 0) scale(0.995);
-  filter: blur(2px);
-  transition:
-    opacity 560ms ease,
-    transform 560ms cubic-bezier(0.22, 1, 0.36, 1),
-    filter 560ms ease;
-  transition-delay: var(--reveal-delay, 0ms);
-  will-change: opacity, transform, filter;
-}
-
-.reveal-visible {
-  opacity: 1;
-  transform: translate3d(0, 0, 0) scale(1);
-  filter: blur(0);
-}
-
-@keyframes pageIn {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 20px, 0) scale(0.98);
-    filter: blur(4px);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-    filter: blur(0);
-  }
-}
-
-@keyframes floatAnimation {
-  0% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
-  100% {
-    transform: translateY(0px);
-  }
-}
-
+/* ─────────────────────────────────────────────
+   KEYFRAMES
+───────────────────────────────────────────── */
 @keyframes slideUpFade {
-  0% {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(26,86,219,0.15); }
+  50%       { box-shadow: 0 0 0 8px rgba(26,86,219,0); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+@keyframes spinSlow {
+  to { transform: rotate(360deg); }
+}
+@keyframes jpSlideUpReveal {
+  from { opacity: 0; transform: translateY(36px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes jpSlideInLeft {
+  from { opacity: 0; transform: translateX(-48px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes jpSlideInRight {
+  from { opacity: 0; transform: translateX(48px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes jpGlowHover {
+  0%, 100% { box-shadow: 0 4px 14px rgba(255,2,17,0.02); }
+  50% { box-shadow: 0 12px 32px rgba(255,2,17,0.12); }
 }
 
-@keyframes bounceSoftAnimation {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
+/* Utility animation classes */
+.animate-slide-up  { animation: slideUpFade 0.6s cubic-bezier(0.22,1,0.36,1) forwards; }
+.animate-fade-in   { animation: fadeIn 0.4s ease forwards; }
+.animate-float     { animation: floatY 3.5s ease-in-out infinite; }
+.animate-pulse-glow { animation: pulseGlow 2.5s ease-in-out infinite; }
+.animate-spin-slow  { animation: spinSlow 3s linear infinite; }
+
+/* Premium JP Animations */
+.jp-animate-reveal { animation: jpSlideUpReveal 0.85s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.jp-animate-left   { animation: jpSlideInLeft 0.85s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.jp-animate-right  { animation: jpSlideInRight 0.85s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.jp-animate-glow   { animation: jpGlowHover 4.5s ease-in-out infinite; }
+
+/* Skeleton loader */
+.jp-skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
 }
 
-.animate-float {
-  animation: floatAnimation 3s ease-in-out infinite;
-}
-
-.animate-slide-up {
-  animation: slideUpFade 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-.animate-bounce-soft {
-  animation: bounceSoftAnimation 2s ease-in-out infinite;
-}
-
-@keyframes pulseSoft {
-  0% {
-    transform: scale(1);
-    opacity: 0.84;
-  }
-  50% {
-    transform: scale(1.04);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 0.84;
-  }
-}
-
+/* ─────────────────────────────────────────────
+   REDUCED MOTION
+───────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  [data-floating-banner],
+  *,
   .reveal-scroll,
-  .reveal-visible,
   .pageTransitionEnter,
-  .keyframePulseSoft {
-    opacity: 1 !important;
-    transform: none !important;
-    translate: none !important;
-    filter: none !important;
-    transition: none !important;
+  [data-floating-banner] {
     animation: none !important;
+    transition: none !important;
+    transform:  none !important;
+  }
+  .reveal-scroll { opacity: 1; }
+  /* Seigaiha drift: pause cleanly so pattern stays visible but static */
+  .jp-seigaiha-bg::before,
+  .jp-shippo-bg::before,
+  .jp-asanoha-bg::before,
+  .jp-pattern-bg::before {
+    animation-play-state: paused !important;
   }
 }
 
+/* ─────────────────────────────────────────────
+   RESPONSIVE
+───────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .homeTrustStrip {
-    grid-template-columns: 1fr;
-  }
+  .homeTrustStrip { grid-template-columns: 1fr; }
+}
+
+/* ─────────────────────────────────────────────
+   JAPANESE WEB AESTHETICS - EXTRA ADDITIONS
+   ───────────────────────────────────────────── */
+
+/* Vertical Floating Badge */
+.jp-vertical-badge {
+  position: fixed;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: var(--foreground-muted);
+  text-transform: uppercase;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.75;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.jp-vertical-badge::before {
+  content: "";
+  display: inline-block;
+  width: 1px;
+  height: 40px;
+  background-color: var(--border-strong);
+}
+.jp-vertical-badge-right {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: var(--foreground-muted);
+  text-transform: uppercase;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.75;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.jp-vertical-badge-right::after {
+  content: "";
+  display: inline-block;
+  width: 1px;
+  height: 40px;
+  background-color: var(--border-strong);
+}
+
+/* Infinite Marquee */
+.jp-marquee {
+  overflow: hidden;
+  white-space: nowrap;
+  background: var(--surface-1);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 0;
+  margin: 40px 0;
+  width: 100%;
+}
+.jp-marquee-track {
+  display: inline-flex;
+  gap: 40px;
+  animation: jpMarqueeScroll 25s linear infinite;
+}
+.jp-marquee-item {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--foreground-2);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.jp-marquee-item span {
+  color: var(--accent);
+}
+
+@keyframes jpMarqueeScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Bilingual Title Wrappers */
+.jp-title-wrap {
+  text-align: center;
+  margin-bottom: 35px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.jp-subtitle {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.jp-subtitle::before, .jp-subtitle::after {
+  content: "";
+  width: 12px;
+  height: 1px;
+  background-color: var(--accent);
+}
+
+/* Sheen sweep animation for premium action buttons */
+.animate-sheen {
+  position: relative;
+  overflow: hidden;
+}
+.animate-sheen::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 20%;
+  height: 200%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(30deg);
+  animation: sheenSweep 6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+@keyframes sheenSweep {
+  0% { left: -60%; }
+  15%, 100% { left: 140%; }
+}
+
+/* Custom card animations */
+.jp-card-modern {
+  border: 1px solid var(--border-soft) !important;
+  transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.jp-card-modern:hover {
+  border-color: var(--border-strong) !important;
+  transform: translateY(-6px) scale(1.01) !important;
+  box-shadow: var(--shadow-lg) !important;
 }

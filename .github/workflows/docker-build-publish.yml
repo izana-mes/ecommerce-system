@@ -1,10 +1,24 @@
 name: docker-build-publish
 
+# FIX C4: Changed from `push: branches: [main]` (parallel with CI) to
+# `workflow_run` so Docker images are only built and pushed AFTER the CI
+# quality gates have passed. This prevents broken code from landing in GHCR.
 on:
-  push:
+  workflow_run:
+    workflows:
+      - backend-ci
+      - frontend-ci
+      - ai-mcp-ci
+    types: [completed]
     branches: [main]
+  push:
     tags: ['v*.*.*']
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to build (branch, tag, or SHA)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -15,9 +29,34 @@ env:
   IMAGE_NAMESPACE: ${{ github.repository_owner }}
 
 jobs:
-  build-and-push:
+  # Gate: only proceed if ALL triggering CI workflows succeeded.
+  # For tag pushes and workflow_dispatch, always proceed.
+  check-ci-status:
     runs-on: ubuntu-latest
+    outputs:
+      should-build: ${{ steps.gate.outputs.should-build }}
+    steps:
+      - name: Evaluate gate
+        id: gate
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            if [ "${{ github.event.workflow_run.conclusion }}" = "success" ]; then
+              echo "should-build=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "CI workflow '${{ github.event.workflow_run.name }}' did not succeed (conclusion: ${{ github.event.workflow_run.conclusion }}). Skipping Docker build."
+              echo "should-build=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "should-build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  build-and-push:
+    needs: check-ci-status
+    if: needs.check-ci-status.outputs.should-build == 'true'
+    runs-on: ubuntu-latest
+    # FIX H5: fail-fast: false — one failing image should not cancel the other 4.
     strategy:
+      fail-fast: false
       matrix:
         include:
           - name: backend
@@ -38,6 +77,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -55,7 +96,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.name }}
           tags: |
-            type=sha
+            type=sha,format=long
             type=ref,event=branch
             type=ref,event=tag
             type=raw,value=latest,enable={{is_default_branch}}
@@ -68,13 +109,16 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # FIX C5: Scope cache per matrix image to prevent layer cross-contamination.
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
 
       - name: Trivy image scan
         uses: aquasecurity/trivy-action@0.24.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.name }}:sha-${{ github.sha }}
+          # The metadata-action with type=sha,format=long produces `sha-<40-char-SHA>`.
+          # github.sha is the full 40-char SHA, so this tag matches exactly.
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.name }}:sha-${{ github.event.workflow_run.head_sha || github.sha }}
           format: table
           ignore-unfixed: true
           severity: HIGH,CRITICAL

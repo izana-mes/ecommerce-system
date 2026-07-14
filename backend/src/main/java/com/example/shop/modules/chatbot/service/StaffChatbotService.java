@@ -31,7 +31,7 @@ public class StaffChatbotService {
     private final ChatbotAiClient chatbotAiClient;
 
     private static final Pattern ORDER_NUMBER_PATTERN =
-            Pattern.compile("\\b([A-Z]{2,}[A-Z0-9_\\-]{2,})\\b", Pattern.CASE_INSENSITIVE);
+            Pattern.compile("\\b(?=[A-Z0-9_\\-]{4,32}\\b)(?=[A-Z0-9_\\-]*\\d)[A-Z0-9]+(?:[_\\-][A-Z0-9]+)*\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern EMAIL_PATTERN =
             Pattern.compile("\\b[A-Z0-9._%+\\-]+@[A-Z0-9.\\-]+\\.[A-Z]{2,}\\b", Pattern.CASE_INSENSITIVE);
 

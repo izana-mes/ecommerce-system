@@ -10,6 +10,7 @@ export type TranslationKey =
   | "nav_chatbot"
   | "nav_support"
   | "nav_admin"
+  | "nav_workspace"
   | "nav_shipper"
   | "nav_fulfillment"
   | "nav_assistant"
@@ -83,6 +84,36 @@ export type TranslationKey =
   | "about_the_company"
   | "about_company_desc"
   | "about_company_partners"
+  | "about_slider_title_1"
+  | "about_slider_desc_1"
+  | "about_slider_title_2"
+  | "about_slider_desc_2"
+  | "about_slider_title_3"
+  | "about_slider_desc_3"
+  | "about_value_gobold_title"
+  | "about_value_gobold_desc"
+  | "about_value_allforone_title"
+  | "about_value_allforone_desc"
+  | "about_value_beapro_title"
+  | "about_value_beapro_desc"
+  | "about_news_title"
+  | "about_news_pr_tag"
+  | "about_news_ir_tag"
+  | "about_news_item_1_title"
+  | "about_news_item_2_title"
+  | "about_news_item_3_title"
+  | "about_metrics_title"
+  | "about_metrics_mau_val"
+  | "about_metrics_mau_lbl"
+  | "about_metrics_gmv_val"
+  | "about_metrics_gmv_lbl"
+  | "about_metrics_emp_val"
+  | "about_metrics_emp_lbl"
+  | "about_services_title"
+  | "about_services_circ_title"
+  | "about_services_circ_desc"
+  | "about_services_tech_title"
+  | "about_services_tech_desc"
   | "contact_us"
   | "contact_store_london"
   | "contact_store_london_address_1"
@@ -341,6 +372,7 @@ export const translations: Record<Locale, Dictionary> = {
     nav_chatbot: "CHATBOT",
     nav_support: "SUPPORT",
     nav_admin: "ADMIN",
+    nav_workspace: "WORKSPACE",
     nav_shipper: "SHIPPER",
     nav_fulfillment: "FULFILLMENT",
     nav_assistant: "ASSISTANT",
@@ -414,6 +446,36 @@ export const translations: Record<Locale, Dictionary> = {
     about_the_company: "The Company",
     about_company_desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
     about_company_partners: "Company Partners",
+    about_slider_title_1: "Circulate all forms of value to unleash the potential in all people",
+    about_slider_desc_1: "Under our group mission, we connect people around the world through technology to build a world where anyone can unleash their potential.",
+    about_slider_title_2: "Building a circular economy powered by technology",
+    about_slider_desc_2: "By making trading seamless, secure, and fun, we help create a sustainable world where resources are valued and reused.",
+    about_slider_title_3: "Empowering communities to grow together",
+    about_slider_desc_3: "From local markets to global impact, we are redefining how value is shared, stored, and experienced.",
+    about_value_gobold_title: "Go Bold",
+    about_value_gobold_desc: "Create massive impact by taking risks and challenging the status quo. Don't be afraid to fail, learn quickly, and innovate.",
+    about_value_allforone_title: "All for One",
+    about_value_allforone_desc: "Work together as a cohesive team to achieve our mission. Collaborate across boundaries, respect diversity, and succeed together.",
+    about_value_beapro_title: "Be a Pro",
+    about_value_beapro_desc: "Deliver high quality work with professional ownership. Take initiative, master your craft, and hold yourself accountable.",
+    about_news_title: "Corporate News",
+    about_news_pr_tag: "PR RELEASE",
+    about_news_ir_tag: "IR RELEASE",
+    about_news_item_1_title: "Announcing our new Sustainable Commerce Roadmap for 2026",
+    about_news_item_2_title: "Financial Results for the Fiscal Year ended March 31, 2026",
+    about_news_item_3_title: "Expansion of our Global Developer Program and OpenAPI integrations",
+    about_metrics_title: "Uomo Group in Numbers",
+    about_metrics_mau_val: "22M+",
+    about_metrics_mau_lbl: "Monthly Active Users",
+    about_metrics_gmv_val: "$3.4B",
+    about_metrics_gmv_lbl: "Annual Transaction Volume",
+    about_metrics_emp_val: "2,100+",
+    about_metrics_emp_lbl: "Global Team Members",
+    about_services_title: "Our Services & Impact",
+    about_services_circ_title: "A Circular Marketplace Built for Everyone",
+    about_services_circ_desc: "We believe in a circular economy where items are kept in use, rather than disposed of. Our platform makes it effortless for anyone to sell items they no longer need, and find unique treasures. By extending the lifecycle of products, we work to reduce waste and carbon footprint worldwide.",
+    about_services_tech_title: "Innovating with Next-Gen Technology",
+    about_services_tech_desc: "Leveraging state-of-the-art artificial intelligence, real-time logistics networks, and secure digital payment solutions, we provide a friction-free marketplace. We strive to pioneer trust-based commerce so our users can buy and sell with total peace of mind.",
     contact_us: "Contact Us",
     contact_store_london: "Store in London",
     contact_store_london_address_1: "1418 River Drive, Suite 35 Cottonhall, CA 9622",
@@ -668,6 +730,7 @@ export const translations: Record<Locale, Dictionary> = {
     nav_chatbot: "チャットボット",
     nav_support: "サポート",
     nav_admin: "管理",
+    nav_workspace: "ワークスペース",
     nav_shipper: "配送",
     nav_fulfillment: "発送",
     nav_assistant: "アシスタント",
@@ -741,6 +804,36 @@ export const translations: Record<Locale, Dictionary> = {
     about_the_company: "会社について",
     about_company_desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
     about_company_partners: "パートナー企業",
+    about_slider_title_1: "あらゆる価値を循環させ、あらゆる人の可能性を広げる",
+    about_slider_desc_1: "「あらゆる価値を循環させ、あらゆる人の可能性を広げる」というグループミッションのもと、テクノロジーの力で世界中の人々をつなぎ、可能性が発揮される世界を実現します。",
+    about_slider_title_2: "テクノロジーの力で循環型社会を構築する",
+    about_slider_desc_2: "誰もが簡単かつ安全に取引できる仕組みを提供し、地球資源が大切に循環される持続可能な社会の実現に貢献します。",
+    about_slider_title_3: "地域社会とグローバルコミュニティのエンパワーメント",
+    about_slider_desc_3: "ローカルなつながりから地球規模のインパクトまで、新しい価値のシェア、保管、体験のあり方を再定義していきます。",
+    about_value_gobold_title: "Go Bold",
+    about_value_gobold_desc: "大胆にやろう。失敗を恐れず、前例のない課題やリスクに挑戦し、イノベーションを起こし続けます。",
+    about_value_allforone_title: "All for One",
+    about_value_allforone_desc: "全ては成功のために。チーム一丸となってミッションに挑み、多様性を尊重しながら協力して成功を勝ち取ります。",
+    about_value_beapro_title: "Be a Pro",
+    about_value_beapro_desc: "プロフェッショナルであれ。オーナーシップを持って高い品質を提供し、自らを磨き、常に結果にコミットします。",
+    about_news_title: "ニュース・IRリリース",
+    about_news_pr_tag: "PRリリース",
+    about_news_ir_tag: "IRリリース",
+    about_news_item_1_title: "2026年度に向けた持続可能な循環型コマース計画の発表について",
+    about_news_item_2_title: "2026年3月期 通期決算発表のお知らせ",
+    about_news_item_3_title: "グローバル開発者向けプラットフォームの拡充とOpenAPI連携の開始について",
+    about_metrics_title: "数字で見るUomoグループ",
+    about_metrics_mau_val: "2,200万人+",
+    about_metrics_mau_lbl: "月間アクティブユーザー数",
+    about_metrics_gmv_val: "3,400億円+",
+    about_metrics_gmv_lbl: "年間総取引額 (GMV)",
+    about_metrics_emp_val: "2,100名+",
+    about_metrics_emp_lbl: "グローバル従業員数",
+    about_services_title: "事業紹介と社会的インパクト",
+    about_services_circ_title: "誰もが参加できる循環型マーケットプレイス",
+    about_services_circ_desc: "私たちは、不要になったものが廃棄されるのではなく、次の誰かへと受け継がれていく「循環型経済（サーキュラーエコノミー）」の実現を目指しています。簡単な操作で不要品を出品し、新たな価値を見出せるプラットフォームを提供。製品の寿命を延ばすことで、廃棄物の削減と環境負荷の低減に取り組んでいます。",
+    about_services_tech_title: "最新テクノロジーによる安心安全な取引の実現",
+    about_services_tech_desc: "最先端のAI技術、高度な配送ネットワーク、安全な決済システムを融合し、シームレスな取引環境を提供。取引相手との信頼性を高める仕組みづくりを通じて、すべてのユーザーが不安なく売買を楽しめるプラットフォームを構築し続けます。",
     contact_us: "お問い合わせ",
     contact_store_london: "ロンドンストア",
     contact_store_london_address_1: "1418 River Drive, Suite 35 Cottonhall, CA 9622",

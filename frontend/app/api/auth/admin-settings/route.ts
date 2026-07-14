@@ -1,85 +1,70 @@
 import { NextResponse } from "next/server";
-import { getConnection } from "@/lib/db";
+import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
-function isMissingTableError(message: string): boolean {
-  const normalized = message.toLowerCase();
-  return normalized.includes("admin_settings") && (
-    normalized.includes("doesn't exist") ||
-    normalized.includes("does not exist") ||
-    normalized.includes("relation") ||
-    normalized.includes("no such table")
-  );
+const API_URL = backendApiBaseUrl();
+
+async function readJson(response: Response) {
+  const raw = await response.text();
+  return raw ? JSON.parse(raw) : null;
 }
 
-export async function GET() {
-  let conn: Awaited<ReturnType<typeof getConnection>> | undefined;
-  try {
-    conn = await getConnection();
-    const [rows] = await conn.execute<
-      Array<{
-        id: number;
-        setting_key: string;
-        setting_value: string;
-        description: string;
-        updated_at: string;
-      }>
-    >("SELECT id, setting_key, setting_value, description, updated_at FROM admin_settings ORDER BY setting_key ASC");
+function backendError(payload: any, fallback: string) {
+  return payload?.message || payload?.error || fallback;
+}
 
-    return NextResponse.json({ settings: rows || [] });
+export async function GET(request: Request) {
+  try {
+    const response = await fetch(`${API_URL}/v1/admin/settings`, {
+      method: "GET",
+      headers: backendAuthHeaders(request),
+      cache: "no-store",
+    });
+    const payload = await readJson(response);
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: backendError(payload, "Failed to fetch admin settings") },
+        { status: response.status }
+      );
+    }
+
+    return NextResponse.json({ settings: payload?.data ?? [] });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("Error fetching admin settings:", message);
-    // Return graceful empty list for any DB error (missing table, no env vars, etc.)
-    return NextResponse.json({
-      settings: [],
-      unavailable: true,
-      details: message});
-  } finally {
-    await conn?.end();
+    return NextResponse.json(
+      { error: "Failed to fetch admin settings", details: message },
+      { status: 502 }
+    );
   }
 }
 
 export async function PUT(request: Request) {
-  const conn = await getConnection();
   try {
     const body = await request.json();
-    const key = (body.setting_key || "").trim();
-    const value = String(body.setting_value ?? "").trim();
-    const description = String(body.description ?? "").trim();
+    const response = await fetch(`${API_URL}/v1/admin/settings`, {
+      method: "PUT",
+      headers: backendAuthHeaders(request),
+      body: JSON.stringify(body),
+      cache: "no-store",
+    });
+    const payload = await readJson(response);
 
-    if (!key) {
+    if (!response.ok) {
       return NextResponse.json(
-        { error: "setting_key is required" },
-        { status: 400 }
+        { error: backendError(payload, "Failed to update setting") },
+        { status: response.status }
       );
     }
 
-    const [, updateMeta] = await conn.execute(
-      "UPDATE admin_settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?",
-      [value, key]
-    );
-    const updatedRows = Number(
-      (updateMeta as { affectedRows?: number; rowCount?: number } | undefined)?.affectedRows ??
-      (updateMeta as { affectedRows?: number; rowCount?: number } | undefined)?.rowCount ??
-      0
-    );
-
-    if (updatedRows === 0) {
-      await conn.execute(
-        "INSERT INTO admin_settings (setting_key, setting_value, description, updated_at) VALUES (?, ?, ?, NOW())",
-        [key, value, description || `Setting for ${key}`]
-      );
-    }
-
-    return NextResponse.json({ message: "Setting updated" });
+    return NextResponse.json({ message: payload?.data ?? payload?.message ?? "Setting updated" });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("Error updating admin setting:", message);
     return NextResponse.json(
       { error: "Failed to update setting", details: message },
-      { status: 500 }
+      { status: 502 }
     );
-  } finally {
-    await conn.end();
   }
 }

@@ -104,7 +104,11 @@ export default function ShipperDashboardPage() {
     setLoading(false);
   }, [user, router, fetchStats, fetchActiveOrder]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    queueMicrotask(() => {
+      void load();
+    });
+  }, [load]);
 
   // ── Real-time: re-fetch silently whenever an order-status event arrives ──
   const { connected } = useShipperSocket(shipperUserId, () => {

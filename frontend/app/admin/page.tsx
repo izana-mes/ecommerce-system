@@ -2146,6 +2146,7 @@ export default function AdminPage() {
     try {
       const response = await fetch("/api/auth/admin-product-requests", {
         method: "PATCH",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json"},
         body: JSON.stringify({ requestId: request.id, action })});
@@ -2184,6 +2185,7 @@ export default function AdminPage() {
     try {
       const response = await fetch("/api/auth/admin-supplier-requests", {
         method: "PATCH",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json"},
         body: JSON.stringify({ requestId: request.id, action })});
@@ -3051,107 +3053,65 @@ export default function AdminPage() {
   }, [ratingAnalytics]);
 
   return (
-    <div className="adminPage">
+    <div className="adminPage jp-seigaiha-bg">
       <div className="adminContainer">
         <div className="adminHeader">
-          <h1>Admin Dashboard</h1>
-          <p>Manage users, orders, product data, and customer coupon campaigns.</p>
+          <h1>
+            <span>ADMIN PANEL&nbsp;&nbsp;/&nbsp;&nbsp;管理パネル</span>
+            ダッシュボード — Dashboard
+          </h1>
+          <p>ユーザー・注文・商品・在庫・キャンペーンを管理します。&nbsp;&nbsp;Manage users, orders, products, inventory, and customer campaigns.</p>
+          <span className="admJpBadge">管理画面 · Admin System</span>
         </div>
 
         <div className="adminTopBar">
-          <button className="pageButton" onClick={() => void handleRefreshActiveTab()}>
-            Refresh Current Tab
-          </button>
+          <div className="adminTopActions">
+            <button className="pageButton" onClick={() => void handleRefreshActiveTab()}>
+              ↻&nbsp; Refresh / 更新
+            </button>
+            <button className="pageButton" onClick={() => router.push("/admin/shifts")}>
+              🗓&nbsp; Shifts / シフト
+            </button>
+            <button className="pageButton" onClick={() => router.push("/workspace/meetings")}>
+              📅&nbsp; Meetings / 会議
+            </button>
+          </div>
           <span className="syncText">
-            Last updated: {lastUpdatedAt ? formatDateTime(lastUpdatedAt) : "Not synced yet"}
+            🕐&nbsp;最終同期 / Last sync:&nbsp;{lastUpdatedAt ? formatDateTime(lastUpdatedAt) : "—"}
           </span>
         </div>
 
         <div className="adminTabs">
-          <button
-            className={`tabButton ${activeTab === "overview" ? "tabButtonActive" : ""}`}
-            onClick={() => setActiveTab("overview")}
-          >
-            Overview
-          </button>
-          <button
-            className={`tabButton ${activeTab === "requests" ? "tabButtonActive" : ""}`}
-            onClick={() => setActiveTab("requests")}
-          >
-            Requests
-          </button>
-          <button
-            className={`tabButton ${activeTab === "users" ? "tabButtonActive" : ""}`}
-            onClick={() => setActiveTab("users")}
-          >
-            Users
-          </button>
-          <button
-            className={`tabButton ${activeTab === "orders" ? "tabButtonActive" : ""}`}
-            onClick={() => setActiveTab("orders")}
-          >
-            Orders
-          </button>
-          <button
-            className={`tabButton ${activeTab === "inventory" ? "tabButtonActive" : ""}`}
-            onClick={() => setActiveTab("inventory")}
-          >
-            Inventory
-          </button>
-          <button
-            className={`tabButton ${activeTab === "products" ? "tabButtonActive" : ""}`}
-            onClick={() => setActiveTab("products")}
-          >
-            Products
-          </button>
-          <button
-            className={`tabButton ${activeTab === "comments" ? "tabButtonActive" : ""}`}
-            onClick={() => setActiveTab("comments")}
-          >
-            Comments
-          </button>
-          <button
-            className={`tabButton ${activeTab === "attendance" ? "tabButtonActive" : ""}`}
-            onClick={() => setActiveTab("attendance")}
-          >
-            Attendance
-          </button>
-          <button
-            className={`tabButton ${activeTab === "audit" ? "tabButtonActive" : ""}`}
-            onClick={() => setActiveTab("audit")}
-          >
-            Audit Logs
-          </button>
-          <button
-            className={`tabButton ${activeTab === "queues" ? "tabButtonActive" : ""}`}
-            onClick={() => setActiveTab("queues")}
-          >
-            Queues
-          </button>
-          <button
-            className={`tabButton ${activeTab === "export" ? "tabButtonActive" : ""}`}
-            onClick={() => setActiveTab("export")}
-          >
-            Export
-          </button>
-          <button
-            className={`tabButton ${activeTab === "health" ? "tabButtonActive" : ""}`}
-            onClick={() => setActiveTab("health")}
-          >
-            Health
-          </button>
-          <button
-            className={`tabButton ${activeTab === "notes" ? "tabButtonActive" : ""}`}
-            onClick={() => setActiveTab("notes")}
-          >
-            Notes
-          </button>
-          <button
-            className={`tabButton ${activeTab === "settings" ? "tabButtonActive" : ""}`}
-            onClick={() => setActiveTab("settings")}
-          >
-            Settings
-          </button>
+          {([
+            { id: "overview",   icon: "📊", label: "Overview",   jp: "概要" },
+            { id: "requests",   icon: "📋", label: "Requests",   jp: "リクエスト" },
+            { id: "users",      icon: "👥", label: "Users",      jp: "ユーザー" },
+            { id: "orders",     icon: "📦", label: "Orders",     jp: "注文" },
+            { id: "inventory",  icon: "🏪", label: "Inventory",  jp: "在庫" },
+            { id: "products",   icon: "🛍", label: "Products",   jp: "商品" },
+            { id: "comments",   icon: "💬", label: "Reviews",    jp: "レビュー" },
+            { id: "attendance", icon: "🕐", label: "Attendance",  jp: "出勤" },
+            { id: "audit",      icon: "📝", label: "Audit",      jp: "監査" },
+            { id: "queues",     icon: "⚙️", label: "Queues",     jp: "キュー" },
+            { id: "export",     icon: "📤", label: "Export",     jp: "出力" },
+            { id: "health",     icon: "💚", label: "Health",     jp: "健全性" },
+            { id: "notes",      icon: "🗒", label: "Notes",      jp: "メモ" },
+            { id: "settings",   icon: "⚙️", label: "Settings",   jp: "設定" },
+          ] as { id: AdminTab; icon: string; label: string; jp: string }[]).map((tab) => (
+            <button
+              key={tab.id}
+              className={`tabButton ${activeTab === tab.id ? "tabButtonActive" : ""}`}
+              onClick={() => setActiveTab(tab.id)}
+              title={`${tab.label} / ${tab.jp}`}
+            >
+              {tab.icon}&nbsp;{tab.label}
+              {activeTab === tab.id && (
+                <span style={{ display: "block", fontSize: "9px", opacity: 0.75, marginTop: "1px", letterSpacing: "0.05em", fontFamily: "'Noto Sans JP', sans-serif" }}>
+                  {tab.jp}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
 
         {activeTab === "overview" ? (
@@ -3265,6 +3225,30 @@ export default function AdminPage() {
                         <strong>Open Coupon Center</strong>
                         <span>Manage campaigns</span>
                         <small>Create, issue, and track coupon confirmations.</small>
+                      </button>
+                      <button
+                        className="actionItem actionItem-warning"
+                        onClick={() => router.push("/admin/fraud")}
+                      >
+                        <strong>Open Fraud Center</strong>
+                        <span>Review risk queue</span>
+                        <small>Filter assessments and approve or reject flagged orders.</small>
+                      </button>
+                      <button
+                        className="actionItem actionItem-success"
+                        onClick={() => router.push("/admin/shifts")}
+                      >
+                        <strong>Open Shift Management</strong>
+                        <span>Plan staffing</span>
+                        <small>Create shifts, import schedules, and review staffing warnings.</small>
+                      </button>
+                      <button
+                        className="actionItem actionItem-info"
+                        onClick={() => router.push("/workspace/meetings")}
+                      >
+                        <strong>Open Meeting Calendar</strong>
+                        <span>Schedule meetings</span>
+                        <small>Book team meetings, track participants, and manage action items.</small>
                       </button>
                     </div>
                   </div>

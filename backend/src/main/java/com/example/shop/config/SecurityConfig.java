@@ -31,6 +31,9 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -62,12 +65,22 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        RequestMatcher csrfProtectedApiSubset = new OrRequestMatcher(
+                new AntPathRequestMatcher("/api/v1/auth/refresh", "POST"),
+                new AntPathRequestMatcher("/api/v1/auth/logout", "POST"),
+                new AntPathRequestMatcher("/api/v1/sessions/**", "DELETE")
+        );
+
+        RequestMatcher apiRequestsExceptProtectedSubset = request ->
+                request.getRequestURI().startsWith("/api/") && !csrfProtectedApiSubset.matches(request);
+
         http
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        // Checkout/cart are proxied through Next.js BFF; do not block place-order on missing XSRF cookie.
-                        .ignoringRequestMatchers("/api/orders", "/api/cart", "/api/cart/**"))
+                        // Keep current API behavior for most routes, but enforce CSRF on
+                        // selected cookie-auth state-changing endpoints.
+                        .ignoringRequestMatchers(apiRequestsExceptProtectedSubset))
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
                                 "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; upgrade-insecure-requests"))
@@ -78,7 +91,9 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/api/health").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/dashboard/stats").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/internal/notifications/order-paid").permitAll()
                         .requestMatchers("/api/internal/notifications/coupon-issued").permitAll()
@@ -92,6 +107,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/payments/vnpay/ipn").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/payments/vnpay/ipn").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/payments/momo/ipn").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/payments/paypal/create-order").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/payments/paypal/capture-order").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/deals/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/chatbot/customer/ask").permitAll()
                         .requestMatchers("/api/chatbot/tools/**").permitAll()
@@ -126,7 +143,7 @@ public class SecurityConfig {
                 .collect(Collectors.toList());
         config.setAllowedOrigins(origins.isEmpty() ? List.of("http://localhost:3000") : origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Content-Type", "X-XSRF-TOKEN", "X-Requested-With", "X-Request-ID"));
+        config.setAllowedHeaders(List.of("Content-Type", "Authorization", "X-XSRF-TOKEN", "X-Requested-With", "X-Request-ID"));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

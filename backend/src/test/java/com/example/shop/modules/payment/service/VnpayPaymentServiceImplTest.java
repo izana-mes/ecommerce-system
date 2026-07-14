@@ -18,6 +18,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class VnpayPaymentServiceImplTest {
@@ -34,11 +35,12 @@ class VnpayPaymentServiceImplTest {
     @Test
     void enqueueIpn_acceptsValidPayload() {
         Map<String, String> payload = Map.of("vnp_TxnRef", "ORD-1", "vnp_SecureHash", "abc");
+        when(paymentIpnMessagePublisher.tryPublish(any())).thenReturn(true);
 
         VnpayIpnResponse response = service.enqueueIpn(payload);
 
         assertEquals("00", response.getRspCode());
-        verify(paymentIpnMessagePublisher).publish(any());
+        verify(paymentIpnMessagePublisher).tryPublish(any());
     }
 
     @Test

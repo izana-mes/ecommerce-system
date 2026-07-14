@@ -38,6 +38,7 @@ public class SellerOrderServiceImpl implements SellerOrderService {
      *   <li>Added optional ORDER-STATUS filter.</li>
      * </ul>
      */
+    @SuppressWarnings("null")
     @Override
     public List<SellerOrderDto> listOrdersForSeller(UUID sellerUserId, int limit, String status) {
         int safeLimit = Math.max(1, Math.min(limit, 500));

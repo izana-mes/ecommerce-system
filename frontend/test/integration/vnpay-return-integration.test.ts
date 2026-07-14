@@ -26,5 +26,33 @@ describe("VNPAY return integration behavior", () => {
 
     expect(res.status).toBe(200);
     expect(body.valid).toBe(true);
+    expect(body.success).toBe(false);
+  });
+
+  it("returns success when backend confirms payment", async () => {
+    process.env.VNPAY_HASH_SECRET = "secret";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({ RspCode: "00", Message: "Confirm Success" }, { status: 200 })
+      )
+    );
+
+    const params = {
+      vnp_TxnRef: "ORD-2002",
+      vnp_ResponseCode: "00",
+      vnp_TransactionStatus: "00",
+      vnp_Amount: "2600000",
+    };
+    const secureHash = createVnpSecureHash(params, "secret");
+    const req = new NextRequest(
+      `http://localhost:3000/api/vnpay/return?${new URLSearchParams({ ...params, vnp_SecureHash: secureHash })}`
+    );
+
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(body.clearCart).toBe(true);
   });
 });

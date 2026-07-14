@@ -55,6 +55,11 @@ services:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 20s
       timeout: 5s
+      # FIX M7: RabbitMQ takes 30-60s to initialise its Mnesia database on first
+      # boot. Without start_period the healthcheck fires immediately and all
+      # retries are consumed before the broker is ready, causing the backend to
+      # refuse to start because the dependency is never marked healthy.
+      start_period: 60s
       retries: 10
     networks:
       - data_net

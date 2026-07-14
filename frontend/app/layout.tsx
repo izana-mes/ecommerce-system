@@ -1,13 +1,6 @@
 import "./globals.css";
 import ReduxProvider from "@/store/provider";
-import Navbar from "@/components/Header/Navbar";
-import Footer from "@/components/Footer/Footer";
-import GlobalScrollReveal from "@/components/GlobalScrollReveal";
-import GlobalFloatingBanners from "@/components/GlobalFloatingBanners";
-import PageTransition from "@/components/PageTransition";
-import FloatingChatButtons from "@/components/Common/FloatingChatButtons";
-import ChatbotWidget from "@/components/Chatbot/ChatbotWidget";
-import { Toaster } from "react-hot-toast";
+import LayoutWrapper from "@/components/LayoutWrapper";
 import Script from "next/script";
 import LocaleProvider from "@/components/providers/LocaleProvider";
 
@@ -49,16 +42,7 @@ export default function RootLayout({
       <body className="antialiased">
         <ReduxProvider>
           <LocaleProvider>
-            <GlobalScrollReveal />
-            <GlobalFloatingBanners />
-            <Navbar />
-            <main id="page-content">
-              <PageTransition>{children}</PageTransition>
-            </main>
-            <FloatingChatButtons />
-            <ChatbotWidget />
-            <Footer />
-            <Toaster />
+            <LayoutWrapper>{children}</LayoutWrapper>
           </LocaleProvider>
         </ReduxProvider>
       </body>

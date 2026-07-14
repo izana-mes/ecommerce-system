@@ -1,6 +1,7 @@
 package com.example.shop.modules.product.service;
 
 import com.example.shop.common.exception.BusinessException;
+import com.example.shop.config.CacheInvalidationEventPublisher;
 import com.example.shop.config.RedisCacheConfig;
 import com.example.shop.modules.cart.repository.CartItemRepository;
 import com.example.shop.modules.cart.repository.CartReservedStockProjection;
@@ -41,6 +42,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
     private final CartItemRepository cartItemRepository;
+    private final CacheInvalidationEventPublisher cacheInvalidationEventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -142,6 +144,7 @@ public class ProductServiceImpl implements ProductService {
             entity.setSupplierUserId(productDto.getSupplierUserId());
         }
         Product saved = productRepository.save(entity);
+        publishProductCacheInvalidation();
         return productMapper.toDto(saved);
     }
 
@@ -180,10 +183,12 @@ public class ProductServiceImpl implements ProductService {
                         }))
                 .toList();
 
-        return productRepository.saveAll(entities)
+        List<ProductDto> saved = productRepository.saveAll(entities)
                 .stream()
                 .map(productMapper::toDto)
                 .toList();
+        publishProductCacheInvalidation();
+        return saved;
     }
 
     @Override
@@ -216,6 +221,7 @@ public class ProductServiceImpl implements ProductService {
         }
 
         Product saved = productRepository.save(existing);
+        publishProductCacheInvalidation();
         return productMapper.toDto(saved);
     }
 
@@ -259,6 +265,7 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productId));
         existing.setSupplierUserId(supplierUserId);
         productRepository.save(existing);
+        publishProductCacheInvalidation();
     }
 
     @Override
@@ -277,6 +284,7 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productId));
         existing.setSellerUserId(sellerUserId);
         productRepository.save(existing);
+        publishProductCacheInvalidation();
     }
 
     @Override
@@ -291,6 +299,7 @@ public class ProductServiceImpl implements ProductService {
         Product existing = productRepository.findByProductID(productID)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productID));
         productRepository.delete(existing);
+        publishProductCacheInvalidation();
     }
 
     @Override
@@ -399,6 +408,7 @@ public class ProductServiceImpl implements ProductService {
             product.setStockQuantity(Math.max(0, defaultStock(product.getStockQuantity()) - entry.getValue()));
         }
         productRepository.saveAll(products);
+        publishProductCacheInvalidation();
     }
 
     @Override
@@ -423,6 +433,7 @@ public class ProductServiceImpl implements ProductService {
             product.setStockQuantity(defaultStock(product.getStockQuantity()) + entry.getValue());
         }
         productRepository.saveAll(products);
+        publishProductCacheInvalidation();
     }
 
     private Map<String, Integer> normalizeRequestItems(List<StockAdjustmentItemDto> items) {
@@ -521,5 +532,18 @@ public class ProductServiceImpl implements ProductService {
             return DEFAULT_CATEGORY;
         }
         return category.trim();
+    }
+
+    private void publishProductCacheInvalidation() {
+        cacheInvalidationEventPublisher.publish(List.of(
+                RedisCacheConfig.PRODUCTS_ALL,
+                RedisCacheConfig.PRODUCTS_SEARCH,
+                RedisCacheConfig.PRODUCTS_SUGGEST,
+                RedisCacheConfig.PRODUCTS_INVENTORY_HEALTH,
+                RedisCacheConfig.ADMIN_DASHBOARD,
+                RedisCacheConfig.STAFF_DASHBOARD,
+                RedisCacheConfig.SELLER_DASHBOARD,
+                RedisCacheConfig.SUPPLIER_DASHBOARD
+        ));
     }
 }

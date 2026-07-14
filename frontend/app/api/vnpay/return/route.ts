@@ -34,28 +34,41 @@ export async function GET(request: NextRequest) {
 
   const paid = responseCode === "00" && transactionStatus === "00";
 
-  // 2. Forward ALL params to backend POST /api/payments/vnpay/ipn
-  //    Backend handles: DB update + direct SMTP email (no RabbitMQ needed)
-  //    This call is best-effort — frontend NEVER returns 500 just because backend fails.
+  // 2. Forward ALL params to backend POST /payments/vnpay/ipn (DB + paid-order email).
+  let backendConfirmed = false;
+  let backendMessage = "";
   try {
     const backendRes = await fetch(`${API_URL}/payments/vnpay/ipn`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(params),   // includes vnp_SecureHash so backend can re-verify
-      signal: AbortSignal.timeout(15_000)});
-    if (!backendRes.ok) {
-      const errText = await backendRes.text().catch(() => "");
-      console.error(`VNPAY_RETURN: backend IPN returned ${backendRes.status}: ${errText}`);
+      body: JSON.stringify(params),
+      signal: AbortSignal.timeout(15_000),
+    });
+    const backendBody = (await backendRes.json().catch(() => null)) as
+      | { RspCode?: string; rspCode?: string; Message?: string; message?: string }
+      | null;
+    const rspCode = String(backendBody?.RspCode ?? backendBody?.rspCode ?? "").trim();
+    backendMessage = String(backendBody?.Message ?? backendBody?.message ?? "").trim();
+    backendConfirmed = rspCode === "00" || rspCode === "02";
+    if (!backendRes.ok || !backendConfirmed) {
+      console.error(
+        `VNPAY_RETURN: backend IPN not confirmed (http=${backendRes.status}, RspCode=${rspCode}): ${backendMessage}`
+      );
     }
   } catch (err) {
     console.error("VNPAY_RETURN: backend IPN call failed:", err instanceof Error ? err.message : err);
   }
 
-  // 3. Always return payment status from VNPAY params (never 500 on backend failure)
+  const success = paid && backendConfirmed;
   return NextResponse.json({
     valid: true,
-    success: paid,
-    clearCart: paid,
+    success,
+    clearCart: success,
     orderNumber: txnRef,
-    message: paid ? "Payment successful" : "Payment failed"});
+    message: success
+      ? "Payment successful"
+      : paid
+        ? backendMessage || "Payment received but order confirmation is still processing. Please refresh your orders shortly."
+        : "Payment failed",
+  });
 }

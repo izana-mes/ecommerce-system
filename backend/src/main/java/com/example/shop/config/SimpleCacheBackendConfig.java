@@ -27,6 +27,8 @@ public class SimpleCacheBackendConfig {
                 RedisCacheConfig.PRODUCTS_SUGGEST,
                 RedisCacheConfig.PRODUCTS_INVENTORY_HEALTH,
                 RedisCacheConfig.ADMIN_DASHBOARD,
-                RedisCacheConfig.STAFF_DASHBOARD);
+                RedisCacheConfig.STAFF_DASHBOARD,
+                RedisCacheConfig.SELLER_DASHBOARD,
+                RedisCacheConfig.SUPPLIER_DASHBOARD);
     }
 }

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import "./profile.css";
 import {getUser,
-  logout as clearAuth,
   logoutServerSession,
   refreshCurrentUserFromServer,
   subscribeToAuthChanges,
@@ -529,12 +528,10 @@ export default function ProfilePage() {
     }
   };
 
-  const handleLogout = () => {
-    // Clear auth and all per-user client state
-    clearAuth();
+  const handleLogout = async () => {
     dispatch(clearCart());
     dispatch(clearWishList());
-    void logoutServerSession();
+    await logoutServerSession();
 
     toast.success(t("profile_logout_success"), {
       duration: 2000,
@@ -548,6 +545,7 @@ export default function ProfilePage() {
       colors: ['#bb0000', '#ffffff']});
 
     router.replace("/login");
+    router.refresh();
   };
 
   if (!user) {

@@ -1,0 +1,24 @@
+# .gitleaks.toml — Gitleaks configuration for ecommerce-system
+# https://github.com/gitleaks/gitleaks#configuration
+#
+# FIX C1 (Gitleaks side): allowlist paths that are EXAMPLE / template files
+# containing placeholder values. Real credentials must never be committed;
+# they belong in GitHub Actions secrets and runtime environment variables.
+
+title = "ecommerce-system gitleaks config"
+
+[allowlist]
+  description = "Allow example/template files that contain placeholder values"
+  paths = [
+    # Example / documentation files — contain placeholder strings, not real secrets.
+    '''.env\.example$''',
+    '''.env\.prod\.example$''',
+    '''backend/\.env\.example$''',
+    '''ai-chatbot-platform/backend/\.env\.example$''',
+    '''ai-chatbot-platform/frontend/\.env\.example$''',
+    '''mcp-server/\.env\.example$''',
+    # Render blueprint — sync:false entries are intentional blank values.
+    '''render\.yaml$''',
+    # Documentation files.
+    '''.*\.md$''',
+  ]

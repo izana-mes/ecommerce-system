@@ -3,7 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {getUser, refreshCurrentUserFromServer, subscribeToAuthChanges } from "@/lib/auth";
+import {
+  getUser,
+  logoutServerSession,
+  refreshCurrentUserFromServer,
+  subscribeToAuthChanges,
+} from "@/lib/auth";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import toast from "react-hot-toast";
 
 type OrderItem = {
@@ -48,6 +54,7 @@ function formatMoney(value: number, currency: string): string {
 
 export default function UserDashboardPage() {
   const router = useRouter();
+  const { t } = useLocale();
   const token = getUser();
   const [loading, setLoading] = useState(true);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -57,14 +64,12 @@ export default function UserDashboardPage() {
   const [firstName, setFirstName] = useState("User");
 
   const syncUser = useCallback(async () => {
-    const currentUser = getUser();
-    if (!currentUser) {
+    const refreshed = await refreshCurrentUserFromServer();
+    const nextUser = refreshed ?? getUser();
+    if (!nextUser) {
       router.replace("/login?returnTo=/dashboard");
       return false;
     }
-
-    const refreshed = await refreshCurrentUserFromServer();
-    const nextUser = refreshed || currentUser;
 
     if (nextUser.role === "admin") {
       router.replace("/admin");
@@ -150,6 +155,13 @@ export default function UserDashboardPage() {
   const pendingCoupons = useMemo(() => coupons.filter((item) => item.status === "pending").length, [coupons]);
   const totalSpent = useMemo(() => orders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0), [orders]);
 
+  const handleLogout = async () => {
+    await logoutServerSession();
+    toast.success(t("profile_logout_success"));
+    router.replace("/login?returnTo=/dashboard");
+    router.refresh();
+  };
+
   if (loading) {
     return <main style={{ maxWidth: 1140, margin: "0 auto", padding: "42px 16px" }}>Loading your dashboard...</main>;
   }
@@ -158,10 +170,17 @@ export default function UserDashboardPage() {
     <main style={{ background: "#f8fafc", minHeight: "70vh", padding: "36px 16px" }}>
       <div style={{ maxWidth: 1140, margin: "0 auto", display: "grid", gap: 18 }}>
         <section style={cardStyle}>
-          <h1 style={{ margin: 0, fontSize: 32 }}>Welcome back, {firstName}!</h1>
-          <p style={{ margin: "10px 0 0", color: "#475467" }}>
-            Your account overview with orders, coupons, and quick shopping actions.
-          </p>
+          <div style={headerRowStyle}>
+            <div>
+              <h1 style={{ margin: 0, fontSize: 32 }}>Welcome back, {firstName}!</h1>
+              <p style={{ margin: "10px 0 0", color: "#475467" }}>
+                Your account overview with orders, coupons, and quick shopping actions.
+              </p>
+            </div>
+            <button type="button" onClick={() => void handleLogout()} style={logoutButtonStyle}>
+              {t("profile_logout")}
+            </button>
+          </div>
         </section>
 
         <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
@@ -309,6 +328,16 @@ const secondaryButtonStyle: React.CSSProperties = {
   padding: "10px 14px",
   background: "#fff",
   cursor: "pointer"};
+
+const logoutButtonStyle: React.CSSProperties = {
+  border: "1px solid #fecaca",
+  borderRadius: 999,
+  padding: "10px 16px",
+  background: "#fff",
+  color: "#b42318",
+  fontWeight: 600,
+  cursor: "pointer",
+  whiteSpace: "nowrap"};
 
 const primaryLinkStyle: React.CSSProperties = {
   textDecoration: "none",

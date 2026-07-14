@@ -184,9 +184,12 @@ export default function LimitedEdition() {
   return (
     <>
       <div className="LimitedEditionSection">
-        <h2>
-          {t("home_limited")} <span> {t("home_edition")}</span>
-        </h2>
+        <div className="jp-title-wrap">
+          <span className="jp-subtitle">LIMITED EDITIONS / 数量限定・特別モデル</span>
+          <h2>
+            {t("home_limited")} <span> {t("home_edition")}</span>
+          </h2>
+        </div>
         <div className="limitedEditionSlider">
           <div className="swiper-button image-swiper-button-next">
             <IoIosArrowBack />

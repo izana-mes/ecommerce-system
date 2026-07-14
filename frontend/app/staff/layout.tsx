@@ -86,7 +86,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
       </aside>
-      <main style={{ flex: 1, overflowY: "auto", position: "relative" }}>
+      <main className="jp-seigaiha-bg" style={{ flex: 1, overflowY: "auto", position: "relative" }}>
         {children}
       </main>
     </div>

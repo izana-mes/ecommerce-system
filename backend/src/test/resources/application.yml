@@ -3,6 +3,8 @@ spring:
     allow-bean-definition-overriding: true
   flyway:
     enabled: false
+  rabbitmq:
+    enabled: false
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -13,12 +15,51 @@ spring:
     url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
     username: sa
     password:
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 application:
+  mail:
+    provider: resend
+    resend:
+      api-key: test-api-key
+      from-email: test@example.com
+      from-name: Test
   security:
     jwt:
-      secret-key: test-secret-key-test-secret-key-test-secret-key
+      secret-key: TjhHv38rf9sj09hyuqiBZ3ctA3Qtf4uzcZLA5ZpHvZI=
       expiration: 3600000
       refresh-token:
         expiration: 86400000
   cors:
     allowed-origins: http://localhost:3000
+  messaging:
+    exchange: shop.events
+    queue:
+      payment-ipn: payment.ipn.process
+      payment-ipn-dlq: payment.ipn.process.dlq
+      order-paid-email: order.paid.email
+      order-paid-email-dlq: order.paid.email.dlq
+      order-created: order.created
+      order-created-dlq: order.created.dlq
+      email-general: email.general
+      email-general-dlq: email.general.dlq
+      low-stock-alert: inventory.low-stock.alert
+      low-stock-alert-dlq: inventory.low-stock.alert.dlq
+      order-status-changed: order.status.changed
+      order-status-changed-dlq: order.status.changed.dlq
+      review-submitted: review.submitted
+      review-submitted-dlq: review.submitted.dlq
+      audit-event: audit.event
+      audit-event-dlq: audit.event.dlq
+    routing-key:
+      payment-ipn: payment.vnpay.ipn
+      order-paid-email: notification.order.paid.email
+      order-created: order.created
+      email-general: email.general.send
+      low-stock-alert: inventory.low-stock.alert
+      order-status-changed: order.status.changed
+      review-submitted: review.submitted
+      audit-event: audit.event
+      cart-abandoned: cart.abandoned

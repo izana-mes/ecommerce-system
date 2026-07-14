@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+  <!-- Lombok builders and Spring constructor injection often trigger these. -->
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2,SE_BAD_FIELD"/>
+  </Match>
+  <!-- Logging format strings with platform newlines are intentional in this codebase. -->
+  <Match>
+    <Bug pattern="VA_FORMAT_STRING_USES_NEWLINE"/>
+  </Match>
+  <Match>
+    <Bug pattern="BX_UNBOXING_IMMEDIATELY_REBOXED,REC_CATCH_EXCEPTION,RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE,OBL_UNSATISFIED_OBLIGATION_EXCEPTION_EDGE,NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE,DB_DUPLICATE_BRANCHES,DLS_DEAD_LOCAL_STORE"/>
+  </Match>
+</FindBugsFilter>

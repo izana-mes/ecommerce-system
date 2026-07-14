@@ -134,7 +134,12 @@ export default function StaffChatbotPage() {
           const event = eventChunk.match(/^event: (.+)$/m)?.[1]?.trim();
           const dataText = eventChunk.match(/^data: (.+)$/m)?.[1]?.trim();
           if (event !== "token" || !dataText) continue;
-          const data = JSON.parse(dataText) as { token?: string };
+          let data: { token?: string } | null = null;
+          try {
+            data = JSON.parse(dataText) as { token?: string };
+          } catch {
+            continue;
+          }
           if (!data.token) continue;
           setMessages((prev) =>
             prev.map((m) => (m.id === assistantId ? { ...m, text: `${m.text}${data.token ?? ""}` } : m))
