@@ -172,9 +172,9 @@ export default function ProfilePage() {
     setCouponLoading(true);
     try {
       const response = await fetch("/api/coupons/notifications", {
+        method: "GET",
         cache: "no-store",
-        credentials: "include",
-        headers: token ? { } : undefined});
+        credentials: "include"});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.error || "Failed to load coupons");

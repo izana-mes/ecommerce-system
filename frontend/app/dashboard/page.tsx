@@ -55,7 +55,7 @@ function formatMoney(value: number, currency: string): string {
 export default function UserDashboardPage() {
   const router = useRouter();
   const { t } = useLocale();
-  const token = getUser();
+
   const [loading, setLoading] = useState(true);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [couponsLoading, setCouponsLoading] = useState(false);
@@ -120,8 +120,7 @@ export default function UserDashboardPage() {
       const response = await fetch("/api/coupons/notifications", {
         method: "GET",
         cache: "no-store",
-        credentials: "include",
-        headers: token ? { } : undefined});
+        credentials: "include"});
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.message || data?.error || "Failed to load coupons");

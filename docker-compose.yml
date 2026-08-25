@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -74,7 +74,7 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
       AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
-      MOMO_IPN_URL: ${MOMO_IPN_URL:-http://localhost:8080/api/payments/momo/ipn}
+      MOMO_IPN_URL: http://backend:8080/api/payments/momo/ipn
       # PayPal — sourced from .env or host environment
       PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
       PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:-}
@@ -128,8 +128,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       RABBITMQ_MANAGEMENT_URL: ${RABBITMQ_MANAGEMENT_URL:-http://rabbitmq:15672}
       MOMO_REDIRECT_URL: ${MOMO_REDIRECT_URL:-http://localhost:3000/payment/momo-return}
+      MOMO_PARTNER_CODE: ${MOMO_PARTNER_CODE:-MOMO}
       AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
-      MOMO_IPN_URL: ${MOMO_IPN_URL:-http://localhost:8080/api/payments/momo/ipn}
+      MOMO_IPN_URL: http://backend:8080/api/payments/momo/ipn
       VNPAY_RETURN_URL: ${VNPAY_RETURN_URL:-http://localhost:3000/payment/vnpay-return}
       # PayPal — only the public client ID is needed in the frontend
       NEXT_PUBLIC_PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
