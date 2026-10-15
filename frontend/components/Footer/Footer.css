@@ -1,27 +1,31 @@
 .footer {
-  padding: 30px 160px;
+  padding: 60px 80px 40px;
   background-color: var(--surface-2);
-  margin-top: 50px;
+  border-top: 1px solid var(--border);
+  margin-top: 80px;
   display: flex;
   flex-direction: column;
-  gap: 100px;
+  gap: 48px;
+  color: var(--foreground);
 }
 
 .footer__container {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 50px;
-  padding-top: 50px;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr;
+  gap: 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .footer_left {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .footer_logo_container {
-  margin-bottom: 20px;
+  margin-bottom: 8px;
 }
 
 .footer_logo_container img {
@@ -29,46 +33,62 @@
 }
 
 .footer_left p {
-  font-size: 14px;
+  font-size: 13px;
+  color: var(--foreground-2);
+  line-height: 1.6;
 }
 
 .footer_address {
   display: flex;
   flex-direction: column;
-  margin-bottom: 10px;
+  gap: 4px;
+  margin-top: 8px;
 }
 
 .footer_address strong {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
+  color: var(--foreground);
 }
 
 .social_links {
   display: flex;
-  gap: 30px;
-  width: 240px;
+  gap: 18px;
+  align-items: center;
+  margin-top: 8px;
 }
 
 .social_links svg {
   cursor: pointer;
+  color: var(--foreground-2);
+  transition: color 0.2s ease;
+}
+
+.social_links svg:hover {
+  color: var(--foreground);
 }
 
 .footer_content {
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 18px;
 }
 
 .footer_content h5 {
-  font-size: 18px;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--foreground);
+  margin: 0;
 }
 
 .links_container ul {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 12px;
+  padding: 0;
+  margin: 0;
 }
 
 .links_container ul li {
@@ -76,80 +96,95 @@
 }
 
 .links_container ul li a {
-  color: var(--foreground);
+  color: var(--foreground-2);
   text-decoration: none;
-  font-size: 14px;
-  position: relative;
+  font-size: 13px;
+  transition: color 0.2s ease;
 }
 
-.links_container ul li a::after {
-  content: "";
-  position: absolute;
-  bottom: -5px;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background-color: var(--foreground);
-  transition: width 0.3s ease-out;
-}
-
-.links_container ul li a:hover::after {
-  width: 80%;
-  transition-delay: 0.1s;
+.links_container ul li a:hover {
+  color: var(--foreground);
 }
 
 .footer_right {
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 16px;
 }
 
 .footer_right h5 {
-  font-size: 18px;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--foreground);
+  margin: 0;
 }
 
 .footer_right p {
-  font-size: 14px;
+  font-size: 13px;
+  color: var(--foreground-2);
+  line-height: 1.5;
+  margin: 0;
 }
 
 .footer_right form {
   display: flex;
-  margin-top: -10px;
+  border: 1px solid var(--border);
+  background-color: var(--surface-1);
+  border-radius: 2px;
+  overflow: hidden;
 }
 
 .footer_right form input {
   width: 100%;
-  padding: 19px 20px;
+  padding: 10px 14px;
   border: none;
   outline: none;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 13px;
+}
+
+.footer_right form input::placeholder {
+  color: var(--foreground-muted);
 }
 
 .footer_right form button {
-  padding: 10px 20px;
-  background-color: var(--surface-1);
-  color: var(--foreground);
+  padding: 10px 16px;
+  background-color: var(--foreground);
+  color: var(--background);
   border: none;
   cursor: pointer;
   text-transform: uppercase;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  transition: opacity 0.2s ease;
+}
+
+.footer_right form button:hover {
+  opacity: 0.85;
 }
 
 .footer_right h6 {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--foreground);
+  margin: 8px 0 0;
 }
 
 .paymentIconContainer {
-  height: 30px;
-  width: 250px;
-  margin-top: -10px;
+  height: 28px;
+  width: 200px;
 }
 
 .paymentIconContainer img {
   width: 100%;
   height: 100%;
+  object-fit: contain;
   background: none !important;
 }
 
@@ -158,98 +193,73 @@
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  margin-top: 20px;
-  border-top: 1px solid #cfcdcd;
-  padding-top: 30px;
-  gap: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 24px;
+  gap: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  font-size: 12px;
+  color: var(--muted-text);
 }
 
 .footerLangCurrency {
   display: flex;
-  gap: 20px;
+  gap: 24px;
   flex-wrap: wrap;
 }
 
 .footerLang {
   display: flex;
   align-items: center;
-  gap: 30px;
+  gap: 10px;
 }
 
 .footerLang select {
-  border: none;
+  border: 1px solid var(--border);
+  background-color: var(--surface-1);
+  color: var(--foreground);
+  padding: 4px 8px;
+  border-radius: 2px;
   outline: none;
-  background-color: transparent;
-  font-size: 14px;
+  font-size: 12px;
+  cursor: pointer;
 }
 
 .footerCurrency {
   display: flex;
   align-items: center;
-  gap: 30px;
+  gap: 10px;
 }
 
 .footerCurrency select {
-  border: none;
+  border: 1px solid var(--border);
+  background-color: var(--surface-1);
+  color: var(--foreground);
+  padding: 4px 8px;
+  border-radius: 2px;
   outline: none;
-  background-color: transparent;
-  font-size: 14px;
+  font-size: 12px;
+  cursor: pointer;
 }
 
 @media screen and (max-width: 1210px) {
   .footer {
-    padding: 50px 60px;
+    padding: 48px 40px 32px;
   }
   .footer__container {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .footer_left {
-    gap: 10px;
-  }
-  .footer_content {
-    gap: 20px;
-  }
-  .footer_right {
-    gap: 20px;
-  }
-  .paymentIconContainer {
-    width: 200px;
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
-@media screen and (max-width: 450px) {
+@media screen and (max-width: 768px) {
   .footer {
-    padding: 20px 15px;
-    gap: 30px;
+    padding: 36px 20px 24px;
+    gap: 32px;
+    margin-top: 50px;
   }
   .footer__container {
     grid-template-columns: 1fr;
-    gap: 30px;
-  }
-  .footer_left {
-    gap: 10px;
-  }
-  .footer_content {
-    gap: 20px;
-  }
-  .footer_right {
-    gap: 20px;
-  }
-  .paymentIconContainer {
-    width: 150px;
-  }
-  .paymentIconContainer img {
-    height: 40px;
-    width: 320px;
-  }
-  .footerLangCurrency {
-    gap: 10px;
-  }
-}
-
-@media screen and (max-width: 320px) {
-  .paymentIconContainer img {
-    height: 35px;
-    width: 280px;
+    gap: 28px;
   }
 }

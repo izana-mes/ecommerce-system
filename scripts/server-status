@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+
+repo_dir=/home/izana/ecommerce-system
+if docker info >/dev/null 2>&1; then
+  echo "Docker: running"
+  docker compose --env-file "$repo_dir/.env.prod" -f "$repo_dir/docker-compose.prod.yml" ps
+else
+  echo "Docker: unavailable"
+fi
+
+if pgrep -f 'ngrok start.*ecommerce' >/dev/null 2>&1; then
+  echo "ngrok: running"
+else
+  echo "ngrok: stopped"
+fi

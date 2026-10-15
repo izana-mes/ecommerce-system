@@ -1,7 +1,6 @@
 x-default-security: &default-security
   security_opt:
     - no-new-privileges:true
-    - seccomp=default
   cap_drop:
     - ALL
   read_only: true
@@ -78,8 +77,6 @@ services:
       MCP_SERVER_URL: http://mcp-server:3100
       SPRING_PROFILES_ACTIVE: prod
       SERVER_SHUTDOWN: graceful
-    ports:
-      - "8080:8080"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/api/health"]
       interval: 20s
@@ -96,6 +93,10 @@ services:
     networks:
       - app_net
       - data_net
+      # The private application/data networks deliberately have no external
+      # route. OAuth token exchange, SMTP, and payment-provider callbacks need
+      # outbound HTTPS/TCP without making any backend port host-published.
+      - egress_net
     mem_limit: 1g
     cpus: "1.00"
 
@@ -143,7 +144,7 @@ services:
       BACKEND_API_BASE_URL: http://backend:8080/api
       BACKEND_URL: http://backend:8080
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000"]
       interval: 20s
@@ -168,6 +169,8 @@ networks:
   data_net:
     driver: bridge
     internal: true
+  egress_net:
+    driver: bridge
 
 volumes:
   postgres_data:

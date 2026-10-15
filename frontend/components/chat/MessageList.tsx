@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, UIEvent } from "react";
+import { HiOutlineChatBubbleLeftRight } from "react-icons/hi2";
 import { ChatMessage, ReactionKind } from "@/lib/chat/types";
 import { MessageBubble } from "./MessageBubble";
 
@@ -109,17 +110,33 @@ export function MessageList({
       role="log"
       aria-live="polite"
     >
-      {loading && (
-        <div style={{ textAlign: "center", padding: "12px", color: "var(--chat-text-muted)" }}>
-          Loading messages...
+      {loading && messages.length > 0 && (
+        <div style={{ textAlign: "center", padding: "8px 0" }}>
+          <span className="chatSendingSpinner" style={{ borderColor: "rgba(0,0,0,0.15)", borderTopColor: "var(--chat-ink)" }} />
         </div>
       )}
 
-      {!loading && messages.length === 0 ? (
+      {loading && messages.length === 0 ? (
+        <div className="chatSkeletonMessageArea" aria-busy="true" aria-label="Loading messages">
+          <div className="chatSkeletonMessageRow incoming">
+            <div className="chatSkeleton chatSkeletonAvatar" style={{ width: 30, height: 30 }} />
+            <div className="chatSkeleton chatSkeletonBubble" style={{ width: "45%", height: 44 }} />
+          </div>
+          <div className="chatSkeletonMessageRow own">
+            <div className="chatSkeleton chatSkeletonBubble" style={{ width: "38%", height: 40 }} />
+          </div>
+          <div className="chatSkeletonMessageRow incoming">
+            <div className="chatSkeleton chatSkeletonAvatar" style={{ width: 30, height: 30 }} />
+            <div className="chatSkeleton chatSkeletonBubble" style={{ width: "55%", height: 58 }} />
+          </div>
+        </div>
+      ) : messages.length === 0 ? (
         <div className="chatEmptyState">
-          <div className="chatEmptyIcon">💬</div>
+          <div className="chatEmptyIconWrap">
+            <HiOutlineChatBubbleLeftRight size={24} />
+          </div>
           <h3>No messages yet</h3>
-          <p>Send a message below to start the conversation.</p>
+          <p>Send a message below to start this conversation.</p>
         </div>
       ) : (
         renderedItems

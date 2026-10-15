@@ -9,6 +9,7 @@ import com.example.shop.modules.supportchat.dto.UpdateConversationRequest;
 import com.example.shop.modules.supportchat.entity.SupportChatConversation;
 import com.example.shop.modules.supportchat.entity.SupportChatMessage;
 import com.example.shop.modules.supportchat.realtime.SupportChatRealtimePublisher;
+import com.example.shop.modules.notification.service.CustomerNotificationService;
 import com.example.shop.modules.supportchat.repository.SupportChatConversationRepository;
 import com.example.shop.modules.supportchat.repository.SupportChatMessageRepository;
 import com.example.shop.modules.user.entity.User;
@@ -33,6 +34,7 @@ public class SupportChatServiceImpl implements SupportChatService {
     private final SupportChatConversationRepository conversationRepository;
     private final SupportChatMessageRepository messageRepository;
     private final SupportChatRealtimePublisher realtimePublisher;
+    private final CustomerNotificationService customerNotificationService;
 
     @Override
     @Transactional
@@ -108,6 +110,10 @@ public class SupportChatServiceImpl implements SupportChatService {
                 .build();
         realtimePublisher.publishConversationSnapshot(response);
         realtimePublisher.publishStaffConversationUpdate(response.getConversation());
+        if (("employee".equalsIgnoreCase(senderRole) || "admin".equalsIgnoreCase(senderRole)) && conv.getCustomerUserId() != null) {
+            customerNotificationService.createForEmail(conv.getCustomerEmail(), "support-message:" + message.getMessageId(),
+                    "message", "New message from customer support", messageBody.substring(0, Math.min(180, messageBody.length())), "/support-chat");
+        }
         return response;
     }
 

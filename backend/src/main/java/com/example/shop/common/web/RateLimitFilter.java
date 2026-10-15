@@ -38,6 +38,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             new RateLimitRule("POST", "/api/v1/auth/register", 8, 60, "register"),
             new RateLimitRule("POST", "/api/v1/auth/forgot-password", 6, 900, "forgot_password"),
             new RateLimitRule("POST", "/api/v1/auth/reset-password", 10, 900, "reset_password"),
+            new RateLimitRule("POST", "/api/orders", 15, 60, "order_creation"),
             new RateLimitRule("POST", "/api/payments", 30, 60, "payments"),
             new RateLimitRule("POST", "/api/chatbot", 50, 60, "chatbot"),
             new RateLimitRule("/api/v1/admin", 100, 60, "admin")
@@ -89,10 +90,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private RateLimitRule findRule(String method, String path) {
         for (RateLimitRule rule : RULES) {
-            if (!rule.method().isBlank() && rule.method().equalsIgnoreCase(method) && rule.pathPrefix().equals(path)) {
-                return rule;
+            boolean methodMatches = rule.method().isBlank() || rule.method().equalsIgnoreCase(method);
+            if (!methodMatches) {
+                continue;
             }
-            if (rule.method().isBlank() && path.startsWith(rule.pathPrefix())) {
+            boolean pathMatches = path.equals(rule.pathPrefix()) || path.startsWith(rule.pathPrefix() + "/");
+            if (pathMatches) {
                 return rule;
             }
         }

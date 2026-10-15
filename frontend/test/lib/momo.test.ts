@@ -18,15 +18,15 @@ describe("momo helpers", () => {
   });
 
   it("uses sandbox host by default and production only when MOMO_ENV says so", () => {
-    expect(resolveMomoEndpoint({} as NodeJS.ProcessEnv)).toBe(MOMO_SANDBOX_ENDPOINT);
-    expect(resolveMomoEndpoint({ MOMO_ENV: "sandbox" } as NodeJS.ProcessEnv)).toBe(
+    expect(resolveMomoEndpoint({} as unknown as NodeJS.ProcessEnv)).toBe(MOMO_SANDBOX_ENDPOINT);
+    expect(resolveMomoEndpoint({ MOMO_ENV: "sandbox" } as unknown as NodeJS.ProcessEnv)).toBe(
       "https://test-payment.momo.vn"
     );
-    expect(resolveMomoEndpoint({ MOMO_ENV: "production" } as NodeJS.ProcessEnv)).toBe(
+    expect(resolveMomoEndpoint({ MOMO_ENV: "production" } as unknown as NodeJS.ProcessEnv)).toBe(
       "https://payment.momo.vn"
     );
     expect(
-      resolveMomoEndpoint({ MOMO_ENDPOINT: "https://test-payment.momo.vn/" } as NodeJS.ProcessEnv)
+      resolveMomoEndpoint({ MOMO_ENDPOINT: "https://test-payment.momo.vn/" } as unknown as NodeJS.ProcessEnv)
     ).toBe("https://test-payment.momo.vn");
   });
 
@@ -50,11 +50,11 @@ describe("momo helpers", () => {
   });
 
   it("defaults to Collection Link payWithMethod and allows official overrides", () => {
-    expect(resolveMomoRequestType({} as NodeJS.ProcessEnv)).toBe("payWithMethod");
-    expect(resolveMomoRequestType({ MOMO_REQUEST_TYPE: "payWithATM" } as NodeJS.ProcessEnv)).toBe(
+    expect(resolveMomoRequestType({} as unknown as NodeJS.ProcessEnv)).toBe("payWithMethod");
+    expect(resolveMomoRequestType({ MOMO_REQUEST_TYPE: "payWithATM" } as unknown as NodeJS.ProcessEnv)).toBe(
       "payWithATM"
     );
-    expect(resolveMomoRequestType({ MOMO_REQUEST_TYPE: "not-a-momo-type" } as NodeJS.ProcessEnv)).toBe(
+    expect(resolveMomoRequestType({ MOMO_REQUEST_TYPE: "not-a-momo-type" } as unknown as NodeJS.ProcessEnv)).toBe(
       "payWithMethod"
     );
   });

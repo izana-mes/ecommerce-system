@@ -567,7 +567,10 @@ export default function ProfilePage() {
       <div className="profileLayout">
         <div className="profileSidebar">
           <div className="profileCard">
-            <h2>{t("profile_title")}</h2>
+            <div className="jp-title-wrap" style={{ alignItems: "flex-start", marginBottom: 20 }}>
+              <span className="jp-subtitle">ACCOUNT / 会員情報</span>
+              <h2 style={{ margin: 0 }}>{t("profile_title")}</h2>
+            </div>
             <div className="profileField">
               <span className="profileLabel">{t("profile_email")}</span>
               <span className="profileValue">{user.email}</span>

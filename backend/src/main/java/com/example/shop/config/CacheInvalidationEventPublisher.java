@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
 import java.util.List;
@@ -30,6 +32,21 @@ public class CacheInvalidationEventPublisher {
         if (cacheNames == null || cacheNames.isEmpty()) {
             return;
         }
+        List<String> cacheNamesSnapshot = List.copyOf(cacheNames);
+        if (TransactionSynchronizationManager.isSynchronizationActive()
+                && TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    publishNow(cacheNamesSnapshot);
+                }
+            });
+            return;
+        }
+        publishNow(cacheNamesSnapshot);
+    }
+
+    private void publishNow(List<String> cacheNames) {
         CacheInvalidationEvent event = new CacheInvalidationEvent(nodeId, cacheNames, Instant.now());
         try {
             redisTemplate.convertAndSend(channel, objectMapper.writeValueAsString(event));

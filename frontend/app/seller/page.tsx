@@ -4,6 +4,7 @@ import { CSSProperties, ChangeEvent, useCallback, useEffect, useMemo, useState }
 import { useRouter } from "next/navigation";
 import {getUser, refreshCurrentUserFromServer, subscribeToAuthChanges } from "@/lib/auth";
 import toast from "react-hot-toast";
+import { invalidateProductsCache } from "@/hooks/useProducts";
 
 type ProductFormState = {
   productID: string;
@@ -223,6 +224,7 @@ export default function SellerPage() {
             `Failed to ${formMode === "create" ? "create" : "update"} product`
         );
       }
+      invalidateProductsCache();
       toast.success(
         data?.message ||
           (formMode === "create"
@@ -258,6 +260,7 @@ export default function SellerPage() {
       if (!response.ok) {
         throw new Error(data?.message || data?.error || "Failed to delete product");
       }
+      invalidateProductsCache();
       toast.success(data?.message || `Deleted ${productID}`);
       await fetchCatalog(catalogQuery);
     } catch (error: unknown) {

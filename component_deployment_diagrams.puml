@@ -1,0 +1,139 @@
+' ============================================================
+' COMPONENT DIAGRAM
+' ============================================================
+@startuml ComponentDiagram
+title Component Diagram - E-Commerce Fashion Platform
+
+skinparam componentStyle rectangle
+skinparam defaultFontSize 13
+skinparam component {
+    BackgroundColor #DDEEFF
+    BorderColor #336699
+    FontColor #000000
+}
+skinparam database {
+    BackgroundColor #FFF3CC
+    BorderColor #CC9900
+}
+skinparam rectangle {
+    BackgroundColor #E8F5E9
+    BorderColor #4CAF50
+}
+skinparam arrow {
+    Color #555555
+}
+skinparam linetype ortho
+
+rectangle "External Services" {
+    component [Google OAuth] as GoogleOAuth
+    component [MoMo / VNPay / PayPal] as Payment
+    component [Gemini AI / Groq AI] as AI
+    component [SMTP Mail] as Mail
+}
+
+rectangle "Backend Server" {
+    component [Authentication &\nUser Management] as Auth
+    component [Product Management] as Product
+    component [Cart & Order Management] as CartOrder
+    component [Payment Processing] as PaymentComp
+    component [Seller Management] as Seller
+    component [Chat] as Chat
+    component [Admin Management] as Admin
+}
+
+component [Frontend\nWeb Interface] as Frontend
+database "PostgreSQL\nDatabase" as DB
+database "Redis\nCache" as Redis
+component [RabbitMQ\nMessage Broker] as RabbitMQ
+
+Frontend --> Auth
+Frontend --> Product
+Frontend --> CartOrder
+Frontend --> PaymentComp
+Frontend --> Seller
+Frontend --> Chat
+Frontend --> Admin
+
+Auth --> GoogleOAuth
+PaymentComp --> Payment
+Auth --> Mail
+Chat --> AI
+Admin --> AI
+
+Auth --> DB
+Product --> DB
+CartOrder --> DB
+PaymentComp --> DB
+Seller --> DB
+Chat --> DB
+Admin --> DB
+
+Product --> Redis
+Chat --> Redis
+
+Auth --> RabbitMQ
+CartOrder --> RabbitMQ
+
+@enduml
+
+' ============================================================
+' DEPLOYMENT DIAGRAM
+' ============================================================
+@startuml DeploymentDiagram
+title Deployment Diagram - E-Commerce Fashion Platform
+
+skinparam defaultFontSize 13
+skinparam node {
+    BackgroundColor #DDEEFF
+    BorderColor #336699
+}
+skinparam database {
+    BackgroundColor #FFF3CC
+    BorderColor #CC9900
+}
+skinparam component {
+    BackgroundColor #E8F5E9
+    BorderColor #4CAF50
+}
+skinparam rectangle {
+    BackgroundColor #F3E5F5
+    BorderColor #9C27B0
+}
+skinparam arrow {
+    Color #555555
+}
+
+node "User\nWeb Browser" as Browser
+
+node "Frontend Server" as FE {
+    component [Next.js\nWeb Application] as NextApp
+}
+
+node "Backend Server" as BE {
+    component [Spring Boot\nApplication] as SpringApp
+}
+
+database "PostgreSQL\nDatabase" as DB
+
+database "Redis\nCache" as Redis
+
+node "RabbitMQ\nMessage Broker" as RabbitMQ
+
+rectangle "External Services" {
+    component [Google OAuth] as Google
+    component [MoMo / VNPay / PayPal] as Payments
+    component [Gemini AI / Groq AI] as AI
+    component [SMTP Mail] as Mail
+}
+
+Browser --> NextApp : HTTP/HTTPS
+NextApp --> SpringApp : REST API
+SpringApp --> DB : SQL
+SpringApp --> Redis : Cache
+SpringApp --> RabbitMQ : AMQP
+SpringApp --> Google : OAuth2
+SpringApp --> Payments : Payment API
+SpringApp --> AI : AI API
+SpringApp --> Mail : SMTP
+
+@enduml

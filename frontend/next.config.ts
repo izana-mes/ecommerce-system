@@ -14,6 +14,14 @@ const nextConfig: NextConfig = {
       "http://localhost:8080";
     return [
       {
+        source: "/login/oauth2/code/:path*",
+        destination: `${backend}/login/oauth2/code/:path*`,
+      },
+      {
+        source: "/oauth2/:path*",
+        destination: `${backend}/oauth2/:path*`,
+      },
+      {
         source: "/api/v1/staff/:path*",
         destination: `${backend}/api/v1/staff/:path*`},
       {
@@ -22,6 +30,17 @@ const nextConfig: NextConfig = {
       {
         source: "/api/v1/supplier/:path*",
         destination: `${backend}/api/v1/supplier/:path*`},
+      // Route handlers under app/api take precedence over these fallbacks.  The
+      // remaining Spring endpoints (and payment provider callbacks) therefore
+      // stay available through the single public frontend origin.
+      {
+        source: "/api/:path*",
+        destination: `${backend}/api/:path*`},
+      // SockJS transports must use the same public origin as the frontend when
+      // the backend has no host-published port.
+      {
+        source: "/ws/:path*",
+        destination: `${backend}/ws/:path*`},
     ];
   }
 };

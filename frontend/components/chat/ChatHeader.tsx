@@ -33,32 +33,43 @@ export function ChatHeader({
             type="button"
             className="chatBackBtn"
             title="Back to conversations"
+            aria-label="Back to conversations"
             onClick={onBackMobile}
           >
-            <HiArrowLeft size={20} />
+            <HiArrowLeft size={18} />
           </button>
         )}
 
-        <div className="chatAvatarWrap" style={{ width: 40, height: 40 }}>
-          <div className="chatAvatar" style={{ fontSize: 16 }}>{initial}</div>
-          {conversation.isOnline && <span className="chatOnlineDot" />}
+        <div className="chatAvatarWrap" style={{ width: 38, height: 38 }}>
+          <div className="chatAvatar" style={{ fontSize: 14 }}>{initial}</div>
+          {conversation.isOnline && <span className="chatOnlineDot" aria-label="Online" />}
         </div>
 
         <div className="chatHeaderInfo">
           <h2 className="chatHeaderTitle">{conversation.title || "Conversation"}</h2>
           <div className="chatHeaderSubtitle">
             {hasTyping ? (
-              <span className="chatTypingSubtitle">{typingText}</span>
-            ) : (
-              <span>
-                {conversation.type === "direct"
-                  ? conversation.isOnline
-                    ? "Online"
-                    : "Offline"
-                  : conversation.type === "support"
-                  ? "Support Desk"
-                  : `${conversation.participants?.length || 2} members`}
+              <span className="chatTypingSubtitle">
+                <span className="chatTypingDots" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </span>
+                <span>{typingText}</span>
               </span>
+            ) : conversation.type === "direct" ? (
+              conversation.isOnline ? (
+                <span className="chatOnlineBadge">
+                  <span className="chatOnlineDotInline" aria-hidden="true" />
+                  <span>Active now</span>
+                </span>
+              ) : (
+                <span>Offline</span>
+              )
+            ) : conversation.type === "support" ? (
+              <span>Support Desk</span>
+            ) : (
+              <span>{conversation.participants?.length || 2} members</span>
             )}
           </div>
         </div>
@@ -69,9 +80,11 @@ export function ChatHeader({
           type="button"
           className={`chatIconBtn ${showDetails ? "active" : ""}`}
           title="Conversation details"
+          aria-label="Toggle conversation details"
+          aria-expanded={showDetails}
           onClick={onToggleDetails}
         >
-          <HiOutlineInformationCircle size={22} />
+          <HiOutlineInformationCircle size={20} />
         </button>
       </div>
     </header>

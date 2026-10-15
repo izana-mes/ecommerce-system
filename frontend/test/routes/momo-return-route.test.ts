@@ -50,9 +50,14 @@ describe("GET /api/momo/return", () => {
     };
   });
 
-  it("accepts a valid successful redirect signature without calling IPN", async () => {
-    const fetchMock = vi.fn();
+  it("accepts a valid successful redirect signature and calls confirm-redirect backend", async () => {
+    // Mock the confirm-redirect backend call — it should be called for successful payments
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: () => Promise.resolve({ success: true, message: "Payment confirmed" }),
+      status: 200,
+    } as unknown as Response);
     vi.stubGlobal("fetch", fetchMock);
+
     const params = signedParams();
     const query = new URLSearchParams(params).toString();
     const req = new NextRequest(`http://localhost:3000/api/momo/return?${query}`);
@@ -62,10 +67,14 @@ describe("GET /api/momo/return", () => {
     expect(json.valid).toBe(true);
     expect(json.success).toBe(true);
     expect(json.orderNumber).toBe("ORD-1");
-    expect(fetchMock).not.toHaveBeenCalled();
+    // confirm-redirect should be called to update order status server-side
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock.mock.calls[0][0]).toContain("/payments/momo/confirm-redirect");
   });
 
-  it("treats a cancelled result as a failed payment", async () => {
+  it("does NOT call confirm-redirect for a cancelled/failed payment", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
     const params = signedParams({ resultCode: "1006", message: "User cancelled" });
     const query = new URLSearchParams(params).toString();
     const req = new NextRequest(`http://localhost:3000/api/momo/return?${query}`);
@@ -74,6 +83,8 @@ describe("GET /api/momo/return", () => {
     expect(res.status).toBe(200);
     expect(json.valid).toBe(true);
     expect(json.success).toBe(false);
+    // No backend call for failed payments
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("rejects an invalid signature", async () => {
@@ -83,5 +94,19 @@ describe("GET /api/momo/return", () => {
     const req = new NextRequest(`http://localhost:3000/api/momo/return?${query}`);
     const res = await GET(req);
     expect(res.status).toBe(400);
+  });
+
+  it("still returns success even if confirm-redirect backend call fails (non-fatal)", async () => {
+    // Even if backend confirm-redirect throws, the frontend should still show success
+    const fetchMock = vi.fn().mockRejectedValue(new Error("Network error"));
+    vi.stubGlobal("fetch", fetchMock);
+    const params = signedParams();
+    const query = new URLSearchParams(params).toString();
+    const req = new NextRequest(`http://localhost:3000/api/momo/return?${query}`);
+    const res = await GET(req);
+    const json = await res.json();
+    expect(res.status).toBe(200);
+    expect(json.valid).toBe(true);
+    expect(json.success).toBe(true);
   });
 });

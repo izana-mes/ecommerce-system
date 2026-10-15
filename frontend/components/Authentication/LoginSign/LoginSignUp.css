@@ -2,56 +2,11 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-top: 50px;
-  padding-bottom: 70px;
-  background-color: var(--foreground);
-  color: var(--background);
+  padding: 80px 24px;
+  background-color: var(--surface-2);
+  color: var(--foreground);
   position: relative;
-  overflow: hidden;
-}
-
-/* Seigaiha (青海波) pattern overlay for login page */
-.loginSignUpSection::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(
-      ellipse 100% 90% at 50% 100%,
-      transparent 59%,
-      rgba(255,255,255,0.07) 59.5%,
-      rgba(255,255,255,0.07) 62%,
-      transparent 62.5%
-    ),
-    radial-gradient(
-      ellipse 100% 90% at 0% 100%,
-      transparent 59%,
-      rgba(255,255,255,0.045) 59.5%,
-      rgba(255,255,255,0.045) 62%,
-      transparent 62.5%
-    ),
-    radial-gradient(
-      ellipse 100% 90% at 100% 100%,
-      transparent 59%,
-      rgba(255,255,255,0.045) 59.5%,
-      rgba(255,255,255,0.045) 62%,
-      transparent 62.5%
-    );
-  background-size:
-    var(--pattern-seigaiha-size) calc(var(--pattern-seigaiha-size) * 0.62),
-    var(--pattern-seigaiha-size) calc(var(--pattern-seigaiha-size) * 0.62),
-    var(--pattern-seigaiha-size) calc(var(--pattern-seigaiha-size) * 0.62);
-  background-position:
-    0 0,
-    calc(var(--pattern-seigaiha-size) / 2) calc(var(--pattern-seigaiha-size) * 0.31),
-    calc(var(--pattern-seigaiha-size) / -2) calc(var(--pattern-seigaiha-size) * 0.31);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.loginSignUpSection > * {
-  position: relative;
-  z-index: 1;
+  min-height: calc(100vh - 200px);
 }
 
 .loginSignUpContainer {
@@ -59,166 +14,227 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 55px;
+  gap: 36px;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  background-color: var(--surface-1);
+  padding: 48px 40px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
 }
 
 .loginSignUpTabs {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 50px;
+  gap: 32px;
+  width: 100%;
+  border-bottom: 1px solid var(--border-soft);
+  padding-bottom: 12px;
 }
 
 .loginSignUpTabs p {
   border: none;
   cursor: pointer;
-  text-decoration: none;
   text-transform: uppercase;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   position: relative;
-  transition: color 0.3s;
-  color: #b3b3b3;
-  text-decoration: none;
+  transition: color 0.2s ease;
+  color: var(--muted-text);
+  padding-bottom: 8px;
 }
 
 .loginSignUpTabs p:hover {
-  color: var(--background);
+  color: var(--foreground);
 }
 
 .loginSignUpTabs p.active {
-  color: var(--background);
+  color: var(--foreground);
+  font-weight: 600;
 }
 
 .loginSignUpTabs p.active::after {
   content: "";
   position: absolute;
-  bottom: -5px;
+  bottom: -13px;
   left: 0;
   width: 100%;
   height: 2px;
-  background-color: var(--surface-1);
+  background-color: var(--foreground);
 }
 
 .loginSignUpTabs p:not(.active)::after {
-  content: "";
-  position: absolute;
-  bottom: -5px;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background-color: var(--surface-1);
-  transition: width 0.2s ease, left 0.2s ease;
-}
-
-.loginSignUpTabs p:not(.active):hover::after {
-  width: 100%;
-  left: 0;
-  transition-delay: 0.2s;
+  display: none;
 }
 
 /* Tab1 Content */
 
-.loginSignUpTabsContentLogin form {
+.loginSignUpTabsContentLogin,
+.loginSignUpTabsContentRegister,
+.loginSignUpTabsContentVerify {
+  width: 100%;
+}
+
+.loginSignUpTabsContentLogin form,
+.loginSignUpTabsContentRegister form,
+.loginSignUpTabsContentVerify form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  width: 500px;
+  gap: 18px;
+  width: 100%;
 }
 
 .loginSignUpTabsContentLogin .googleLoginButton {
-  width: 500px;
-  margin-bottom: 12px;
+  width: 100%;
+  margin-bottom: 8px;
 }
 
-.loginSignUpTabsContentLogin form input {
-  padding: 20px;
-  border: 2px solid #9a9a9a;
-  outline-color: var(--background);
-  background-color: var(--foreground);
-  color: var(--background);
-  caret-color: var(--background);
+.loginSignUpTabsContentLogin form input,
+.loginSignUpTabsContentRegister input,
+.loginSignUpTabsContentVerify input {
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  outline: none;
+  background-color: var(--surface-1);
+  color: var(--foreground);
+  caret-color: var(--foreground);
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.loginSignUpTabsContentLogin form input:focus,
+.loginSignUpTabsContentRegister input:focus,
+.loginSignUpTabsContentVerify input:focus {
+  border-color: var(--foreground);
 }
 
 .loginSignUpForgetPass {
   display: flex;
   justify-content: space-between;
-  padding-bottom: 10px;
+  align-items: center;
+  font-size: 13px;
 }
 
 .loginSignUpForgetPass label {
   display: flex;
   align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
 }
 
 .loginSignUpForgetPass a {
-  font-size: 14px;
-  color: var(--background);
+  font-size: 13px;
+  color: var(--foreground-2);
+  text-decoration: underline;
+  transition: color 0.2s ease;
 }
 
-/* custom radio button */
+.loginSignUpForgetPass a:hover {
+  color: var(--foreground);
+}
+
+/* custom checkbox/radio */
 
 .loginSignUpForgetPass label input {
   appearance: none;
-  border: 2px solid var(--border-soft);
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
   position: relative;
   cursor: pointer;
   outline: none;
-  padding: 6px !important;
+  padding: 0 !important;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .loginSignUpForgetPass label input:checked {
-  border: 2px solid #ffffff;
+  background-color: var(--foreground);
+  border-color: var(--foreground);
 }
 
 .loginSignUpForgetPass label input::after {
   content: "";
   display: block;
-  width: 8px;
+  width: 5px;
   height: 8px;
-  background-color: var(--surface-1);
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  transition: transform 0.2s ease-in-out;
+  border: solid var(--background);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg) scale(0);
+  margin-bottom: 2px;
+  transition: transform 0.15s ease-in-out;
 }
 
 .loginSignUpForgetPass label input:checked::after {
-  transform: translate(-50%, -50%) scale(1);
+  transform: rotate(45deg) scale(1);
 }
-
-/* custom radio button end */
 
 .loginSignUpForgetPass p {
-  color: var(--muted-text);
-  font-size: 14px;
+  color: var(--foreground-2);
+  font-size: 13px;
+  margin: 0;
 }
 
-.loginSignUpTabsContentLogin button {
-  padding: 20px;
-  background-color: var(--surface-1);
-  color: var(--foreground);
-  border: 1px solid #ffffff;
+.loginSignUpTabsContentLogin button,
+.loginSignUpTabsContentRegister button,
+.loginSignUpTabsContentVerify button {
+  padding: 13px 20px;
+  background-color: var(--foreground);
+  color: var(--background);
+  border: 1px solid var(--foreground);
+  border-radius: 2px;
   cursor: pointer;
   text-transform: uppercase;
+  font-size: 12px;
   font-weight: 600;
+  letter-spacing: 0.08em;
+  transition: opacity 0.2s ease;
+  width: 100%;
 }
 
-.loginSignUpTabsContentLogin button:disabled {
-  opacity: 0.65;
+.loginSignUpTabsContentLogin button:hover,
+.loginSignUpTabsContentRegister button:hover,
+.loginSignUpTabsContentVerify button:hover {
+  opacity: 0.88;
+}
+
+.loginSignUpTabsContentLogin button:disabled,
+.loginSignUpTabsContentRegister button:disabled,
+.loginSignUpTabsContentVerify button:disabled {
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
+.loginSignUpTabsContentVerify button.secondaryButton {
+  background-color: transparent;
+  color: var(--foreground);
+  border: 1px solid var(--border-strong);
+}
+
+.loginSignUpTabsContentVerify button.secondaryButton:hover {
+  background-color: var(--surface-2);
+}
+
 .loginSignUpTabsContentLoginText {
-  padding-top: 20px;
+  padding-top: 12px;
 }
 
 .loginSignUpTabsContentLoginText p {
-  font-size: 14px;
+  font-size: 13px;
   text-align: center;
   color: var(--muted-text);
+  margin: 0;
 }
 
 .loginSignUpTabsContentLoginText p span {
@@ -228,119 +244,28 @@
   font-weight: 500;
 }
 
-/* Tab Content 2 */
-
-.loginSignUpTabsContentRegister form {
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
-  width: 500px;
-}
-
-.loginSignUpTabsContentRegister input {
-  padding: 20px;
-  border: 2px solid #9a9a9a;
-  outline-color: var(--background);
-  background-color: var(--foreground);
-  color: var(--background);
-  caret-color: var(--background);
-}
-
-.loginSignUpTabsContentRegister p {
-  color: var(--muted-text);
-  font-size: 14px;
-}
-
-.loginSignUpTabsContentRegister button {
-  padding: 20px;
-  background-color: var(--surface-1);
-  color: var(--foreground);
-  border: 1px solid #ffffff;
-  cursor: pointer;
-  text-transform: uppercase;
-  font-weight: 600;
-}
-
-.loginSignUpTabsContentVerify form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  width: 500px;
-}
-
-.loginSignUpTabsContentVerify input {
-  padding: 20px;
-  border: 2px solid #9a9a9a;
-  outline-color: var(--background);
-  background-color: var(--foreground);
-  color: var(--background);
-  caret-color: var(--background);
-}
-
+.loginSignUpTabsContentRegister p,
 .loginSignUpTabsContentVerify p {
-  color: var(--muted-text);
-  font-size: 14px;
-}
-
-.loginSignUpTabsContentVerify button {
-  padding: 20px;
-  background-color: var(--surface-1);
-  color: var(--foreground);
-  border: 1px solid #ffffff;
-  cursor: pointer;
-  text-transform: uppercase;
-  font-weight: 600;
-}
-
-.loginSignUpTabsContentVerify button.secondaryButton {
-  background-color: transparent;
-  color: var(--background);
-  border: 1px solid #9a9a9a;
+  color: var(--foreground-3);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
 }
 
 .loginSignUpTabsContentLogin form input::placeholder,
 .loginSignUpTabsContentRegister input::placeholder,
 .loginSignUpTabsContentVerify input::placeholder {
-  color: #d4d4d4;
+  color: var(--foreground-muted);
   opacity: 1;
 }
 
-@media screen and (max-width: 450px) {
+@media screen and (max-width: 500px) {
   .loginSignUpSection {
-    padding-bottom: 30px;
+    padding: 40px 16px;
   }
 
-  .loginSignUpTabsContentLogin form {
-    width: 330px;
-  }
-
-  .loginSignUpTabsContentLogin .googleLoginButton {
-    width: 330px;
-  }
-
-  .loginSignUpTabsContentRegister form {
-    width: 330px;
-  }
-
-  .loginSignUpTabsContentVerify form {
-    width: 330px;
-  }
-}
-
-@media screen and (max-width: 320px) {
-  .loginSignUpTabsContentLogin form {
-    width: 280px;
-  }
-
-  .loginSignUpTabsContentLogin .googleLoginButton {
-    width: 280px;
-  }
-
-  .loginSignUpTabsContentRegister form {
-    width: 280px;
-  }
-
-  .loginSignUpTabsContentVerify form {
-    width: 280px;
+  .loginSignUpContainer {
+    padding: 32px 20px;
+    max-width: 100%;
   }
 }

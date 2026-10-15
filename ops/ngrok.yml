@@ -1,0 +1,6 @@
+version: "3"
+tunnels:
+  ecommerce:
+    proto: http
+    addr: 127.0.0.1:3000
+    url: https://radiated-overpay-retired.ngrok-free.dev

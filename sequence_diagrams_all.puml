@@ -1,0 +1,3334 @@
+```plantuml
+@startuml
+title SD01 - Quản lý tài khoản cá nhân
+actor "Khách hàng" as Actor
+participant "Frontend" as FE
+participant "AuthMeController" as Ctrl
+participant "AuthServiceImpl" as Service
+participant "UserRepository" as Repo
+database "DB" as DB
+
+Actor -> FE: Truy cập trang cá nhân
+FE -> Ctrl: GET /api/v1/auth/me
+Ctrl -> Service: getCurrentUser()
+Service -> Repo: findById()
+Repo -> DB: query
+DB --> Repo: user data
+Repo --> Service: user info
+Service --> Ctrl: user info
+Ctrl --> FE: user info
+FE --> Actor: Hiển thị thông tin
+Actor -> FE: Chỉnh sửa và lưu
+FE -> Ctrl: PUT /api/v1/auth/me
+Ctrl -> Service: updateProfile()
+Service -> Repo: validate()
+alt Thông tin không hợp lệ
+    Repo --> Service: error
+    Service --> Ctrl: 400 Bad Request
+    Ctrl --> FE: error message
+    FE --> Actor: Hiển thị lỗi
+else Thông tin hợp lệ
+    alt Không có thay đổi
+        Service --> Ctrl: no change
+        Ctrl --> FE: 200 OK
+        FE --> Actor: Giữ nguyên
+    else Có thay đổi
+        Service -> Repo: save()
+        Repo -> DB: update
+        DB --> Repo: success
+        Repo --> Service: success
+        Service --> Ctrl: 200 OK
+        Ctrl --> FE: success
+        FE --> Actor: Cập nhật thành công
+    end
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD02 - Đăng ký tài khoản
+actor "Khách hàng" as Actor
+participant "Frontend" as FE
+participant "AuthController" as Ctrl
+participant "AuthServiceImpl" as Service
+participant "UserRepository" as Repo
+participant "EmailMessagePublisher" as Email
+database "DB" as DB
+
+Actor -> FE: Điền form đăng ký
+FE -> Ctrl: POST /api/v1/auth/register
+Ctrl -> Service: register()
+Service -> Repo: existsByEmailIgnoreCase()
+Repo -> DB: query
+DB --> Repo: result
+alt Email đã tồn tại
+    Repo --> Service: true
+    Service --> Ctrl: 409 Conflict
+    Ctrl --> FE: error message
+    FE --> Actor: Báo lỗi email tồn tại
+else Thông tin không hợp lệ hoặc sai mật khẩu
+    Service --> Ctrl: 400 Bad Request
+    Ctrl --> FE: error message
+    FE --> Actor: Báo lỗi nhập liệu
+else Hợp lệ
+    Repo --> Service: false
+    Service -> Repo: save()
+    Repo -> DB: insert
+    DB --> Repo: success
+    Service -> Email: publish verification email
+    Service --> Ctrl: 201 Created
+    Ctrl --> FE: success message
+    FE --> Actor: Thông báo kiểm tra email
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD03 - Xác thực email
+actor "Khách hàng" as Actor
+participant "Frontend" as FE
+participant "AuthController" as Ctrl
+participant "AuthServiceImpl" as Service
+participant "EmailVerificationTokenRepository" as Repo
+participant "UserRepository" as UserRepo
+database "DB" as DB
+
+Actor -> FE: Click link xác thực
+FE -> Ctrl: GET /api/v1/auth/verify-email?token=...
+Ctrl -> Service: verifyEmail(token)
+Service -> Repo: findByTokenHash()
+Repo -> DB: query
+DB --> Repo: token data
+alt Token không hợp lệ / hết hạn
+    Repo --> Service: null / expired
+    Service --> Ctrl: 400 Bad Request
+    Ctrl --> FE: error message
+    FE --> Actor: Thông báo lỗi
+else Hợp lệ
+    Repo --> Service: token info
+    Service -> UserRepo: save(isVerified=true)
+    UserRepo -> DB: update
+    DB --> UserRepo: success
+    Service --> Ctrl: 200 OK
+    Ctrl --> FE: success message
+    FE --> Actor: Thông báo xác thực thành công
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD04 - Gửi lại email xác thực
+actor "Khách hàng" as Actor
+participant "Frontend" as FE
+participant "AuthController" as Ctrl
+participant "AuthServiceImpl" as Service
+participant "UserRepository" as UserRepo
+participant "EmailVerificationTokenRepository" as Repo
+participant "EmailMessagePublisher" as Email
+database "DB" as DB
+
+Actor -> FE: Yêu cầu gửi lại email
+FE -> Ctrl: POST /api/v1/auth/resend-verification
+Ctrl -> Service: resendVerificationEmail()
+Service -> UserRepo: findByEmail()
+UserRepo -> DB: query
+DB --> UserRepo: user data
+alt Tài khoản đã xác thực
+    Service --> Ctrl: 400 Bad Request (Already verified)
+    Ctrl --> FE: message
+    FE --> Actor: Thông báo đã xác thực
+else Chưa xác thực
+    Service -> Repo: create/update token
+    Repo -> DB: save
+    DB --> Repo: success
+    Service -> Email: publish verification email
+    Service --> Ctrl: 200 OK
+    Ctrl --> FE: success message
+    FE --> Actor: Thông báo đã gửi email
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD05 - Đăng nhập
+actor "Khách hàng" as Actor
+participant "Frontend" as FE
+participant "AuthController" as Ctrl
+participant "AuthServiceImpl" as Service
+participant "AuthenticationManager" as AuthMgr
+participant "TokenService" as TokenSvc
+participant "AuthCookieService" as CookieSvc
+participant "JwtProvider" as Jwt
+
+Actor -> FE: Nhập email, password
+FE -> Ctrl: POST /api/v1/auth/authenticate
+Ctrl -> Service: authenticate()
+Service -> AuthMgr: authenticate(credentials)
+alt Sai thông tin (401)
+    AuthMgr --> Service: AuthException
+    Service --> Ctrl: 401 Unauthorized
+    Ctrl --> FE: error message
+    FE --> Actor: Thông báo sai thông tin
+else Chưa xác thực email
+    AuthMgr --> Service: UnverifiedException
+    Service --> Ctrl: 403 Forbidden
+    Ctrl --> FE: error message
+    FE --> Actor: Yêu cầu xác thực email
+else Thành công
+    AuthMgr --> Service: UserDetails
+    Service -> TokenSvc: createRefreshToken()
+    Service -> Jwt: generateAccessToken()
+    Service -> CookieSvc: writeAuthCookies()
+    Service --> Ctrl: success
+    Ctrl --> FE: 200 OK + Cookies
+    FE --> Actor: Đăng nhập thành công
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD06 - Đăng nhập qua Google
+actor "Khách hàng" as Actor
+participant "Frontend" as FE
+participant "Spring Security" as Sec
+participant "Google" as Google
+participant "OAuth2AuthenticationSuccessHandler" as Handler
+participant "AuthServiceImpl" as Service
+participant "UserRepository" as Repo
+participant "JwtProvider" as Jwt
+
+Actor -> FE: Chọn Đăng nhập Google
+FE -> Sec: GET /oauth2/authorize/google
+Sec -> Google: Redirect to Google
+Google --> Actor: Hiển thị màn hình đăng nhập Google
+Actor -> Google: Xác nhận
+Google -> Sec: callback
+alt Từ chối / Lỗi
+    Sec --> FE: Redirect with error
+    FE --> Actor: Thông báo lỗi
+else Thành công
+    Sec -> Handler: onAuthenticationSuccess()
+    Handler -> Service: processOAuth2User()
+    Service -> Repo: find/create user
+    Repo --> Service: user data
+    Service -> Jwt: generate token
+    Service --> Handler: JWT
+    Handler --> FE: Redirect with JWT
+    FE --> Actor: Đăng nhập thành công
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD07 - Đăng xuất
+actor "Khách hàng" as Actor
+participant "Frontend" as FE
+participant "AuthController" as Ctrl
+participant "AuthServiceImpl" as Service
+participant "RefreshTokenRepository" as Repo
+participant "AuthCookieService" as CookieSvc
+database "DB" as DB
+
+Actor -> FE: Click đăng xuất
+FE -> Ctrl: POST /api/v1/auth/logout
+alt Hết hạn session
+    Ctrl --> FE: 401 Unauthorized
+    FE --> Actor: Yêu cầu đăng nhập lại
+else Hợp lệ
+    Ctrl -> Service: logout()
+    Service -> Repo: revokeToken()
+    Repo -> DB: delete/update
+    Service -> CookieSvc: clearCookies()
+    Service --> Ctrl: success
+    Ctrl --> FE: 200 OK
+    FE --> Actor: Chuyển hướng về trang chủ/đăng nhập
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD08 - Quên mật khẩu
+actor "Khách hàng" as Actor
+participant "Frontend" as FE
+participant "AuthController" as Ctrl
+participant "AuthServiceImpl" as Service
+participant "UserRepository" as UserRepo
+participant "PasswordResetTokenRepository" as Repo
+participant "EmailMessagePublisher" as Email
+database "DB" as DB
+
+Actor -> FE: Nhập email và gửi
+FE -> Ctrl: POST /api/v1/auth/forgot-password
+Ctrl -> Service: requestPasswordReset()
+Service -> UserRepo: findByEmail()
+UserRepo -> DB: query
+DB --> UserRepo: result
+alt Email không tồn tại / không hợp lệ
+    UserRepo --> Service: not found
+    Service --> Ctrl: 404 Not Found
+    Ctrl --> FE: error message
+    FE --> Actor: Thông báo lỗi
+else Thành công
+    UserRepo --> Service: user data
+    Service -> Repo: save()
+    Repo -> DB: insert
+    DB --> Repo: success
+    Service -> Email: publish reset email
+    Service --> Ctrl: 200 OK
+    Ctrl --> FE: success message
+    FE --> Actor: Thông báo kiểm tra email
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD09 - Đặt lại mật khẩu
+actor "Khách hàng" as Actor
+participant "Frontend" as FE
+participant "AuthController" as Ctrl
+participant "AuthServiceImpl" as Service
+participant "PasswordResetTokenRepository" as Repo
+participant "UserRepository" as UserRepo
+database "DB" as DB
+
+Actor -> FE: Click link & nhập pass mới
+FE -> Ctrl: POST /api/v1/auth/reset-password
+Ctrl -> Service: resetPassword()
+Service -> Repo: findByTokenHash()
+Repo -> DB: query
+DB --> Repo: result
+alt Mật khẩu xác nhận không khớp
+    Ctrl --> FE: 400 Bad Request
+    FE --> Actor: Báo lỗi không khớp
+else Token không hợp lệ / hết hạn
+    Repo --> Service: invalid
+    Service --> Ctrl: 400 Bad Request
+    Ctrl --> FE: error message
+    FE --> Actor: Yêu cầu gửi lại quên mật khẩu
+else Hợp lệ
+    Repo --> Service: valid token
+    Service -> UserRepo: save(newPassword)
+    UserRepo -> DB: update
+    DB --> UserRepo: success
+    Service --> Ctrl: 200 OK
+    Ctrl --> FE: success message
+    FE --> Actor: Thông báo thành công
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD10 - Xem danh sách sản phẩm
+actor "Khách hàng" as Actor
+participant "Frontend" as FE
+participant "ProductController" as Ctrl
+participant "ProductService" as Service
+participant "ProductRepository" as Repo
+database "DB" as DB
+
+Actor -> FE: Truy cập trang sản phẩm
+FE -> Ctrl: GET /api/products
+Ctrl -> Service: getAllProducts()
+Service -> Repo: findAll()
+Repo -> DB: query
+DB --> Repo: result
+alt Lỗi cơ sở dữ liệu
+    Repo --> Service: DB Error
+    Service --> Ctrl: 500 Internal Error
+    Ctrl --> FE: error message
+    FE --> Actor: Báo lỗi hệ thống
+else Danh sách rỗng
+    Repo --> Service: empty list
+    Service --> Ctrl: empty list
+    Ctrl --> FE: 200 OK
+    FE --> Actor: Báo không có sản phẩm
+else Thành công
+    Repo --> Service: product list
+    Service --> Ctrl: product list
+    Ctrl --> FE: 200 OK
+    FE --> Actor: Hiển thị danh sách sản phẩm
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD11 - Tìm kiếm sản phẩm
+actor "Khách hàng" as Actor
+participant "Frontend" as FE
+participant "ProductController" as Ctrl
+participant "SearchHistoryService" as History
+participant "ProductService" as Service
+participant "ProductRepository" as Repo
+database "Redis/DB" as DB
+
+Actor -> FE: Nhập từ khóa
+FE -> Ctrl: GET /api/products?q={keyword}
+alt Từ khóa không hợp lệ
+    Ctrl --> FE: 400 Bad Request
+    FE --> Actor: Yêu cầu nhập lại
+else Hợp lệ
+    Ctrl -> History: saveSearchTerm()
+    History -> DB: save to Redis
+    Ctrl -> Service: searchProducts()
+    Service -> Repo: search()
+    Repo -> DB: query
+    DB --> Repo: results
+    alt Không có kết quả
+        Repo --> Service: empty list
+        Service --> Ctrl: empty list
+        Ctrl --> FE: 200 OK
+        FE --> Actor: Báo không tìm thấy
+    else Có kết quả
+        Repo --> Service: product list
+        Service --> Ctrl: product list
+        Ctrl --> FE: 200 OK
+        FE --> Actor: Hiển thị kết quả tìm kiếm
+    end
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD12 - Xem lịch sử tìm kiếm
+actor "Khách hàng" as Actor
+participant "Frontend" as FE
+participant "ProductController" as Ctrl
+participant "SearchHistoryService" as Service
+database "Redis" as DB
+
+Actor -> FE: Click thanh tìm kiếm
+FE -> Ctrl: GET /api/products/search-history
+Ctrl -> Service: getHistory(user)
+Service -> DB: query history
+DB --> Service: result list
+Service --> Ctrl: result list
+Ctrl --> FE: 200 OK
+FE --> Actor: Hiển thị lịch sử tìm kiếm
+@enduml
+```
+
+```plantuml
+@startuml
+title SD13 - Gửi yêu cầu thêm sản phẩm (Module Sản phẩm)
+actor "Người bán" as Actor
+participant "Frontend" as FE
+participant "SellerCatalogController" as Ctrl
+participant "ProductChangeRequestService" as Service
+participant "ProductChangeRequestRepository" as Repo
+database "DB" as DB
+
+Actor -> FE: Điền form sản phẩm mới
+FE -> Ctrl: POST /api/v1/seller/products
+Ctrl -> Service: requestCreate(payload, user)
+alt Thiếu trường bắt buộc / sai thông tin
+    Service --> Ctrl: 400 Bad Request
+    Ctrl --> FE: error message
+    FE --> Actor: Báo lỗi nhập liệu
+else Hợp lệ
+    Service -> Repo: save(status=PENDING)
+    Repo -> DB: insert
+    alt Lỗi lưu trữ
+        DB --> Repo: DB Error
+        Repo --> Service: error
+        Service --> Ctrl: 500 Internal Error
+        Ctrl --> FE: error
+        FE --> Actor: Báo lỗi hệ thống
+    else Thành công
+        DB --> Repo: success
+        Repo --> Service: request object
+        Service --> Ctrl: 202 Accepted
+        Ctrl --> FE: success
+        FE --> Actor: Thông báo chờ duyệt
+    end
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD14 - Gửi yêu cầu cập nhật sản phẩm (Module Sản phẩm)
+actor "Người bán" as Actor
+participant "Frontend" as FE
+participant "SellerCatalogController" as Ctrl
+participant "ProductChangeRequestService" as Service
+participant "ProductChangeRequestRepository" as Repo
+database "DB" as DB
+
+Actor -> FE: Chọn sản phẩm & chỉnh sửa
+FE -> Ctrl: PUT /api/v1/seller/products/{productID}
+Ctrl -> Service: requestUpdate()
+alt Sản phẩm không tồn tại / Dữ liệu sai
+    Service --> Ctrl: 404 / 400 Error
+    Ctrl --> FE: error message
+    FE --> Actor: Báo lỗi
+else Hợp lệ
+    Service -> Repo: save(status=PENDING)
+    Repo -> DB: insert
+    alt Lỗi lưu trữ
+        DB --> Repo: error
+        Repo --> Service: error
+        Service --> Ctrl: 500
+        Ctrl --> FE: error message
+        FE --> Actor: Báo lỗi hệ thống
+    else Thành công
+        DB --> Repo: success
+        Repo --> Service: request object
+        Service --> Ctrl: 202 Accepted
+        Ctrl --> FE: success
+        FE --> Actor: Thông báo chờ duyệt
+    end
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD15 - Gửi yêu cầu xóa sản phẩm (Module Sản phẩm)
+actor "Người bán" as Actor
+participant "Frontend" as FE
+participant "SellerCatalogController" as Ctrl
+participant "ProductChangeRequestService" as Service
+participant "ProductChangeRequestRepository" as Repo
+database "DB" as DB
+
+Actor -> FE: Click xóa sản phẩm
+alt Người dùng hủy
+    FE --> Actor: Hủy thao tác
+else Xác nhận xóa
+    FE -> Ctrl: DELETE /api/v1/seller/products/{productID}
+    Ctrl -> Service: requestDelete()
+    alt Sản phẩm không tồn tại
+        Service --> Ctrl: 404 Not Found
+        Ctrl --> FE: error message
+        FE --> Actor: Báo lỗi không tồn tại
+    else Hợp lệ
+        Service -> Repo: save(status=PENDING)
+        Repo -> DB: insert
+        alt Lỗi lưu trữ
+            DB --> Repo: error
+            Repo --> Service: error
+            Service --> Ctrl: 500
+            Ctrl --> FE: error
+            FE --> Actor: Báo lỗi hệ thống
+        else Thành công
+            DB --> Repo: success
+            Repo --> Service: success
+            Service --> Ctrl: 202 Accepted
+            Ctrl --> FE: success
+            FE --> Actor: Thông báo chờ duyệt
+        end
+    end
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD16 - Duyệt yêu cầu thay đổi sản phẩm
+actor "Quản trị viên" as Actor
+participant "Frontend" as FE
+participant "ProductController" as Ctrl
+participant "ProductChangeRequestService" as Service
+participant "ProductService" as ProdService
+participant "ProductRepository" as ProdRepo
+participant "ProductChangeRequestRepository" as Repo
+database "DB" as DB
+
+Actor -> FE: Chọn duyệt yêu cầu
+FE -> Ctrl: POST /api/products/change-requests/{id}/approve
+Ctrl -> Service: approve()
+Service -> Repo: findById()
+Repo -> DB: query
+DB --> Repo: request data
+alt Không tìm thấy / Đã xử lý
+    Repo --> Service: not found / invalid status
+    Service --> Ctrl: 400 Bad Request
+    Ctrl --> FE: error
+    FE --> Actor: Báo lỗi
+else Hợp lệ
+    Service -> Service: deserialize payload
+    Service -> ProdService: create/update/deleteProduct()
+    ProdService -> ProdRepo: save/delete()
+    ProdRepo -> DB: execute
+    alt Lỗi cập nhật sản phẩm
+        DB --> ProdRepo: error
+        ProdRepo --> ProdService: error
+        ProdService --> Service: error
+        Service --> Ctrl: 500
+        Ctrl --> FE: error
+        FE --> Actor: Báo lỗi hệ thống
+    else Thành công
+        DB --> ProdRepo: success
+        Service -> Repo: save(status=APPROVED)
+        Repo -> DB: update
+        Service --> Ctrl: 200 OK
+        Ctrl --> FE: success
+        FE --> Actor: Duyệt thành công
+    end
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD17 - Từ chối yêu cầu thay đổi sản phẩm
+actor "Quản trị viên" as Actor
+participant "Frontend" as FE
+participant "ProductController" as Ctrl
+participant "ProductChangeRequestService" as Service
+participant "ProductChangeRequestRepository" as Repo
+database "DB" as DB
+
+Actor -> FE: Chọn từ chối & nhập lý do
+FE -> Ctrl: POST /api/products/change-requests/{id}/reject {note}
+Ctrl -> Service: reject()
+Service -> Repo: findById()
+Repo -> DB: query
+DB --> Repo: request data
+alt Không tìm thấy / Đã xử lý
+    Repo --> Service: error
+    Service --> Ctrl: 400 Bad Request
+    Ctrl --> FE: error
+    FE --> Actor: Báo lỗi
+else Hợp lệ
+    Service -> Repo: save(status=REJECTED, note)
+    Repo -> DB: update
+    alt Lỗi lưu trữ
+        DB --> Repo: error
+        Repo --> Service: error
+        Service --> Ctrl: 500
+        Ctrl --> FE: error
+        FE --> Actor: Báo lỗi hệ thống
+    else Thành công
+        DB --> Repo: success
+        Repo --> Service: success
+        Service --> Ctrl: 200 OK
+        Ctrl --> FE: success
+        FE --> Actor: Từ chối thành công
+    end
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD18 - Xem danh sách yêu cầu thay đổi
+actor "Quản trị viên" as Actor
+participant "Frontend" as FE
+participant "ProductController" as Ctrl
+participant "ProductChangeRequestService" as Service
+participant "ProductChangeRequestRepository" as Repo
+database "DB" as DB
+
+Actor -> FE: Truy cập quản lý yêu cầu
+FE -> Ctrl: GET /api/products/change-requests?status=PENDING
+Ctrl -> Service: listRequests()
+Service -> Repo: findByStatus()
+Repo -> DB: query
+DB --> Repo: result
+alt Lỗi cơ sở dữ liệu
+    Repo --> Service: DB error
+    Service --> Ctrl: 500
+    Ctrl --> FE: error
+    FE --> Actor: Báo lỗi hệ thống
+else Không có yêu cầu
+    Repo --> Service: empty
+    Service --> Ctrl: empty list
+    Ctrl --> FE: 200 OK
+    FE --> Actor: Báo danh sách trống
+else Có yêu cầu
+    Repo --> Service: request list
+    Service --> Ctrl: list
+    Ctrl --> FE: 200 OK
+    FE --> Actor: Hiển thị danh sách
+    Actor -> FE: Chọn xem chi tiết
+    FE --> Actor: Hiển thị chi tiết yêu cầu
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD19 - Thêm sản phẩm trực tiếp
+actor "Quản trị viên" as Actor
+participant "Frontend" as FE
+participant "ProductController" as Ctrl
+participant "ProductService" as Service
+participant "ProductRepository" as Repo
+database "DB" as DB
+
+Actor -> FE: Điền thông tin sản phẩm
+FE -> Ctrl: POST /api/products/single
+Ctrl -> Service: createProduct(dto)
+alt Thiếu thông tin / Dữ liệu sai
+    Service --> Ctrl: 400 Bad Request
+    Ctrl --> FE: error message
+    FE --> Actor: Báo lỗi nhập liệu
+else Hợp lệ
+    Service -> Repo: save()
+    Repo -> DB: insert
+    alt Lỗi lưu trữ
+        DB --> Repo: error
+        Repo --> Service: error
+        Service --> Ctrl: 500
+        Ctrl --> FE: error
+        FE --> Actor: Báo lỗi hệ thống
+    else Thành công
+        DB --> Repo: success
+        Repo --> Service: success
+        Service --> Ctrl: 201 Created
+        Ctrl --> FE: success
+        FE --> Actor: Thông báo thành công
+    end
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD20 - Cập nhật sản phẩm trực tiếp
+actor "Quản trị viên" as Actor
+participant "Frontend" as FE
+participant "ProductController" as Ctrl
+participant "ProductService" as Service
+participant "ProductRepository" as Repo
+database "DB" as DB
+
+Actor -> FE: Chỉnh sửa sản phẩm
+FE -> Ctrl: PUT /api/products/{productID}
+Ctrl -> Service: updateProduct()
+alt Sản phẩm không tồn tại / Dữ liệu sai
+    Service --> Ctrl: 404 / 400 Error
+    Ctrl --> FE: error message
+    FE --> Actor: Báo lỗi
+else Hợp lệ
+    Service -> Repo: save()
+    Repo -> DB: update
+    alt Lỗi cập nhật
+        DB --> Repo: error
+        Repo --> Service: error
+        Service --> Ctrl: 500
+        Ctrl --> FE: error
+        FE --> Actor: Báo lỗi hệ thống
+    else Thành công
+        DB --> Repo: success
+        Repo --> Service: success
+        Service --> Ctrl: 200 OK
+        Ctrl --> FE: success
+        FE --> Actor: Thông báo thành công
+    end
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD21 - Xóa sản phẩm trực tiếp
+actor "Quản trị viên" as Actor
+participant "Frontend" as FE
+participant "ProductController" as Ctrl
+participant "ProductService" as Service
+participant "ProductRepository" as Repo
+database "DB" as DB
+
+Actor -> FE: Click xóa sản phẩm
+alt Người dùng hủy
+    FE --> Actor: Hủy thao tác
+else Xác nhận xóa
+    FE -> Ctrl: DELETE /api/products/{productID}
+    Ctrl -> Service: deleteProduct()
+    Service -> Repo: findById()
+    alt Không tồn tại
+        Repo --> Service: null
+        Service --> Ctrl: 404 Not Found
+        Ctrl --> FE: error
+        FE --> Actor: Báo lỗi không tồn tại
+    else Tồn tại
+        Service -> Repo: delete()
+        Repo -> DB: delete
+        alt Lỗi xóa
+            DB --> Repo: error
+            Repo --> Service: error
+            Service --> Ctrl: 500
+            Ctrl --> FE: error
+            FE --> Actor: Báo lỗi hệ thống
+        else Thành công
+            DB --> Repo: success
+            Repo --> Service: success
+            Service --> Ctrl: 204 No Content
+            Ctrl --> FE: success
+            FE --> Actor: Xóa thành công
+        end
+    end
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD22 - Xem giỏ hàng
+actor "Khách hàng" as Actor
+participant "Frontend" as FE
+participant "CartController" as Ctrl
+participant "CartService" as Service
+participant "CartItemRepository" as Repo
+database "DB" as DB
+
+Actor -> FE: Truy cập giỏ hàng
+FE -> Ctrl: GET /api/cart
+Ctrl -> Service: getCart(user)
+Service -> Repo: findByUser()
+Repo -> DB: query
+DB --> Repo: result
+alt Lỗi truy xuất dữ liệu
+    Repo --> Service: error
+    Service --> Ctrl: 500 Error
+    Ctrl --> FE: error message
+    FE --> Actor: Báo lỗi hệ thống
+else Giỏ hàng trống
+    Repo --> Service: empty
+    Service --> Ctrl: empty cart
+    Ctrl --> FE: 200 OK
+    FE --> Actor: Hiển thị giỏ hàng trống
+else Có sản phẩm
+    Repo --> Service: list of items
+    Service --> Ctrl: cart info (items, total)
+    Ctrl --> FE: 200 OK
+    FE --> Actor: Hiển thị sản phẩm và tổng tiền
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD23 - Thêm sản phẩm vào giỏ
+actor "Khách hàng" as Actor
+participant "Frontend" as FE
+participant "CartController" as Ctrl
+participant "CartService" as Service
+participant "ProductRepository" as ProdRepo
+participant "CartItemRepository" as CartRepo
+database "DB" as DB
+
+Actor -> FE: Chọn sản phẩm & số lượng -> Thêm
+FE -> Ctrl: POST /api/cart {productID, quantity}
+Ctrl -> Service: addToCart()
+Service -> ProdRepo: findByProductID()
+alt Không tồn tại / Hết hàng
+    ProdRepo --> Service: error
+    Service --> Ctrl: 404 / 400 Error
+    Ctrl --> FE: error message
+    FE --> Actor: Báo lỗi
+else Số lượng không hợp lệ
+    Service --> Ctrl: 400 Bad Request
+    Ctrl --> FE: error message
+    FE --> Actor: Báo lỗi nhập liệu
+else Hợp lệ
+    Service -> CartRepo: findByUserAndProductID()
+    CartRepo -> DB: query
+    DB --> CartRepo: result
+    alt Đã có trong giỏ
+        Service -> CartRepo: update quantity
+    else Chưa có
+        Service -> CartRepo: insert new item
+    end
+    CartRepo -> DB: save()
+    DB --> CartRepo: success
+    Service --> Ctrl: 200 OK
+    Ctrl --> FE: success
+    FE --> Actor: Thông báo thêm thành công
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD24 - Cập nhật số lượng
+actor "Khách hàng" as Actor
+participant "Frontend" as FE
+participant "CartController" as Ctrl
+participant "CartService" as Service
+participant "CartItemRepository" as Repo
+database "DB" as DB
+
+Actor -> FE: Thay đổi số lượng
+FE -> Ctrl: PUT /api/cart/{productID} {quantity}
+Ctrl -> Service: updateQuantity()
+alt Số lượng không hợp lệ / Vượt tồn kho / Không tồn tại
+    Service --> Ctrl: 400 / 404 Error
+    Ctrl --> FE: error message
+    FE --> Actor: Báo lỗi
+else Hợp lệ
+    Service -> Repo: findByUserAndProductID()
+    Service -> Repo: save(new quantity)
+    Repo -> DB: update
+    DB --> Repo: success
+    Service -> Service: recalculate total
+    Service --> Ctrl: updated cart
+    Ctrl --> FE: 200 OK
+    FE --> Actor: Cập nhật thành công & hiển thị tổng tiền mới
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD25 - Xóa sản phẩm khỏi giỏ
+actor "Khách hàng" as Actor
+participant "Frontend" as FE
+participant "CartController" as Ctrl
+participant "CartService" as Service
+participant "CartItemRepository" as Repo
+database "DB" as DB
+
+Actor -> FE: Click xóa & xác nhận
+alt Người dùng hủy
+    FE --> Actor: Hủy thao tác
+else Xác nhận
+    FE -> Ctrl: DELETE /api/cart/{productID}
+    Ctrl -> Service: removeFromCart()
+    Service -> Repo: delete()
+    Repo -> DB: execute
+    alt Sản phẩm không có trong giỏ
+        DB --> Repo: not found
+        Service --> Ctrl: 404 Error
+        Ctrl --> FE: error
+        FE --> Actor: Báo lỗi
+    else Thành công
+        DB --> Repo: success
+        Service -> Service: update total
+        Service --> Ctrl: 200 OK
+        Ctrl --> FE: success
+        FE --> Actor: Cập nhật giỏ hàng
+    end
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD26 - Xem danh sách yêu thích
+actor "Khách hàng" as Actor
+participant "Frontend" as FE
+participant "WishlistController" as Ctrl
+participant "WishlistService" as Service
+participant "WishlistItemRepository" as Repo
+database "DB" as DB
+
+Actor -> FE: Truy cập danh sách yêu thích
+FE -> Ctrl: GET /api/wishlist
+Ctrl -> Service: getWishlist(user)
+Service -> Repo: findByUser()
+Repo -> DB: query
+DB --> Repo: result
+alt Danh sách trống
+    Repo --> Service: empty
+    Service --> Ctrl: empty list
+    Ctrl --> FE: 200 OK
+    FE --> Actor: Hiển thị trống
+else Sản phẩm không còn tồn tại
+    Service -> Service: filter unavailable
+    Service --> Ctrl: filtered list
+    Ctrl --> FE: 200 OK
+    FE --> Actor: Hiển thị danh sách
+else Hợp lệ
+    Repo --> Service: list
+    Service --> Ctrl: list
+    Ctrl --> FE: 200 OK
+    FE --> Actor: Hiển thị danh sách
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD27 - Thêm vào danh sách yêu thích
+actor "Khách hàng" as Actor
+participant "Frontend" as FE
+participant "WishlistController" as Ctrl
+participant "WishlistService" as Service
+participant "ProductRepository" as ProdRepo
+participant "WishlistItemRepository" as Repo
+database "DB" as DB
+
+Actor -> FE: Click yêu thích sản phẩm
+FE -> Ctrl: POST /api/wishlist {productID}
+Ctrl -> Service: addToWishlist()
+Service -> ProdRepo: findByProductID()
+alt Không tồn tại
+    ProdRepo --> Service: null
+    Service --> Ctrl: 404 Not Found
+    Ctrl --> FE: error message
+    FE --> Actor: Báo lỗi
+else Đã có trong danh sách
+    Service -> Repo: check exists
+    Repo --> Service: exists
+    Service --> Ctrl: 400 Bad Request
+    Ctrl --> FE: error message
+    FE --> Actor: Báo đã tồn tại
+else Hợp lệ
+    Service -> Repo: save()
+    Repo -> DB: insert
+    alt Lỗi lưu
+        DB --> Repo: error
+        Service --> Ctrl: 500 Error
+        Ctrl --> FE: error
+        FE --> Actor: Báo lỗi hệ thống
+    else Thành công
+        DB --> Repo: success
+        Service --> Ctrl: 201 Created
+        Ctrl --> FE: success
+        FE --> Actor: Thêm thành công
+    end
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD28 - Xóa khỏi danh sách yêu thích
+actor "Khách hàng" as Actor
+participant "Frontend" as FE
+participant "WishlistController" as Ctrl
+participant "WishlistService" as Service
+participant "WishlistItemRepository" as Repo
+database "DB" as DB
+
+Actor -> FE: Bỏ yêu thích / Xác nhận xóa
+alt Người dùng hủy
+    FE --> Actor: Hủy thao tác
+else Xác nhận
+    FE -> Ctrl: DELETE /api/wishlist/{productID}
+    Ctrl -> Service: removeFromWishlist()
+    Service -> Repo: deleteByUserAndProductID()
+    Repo -> DB: delete
+    alt Không có trong danh sách / Lỗi cập nhật
+        DB --> Repo: error / not found
+        Repo --> Service: error
+        Service --> Ctrl: 404 / 500 Error
+        Ctrl --> FE: error
+        FE --> Actor: Báo lỗi
+    else Thành công
+        DB --> Repo: success
+        Service --> Ctrl: 200 OK
+        Ctrl --> FE: success
+        FE --> Actor: Cập nhật danh sách thành công
+    end
+end
+@enduml
+```
+```plantuml
+@startuml
+title SD29 - Tạo đơn hàng
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "OrderController" as OC
+participant "OrderServiceImpl" as OS
+participant "ProductRepository" as PR
+participant "InventoryReservationService" as IRS
+participant "JdbcTemplate" as DB
+participant "OrderCreatedEventPublisher" as OCEP
+
+KH -> FE : Điền thông tin giao hàng & Chọn thanh toán
+activate KH
+activate FE
+FE -> OC : POST /api/orders {items, address, paymentMethod}
+activate OC
+OC -> OS : createOrder(request, user)
+activate OS
+OS -> PR : findAllById(productIds)
+activate PR
+PR --> OS : products list
+deactivate PR
+alt Sản phẩm không đủ tồn kho
+    OS --> OC : Báo lỗi không đủ hàng
+    OC --> FE : Hiển thị lỗi
+    FE --> KH : Thông báo lỗi
+else
+    OS -> IRS : reserveStock()
+    activate IRS
+    IRS --> OS : success
+    deactivate IRS
+    OS -> DB : INSERT INTO orders
+    activate DB
+    DB --> OS : success
+    OS -> DB : INSERT INTO order_items
+    DB --> OS : success
+    OS -> DB : INSERT INTO payments(status=pending)
+    DB --> OS : success
+    deactivate DB
+    OS -> OCEP : publish()
+    activate OCEP
+    OCEP --> OS : done
+    deactivate OCEP
+    OS --> OC : return {orderNumber, trackingSecret}
+    deactivate OS
+    OC --> FE : 201 Created {orderNumber, trackingSecret}
+    deactivate OC
+    FE --> KH : Hiển thị tạo đơn hàng thành công
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD30 - Xem lịch sử đơn hàng
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "OrderController" as OC
+participant "OrderServiceImpl" as OS
+participant "JdbcTemplate" as DB
+
+KH -> FE : Truy cập lịch sử đơn hàng
+activate KH
+activate FE
+FE -> OC : GET /api/orders/history
+activate OC
+OC -> OS : getMyOrders(user)
+activate OS
+OS -> DB : SELECT orders WHERE user_id = ?
+activate DB
+DB --> OS : orders list
+deactivate DB
+alt Danh sách trống
+    OS --> OC : return empty list
+    OC --> FE : 200 OK (empty)
+    FE --> KH : Hiển thị danh sách trống
+else
+    OS --> OC : return list
+    deactivate OS
+    OC --> FE : 200 OK (orders list)
+    deactivate OC
+    FE --> KH : Hiển thị danh sách đơn hàng
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD31 - Theo dõi đơn hàng (số đơn)
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "OrderController" as OC
+participant "OrderServiceImpl" as OS
+participant "JdbcTemplate" as DB
+
+KH -> FE : Nhập orderNumber + email
+activate KH
+activate FE
+FE -> OC : GET /api/orders/number/{orderNumber}/track
+activate OC
+OC -> OS : getOrderTrackingByNumberForCustomer(orderNumber, email)
+activate OS
+OS -> DB : SELECT orders WHERE order_number = ? AND customer_email = ?
+activate DB
+DB --> OS : order data
+alt Không tìm thấy đơn hàng
+    OS --> OC : Exception (Not found)
+    OC --> FE : 404 Not Found
+    FE --> KH : Yêu cầu nhập lại
+else
+    OS -> DB : SELECT order_items
+    DB --> OS : order items list
+    deactivate DB
+    OS --> OC : return OrderTrackingDto
+    deactivate OS
+    OC --> FE : 200 OK (OrderTrackingDto)
+    deactivate OC
+    FE --> KH : Hiển thị thông tin theo dõi đơn hàng
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD32 - Chỉnh sửa đơn hàng
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "OrderController" as OC
+participant "OrderServiceImpl" as OS
+participant "JdbcTemplate" as DB
+
+KH -> FE : Chọn đơn hàng & chỉnh sửa thông tin
+activate KH
+activate FE
+FE -> OC : PUT /api/orders/{orderNumber} {shippingInfo, notes}
+activate OC
+OC -> OS : editOrder()
+activate OS
+OS -> DB : SELECT order by orderNumber
+activate DB
+DB --> OS : order data
+deactivate DB
+alt Trạng thái không cho phép sửa
+    OS --> OC : Error (Status not allowed)
+    OC --> FE : 400 Bad Request
+    FE --> KH : Báo lỗi trạng thái không hợp lệ
+else
+    OS -> DB : UPDATE orders WHERE order_number = ?
+    activate DB
+    DB --> OS : update success
+    deactivate DB
+    OS --> OC : success
+    deactivate OS
+    OC --> FE : 200 OK
+    deactivate OC
+    FE --> KH : Hiển thị cập nhật thành công
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD33 - Hủy đơn hàng
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "OrderController" as OC
+participant "OrderServiceImpl" as OS
+participant "JdbcTemplate" as DB
+
+KH -> FE : Chọn đơn hàng & xác nhận hủy
+activate KH
+activate FE
+alt Khách hàng không xác nhận
+    FE --> KH : Dừng thao tác
+else
+    FE -> OC : POST /api/orders/{orderNumber}/cancel
+    activate OC
+    OC -> OS : cancelOrder()
+    activate OS
+    OS -> DB : SELECT order by orderNumber
+    activate DB
+    DB --> OS : order data
+    deactivate DB
+    alt Trạng thái không cho phép hủy
+        OS --> OC : Error (Cannot cancel)
+        OC --> FE : 400 Bad Request
+        FE --> KH : Báo lỗi không thể hủy
+    else
+        OS -> DB : UPDATE orders SET order_status='cancelled'
+        activate DB
+        DB --> OS : update success
+        deactivate DB
+        OS --> OC : success
+        deactivate OS
+        OC --> FE : 200 OK
+        deactivate OC
+        FE --> KH : Thông báo hủy thành công
+    end
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD34 - Cập nhật trạng thái đơn hàng (Admin - Module Đơn hàng)
+actor "Quản trị viên" as QTV
+participant "Frontend" as FE
+participant "AdminOrderController" as AOC
+participant "OrderService" as OS
+participant "JdbcTemplate" as DB
+
+QTV -> FE : Chọn đơn hàng & chọn trạng thái mới
+activate QTV
+activate FE
+FE -> AOC : PATCH /api/admin/orders/{orderNumber}/status {orderStatus}
+activate AOC
+AOC -> OS : updateOrderStatus()
+activate OS
+OS -> DB : SELECT order by orderNumber
+activate DB
+DB --> OS : order exists
+deactivate DB
+alt Không tìm thấy đơn hàng hoặc trạng thái không hợp lệ
+    OS --> AOC : Error
+    AOC --> FE : Error Response
+    FE --> QTV : Báo lỗi
+else
+    OS -> DB : UPDATE orders SET order_status = ?
+    activate DB
+    DB --> OS : success
+    deactivate DB
+    OS --> AOC : success
+    deactivate OS
+    AOC --> FE : 200 OK
+    deactivate AOC
+    FE --> QTV : Thông báo cập nhật thành công
+end
+deactivate FE
+deactivate QTV
+@enduml
+```
+
+```plantuml
+@startuml
+title SD35 - Xem hàng đợi thực hiện đơn
+actor "Quản trị viên" as QTV
+participant "Frontend" as FE
+participant "AdminOrderController" as AOC
+participant "OrderService" as OS
+participant "JdbcTemplate" as DB
+
+QTV -> FE : Truy cập hàng đợi đơn hàng
+activate QTV
+activate FE
+FE -> AOC : GET /api/admin/orders?status=pending
+activate AOC
+AOC -> OS : getOrderQueue()
+activate OS
+OS -> DB : SELECT orders WHERE order_status='pending' ORDER BY created_at
+activate DB
+DB --> OS : orders list
+deactivate DB
+alt Hàng đợi trống
+    OS --> AOC : empty list
+    AOC --> FE : 200 OK (empty)
+    FE --> QTV : Hiển thị danh sách trống
+else
+    OS --> AOC : sorted list
+    deactivate OS
+    AOC --> FE : 200 OK (list)
+    deactivate AOC
+    FE --> QTV : Hiển thị danh sách đơn hàng & Xử lý đơn
+end
+deactivate FE
+deactivate QTV
+@enduml
+```
+
+```plantuml
+@startuml
+title SD36 - Thanh toán qua MoMo
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "System (OrderController)" as SYS
+participant "MoMo (App/Web)" as MOMO
+
+KH -> FE : Chọn thanh toán MoMo & Đặt hàng
+activate KH
+activate FE
+FE -> SYS : Tạo đơn hàng (paymentMethod=momo)
+activate SYS
+SYS --> FE : Trả về orderNumber & paymentStatus=pending
+deactivate SYS
+FE -> MOMO : Redirect / Hiển thị mã QR MoMo
+activate MOMO
+MOMO --> KH : Hiển thị giao diện thanh toán
+alt Khách hàng hủy hoặc thanh toán thất bại
+    KH -> MOMO : Hủy / Giao dịch lỗi
+    MOMO --> FE : Redirect lỗi
+    FE --> KH : Hiển thị thanh toán thất bại
+else
+    KH -> MOMO : Thực hiện thanh toán
+    MOMO --> FE : Redirect thành công
+    FE --> KH : Thông báo thanh toán thành công
+    MOMO -> SYS : Gửi IPN callback (Bất đồng bộ)
+end
+deactivate MOMO
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD37 - Xử lý IPN MoMo
+actor "MoMo (external system)" as MOMO
+participant "MomoPaymentController" as MPC
+participant "MomoPaymentService" as MPS
+participant "JdbcTemplate" as DB
+
+MOMO -> MPC : POST /api/payments/momo/ipn {params}
+activate MOMO
+activate MPC
+MPC -> MPS : processIpn(params)
+activate MPS
+MPS -> MPS : verify signature
+alt Chữ ký không hợp lệ / Dữ liệu lỗi
+    MPS --> MPC : Error
+    MPC --> MOMO : Reject IPN
+else
+    MPS -> DB : SELECT order by paymentReference
+    activate DB
+    DB --> MPS : order data
+    deactivate DB
+    alt Giao dịch không tồn tại hoặc đã xử lý
+        MPS --> MPC : Error (Already processed/Not found)
+        MPC --> MOMO : Response handled
+    else
+        MPS -> DB : UPDATE orders SET payment_status='paid'
+        activate DB
+        DB --> MPS : success
+        MPS -> DB : UPDATE payments SET status='paid'
+        DB --> MPS : success
+        deactivate DB
+        MPS --> MPC : IPN result
+        deactivate MPS
+        MPC --> MOMO : 200 OK (IPN result)
+    end
+end
+deactivate MPC
+deactivate MOMO
+@enduml
+```
+
+```plantuml
+@startuml
+title SD38 - Thanh toán qua VNPay
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "System" as SYS
+participant "VNPay (external system)" as VNPAY
+
+KH -> FE : Chọn thanh toán VNPay & Đặt hàng
+activate KH
+activate FE
+FE -> SYS : Tạo đơn (paymentMethod=vnpay)
+activate SYS
+SYS --> FE : orderNumber & paymentStatus=pending
+deactivate SYS
+FE -> VNPAY : Redirect khách hàng tới URL VNPay
+activate VNPAY
+VNPAY --> KH : Giao diện VNPay
+alt Hủy hoặc thất bại
+    KH -> VNPAY : Hủy thanh toán
+    VNPAY --> FE : Redirect lại FE (lỗi)
+    FE --> KH : Thông báo lỗi thanh toán
+else
+    KH -> VNPAY : Thanh toán thành công
+    VNPAY --> FE : Redirect lại FE (thành công)
+    FE --> KH : Thông báo thanh toán thành công
+    VNPAY -> SYS : VNPay gửi IPN (Bất đồng bộ)
+end
+deactivate VNPAY
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD39 - Xử lý IPN VNPay
+actor "VNPay (external system)" as VNPAY
+participant "VnpayPaymentController" as VPC
+participant "VnpayPaymentService" as VPS
+participant "JdbcTemplate" as DB
+
+VNPAY -> VPC : POST /api/payments/vnpay/ipn {vnp_* params}
+activate VNPAY
+activate VPC
+VPC -> VPS : processIpn(params)
+activate VPS
+VPS -> VPS : verify HMAC signature
+alt Chữ ký không hợp lệ
+    VPS --> VPC : Error
+    VPC --> VNPAY : Reject
+else
+    VPS -> DB : find order by orderNumber
+    activate DB
+    DB --> VPS : order data
+    deactivate DB
+    alt Không tìm thấy đơn hoặc đã xử lý
+        VPS --> VPC : Error
+        VPC --> VNPAY : Response
+    else
+        VPS -> DB : UPDATE orders SET payment_status='paid'
+        activate DB
+        DB --> VPS : success
+        VPS -> DB : UPDATE payments SET status='paid'
+        DB --> VPS : success
+        deactivate DB
+        VPS --> VPC : success result
+        deactivate VPS
+        VPC --> VNPAY : 200 OK (IPN result)
+    end
+end
+deactivate VPC
+deactivate VNPAY
+@enduml
+```
+
+```plantuml
+@startuml
+title SD40 - Thanh toán khi nhận hàng (COD)
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "OrderController" as OC
+participant "OrderServiceImpl" as OS
+participant "JdbcTemplate" as DB
+
+KH -> FE : Chọn thanh toán COD & Đặt hàng
+activate KH
+activate FE
+FE -> OC : POST /api/orders {paymentMethod='cod'}
+activate OC
+OC -> OS : createOrder()
+activate OS
+OS -> OS : validate order info
+alt Thông tin không hợp lệ
+    OS --> OC : Error
+    OC --> FE : 400 Bad Request
+    FE --> KH : Báo lỗi không thể tạo đơn
+else
+    OS -> DB : INSERT INTO orders(paymentStatus='unpaid')
+    activate DB
+    DB --> OS : success
+    OS -> DB : INSERT INTO order_items
+    DB --> OS : success
+    OS -> DB : INSERT INTO payments(status='pending')
+    DB --> OS : success
+    deactivate DB
+    OS --> OC : {orderNumber}
+    deactivate OS
+    OC --> FE : 201 Created
+    deactivate OC
+    FE --> KH : Đơn hàng đang chờ giao
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD41 - Xem đánh giá sản phẩm
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "ProductReviewController" as PRC
+participant "ProductReviewService" as PRS
+participant "StringRedisTemplate" as REDIS
+
+KH -> FE : Chọn sản phẩm
+activate KH
+activate FE
+FE -> PRC : GET /api/products/{productID}/reviews
+activate PRC
+PRC -> PRS : getReviews(productID, limit, principal)
+activate PRS
+PRS -> REDIS : opsForValue().get('reviews:{productID}')
+activate REDIS
+REDIS --> PRS : JSON data
+deactivate REDIS
+alt Không có đánh giá
+    PRS --> PRC : empty response
+    PRC --> FE : 200 OK (empty)
+    FE --> KH : Hiển thị không có đánh giá
+else
+    PRS -> PRS : deserialize JSON
+    PRS --> PRC : ProductReviewSummaryDto
+    deactivate PRS
+    PRC --> FE : 200 OK (ProductReviewSummaryDto)
+    deactivate PRC
+    FE --> KH : Hiển thị danh sách đánh giá (rating, comment, author)
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD42 - Thêm đánh giá
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "ProductReviewController" as PRC
+participant "ProductReviewService" as PRS
+participant "ProductRepository" as PR
+participant "StringRedisTemplate" as REDIS
+
+KH -> FE : Chọn sản phẩm & Nhập đánh giá (rating, comment)
+activate KH
+activate FE
+FE -> PRC : POST /api/products/{productID}/reviews {rating, comment}
+activate PRC
+PRC -> PRS : addReview(productID, request, principal)
+activate PRS
+PRS -> PR : findByProductID(productID)
+activate PR
+PR --> PRS : product data
+deactivate PR
+alt Dữ liệu không hợp lệ hoặc Không tìm thấy sản phẩm
+    PRS --> PRC : Error
+    PRC --> FE : 400 Bad Request / 404 Not Found
+    FE --> KH : Yêu cầu nhập lại / Báo lỗi
+else
+    PRS -> REDIS : get('reviews:{productID}')
+    activate REDIS
+    REDIS --> PRS : current reviews JSON
+    deactivate REDIS
+    PRS -> PRS : build new review entry
+    PRS -> REDIS : set('reviews:{productID}', updatedJSON)
+    activate REDIS
+    REDIS --> PRS : success
+    deactivate REDIS
+    PRS --> PRC : ProductReviewSummaryDto
+    deactivate PRS
+    PRC --> FE : 201 Created
+    deactivate PRC
+    FE --> KH : Hiển thị đánh giá mới
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD43 - Chỉnh sửa đánh giá
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "ProductReviewController" as PRC
+participant "ProductReviewService" as PRS
+participant "StringRedisTemplate" as REDIS
+
+KH -> FE : Chọn đánh giá của mình & Chỉnh sửa
+activate KH
+activate FE
+FE -> PRC : PUT /api/products/{productID}/reviews/{reviewID} {rating, comment}
+activate PRC
+PRC -> PRS : updateReview()
+activate PRS
+PRS -> REDIS : get('reviews:{productID}')
+activate REDIS
+REDIS --> PRS : JSON data
+deactivate REDIS
+PRS -> PRS : find review by id
+alt Không tìm thấy đánh giá hoặc dữ liệu lỗi
+    PRS --> PRC : Error
+    PRC --> FE : 400 Bad Request
+    FE --> KH : Báo lỗi cập nhật thất bại
+else
+    PRS -> PRS : update fields (rating, comment)
+    PRS -> REDIS : set('reviews:{productID}', updatedJSON)
+    activate REDIS
+    REDIS --> PRS : success
+    deactivate REDIS
+    PRS --> PRC : success
+    deactivate PRS
+    PRC --> FE : 200 OK
+    deactivate PRC
+    FE --> KH : Cập nhật đánh giá thành công
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD44 - Xóa đánh giá
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "ProductReviewController" as PRC
+participant "ProductReviewService" as PRS
+participant "StringRedisTemplate" as REDIS
+
+KH -> FE : Chọn đánh giá của mình & Xác nhận xóa
+activate KH
+activate FE
+alt Khách hàng hủy thao tác
+    FE --> KH : Dừng xóa
+else
+    FE -> PRC : DELETE /api/products/{productID}/reviews/{reviewID}
+    activate PRC
+    PRC -> PRS : deleteReview()
+    activate PRS
+    PRS -> REDIS : get('reviews:{productID}')
+    activate REDIS
+    REDIS --> PRS : JSON data
+    deactivate REDIS
+    alt Không tìm thấy đánh giá
+        PRS --> PRC : Error
+        PRC --> FE : 404 Not Found
+        FE --> KH : Báo lỗi không xóa được
+    else
+        PRS -> PRS : remove review entry
+        PRS -> REDIS : set('reviews:{productID}', updatedJSON)
+        activate REDIS
+        REDIS --> PRS : success
+        deactivate REDIS
+        PRS --> PRC : success
+        deactivate PRS
+        PRC --> FE : 204 No Content
+        deactivate PRC
+        FE --> KH : Xóa thành công, cập nhật danh sách
+    end
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD45 - Thích đánh giá
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "ProductReviewController" as PRC
+participant "ProductReviewService" as PRS
+participant "StringRedisTemplate" as REDIS
+
+KH -> FE : Xem đánh giá & click Like
+activate KH
+activate FE
+FE -> PRC : POST /api/products/{productID}/reviews/{reviewID}/like
+activate PRC
+PRC -> PRS : toggleLike()
+activate PRS
+PRS -> REDIS : get('reviews:{productID}')
+activate REDIS
+REDIS --> PRS : JSON data
+deactivate REDIS
+alt Không tìm thấy đánh giá hoặc Đã thích (nếu không đổi trạng thái)
+    PRS --> PRC : Error / No change
+    PRC --> FE : Response
+    FE --> KH : Hiển thị lỗi / Bỏ qua duplicate
+else
+    PRS -> PRS : check if already liked -> add/toggle like
+    PRS -> REDIS : set('reviews:{productID}', updatedJSON)
+    activate REDIS
+    REDIS --> PRS : success
+    deactivate REDIS
+    PRS --> PRC : updated count
+    deactivate PRS
+    PRC --> FE : 200 OK (count)
+    deactivate PRC
+    FE --> KH : Cập nhật số lượng Like hiển thị
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD46 - Không thích đánh giá
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "ProductReviewController" as PRC
+participant "ProductReviewService" as PRS
+participant "StringRedisTemplate" as REDIS
+
+KH -> FE : Xem đánh giá & click Dislike
+activate KH
+activate FE
+FE -> PRC : POST /api/products/{productID}/reviews/{reviewID}/dislike
+activate PRC
+PRC -> PRS : addDislike()
+activate PRS
+PRS -> REDIS : get('reviews:{productID}')
+activate REDIS
+REDIS --> PRS : JSON data
+deactivate REDIS
+alt Không tìm thấy đánh giá hoặc Đã react
+    PRS --> PRC : Error / No change
+    PRC --> FE : Response
+    FE --> KH : Bỏ qua duplicate / Hiển thị lỗi
+else
+    PRS -> PRS : check state -> add dislike
+    PRS -> REDIS : set('reviews:{productID}', updatedJSON)
+    activate REDIS
+    REDIS --> PRS : success
+    deactivate REDIS
+    PRS --> PRC : return
+    deactivate PRS
+    PRC --> FE : 200 OK
+    deactivate PRC
+    FE --> KH : Cập nhật hiển thị Dislike
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD47 - Trả lời đánh giá
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "ProductReviewController" as PRC
+participant "ProductReviewService" as PRS
+participant "StringRedisTemplate" as REDIS
+
+KH -> FE : Chọn đánh giá & Nhập text reply
+activate KH
+activate FE
+FE -> PRC : POST /api/products/{productID}/reviews/{reviewID}/replies {text}
+activate PRC
+PRC -> PRS : addReply()
+activate PRS
+PRS -> REDIS : get('reviews:{productID}')
+activate REDIS
+REDIS --> PRS : JSON data
+deactivate REDIS
+alt Không tìm thấy đánh giá hoặc Nội dung lỗi
+    PRS --> PRC : Error
+    PRC --> FE : 400/404 Error
+    FE --> KH : Yêu cầu nhập lại / Báo lỗi
+else
+    PRS -> PRS : build reply entry -> add to review.replies
+    PRS -> REDIS : set('reviews:{productID}', updatedJSON)
+    activate REDIS
+    REDIS --> PRS : success
+    deactivate REDIS
+    PRS --> PRC : updated review
+    deactivate PRS
+    PRC --> FE : 200 OK (updated review)
+    deactivate PRC
+    FE --> KH : Hiển thị phản hồi mới
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD48 - Xem tất cả đánh giá (admin)
+actor "Quản trị viên" as QTV
+participant "Frontend" as FE
+participant "AdminReviewController" as ARC
+participant "ProductReviewService" as PRS
+participant "Redis/DB" as DB
+
+QTV -> FE : Truy cập Quản lý đánh giá
+activate QTV
+activate FE
+FE -> ARC : GET /api/admin/reviews
+activate ARC
+ARC -> ARC : check admin role
+alt Không có quyền truy cập
+    ARC --> FE : 403 Forbidden
+    FE --> QTV : Từ chối truy cập
+else
+    ARC -> PRS : getAllReviews()
+    activate PRS
+    PRS -> DB : fetch all reviews
+    activate DB
+    DB --> PRS : reviews data
+    deactivate DB
+    alt Không có đánh giá hoặc Lỗi tải dữ liệu
+        PRS --> ARC : empty / error
+        ARC --> FE : Response
+        FE --> QTV : Hiển thị danh sách trống / Lỗi
+    else
+        PRS --> ARC : list of reviews
+        deactivate PRS
+        ARC --> FE : 200 OK
+        deactivate ARC
+        FE --> QTV : Hiển thị tất cả đánh giá & Chọn 1 để quản lý
+    end
+end
+deactivate FE
+deactivate QTV
+@enduml
+```
+
+```plantuml
+@startuml
+title SD49 - Chỉnh sửa đánh giá (admin)
+actor "Quản trị viên" as QTV
+participant "Frontend" as FE
+participant "AdminReviewController" as ARC
+participant "ProductReviewService" as PRS
+participant "StringRedisTemplate" as REDIS
+
+QTV -> FE : Chọn đánh giá & Chỉnh sửa nội dung
+activate QTV
+activate FE
+FE -> ARC : PUT /api/admin/reviews/{reviewID} {content}
+activate ARC
+ARC -> PRS : adminUpdateReview()
+activate PRS
+PRS -> REDIS : get()
+activate REDIS
+REDIS --> PRS : JSON data
+deactivate REDIS
+alt Không tìm thấy đánh giá hoặc dữ liệu không hợp lệ
+    PRS --> ARC : Error
+    ARC --> FE : Error Response
+    FE --> QTV : Báo lỗi cập nhật thất bại
+else
+    PRS -> PRS : find review -> update content
+    PRS -> REDIS : set()
+    activate REDIS
+    REDIS --> PRS : success
+    deactivate REDIS
+    PRS --> ARC : success
+    deactivate PRS
+    ARC --> FE : 200 OK
+    deactivate ARC
+    FE --> QTV : Thông báo chỉnh sửa thành công
+end
+deactivate FE
+deactivate QTV
+@enduml
+```
+
+```plantuml
+@startuml
+title SD50 - Xóa đánh giá (admin)
+actor "Quản trị viên" as QTV
+participant "Frontend" as FE
+participant "AdminReviewController" as ARC
+participant "ProductReviewService" as PRS
+participant "StringRedisTemplate" as REDIS
+
+QTV -> FE : Chọn đánh giá & Xác nhận xóa
+activate QTV
+activate FE
+alt QTV hủy thao tác
+    FE --> QTV : Dừng xóa
+else
+    FE -> ARC : DELETE /api/admin/reviews/{reviewID}
+    activate ARC
+    ARC -> PRS : adminDeleteReview()
+    activate PRS
+    PRS -> REDIS : get()
+    activate REDIS
+    REDIS --> PRS : JSON data
+    deactivate REDIS
+    alt Không tìm thấy đánh giá
+        PRS --> ARC : Error
+        ARC --> FE : 404 Not Found
+        FE --> QTV : Báo lỗi xóa thất bại
+    else
+        PRS -> PRS : remove review
+        PRS -> REDIS : set()
+        activate REDIS
+        REDIS --> PRS : success
+        deactivate REDIS
+        PRS --> ARC : success
+        deactivate PRS
+        ARC --> FE : 204 No Content
+        deactivate ARC
+        FE --> QTV : Xóa thành công
+    end
+end
+deactivate FE
+deactivate QTV
+@enduml
+```
+
+```plantuml
+@startuml
+title SD51 - Tạo yêu cầu hỗ trợ
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "ChatController" as CC
+participant "ChatService" as CS
+participant "SocialConversationRepository" as SCR
+participant "SocialConversationMemberRepository" as SCMR
+participant "SocialMessageRepository" as SMR
+
+KH -> FE : Click Hỗ trợ
+activate KH
+activate FE
+FE -> CC : POST /api/conversations {type:'support'}
+activate CC
+CC -> CS : createSupportConversation()
+activate CS
+alt Thông tin yêu cầu không hợp lệ
+    CS --> CC : Error
+    CC --> FE : 400 Bad Request
+    FE --> KH : Lỗi tạo cuộc trò chuyện
+else
+    CS -> SCR : save(type='support')
+    activate SCR
+    SCR --> CS : saved
+    deactivate SCR
+    CS -> SCMR : save()
+    activate SCMR
+    SCMR --> CS : saved
+    deactivate SCMR
+    CS --> CC : conversation info
+    deactivate CS
+    CC --> FE : 201 Created
+    deactivate CC
+    FE --> KH : Hiển thị khung chat hỗ trợ
+    KH -> FE : Nhập nội dung yêu cầu
+    FE -> CC : POST /api/conversations/{id}/messages
+    activate CC
+    CC -> CS : sendMessage()
+    activate CS
+    CS -> SMR : save()
+    activate SMR
+    SMR --> CS : success
+    deactivate SMR
+    CS --> CC : message info
+    deactivate CS
+    CC --> FE : 201 Created
+    deactivate CC
+    FE --> KH : Gửi yêu cầu thành công
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD52 - Xóa tin nhắn
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "ChatController" as CC
+participant "ChatService" as CS
+participant "SocialMessageRepository" as SMR
+participant "SimpMessagingTemplate" as WS
+
+KH -> FE : Chọn tin nhắn & Xác nhận xóa
+activate KH
+activate FE
+FE -> CC : DELETE /api/messages/{messageId}
+activate CC
+CC -> CS : deleteMessage()
+activate CS
+CS -> SMR : findById(messageId)
+activate SMR
+SMR --> CS : message data
+deactivate SMR
+alt Tin nhắn không thuộc về User
+    CS --> CC : Error (Unauthorized)
+    CC --> FE : 403 Forbidden
+    FE --> KH : Từ chối xóa
+else
+    CS -> CS : check sender ownership
+    CS -> SMR : save(deletedForEveryoneAt=now)
+    activate SMR
+    SMR --> CS : success
+    deactivate SMR
+    CS -> WS : broadcast (updated conversation)
+    activate WS
+    WS --> CS : sent
+    deactivate WS
+    CS --> CC : success
+    deactivate CS
+    CC --> FE : 200 OK
+    deactivate CC
+    FE --> KH : Cập nhật hiển thị (Tin nhắn đã xóa)
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD53 - Thả cảm xúc tin nhắn
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "ChatController" as CC
+participant "ChatService" as CS
+participant "SocialReactionRepository" as SRR
+participant "SocialReactionCountRepository" as SRCR
+participant "SimpMessagingTemplate" as WS
+
+KH -> FE : Chọn tin nhắn & Chọn Emoji
+activate KH
+activate FE
+FE -> CC : POST /api/messages/{messageId}/reactions {reaction:'emoji'}
+activate CC
+CC -> CS : toggleReaction()
+activate CS
+alt Thao tác thất bại / Đã react
+    CS -> SRR : check existing
+    CS -> CS : toggle/remove
+    CS -> SRCR : update count
+else
+    CS -> SRR : save/toggle reaction
+    activate SRR
+    SRR --> CS : success
+    deactivate SRR
+    CS -> SRCR : update count
+    activate SRCR
+    SRCR --> CS : success
+    deactivate SRCR
+    CS -> WS : broadcast reaction update
+    activate WS
+    WS --> CS : sent
+    deactivate WS
+    CS --> CC : success
+    deactivate CS
+    CC --> FE : 200 OK
+    deactivate CC
+    FE --> KH : Hiển thị reaction đã cập nhật
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD54 - Tìm kiếm người dùng
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "ChatController" as CC
+participant "ChatService" as CS
+participant "UserRepository" as UR
+
+KH -> FE : Nhập từ khóa tìm kiếm
+activate KH
+activate FE
+FE -> CC : GET /api/users/search?q={keyword}
+activate CC
+CC -> CS : searchUsers(query)
+activate CS
+alt Từ khóa không hợp lệ
+    CS --> CC : Error
+    CC --> FE : 400 Bad Request
+    FE --> KH : Yêu cầu nhập lại
+else
+    CS -> UR : findByEmailOrUsernameContaining()
+    activate UR
+    UR --> CS : users list
+    deactivate UR
+    alt Không tìm thấy ai
+        CS --> CC : empty list
+        CC --> FE : 200 OK (empty)
+        FE --> KH : Hiển thị danh sách trống
+    else
+        CS --> CC : list of matching users
+        deactivate CS
+        CC --> FE : 200 OK
+        deactivate CC
+        FE --> KH : Hiển thị danh sách người dùng
+    end
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD55 - Tạo cuộc trò chuyện trực tiếp
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "ChatController" as CC
+participant "ChatService" as CS
+participant "SocialConversationRepository" as SCR
+participant "SocialConversationMemberRepository" as SCMR
+
+KH -> FE : Chọn người dùng mục tiêu
+activate KH
+activate FE
+FE -> CC : POST /api/conversations {type:'direct', targetUserId}
+activate CC
+CC -> CS : createOrGetDirectConversation(currentUser, targetUser)
+activate CS
+CS -> CS : check if conversation exists
+alt User mục tiêu không tồn tại
+    CS --> CC : Error (Not Found)
+    CC --> FE : 404 Not Found
+    FE --> KH : Báo lỗi không thể tạo
+else
+    alt Cuộc trò chuyện đã tồn tại
+        CS --> CC : existing conversation info
+    else
+        CS -> SCR : save()
+        activate SCR
+        SCR --> CS : saved
+        deactivate SCR
+        CS -> SCMR : save() (both members)
+        activate SCMR
+        SCMR --> CS : saved
+        deactivate SCMR
+        CS --> CC : new conversation info
+    end
+    deactivate CS
+    CC --> FE : 201/200 Success
+    deactivate CC
+    FE --> KH : Hiển thị khung chat
+    KH -> FE : Nhập tin nhắn đầu tiên
+    FE -> CC : POST /api/conversations/{id}/messages
+    activate CC
+    CC --> FE : 201 Created
+    deactivate CC
+    FE --> KH : Gửi tin nhắn thành công
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD56 - Gửi tin nhắn
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "ChatController" as CC
+participant "ChatService" as CS
+participant "SocialConversationMemberRepository" as SCMR
+participant "SocialMessageRepository" as SMR
+participant "SocialConversationRepository" as SCR
+participant "SimpMessagingTemplate" as WS
+
+KH -> FE : Mở cuộc trò chuyện & Gõ tin nhắn
+activate KH
+activate FE
+FE -> CC : POST /api/conversations/{id}/messages {body, type}
+activate CC
+CC -> CS : sendMessage()
+activate CS
+CS -> SCMR : check membership
+activate SCMR
+SCMR --> CS : verified
+deactivate SCMR
+alt Nội dung lỗi / Không phải thành viên
+    CS --> CC : Error
+    CC --> FE : 400/403 Error
+    FE --> KH : Báo lỗi / Yêu cầu gửi lại
+else
+    CS -> SMR : save()
+    activate SMR
+    SMR --> CS : message saved
+    deactivate SMR
+    CS -> SCR : update lastMessageAt
+    activate SCR
+    SCR --> CS : updated
+    deactivate SCR
+    CS -> SCMR : increment unreadCount for other members
+    activate SCMR
+    SCMR --> CS : updated
+    deactivate SCMR
+    CS -> WS : convertAndSend('/topic/conversations/{id}', messageDto)
+    activate WS
+    WS --> CS : broadcasted
+    deactivate WS
+    CS --> CC : MessageDto
+    deactivate CS
+    CC --> FE : 201 Created (MessageDto)
+    deactivate CC
+    FE --> KH : Tin nhắn được hiển thị
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+
+```plantuml
+@startuml
+title SD57 - Xem tin nhắn
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "ChatController" as CC
+participant "ChatService" as CS
+participant "SocialMessageRepository" as SMR
+
+KH -> FE : Chọn cuộc trò chuyện
+activate KH
+activate FE
+FE -> CC : GET /api/conversations/{id}/messages
+activate CC
+CC -> CS : getMessages()
+activate CS
+CS -> CS : check membership
+alt Không tìm thấy hội thoại / Không có quyền
+    CS --> CC : Error (404/403)
+    CC --> FE : Error Response
+    FE --> KH : Báo lỗi / Từ chối truy cập
+else
+    CS -> SMR : findByConversationId()
+    activate SMR
+    SMR --> CS : messages list
+    deactivate SMR
+    alt Không có tin nhắn nào
+        CS --> CC : empty list
+        CC --> FE : 200 OK (empty)
+        FE --> KH : Hiển thị cuộc trò chuyện trống
+    else
+        CS --> CC : messages ordered by time
+        deactivate CS
+        CC --> FE : 200 OK (messages list)
+        deactivate CC
+        FE --> KH : Hiển thị danh sách tin nhắn
+    end
+end
+deactivate FE
+deactivate KH
+@enduml
+```
+```plantuml
+@startuml
+title SD58 - Kiểm tra mã giảm giá
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "CouponController" as CC
+participant "CouponService" as CS
+participant "CouponRepository" as CR
+
+KH -> FE: Nhập mã giảm giá
+FE -> CC: POST /api/v1/coupons/validate {code, subtotal}
+CC -> CS: validateCoupon(code, userId, subtotal)
+CS -> CR: findByCode(code)
+CR --> CS: Coupon entity
+alt mã hợp lệ
+    CS -> CS: Kiểm tra isActive, usageLimit, expiresAt, minOrderAmount
+    alt thỏa mãn điều kiện
+        CS --> CC: ValidatedCouponDto (discountAmount)
+        CC --> FE: 200 OK (discountAmount)
+        FE --> KH: Hiển thị số tiền giảm
+    else không thỏa mãn điều kiện
+        CS --> CC: Lỗi điều kiện (hết hạn, chưa đạt tối thiểu...)
+        CC --> FE: 400 Bad Request
+        FE --> KH: Thông báo lý do không hợp lệ
+    end
+else mã không tồn tại
+    CR --> CS: null
+    CS --> CC: Lỗi không tìm thấy
+    CC --> FE: 404 Not Found
+    FE --> KH: Thông báo mã không hợp lệ
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD59 - Áp dụng mã giảm giá
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "CouponController" as CC
+participant "CouponService" as CS
+participant "CouponAssignmentRepository" as CAR
+participant "CouponRepository" as CR
+
+KH -> FE: Xác nhận áp dụng mã (Checkout)
+FE -> CC: POST /api/v1/coupons/validate {code, subtotal}
+CC --> FE: 200 OK (Validated)
+FE -> CC: POST /api/v1/coupons/redeem {code, subtotal, orderId}
+CC -> CS: redeemCoupon()
+CS -> CAR: findByUserIdAndCouponId()
+CAR --> CS: CouponAssignment
+alt thỏa mãn điều kiện và hợp lệ
+    CS -> CAR: save(usedAt, usedOrderId)
+    CAR --> CS: saved Assignment
+    CS -> CR: save(usageCount+1)
+    CR --> CS: saved Coupon
+    CS --> CC: Redeem Success
+    CC --> FE: 200 OK
+    FE --> KH: Cập nhật tổng tiền, hiển thị thành công
+else mã không hợp lệ hoặc không đủ điều kiện
+    CS --> CC: Lỗi áp dụng
+    CC --> FE: 400 Bad Request
+    FE --> KH: Thông báo không thể áp dụng mã
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD60 - Xem thông báo mã giảm giá
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "CouponController" as CC
+participant "CouponService" as CS
+participant "CouponAssignmentRepository" as CAR
+
+KH -> FE: Mở thông báo mã giảm giá
+FE -> CC: GET /api/v1/coupons/notifications
+CC -> CS: getUserNotifications(userId)
+CS -> CAR: findByUserIdAndAcknowledgedAtIsNull(userId)
+alt tải thành công
+    CAR --> CS: List<CouponAssignment>
+    CS --> CC: List<NotificationDto>
+    CC --> FE: 200 OK (danh sách)
+    FE --> KH: Hiển thị danh sách thông báo mã giảm giá
+else không có thông báo
+    CAR --> CS: Empty List
+    CS --> CC: Empty List
+    CC --> FE: 200 OK (danh sách rỗng)
+    FE --> KH: Hiển thị danh sách rỗng
+else lỗi tải dữ liệu
+    CAR --> CS: Lỗi DB
+    CS --> CC: Lỗi xử lý
+    CC --> FE: 500 Internal Server Error
+    FE --> KH: Thông báo lỗi tải
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD61 - Xem danh sách mã giảm giá (Admin - Module Mã giảm giá)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "AdminCouponController" as ACC
+participant "CouponService" as CS
+participant "CouponRepository" as CR
+
+Admin -> FE: Truy cập quản lý mã giảm giá
+FE -> ACC: GET /api/v1/admin/coupons
+ACC -> CS: listCoupons()
+CS -> CR: findAll()
+alt có mã giảm giá
+    CR --> CS: List<Coupon>
+    CS --> ACC: List<CouponDto>
+    ACC --> FE: 200 OK
+    FE --> Admin: Hiển thị danh sách, cho phép chọn xem chi tiết
+else không có mã giảm giá
+    CR --> CS: Empty List
+    CS --> ACC: Empty List
+    ACC --> FE: 200 OK
+    FE --> Admin: Hiển thị danh sách rỗng
+else lỗi tải dữ liệu
+    CR --> CS: Lỗi DB
+    CS --> ACC: Lỗi xử lý
+    ACC --> FE: 500 Internal Server Error
+    FE --> Admin: Thông báo lỗi tải
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD62 - Tạo mã giảm giá (Admin - Module Mã giảm giá)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "AdminCouponController" as ACC
+participant "CouponService" as CS
+participant "CouponRepository" as CR
+
+Admin -> FE: Điền thông tin tạo mã (code, discountValue,...)
+FE -> ACC: POST /api/v1/admin/coupons {thông tin}
+ACC -> CS: createCoupon(dto)
+CS -> CR: kiểm tra trùng lặp code
+alt thông tin hợp lệ và code chưa tồn tại
+    CR --> CS: false (không trùng)
+    CS -> CR: save(Coupon)
+    CR --> CS: saved Coupon
+    CS --> ACC: CouponDto
+    ACC --> FE: 201 Created
+    FE --> Admin: Thông báo tạo thành công
+else code đã tồn tại
+    CR --> CS: true (đã tồn tại)
+    CS --> ACC: Lỗi code trùng
+    ACC --> FE: 400 Bad Request
+    FE --> Admin: Thông báo code đã tồn tại
+else thông tin không hợp lệ
+    ACC --> FE: 400 Bad Request
+    FE --> Admin: Báo lỗi thông tin
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD63 - Cập nhật mã giảm giá (Admin - Module Mã giảm giá)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "AdminCouponController" as ACC
+participant "CouponService" as CS
+participant "CouponRepository" as CR
+
+Admin -> FE: Chọn mã giảm giá & cập nhật thông tin
+FE -> ACC: PUT /api/v1/admin/coupons/{id} {thông tin mới}
+ACC -> CS: updateCoupon(id, dto)
+CS -> CR: findById(id)
+alt tìm thấy và thông tin hợp lệ
+    CR --> CS: Coupon entity
+    CS -> CS: Cập nhật các trường
+    CS -> CR: save(Coupon)
+    CR --> CS: saved Coupon
+    CS --> ACC: CouponDto
+    ACC --> FE: 200 OK
+    FE --> Admin: Thông báo cập nhật thành công
+else không tìm thấy mã
+    CR --> CS: null
+    CS --> ACC: Lỗi không tìm thấy
+    ACC --> FE: 404 Not Found
+    FE --> Admin: Thông báo mã không tồn tại
+else dữ liệu không hợp lệ
+    ACC --> FE: 400 Bad Request
+    FE --> Admin: Báo lỗi thông tin
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD64 - Phát hành mã giảm giá cho người dùng (Admin - Module Mã giảm giá)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "AdminCouponController" as ACC
+participant "CouponService" as CS
+participant "CouponRepository" as CR
+participant "CouponAssignmentRepository" as CAR
+
+Admin -> FE: Chọn mã, chọn người dùng & phát hành
+FE -> ACC: POST /api/v1/admin/coupons/{id}/issue {userId, userEmail, notificationTitle, notificationMessage}
+ACC -> CS: issueCoupon(id, dto)
+CS -> CR: findById(id)
+alt mã hợp lệ và tìm thấy
+    CR --> CS: Coupon entity
+    CS -> CS: Kiểm tra trạng thái coupon (isActive)
+    alt mã khả dụng
+        CS -> CAR: save(CouponAssignment)
+        CAR --> CS: saved Assignment
+        CS --> ACC: Success
+        ACC --> FE: 200 OK
+        FE --> Admin: Thông báo phát hành thành công
+    else mã không khả dụng
+        CS --> ACC: Lỗi mã không khả dụng
+        ACC --> FE: 400 Bad Request
+        FE --> Admin: Thông báo mã không khả dụng
+    end
+else không tìm thấy mã / người dùng
+    CR --> CS: null
+    CS --> ACC: Lỗi không tìm thấy
+    ACC --> FE: 404 Not Found
+    FE --> Admin: Thông báo không tìm thấy
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD65 - Gửi yêu cầu trở thành người bán
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "SellerAccessRequestController" as SARC
+participant "SellerAccessRequestService" as SARS
+participant "SellerAccessRequestRepository" as SARR
+
+KH -> FE: Điền form đăng ký người bán
+FE -> SARC: POST /api/v1/seller-access/request {thông tin}
+SARC -> SARS: createRequest(request, user)
+SARS -> SARR: findByRequestedByAndStatus(user, PENDING)
+alt không có yêu cầu chờ duyệt
+    SARR --> SARS: null
+    SARS -> SARR: save(status=PENDING)
+    SARR --> SARS: saved Request
+    SARS --> SARC: Success
+    SARC --> FE: 202 Accepted
+    FE --> KH: Thông báo gửi yêu cầu thành công
+else đã có yêu cầu chờ duyệt
+    SARR --> SARS: Request (PENDING)
+    SARS --> SARC: Lỗi đã tồn tại yêu cầu
+    SARC --> FE: 400 Bad Request
+    FE --> KH: Thông báo đã có yêu cầu đang xử lý
+else thông tin không hợp lệ
+    SARC --> FE: 400 Bad Request
+    FE --> KH: Thông báo điền lại thông tin
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD66 - Xem trạng thái yêu cầu
+actor "Khách hàng" as KH
+participant "Frontend" as FE
+participant "SellerAccessRequestController" as SARC
+participant "SellerAccessRequestService" as SARS
+participant "SellerAccessRequestRepository" as SARR
+
+KH -> FE: Truy cập xem trạng thái yêu cầu
+FE -> SARC: GET /api/v1/seller-access/me
+SARC -> SARS: getLatestForCurrentUser(user)
+SARS -> SARR: findTopByRequestedByOrderByCreatedAtDesc(user)
+alt có yêu cầu
+    SARR --> SARS: Request entity
+    SARS --> SARC: status (PENDING/APPROVED/REJECTED)
+    SARC --> FE: 200 OK (status)
+    FE --> KH: Hiển thị trạng thái yêu cầu
+else không có yêu cầu
+    SARR --> SARS: null
+    SARS --> SARC: No request
+    SARC --> FE: 204 No Content / 404
+    FE --> KH: Thông báo chưa có yêu cầu nào
+else lỗi tải
+    SARR --> SARS: Lỗi DB
+    SARS --> SARC: Lỗi xử lý
+    SARC --> FE: 500 Internal Server Error
+    FE --> KH: Thông báo lỗi
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD67 - Xem yêu cầu trở thành người bán (Admin - Module Người bán)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "SellerAccessRequestController" as SARC
+participant "SellerAccessRequestService" as SARS
+participant "SellerAccessRequestRepository" as SARR
+
+Admin -> FE: Truy cập quản lý yêu cầu người bán
+FE -> SARC: GET /api/v1/seller-access/requests
+SARC -> SARS: listRequests()
+SARS -> SARR: findAll()
+alt có dữ liệu
+    SARR --> SARS: List<Request>
+    SARS --> SARC: List<RequestDto>
+    SARC --> FE: 200 OK
+    FE --> Admin: Hiển thị danh sách, cho phép chọn xem
+else không có yêu cầu
+    SARR --> SARS: Empty List
+    SARS --> SARC: Empty List
+    SARC --> FE: 200 OK
+    FE --> Admin: Hiển thị danh sách rỗng
+else lỗi tải
+    SARR --> SARS: Lỗi DB
+    SARS --> SARC: Lỗi xử lý
+    SARC --> FE: 500 Internal Server Error
+    FE --> Admin: Thông báo lỗi tải
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD68 - Phê duyệt yêu cầu (Admin - Module Người bán)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "SellerAccessRequestController" as SARC
+participant "SellerAccessRequestService" as SARS
+participant "SellerAccessRequestRepository" as SARR
+participant "UserRepository" as UR
+
+Admin -> FE: Chọn yêu cầu & phê duyệt
+FE -> SARC: POST /api/v1/seller-access/requests/{id}/approve {note}
+SARC -> SARS: approve(id, note)
+SARS -> SARR: findById(id)
+alt tìm thấy và chưa xử lý
+    SARR --> SARS: Request entity
+    SARS -> SARR: save(status=APPROVED, reviewedBy, note)
+    SARR --> SARS: saved Request
+    SARS -> UR: gán ROLE_SELLER cho user
+    UR --> SARS: success
+    SARS --> SARC: Success
+    SARC --> FE: 200 OK
+    FE --> Admin: Thông báo phê duyệt thành công
+else không tìm thấy hoặc đã xử lý
+    SARR --> SARS: null / Request (không phải PENDING)
+    SARS --> SARC: Lỗi không hợp lệ
+    SARC --> FE: 400 Bad Request
+    FE --> Admin: Thông báo yêu cầu không hợp lệ
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD69 - Từ chối yêu cầu (Admin - Module Người bán)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "SellerAccessRequestController" as SARC
+participant "SellerAccessRequestService" as SARS
+participant "SellerAccessRequestRepository" as SARR
+
+Admin -> FE: Chọn yêu cầu & từ chối
+FE -> SARC: POST /api/v1/seller-access/requests/{id}/reject {note}
+SARC -> SARS: reject(id, note)
+SARS -> SARR: findById(id)
+alt tìm thấy và chưa xử lý
+    SARR --> SARS: Request entity
+    SARS -> SARR: save(status=REJECTED, reviewedBy, note)
+    SARR --> SARS: saved Request
+    SARS --> SARC: Success
+    SARC --> FE: 200 OK
+    FE --> Admin: Thông báo từ chối thành công
+else không tìm thấy hoặc đã xử lý
+    SARR --> SARS: null / Request (không phải PENDING)
+    SARS --> SARC: Lỗi không hợp lệ
+    SARC --> FE: 400 Bad Request
+    FE --> Admin: Thông báo yêu cầu không hợp lệ
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD70 - Xem sản phẩm của cửa hàng
+actor "Người bán" as NB
+participant "Frontend" as FE
+participant "SellerCatalogController" as SCC
+participant "ProductRepository" as PR
+
+NB -> FE: Truy cập danh sách sản phẩm cửa hàng
+FE -> SCC: GET /api/v1/seller/products
+SCC -> PR: findBySellerUserId(userId)
+alt có sản phẩm
+    PR --> SCC: List<Product>
+    SCC --> FE: 200 OK (List)
+    FE --> NB: Hiển thị danh sách sản phẩm
+else không có sản phẩm
+    PR --> SCC: Empty List
+    SCC --> FE: 200 OK (Empty List)
+    FE --> NB: Hiển thị danh sách rỗng
+else lỗi tải
+    PR --> SCC: Lỗi DB
+    SCC --> FE: 500 Internal Server Error
+    FE --> NB: Thông báo lỗi
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD71 - Gửi yêu cầu thêm sản phẩm (Module Người bán)
+actor "Người bán" as NB
+participant "Frontend" as FE
+participant "SellerCatalogController" as SCC
+participant "ProductChangeRequestService" as PCRS
+participant "ProductChangeRequestRepository" as PCRR
+
+NB -> FE: Điền thông tin sản phẩm mới & lưu
+FE -> SCC: POST /api/v1/seller/products {thông tin sản phẩm}
+SCC -> PCRS: requestCreate(payload, user)
+alt thông tin hợp lệ
+    PCRS -> PCRS: Serialize payload to JSON
+    PCRS -> PCRR: save(actionType=CREATE, status=PENDING, requestedBy=seller)
+    PCRR --> PCRS: saved Request
+    PCRS --> SCC: {message, requestId}
+    SCC --> FE: 202 Accepted
+    FE --> NB: Thông báo gửi yêu cầu thành công
+else thông tin không hợp lệ
+    SCC --> FE: 400 Bad Request
+    FE --> NB: Báo lỗi nhập liệu
+else lỗi hệ thống (không lưu được)
+    PCRR --> PCRS: Lỗi DB
+    PCRS --> SCC: Lỗi
+    SCC --> FE: 500 Internal Server Error
+    FE --> NB: Thông báo lỗi
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD72 - Gửi yêu cầu cập nhật sản phẩm (Module Người bán)
+actor "Người bán" as NB
+participant "Frontend" as FE
+participant "SellerCatalogController" as SCC
+participant "ProductChangeRequestService" as PCRS
+participant "ProductChangeRequestRepository" as PCRR
+
+NB -> FE: Thay đổi chi tiết sản phẩm & lưu
+FE -> SCC: PUT /api/v1/seller/products/{productID} {thông tin mới}
+SCC -> PCRS: requestUpdate(productID, payload, user)
+alt hợp lệ và tìm thấy sản phẩm
+    PCRS -> PCRS: Serialize payload to JSON
+    PCRS -> PCRR: save(actionType=UPDATE, status=PENDING, targetProductId, requestedBy=seller)
+    PCRR --> PCRS: saved Request
+    PCRS --> SCC: Success
+    SCC --> FE: 202 Accepted
+    FE --> NB: Thông báo gửi yêu cầu cập nhật thành công
+else sản phẩm không tồn tại/không thuộc người bán
+    PCRS --> SCC: Lỗi không tìm thấy
+    SCC --> FE: 404 Not Found / 403 Forbidden
+    FE --> NB: Thông báo lỗi
+else dữ liệu không hợp lệ
+    SCC --> FE: 400 Bad Request
+    FE --> NB: Báo lỗi nhập liệu
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD73 - Gửi yêu cầu xóa sản phẩm (Module Người bán)
+actor "Người bán" as NB
+participant "Frontend" as FE
+participant "SellerCatalogController" as SCC
+participant "ProductChangeRequestService" as PCRS
+participant "ProductChangeRequestRepository" as PCRR
+
+NB -> FE: Chọn sản phẩm & xác nhận xóa
+FE -> SCC: DELETE /api/v1/seller/products/{productID}
+SCC -> PCRS: requestDelete(productID, user)
+alt sản phẩm thuộc về người bán
+    PCRS -> PCRS: Verify owner
+    PCRS -> PCRR: save(actionType=DELETE, status=PENDING, targetProductId)
+    PCRR --> PCRS: saved Request
+    PCRS --> SCC: Success
+    SCC --> FE: 202 Accepted
+    FE --> NB: Thông báo gửi yêu cầu xóa thành công
+else sản phẩm không tồn tại / không thuộc người bán
+    PCRS --> SCC: Reject
+    SCC --> FE: 403 Forbidden / 404 Not Found
+    FE --> NB: Thông báo lỗi
+else lỗi hệ thống
+    PCRR --> PCRS: Lỗi DB
+    PCRS --> SCC: Lỗi
+    SCC --> FE: 500 Internal Server Error
+    FE --> NB: Thông báo lỗi
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD74 - Xem lịch sử giao dịch
+actor "Người bán" as NB
+participant "Frontend" as FE
+participant "SellerFinanceController" as SFC
+participant "SellerTransactionRepository" as STR
+
+NB -> FE: Truy cập mục tài chính
+FE -> SFC: GET /api/v1/seller/finance/transactions
+SFC -> STR: findBySellerUserId(userId)
+alt có dữ liệu
+    STR --> SFC: List<Transaction> (ordered by createdAt)
+    SFC --> FE: 200 OK
+    FE --> NB: Hiển thị lịch sử giao dịch
+else không có dữ liệu
+    STR --> SFC: Empty List
+    SFC --> FE: 200 OK
+    FE --> NB: Hiển thị danh sách rỗng
+else lỗi tải
+    STR --> SFC: Lỗi DB
+    SFC --> FE: 500 Internal Server Error
+    FE --> NB: Thông báo lỗi
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD75 - Xem danh sách đơn hàng (Admin)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "AdminOrderController" as AOC
+participant "Database (JdbcTemplate)" as DB
+
+Admin -> FE: Truy cập quản lý đơn hàng
+FE -> AOC: GET /api/admin/orders
+AOC -> DB: SELECT orders (kèm bộ lọc nếu có)
+alt có đơn hàng
+    DB --> AOC: List<Order>
+    AOC --> FE: 200 OK
+    FE --> Admin: Hiển thị danh sách, cho phép chọn đơn hàng
+else không có đơn hàng
+    DB --> AOC: Empty List
+    AOC --> FE: 200 OK
+    FE --> Admin: Hiển thị danh sách rỗng
+else lỗi tải
+    DB --> AOC: Lỗi DB
+    AOC --> FE: 500 Internal Server Error
+    FE --> Admin: Thông báo lỗi
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD76 - Cập nhật trạng thái đơn hàng (Admin - Module Quản trị)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "AdminOrderController" as AOC
+participant "OrderService" as OS
+participant "Database (JdbcTemplate)" as DB
+
+Admin -> FE: Chọn đơn hàng & trạng thái mới
+FE -> AOC: PATCH /api/admin/orders/{orderNumber}/status {orderStatus}
+AOC -> OS: updateOrderStatus()
+OS -> DB: check order exists
+alt đơn hàng tồn tại & trạng thái hợp lệ
+    DB --> OS: Order found
+    OS -> DB: UPDATE orders SET order_status
+    DB --> OS: Updated
+    OS --> AOC: Success
+    AOC --> FE: 200 OK
+    FE --> Admin: Thông báo cập nhật thành công
+else không tìm thấy / không hợp lệ
+    DB --> OS: Not found
+    OS --> AOC: Error
+    AOC --> FE: 400/404
+    FE --> Admin: Thông báo lỗi
+else cập nhật thất bại
+    DB --> OS: Lỗi DB
+    OS --> AOC: Error
+    AOC --> FE: 500 Internal Server Error
+    FE --> Admin: Thông báo cập nhật thất bại
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD77 - Cập nhật trạng thái thanh toán
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "AdminOrderController" as AOC
+participant "Database (JdbcTemplate)" as DB
+
+Admin -> FE: Chọn đơn hàng & cập nhật thanh toán
+FE -> AOC: PATCH /api/admin/orders/{orderNumber}/payment-status {paymentStatus}
+AOC -> DB: check order
+alt đơn hàng tồn tại & trạng thái hợp lệ
+    DB --> AOC: Order found
+    AOC -> DB: UPDATE orders SET payment_status
+    AOC -> DB: UPDATE payments SET status
+    DB --> AOC: Updated
+    AOC --> FE: 200 OK
+    FE --> Admin: Thông báo cập nhật thành công
+else không tìm thấy / trạng thái lỗi
+    DB --> AOC: Not found
+    AOC --> FE: 400/404
+    FE --> Admin: Thông báo lỗi
+else cập nhật thất bại
+    DB --> AOC: Lỗi DB
+    AOC --> FE: 500 Internal Server Error
+    FE --> Admin: Thông báo cập nhật thất bại
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD78 - Cập nhật thông tin vận chuyển
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "AdminOrderController" as AOC
+participant "Database (JdbcTemplate)" as DB
+
+Admin -> FE: Chọn đơn hàng & nhập thông tin vận chuyển
+FE -> AOC: PATCH /api/admin/orders/{orderNumber}/shipping {carrier, trackingNumber}
+AOC -> DB: check order
+alt đơn hàng tồn tại & thông tin hợp lệ
+    DB --> AOC: Order found
+    AOC -> DB: UPDATE orders SET shipping_carrier, tracking, shipped_at
+    DB --> AOC: Updated
+    AOC --> FE: 200 OK
+    FE --> Admin: Thông báo cập nhật thành công
+else không tìm thấy / không hợp lệ
+    DB --> AOC: Not found / Invalid
+    AOC --> FE: 400/404
+    FE --> Admin: Thông báo lỗi
+else cập nhật thất bại
+    DB --> AOC: Lỗi DB
+    AOC --> FE: 500 Internal Server Error
+    FE --> Admin: Thông báo cập nhật thất bại
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD79 - Xem đánh giá (Admin - Module Quản trị)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "AdminReviewController" as ARC
+participant "ProductReviewService" as PRS
+participant "Redis" as Redis
+
+Admin -> FE: Truy cập quản lý đánh giá
+FE -> ARC: GET /api/admin/reviews
+ARC -> PRS: getAllReviews()
+PRS -> Redis: SCAN keys reviews:*
+alt có dữ liệu đánh giá
+    Redis --> PRS: review entries
+    PRS -> PRS: aggregate reviews
+    PRS --> ARC: List<ReviewDto>
+    ARC --> FE: 200 OK
+    FE --> Admin: Hiển thị danh sách, cho phép chọn đánh giá
+else không có đánh giá
+    Redis --> PRS: empty
+    PRS --> ARC: Empty List
+    ARC --> FE: 200 OK
+    FE --> Admin: Hiển thị danh sách rỗng
+else lỗi tải
+    Redis --> PRS: Lỗi kết nối
+    PRS --> ARC: Lỗi
+    ARC --> FE: 500 Internal Server Error
+    FE --> Admin: Thông báo lỗi
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD80 - Chỉnh sửa đánh giá (Admin - Module Quản trị)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "AdminReviewController" as ARC
+participant "ProductReviewService" as PRS
+participant "StringRedisTemplate" as Redis
+
+Admin -> FE: Chọn đánh giá & sửa nội dung
+FE -> ARC: PUT /api/admin/reviews/{reviewID} {updated content}
+ARC -> PRS: adminUpdateReview(reviewID, content)
+PRS -> Redis: get(reviewID)
+alt tìm thấy và nội dung hợp lệ
+    Redis --> PRS: review data
+    PRS -> PRS: Cập nhật các trường
+    PRS -> Redis: set(reviewID, updatedData)
+    Redis --> PRS: OK
+    PRS --> ARC: Success
+    ARC --> FE: 200 OK
+    FE --> Admin: Thông báo cập nhật thành công
+else không tìm thấy đánh giá
+    Redis --> PRS: null
+    PRS --> ARC: Error Not Found
+    ARC --> FE: 404 Not Found
+    FE --> Admin: Thông báo đánh giá không tồn tại
+else lỗi cập nhật / không hợp lệ
+    ARC --> FE: 400/500
+    FE --> Admin: Thông báo lỗi
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD81 - Xóa đánh giá (Admin - Module Quản trị)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "AdminReviewController" as ARC
+participant "ProductReviewService" as PRS
+participant "StringRedisTemplate" as Redis
+
+Admin -> FE: Chọn đánh giá & xác nhận xóa
+alt người dùng hủy
+    FE --> Admin: Hủy thao tác
+else xác nhận xóa
+    FE -> ARC: DELETE /api/admin/reviews/{reviewID}
+    ARC -> PRS: adminDeleteReview(reviewID)
+    PRS -> Redis: get(reviewID)
+    alt tìm thấy đánh giá
+        Redis --> PRS: review data
+        PRS -> Redis: delete(reviewID)
+        Redis --> PRS: OK
+        PRS --> ARC: Success
+        ARC --> FE: 200 OK
+        FE --> Admin: Thông báo xóa thành công
+    else không tìm thấy đánh giá
+        Redis --> PRS: null
+        PRS --> ARC: Error Not Found
+        ARC --> FE: 404 Not Found
+        FE --> Admin: Thông báo đánh giá không tồn tại
+    else lỗi hệ thống
+        PRS --> ARC: Error
+        ARC --> FE: 500 Internal Server Error
+        FE --> Admin: Thông báo xóa thất bại
+    end
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD82 - Xem danh sách mã giảm giá (Admin - Module Quản trị)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "AdminCouponController" as ACC
+participant "CouponService" as CS
+participant "CouponRepository" as CR
+
+Admin -> FE: Truy cập quản lý mã giảm giá
+FE -> ACC: GET /api/v1/admin/coupons
+ACC -> CS: listCoupons()
+CS -> CR: findAll()
+alt có mã giảm giá
+    CR --> CS: List<Coupon>
+    CS --> ACC: List<CouponDto>
+    ACC --> FE: 200 OK
+    FE --> Admin: Hiển thị danh sách, cho phép chọn thao tác
+else không có mã
+    CR --> CS: Empty List
+    CS --> ACC: Empty List
+    ACC --> FE: 200 OK
+    FE --> Admin: Hiển thị danh sách rỗng
+else lỗi tải
+    CR --> CS: Lỗi DB
+    CS --> ACC: Lỗi
+    ACC --> FE: 500 Internal Server Error
+    FE --> Admin: Thông báo lỗi tải
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD83 - Tạo mã giảm giá (Admin - Module Quản trị)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "AdminCouponController" as ACC
+participant "CouponService" as CS
+participant "CouponRepository" as CR
+
+Admin -> FE: Điền form tạo mã giảm giá
+FE -> ACC: POST /api/v1/admin/coupons {thông tin}
+ACC -> CS: createCoupon(dto)
+CS -> CR: check code not duplicate
+alt code chưa tồn tại và thông tin hợp lệ
+    CR --> CS: false (không trùng)
+    CS -> CR: save(Coupon)
+    CR --> CS: saved Coupon
+    CS --> ACC: Success
+    ACC --> FE: 201 Created
+    FE --> Admin: Thông báo tạo thành công
+else code đã tồn tại
+    CR --> CS: true (đã tồn tại)
+    CS --> ACC: Lỗi trùng code
+    ACC --> FE: 400 Bad Request
+    FE --> Admin: Yêu cầu nhập mã code mới
+else thông tin không hợp lệ / lỗi lưu
+    ACC --> FE: 400/500
+    FE --> Admin: Thông báo lỗi
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD84 - Cập nhật mã giảm giá (Admin - Module Quản trị)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "AdminCouponController" as ACC
+participant "CouponService" as CS
+participant "CouponRepository" as CR
+
+Admin -> FE: Chọn mã giảm giá & cập nhật
+FE -> ACC: PUT /api/v1/admin/coupons/{id} {thông tin cập nhật}
+ACC -> CS: updateCoupon(id, dto)
+CS -> CR: findById(id)
+alt tìm thấy mã và thông tin hợp lệ
+    CR --> CS: Coupon entity
+    CS -> CS: Cập nhật các trường
+    CS -> CR: save(Coupon)
+    CR --> CS: saved Coupon
+    CS --> ACC: Success
+    ACC --> FE: 200 OK
+    FE --> Admin: Thông báo cập nhật thành công
+else không tìm thấy mã
+    CR --> CS: null
+    CS --> ACC: Lỗi Not Found
+    ACC --> FE: 404 Not Found
+    FE --> Admin: Thông báo mã không tồn tại
+else dữ liệu không hợp lệ
+    ACC --> FE: 400 Bad Request
+    FE --> Admin: Thông báo lỗi dữ liệu
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD85 - Phát hành mã cho người dùng (Admin - Module Quản trị)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "AdminCouponController" as ACC
+participant "CouponService" as CS
+participant "CouponRepository" as CR
+participant "CouponAssignmentRepository" as CAR
+
+Admin -> FE: Chọn mã, chọn người dùng & phát hành
+FE -> ACC: POST /api/v1/admin/coupons/{id}/issue {userId, ...}
+ACC -> CS: issueCoupon(id, dto)
+CS -> CR: findById(id)
+alt mã hợp lệ, khả dụng và người dùng tồn tại
+    CR --> CS: Coupon entity
+    CS -> CAR: save(issuedAt=now)
+    CAR --> CS: saved Assignment
+    CS --> ACC: Success
+    ACC --> FE: 200 OK
+    FE --> Admin: Thông báo phát hành thành công
+else mã không hợp lệ / không tồn tại
+    CR --> CS: null
+    CS --> ACC: Lỗi
+    ACC --> FE: 404/400
+    FE --> Admin: Yêu cầu chọn lại
+else phát hành thất bại
+    CS --> ACC: Lỗi xử lý
+    ACC --> FE: 500 Internal Server Error
+    FE --> Admin: Thông báo lỗi
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD86 - Xem yêu cầu người bán (Admin - Module Quản trị)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "SellerAccessRequestController" as SARC
+participant "SellerAccessRequestService" as SARS
+participant "SellerAccessRequestRepository" as SARR
+
+Admin -> FE: Truy cập yêu cầu người bán
+FE -> SARC: GET /api/v1/seller-access/requests
+SARC -> SARS: listRequests()
+SARS -> SARR: findAll()
+alt có dữ liệu
+    SARR --> SARS: List<Request>
+    SARS --> SARC: List<RequestDto>
+    SARC --> FE: 200 OK
+    FE --> Admin: Hiển thị danh sách, cho phép chọn xem
+else không có yêu cầu
+    SARR --> SARS: Empty List
+    SARS --> SARC: Empty List
+    SARC --> FE: 200 OK
+    FE --> Admin: Hiển thị danh sách rỗng
+else lỗi tải
+    SARR --> SARS: Lỗi DB
+    SARS --> SARC: Lỗi
+    SARC --> FE: 500 Internal Server Error
+    FE --> Admin: Thông báo lỗi
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD87 - Duyệt / Từ chối người bán (Admin - Module Quản trị)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "SellerAccessRequestController" as SARC
+participant "SellerAccessRequestService" as SARS
+participant "SellerAccessRequestRepository" as SARR
+participant "UserRepository" as UR
+
+Admin -> FE: Chọn yêu cầu & xem thông tin
+alt chọn phê duyệt
+    FE -> SARC: POST /api/v1/seller-access/requests/{id}/approve {note}
+    SARC -> SARS: approve(id, note)
+    SARS -> SARR: findById(id)
+    alt yêu cầu hợp lệ
+        SARS -> SARR: save(status=APPROVED)
+        SARS -> UR: assign ROLE_SELLER
+        SARS --> SARC: Success
+        SARC --> FE: 200 OK
+        FE --> Admin: Thông báo phê duyệt thành công
+    else không hợp lệ / đã xử lý
+        SARS --> SARC: Lỗi
+        SARC --> FE: 400 Bad Request
+        FE --> Admin: Thông báo lỗi
+    end
+else chọn từ chối
+    FE -> SARC: POST /api/v1/seller-access/requests/{id}/reject {note}
+    SARC -> SARS: reject(id, note)
+    SARS -> SARR: findById(id)
+    alt yêu cầu hợp lệ
+        SARS -> SARR: save(status=REJECTED)
+        SARS --> SARC: Success
+        SARC --> FE: 200 OK
+        FE --> Admin: Thông báo từ chối thành công
+    else không hợp lệ / đã xử lý
+        SARS --> SARC: Lỗi
+        SARC --> FE: 400 Bad Request
+        FE --> Admin: Thông báo lỗi
+    end
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD88 - Xem yêu cầu thay đổi sản phẩm (Admin - Module Quản trị)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "ProductController" as PC
+participant "ProductChangeRequestService" as PCRS
+participant "ProductChangeRequestRepository" as PCRR
+
+Admin -> FE: Truy cập yêu cầu thay đổi sản phẩm
+FE -> PC: GET /api/products/change-requests
+PC -> PCRS: listRequests()
+PCRS -> PCRR: findAll()
+alt có dữ liệu
+    PCRR --> PCRS: List<ChangeRequest> (sorted)
+    PCRS --> PC: List<RequestDto>
+    PC --> FE: 200 OK
+    FE --> Admin: Hiển thị danh sách, cho phép chọn xem chi tiết
+else không có yêu cầu
+    PCRR --> PCRS: Empty List
+    PCRS --> PC: Empty List
+    PC --> FE: 200 OK
+    FE --> Admin: Hiển thị danh sách rỗng
+else lỗi tải
+    PCRR --> PCRS: Lỗi DB
+    PCRS --> PC: Lỗi
+    PC --> FE: 500 Internal Server Error
+    FE --> Admin: Thông báo lỗi
+end
+@enduml
+```
+
+```plantuml
+@startuml
+title SD89 - Duyệt / Từ chối thay đổi sản phẩm (Admin - Module Quản trị)
+actor "Quản trị viên" as Admin
+participant "Frontend" as FE
+participant "ProductController" as PC
+participant "ProductChangeRequestService" as PCRS
+participant "ProductChangeRequestRepository" as PCRR
+participant "ProductService" as PS
+participant "ProductRepository" as PR
+
+Admin -> FE: Chọn yêu cầu, xem payload
+alt chọn phê duyệt
+    FE -> PC: POST /api/products/change-requests/{id}/approve {note}
+    PC -> PCRS: approve(id, note)
+    PCRS -> PCRR: findById(id)
+    alt yêu cầu hợp lệ (PENDING)
+        PCRR --> PCRS: Request entity
+        PCRS -> PCRS: deserialize payload
+        alt CREATE
+            PCRS -> PS: createProduct(payload)
+            PS -> PR: save()
+        else UPDATE
+            PCRS -> PS: updateProduct(targetId, payload)
+            PS -> PR: save()
+        else DELETE
+            PCRS -> PS: deleteProduct(targetId)
+            PS -> PR: delete()
+        end
+        alt cập nhật sản phẩm thành công
+            PCRS -> PCRR: save(status=APPROVED)
+            PCRS --> PC: Success
+            PC --> FE: 200 OK
+            FE --> Admin: Thông báo duyệt thành công
+        else lỗi cập nhật sản phẩm
+            PS --> PCRS: Lỗi logic/DB
+            PCRS --> PC: Lỗi
+            PC --> FE: 500 Internal Server Error
+            FE --> Admin: Thông báo lỗi khi áp dụng
+        end
+    else không hợp lệ / đã xử lý
+        PCRS --> PC: Lỗi
+        PC --> FE: 400 Bad Request
+        FE --> Admin: Thông báo lỗi
+    end
+else chọn từ chối
+    FE -> PC: POST /api/products/change-requests/{id}/reject {note}
+    PC -> PCRS: reject(id, note)
+    PCRS -> PCRR: findById(id)
+    alt yêu cầu hợp lệ
+        PCRR --> PCRS: Request entity
+        PCRS -> PCRR: save(status=REJECTED)
+        PCRS --> PC: Success
+        PC --> FE: 200 OK
+        FE --> Admin: Thông báo từ chối thành công
+    else không hợp lệ / đã xử lý
+        PCRS --> PC: Lỗi
+        PC --> FE: 400 Bad Request
+        FE --> Admin: Thông báo lỗi
+    end
+end
+@enduml
+```

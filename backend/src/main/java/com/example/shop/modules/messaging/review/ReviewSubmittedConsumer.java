@@ -4,9 +4,13 @@ import com.example.shop.common.mail.EmailService;
 import com.example.shop.config.ConditionalOnRabbitEnabled;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
+
+import java.time.Duration;
 
 @Component
 @RequiredArgsConstructor
@@ -15,6 +19,9 @@ import org.springframework.stereotype.Component;
 public class ReviewSubmittedConsumer {
 
     private final EmailService emailService;
+    private final ObjectProvider<StringRedisTemplate> redisTemplateProvider;
+
+    private static final Duration DEDUP_TTL = Duration.ofDays(7);
 
     @Value("${application.bootstrap.admin.email:admin@example.com}")
     private String adminEmail;
@@ -26,7 +33,25 @@ public class ReviewSubmittedConsumer {
             return;
         }
 
+        String reviewId = event.getReviewId();
+        if (reviewId != null && !reviewId.isBlank()) {
+            StringRedisTemplate redis = redisTemplateProvider.getIfAvailable();
+            if (redis != null) {
+                String dedupKey = "msg:idemp:review:" + reviewId.trim();
+                try {
+                    Boolean isNew = redis.opsForValue().setIfAbsent(dedupKey, "1", DEDUP_TTL);
+                    if (Boolean.FALSE.equals(isNew)) {
+                        log.info("Duplicate review submitted event skipped for review {}", reviewId);
+                        return;
+                    }
+                } catch (Exception ex) {
+                    log.warn("Redis dedup check failed for review {}, processing anyway: {}", reviewId, ex.getMessage());
+                }
+            }
+        }
+
         log.info("Consumed review submitted event: product={} rating={}", event.getProductId(), event.getRating());
+
 
         // Send admin moderation notification
         String adminSubject = "📝 New Review - " + safe(event.getProductName());

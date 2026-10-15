@@ -22,7 +22,15 @@ export function middleware(request: NextRequest) {
 
   const isAuthPage = AUTH_PAGES.some((prefix) => pathname.startsWith(prefix));
   if (isAuthPage && hasSessionCookie) {
-    const response = NextResponse.redirect(new URL("/dashboard", request.url));
+    const returnToParam = request.nextUrl.searchParams.get("returnTo")?.trim();
+    const safeReturnTo =
+      returnToParam &&
+      returnToParam.startsWith("/") &&
+      !returnToParam.startsWith("//") &&
+      !returnToParam.startsWith("/login")
+        ? returnToParam
+        : "/";
+    const response = NextResponse.redirect(new URL(safeReturnTo, request.url));
     response.headers.set("x-request-id", requestId);
     response.headers.set("x-correlation-id", correlationId);
     return response;

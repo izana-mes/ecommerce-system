@@ -15,7 +15,7 @@ export function MessageComposer({
   onSend,
   onTyping,
   disabled = false,
-  placeholder = "Type a message...",
+  placeholder = "Write a message...",
 }: MessageComposerProps) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -93,7 +93,7 @@ export function MessageComposer({
 
   return (
     <div className="chatComposerWrap">
-      {error ? <div className="chatComposerError">{error}</div> : null}
+      {error ? <div className="chatComposerError" role="alert">{error}</div> : null}
       <div className={`chatComposerForm ${error ? "hasError" : ""}`}>
         <div style={{ position: "relative" }}>
           {showEmojiPicker && (
@@ -118,10 +118,11 @@ export function MessageComposer({
             type="button"
             className="chatComposerBtn"
             title="Add emoji"
+            aria-label="Add emoji"
             onClick={() => setShowEmojiPicker((prev) => !prev)}
             disabled={disabled || sending}
           >
-            <HiOutlineFaceSmile size={22} />
+            <HiOutlineFaceSmile size={20} />
           </button>
         </div>
 
@@ -129,9 +130,10 @@ export function MessageComposer({
           type="button"
           className="chatComposerBtn"
           title="Attachments coming soon"
+          aria-label="Add attachment"
           disabled
         >
-          <HiOutlinePaperClip size={20} />
+          <HiOutlinePaperClip size={18} />
         </button>
 
         <textarea
@@ -147,17 +149,27 @@ export function MessageComposer({
 
         <button
           type="button"
-          className="chatComposerBtn chatComposerSendBtn"
+          className={`chatComposerBtn chatComposerSendBtn ${sending ? "sending" : ""}`}
           onClick={handleSend}
           disabled={disabled || sending || draft.trim().length === 0}
           title="Send (Enter)"
+          aria-label="Send message"
         >
-          <span>{sending ? "Sending" : "Send"}</span>
-          <HiPaperAirplane size={16} />
+          {sending ? (
+            <>
+              <span className="chatSendingSpinner" aria-hidden="true" />
+              <span>Sending</span>
+            </>
+          ) : (
+            <>
+              <span>Send</span>
+              <HiPaperAirplane size={14} />
+            </>
+          )}
         </button>
       </div>
       <div className="chatComposerHint">
-        <span>Enter to send, Shift + Enter for new line</span>
+        <span>Enter to send · Shift + Enter for new line</span>
         {draft.length > 3000 && <span>{4000 - draft.length} chars left</span>}
       </div>
     </div>

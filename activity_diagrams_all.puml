@@ -1,0 +1,1850 @@
+@startuml
+title AD01 - Quản lý tài khoản cá nhân
+|Actor|
+start
+:Người dùng chọn chức năng quản lý tài khoản;
+|System|
+:Hệ thống hiển thị thông tin tài khoản hiện tại;
+repeat
+  |Actor|
+  :Người dùng chỉnh sửa thông tin (tên, số điện thoại, địa chỉ);
+  :Người dùng nhấn lưu thay đổi;
+  |System|
+  :Hệ thống kiểm tra tính hợp lệ của thông tin;
+  if (Thông tin hợp lệ?) then (Yes)
+    :Hệ thống cập nhật thông tin tài khoản;
+    :Hệ thống thông báo cập nhật thành công;
+    break
+  else (No)
+    :Hệ thống thông báo lỗi định dạng;
+    :Yêu cầu người dùng nhập lại;
+  endif
+repeat while (Nhập lại) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD02 - Đăng ký tài khoản
+|Actor|
+start
+:Người dùng chọn đăng ký;
+repeat
+  |Actor|
+  :Người dùng nhập thông tin đăng ký (email, mật khẩu, tên);
+  :Người dùng nhấn nút đăng ký;
+  |System|
+  :Hệ thống kiểm tra thông tin;
+  if (Thông tin hợp lệ và email chưa tồn tại?) then (Yes)
+    :Hệ thống tạo tài khoản mới ở trạng thái chờ xác thực;
+    :Hệ thống gửi email chứa mã/link xác thực;
+    :Hệ thống thông báo đăng ký thành công và yêu cầu kiểm tra email;
+    break
+  else (No)
+    :Hệ thống thông báo lỗi (email đã tồn tại hoặc thông tin không hợp lệ);
+    :Yêu cầu người dùng kiểm tra lại thông tin;
+  endif
+repeat while (Nhập lại) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD03 - Xác thực email
+|Actor|
+start
+repeat
+  |Actor|
+  :Người dùng mở email và click vào link xác thực hoặc nhập mã;
+  |System|
+  :Hệ thống kiểm tra mã/link xác thực;
+  if (Mã/link hợp lệ và chưa hết hạn?) then (Yes)
+    :Hệ thống cập nhật trạng thái tài khoản thành đã xác thực;
+    :Hệ thống thông báo xác thực thành công;
+    break
+  else (No)
+    :Hệ thống thông báo link/mã không hợp lệ hoặc đã hết hạn;
+    :Gợi ý người dùng gửi lại email xác thực;
+  endif
+repeat while (Thử lại) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD04 - Gửi lại email xác thực
+|Actor|
+start
+:Người dùng yêu cầu gửi lại email xác thực;
+repeat
+  |Actor|
+  :Người dùng nhập địa chỉ email;
+  |System|
+  :Hệ thống kiểm tra email;
+  if (Email tồn tại và chưa được xác thực?) then (Yes)
+    :Hệ thống tạo mã/link xác thực mới;
+    :Hệ thống gửi email chứa mã/link mới;
+    :Hệ thống thông báo đã gửi lại email;
+    break
+  else (No)
+    :Hệ thống thông báo lỗi (email không tồn tại hoặc đã được xác thực);
+  endif
+repeat while (Nhập lại email) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD05 - Đăng nhập
+|Actor|
+start
+:Người dùng chọn chức năng đăng nhập;
+repeat
+  |Actor|
+  :Người dùng nhập email và mật khẩu;
+  :Người dùng nhấn nút đăng nhập;
+  |System|
+  :Hệ thống kiểm tra thông tin đăng nhập;
+  if (Thông tin chính xác?) then (Yes)
+    if (Tài khoản đã xác thực?) then (Yes)
+      if (Tài khoản có bị khóa không?) then (No)
+        :Hệ thống tạo phiên đăng nhập;
+        :Chuyển hướng người dùng đến trang chủ;
+        break
+      else (Yes)
+        :Hệ thống thông báo tài khoản bị khóa;
+        break
+      endif
+    else (No)
+      :Hệ thống thông báo tài khoản chưa xác thực;
+      :Gợi ý xác thực email;
+      break
+    endif
+  else (No)
+    :Hệ thống thông báo sai thông tin đăng nhập;
+  endif
+repeat while (Nhập lại) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD06 - Đăng nhập qua Google
+|Actor|
+start
+:Người dùng chọn đăng nhập bằng Google;
+|System|
+:Hệ thống chuyển hướng tới trang đăng nhập Google;
+repeat
+  |Actor|
+  :Người dùng xác thực với Google;
+  |System|
+  if (Xác thực thành công?) then (Yes)
+    :Google trả về thông tin người dùng;
+    :Hệ thống kiểm tra email;
+    if (Email đã tồn tại trong hệ thống?) then (Yes)
+      :Hệ thống đăng nhập tài khoản hiện có;
+    else (No)
+      :Hệ thống tự động tạo tài khoản mới từ thông tin Google;
+      :Hệ thống đăng nhập tài khoản mới;
+    endif
+    :Chuyển hướng người dùng đến trang chủ;
+    break
+  else (No)
+    :Hệ thống thông báo đăng nhập thất bại;
+  endif
+repeat while (Thử lại) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD07 - Đăng xuất
+|Actor|
+start
+:Người dùng chọn chức năng đăng xuất;
+|System|
+:Hệ thống xác nhận yêu cầu đăng xuất;
+:Hệ thống hủy phiên đăng nhập hiện tại;
+:Chuyển hướng người dùng về trang chủ hoặc trang đăng nhập;
+stop
+@enduml
+
+@startuml
+title AD08 - Quên mật khẩu
+|Actor|
+start
+:Người dùng chọn quên mật khẩu;
+repeat
+  |Actor|
+  :Người dùng nhập địa chỉ email;
+  |System|
+  :Hệ thống kiểm tra email;
+  if (Email tồn tại trong hệ thống?) then (Yes)
+    :Hệ thống tạo mã khôi phục mật khẩu;
+    :Hệ thống gửi email chứa link/mã khôi phục;
+    :Hệ thống thông báo đã gửi hướng dẫn khôi phục;
+    break
+  else (No)
+    :Hệ thống thông báo email không tồn tại;
+  endif
+repeat while (Nhập lại email) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD09 - Đặt lại mật khẩu
+|Actor|
+start
+:Người dùng truy cập link khôi phục hoặc nhập mã khôi phục;
+|System|
+:Hệ thống kiểm tra tính hợp lệ của link/mã;
+if (Link/mã hợp lệ và chưa hết hạn?) then (Yes)
+  :Hệ thống hiển thị form nhập mật khẩu mới;
+  repeat
+    |Actor|
+    :Người dùng nhập mật khẩu mới và xác nhận mật khẩu;
+    |System|
+    :Hệ thống kiểm tra độ mạnh và tính trùng khớp của mật khẩu;
+    if (Mật khẩu hợp lệ?) then (Yes)
+      :Hệ thống cập nhật mật khẩu mới;
+      :Hệ thống thông báo đặt lại mật khẩu thành công;
+      :Chuyển hướng người dùng đến trang đăng nhập;
+      break
+    else (No)
+      :Hệ thống thông báo lỗi mật khẩu;
+      :Yêu cầu nhập lại mật khẩu mới;
+    endif
+  repeat while (Nhập lại) is (Yes)
+else (No)
+  :Hệ thống thông báo link/mã không hợp lệ hoặc đã hết hạn;
+endif
+stop
+@enduml
+
+@startuml
+title AD10 - Xem danh sách sản phẩm
+|Actor|
+start
+:Người dùng truy cập trang danh sách sản phẩm;
+:Người dùng có thể chọn bộ lọc hoặc phân trang;
+|System|
+:Hệ thống lấy danh sách sản phẩm theo tiêu chí;
+if (Có sản phẩm nào phù hợp?) then (Yes)
+  :Hệ thống hiển thị danh sách sản phẩm;
+else (No)
+  :Hệ thống thông báo không có sản phẩm nào;
+endif
+stop
+@enduml
+
+@startuml
+title AD11 - Tìm kiếm sản phẩm
+|Actor|
+start
+repeat
+  |Actor|
+  :Người dùng nhập từ khóa tìm kiếm;
+  :Người dùng nhấn tìm kiếm;
+  |System|
+  :Hệ thống lưu lại từ khóa vào lịch sử tìm kiếm;
+  :Hệ thống tìm kiếm sản phẩm phù hợp với từ khóa;
+  if (Tìm thấy sản phẩm?) then (Yes)
+    :Hệ thống hiển thị danh sách sản phẩm kết quả;
+    break
+  else (No)
+    :Hệ thống thông báo không tìm thấy sản phẩm phù hợp;
+    :Hiển thị gợi ý tìm kiếm;
+  endif
+repeat while (Tìm kiếm lại) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD12 - Xem lịch sử tìm kiếm
+|Actor|
+start
+:Người dùng nhấp vào thanh tìm kiếm;
+|System|
+:Hệ thống truy xuất lịch sử tìm kiếm của người dùng;
+if (Có lịch sử tìm kiếm?) then (Yes)
+  :Hệ thống hiển thị danh sách các từ khóa tìm kiếm gần đây;
+else (No)
+  :Hệ thống không hiển thị lịch sử;
+endif
+stop
+@enduml
+
+@startuml
+title AD13 - Gửi yêu cầu thêm sản phẩm
+|Actor|
+start
+:Nhân viên chọn chức năng gửi yêu cầu thêm sản phẩm;
+repeat
+  |Actor|
+  :Nhân viên điền thông tin sản phẩm mới (tên, giá, mô tả, hình ảnh);
+  :Nhân viên gửi yêu cầu;
+  |System|
+  :Hệ thống kiểm tra thông tin nhập vào;
+  if (Thông tin hợp lệ?) then (Yes)
+    :Hệ thống tạo yêu cầu thêm sản phẩm ở trạng thái chờ duyệt;
+    :Hệ thống thông báo gửi yêu cầu thành công;
+    break
+  else (No)
+    :Hệ thống thông báo lỗi nhập liệu;
+    :Yêu cầu nhân viên sửa lại thông tin;
+  endif
+repeat while (Sửa lại thông tin) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD14 - Gửi yêu cầu cập nhật sản phẩm
+|Actor|
+start
+:Nhân viên chọn sản phẩm cần cập nhật;
+:Nhân viên chọn chức năng gửi yêu cầu cập nhật;
+repeat
+  |Actor|
+  :Nhân viên chỉnh sửa thông tin sản phẩm;
+  :Nhân viên gửi yêu cầu;
+  |System|
+  :Hệ thống kiểm tra thông tin nhập vào;
+  if (Thông tin hợp lệ?) then (Yes)
+    :Hệ thống tạo yêu cầu cập nhật sản phẩm ở trạng thái chờ duyệt;
+    :Hệ thống thông báo gửi yêu cầu thành công;
+    break
+  else (No)
+    :Hệ thống thông báo lỗi nhập liệu;
+    :Yêu cầu nhân viên sửa lại thông tin;
+  endif
+repeat while (Sửa lại thông tin) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD15 - Gửi yêu cầu xóa sản phẩm
+|Actor|
+start
+:Nhân viên chọn sản phẩm cần xóa;
+:Nhân viên chọn chức năng gửi yêu cầu xóa;
+:Nhân viên nhập lý do xóa (tùy chọn);
+:Nhân viên xác nhận gửi yêu cầu;
+|System|
+:Hệ thống tạo yêu cầu xóa sản phẩm ở trạng thái chờ duyệt;
+:Hệ thống thông báo gửi yêu cầu thành công;
+stop
+@enduml
+
+@startuml
+title AD16 - Duyệt yêu cầu thay đổi sản phẩm
+|Actor|
+start
+:Quản lý xem danh sách yêu cầu thay đổi;
+:Quản lý chọn một yêu cầu đang chờ duyệt;
+:Quản lý xem chi tiết yêu cầu;
+:Quản lý chọn chức năng phê duyệt;
+|System|
+:Hệ thống cập nhật trạng thái yêu cầu thành đã duyệt;
+:Hệ thống áp dụng thay đổi vào danh mục sản phẩm chính;
+:Hệ thống thông báo phê duyệt thành công;
+stop
+@enduml
+
+@startuml
+title AD17 - Từ chối yêu cầu thay đổi sản phẩm
+|Actor|
+start
+:Quản lý xem danh sách yêu cầu thay đổi;
+:Quản lý chọn một yêu cầu đang chờ duyệt;
+:Quản lý xem chi tiết yêu cầu;
+:Quản lý chọn chức năng từ chối;
+:Quản lý nhập lý do từ chối;
+|System|
+:Hệ thống cập nhật trạng thái yêu cầu thành bị từ chối;
+:Hệ thống lưu lý do từ chối;
+:Hệ thống thông báo từ chối thành công;
+stop
+@enduml
+
+@startuml
+title AD18 - Xem danh sách yêu cầu thay đổi
+|Actor|
+start
+:Người dùng (Quản lý/Nhân viên) chọn xem danh sách yêu cầu;
+:Người dùng có thể chọn bộ lọc (loại yêu cầu, trạng thái);
+|System|
+:Hệ thống lấy danh sách yêu cầu theo tiêu chí;
+if (Có yêu cầu nào phù hợp?) then (Yes)
+  :Hệ thống hiển thị danh sách yêu cầu;
+else (No)
+  :Hệ thống thông báo danh sách trống;
+endif
+stop
+@enduml
+
+@startuml
+title AD19 - Thêm sản phẩm trực tiếp
+|Actor|
+start
+:Quản lý chọn chức năng thêm sản phẩm mới;
+repeat
+  |Actor|
+  :Quản lý nhập thông tin sản phẩm;
+  :Quản lý nhấn lưu;
+  |System|
+  :Hệ thống kiểm tra thông tin;
+  if (Thông tin hợp lệ?) then (Yes)
+    :Hệ thống thêm sản phẩm vào danh mục;
+    :Hệ thống thông báo thêm thành công;
+    break
+  else (No)
+    :Hệ thống thông báo lỗi;
+    :Yêu cầu kiểm tra lại thông tin;
+  endif
+repeat while (Nhập lại) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD20 - Cập nhật sản phẩm trực tiếp
+|Actor|
+start
+:Quản lý chọn sản phẩm cần cập nhật;
+repeat
+  |Actor|
+  :Quản lý thay đổi thông tin sản phẩm;
+  :Quản lý nhấn lưu;
+  |System|
+  :Hệ thống kiểm tra thông tin;
+  if (Thông tin hợp lệ?) then (Yes)
+    :Hệ thống cập nhật thông tin sản phẩm;
+    :Hệ thống thông báo cập nhật thành công;
+    break
+  else (No)
+    :Hệ thống thông báo lỗi;
+    :Yêu cầu kiểm tra lại thông tin;
+  endif
+repeat while (Nhập lại) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD21 - Xóa sản phẩm trực tiếp
+|Actor|
+start
+:Quản lý chọn sản phẩm cần xóa;
+:Quản lý chọn chức năng xóa;
+|System|
+:Hệ thống yêu cầu xác nhận xóa;
+|Actor|
+if (Quản lý xác nhận?) then (Yes)
+  |System|
+  :Hệ thống kiểm tra ràng buộc của sản phẩm (ví dụ: có đơn hàng không);
+  if (Có ràng buộc?) then (Yes)
+    :Hệ thống thông báo không thể xóa;
+    :Chuyển trạng thái sản phẩm sang ngưng kinh doanh;
+  else (No)
+    :Hệ thống xóa sản phẩm khỏi danh mục;
+    :Hệ thống thông báo xóa thành công;
+  endif
+else (No)
+  |System|
+  :Hủy thao tác xóa;
+endif
+stop
+@enduml
+
+@startuml
+title AD22 - Xem giỏ hàng
+|Actor|
+start
+:Người dùng chọn chức năng xem giỏ hàng;
+|System|
+:Hệ thống lấy thông tin giỏ hàng của người dùng;
+if (Giỏ hàng có sản phẩm?) then (Yes)
+  :Hệ thống hiển thị danh sách sản phẩm, số lượng, giá và tổng tiền;
+else (No)
+  :Hệ thống thông báo giỏ hàng trống;
+  :Hiển thị nút tiếp tục mua sắm;
+endif
+stop
+@enduml
+
+@startuml
+title AD23 - Thêm sản phẩm vào giỏ
+|Actor|
+start
+:Người dùng xem chi tiết sản phẩm;
+repeat
+  |Actor|
+  :Người dùng chọn số lượng và nhấn thêm vào giỏ;
+  |System|
+  :Hệ thống kiểm tra số lượng tồn kho;
+  if (Đủ số lượng tồn kho?) then (Yes)
+    if (Sản phẩm đã có trong giỏ?) then (Yes)
+      :Hệ thống tăng số lượng sản phẩm trong giỏ;
+    else (No)
+      :Hệ thống thêm sản phẩm mới vào giỏ;
+    endif
+    :Hệ thống thông báo thêm thành công;
+    break
+  else (No)
+    :Hệ thống thông báo không đủ hàng;
+  endif
+repeat while (Thử chọn số lượng khác) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD24 - Cập nhật số lượng
+|Actor|
+start
+:Người dùng đang ở trang giỏ hàng;
+repeat
+  |Actor|
+  :Người dùng thay đổi số lượng của một sản phẩm;
+  |System|
+  :Hệ thống kiểm tra số lượng tồn kho;
+  if (Số lượng hợp lệ và đủ tồn kho?) then (Yes)
+    :Hệ thống cập nhật số lượng mới trong giỏ hàng;
+    :Hệ thống tính toán lại tổng tiền;
+    break
+  else (No)
+    :Hệ thống thông báo lỗi số lượng;
+    :Khôi phục lại số lượng cũ;
+  endif
+repeat while (Nhập lại số lượng) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD25 - Xóa sản phẩm khỏi giỏ
+|Actor|
+start
+:Người dùng đang ở trang giỏ hàng;
+:Người dùng chọn xóa một sản phẩm;
+|System|
+:Hệ thống loại bỏ sản phẩm khỏi giỏ hàng;
+:Hệ thống tính toán lại tổng tiền;
+:Hệ thống cập nhật hiển thị giỏ hàng;
+stop
+@enduml
+
+@startuml
+title AD26 - Xem danh sách yêu thích
+|Actor|
+start
+:Người dùng chọn chức năng xem danh sách yêu thích;
+|System|
+:Hệ thống truy xuất danh sách sản phẩm yêu thích;
+if (Danh sách có sản phẩm?) then (Yes)
+  :Hệ thống hiển thị danh sách sản phẩm yêu thích;
+else (No)
+  :Hệ thống thông báo danh sách trống;
+endif
+stop
+@enduml
+
+@startuml
+title AD27 - Thêm vào danh sách yêu thích
+|Actor|
+start
+:Người dùng xem một sản phẩm;
+:Người dùng nhấn nút yêu thích;
+|System|
+:Hệ thống kiểm tra trạng thái yêu thích;
+if (Sản phẩm đã có trong danh sách?) then (Yes)
+  :Hệ thống thông báo sản phẩm đã được yêu thích;
+else (No)
+  :Hệ thống thêm sản phẩm vào danh sách yêu thích;
+  :Hệ thống thông báo thêm thành công;
+endif
+stop
+@enduml
+
+@startuml
+title AD28 - Xóa khỏi danh sách yêu thích
+|Actor|
+start
+:Người dùng xem danh sách yêu thích hoặc chi tiết sản phẩm;
+:Người dùng nhấn nút bỏ yêu thích;
+|System|
+:Hệ thống loại bỏ sản phẩm khỏi danh sách yêu thích;
+:Hệ thống thông báo đã xóa khỏi danh sách yêu thích;
+stop
+@enduml
+
+@startuml
+title AD29 - Tạo đơn hàng
+|Actor|
+start
+:Người dùng chọn thanh toán từ giỏ hàng;
+repeat
+  |Actor|
+  :Người dùng nhập thông tin giao hàng và chọn phương thức thanh toán;
+  :Người dùng nhấn đặt hàng;
+  |System|
+  :Hệ thống kiểm tra lại giỏ hàng và số lượng tồn kho;
+  if (Giỏ hàng hợp lệ và đủ tồn kho?) then (Yes)
+    :Hệ thống tạo đơn hàng mới;
+    :Hệ thống trừ đi số lượng tồn kho tương ứng;
+    :Hệ thống xóa các sản phẩm đã đặt khỏi giỏ hàng;
+    :Hệ thống thông báo đặt hàng thành công;
+    break
+  else (No)
+    :Hệ thống thông báo lỗi (sản phẩm hết hàng hoặc thay đổi giá);
+    :Yêu cầu người dùng kiểm tra lại giỏ hàng;
+  endif
+repeat while (Điều chỉnh giỏ hàng/thông tin) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD30 - Xem lịch sử đơn hàng
+|Actor|
+start
+:Người dùng chọn chức năng xem lịch sử đơn hàng;
+|System|
+:Hệ thống truy xuất danh sách đơn hàng của người dùng;
+if (Có đơn hàng nào không?) then (Yes)
+  :Hệ thống hiển thị danh sách đơn hàng kèm trạng thái;
+  |Actor|
+  :Người dùng có thể chọn xem chi tiết một đơn hàng;
+else (No)
+  |System|
+  :Hệ thống thông báo chưa có đơn hàng nào;
+endif
+stop
+@enduml
+@startuml
+title AD31 - Theo dõi đơn hàng (số đơn)
+|Actor|
+start
+repeat
+  :Khách hàng chọn chức năng Theo dõi đơn hàng;
+  :Nhập mã số đơn hàng;
+|System|
+  :Hệ thống kiểm tra định dạng mã đơn;
+repeat while (Mã đơn hàng hợp lệ?) is (No) not (Yes)
+:Hệ thống truy xuất thông tin đơn hàng;
+if (Tìm thấy đơn hàng?) then (Yes)
+  :Hệ thống hiển thị trạng thái và chi tiết đơn hàng;
+else (No)
+  :Hệ thống thông báo không tìm thấy đơn hàng;
+endif
+stop
+@enduml
+
+@startuml
+title AD32 - Chỉnh sửa đơn hàng
+|Actor|
+start
+:Khách hàng/Admin chọn đơn hàng cần chỉnh sửa;
+|System|
+:Hệ thống kiểm tra trạng thái đơn hàng;
+if (Đơn hàng ở trạng thái cho phép chỉnh sửa?) then (Yes)
+  :Hiển thị form chỉnh sửa thông tin (địa chỉ, SĐT...);
+  |Actor|
+  repeat
+    :Người dùng nhập thông tin mới và lưu;
+  |System|
+    :Hệ thống kiểm tra tính hợp lệ của thông tin mới;
+  repeat while (Thông tin hợp lệ?) is (No) not (Yes)
+  :Cập nhật thông tin đơn hàng;
+  :Thông báo cập nhật thành công;
+else (No)
+  :Hệ thống thông báo đơn hàng không thể chỉnh sửa;
+endif
+stop
+@enduml
+
+@startuml
+title AD33 - Hủy đơn hàng
+|Actor|
+start
+:Khách hàng chọn đơn hàng muốn hủy;
+:Khách hàng chọn chức năng Hủy đơn hàng;
+|System|
+:Hệ thống kiểm tra trạng thái hiện tại của đơn hàng;
+if (Trạng thái cho phép hủy?) then (Yes)
+  :Yêu cầu khách hàng xác nhận hoặc chọn lý do hủy;
+  |Actor|
+  :Khách hàng xác nhận hủy;
+  |System|
+  :Hệ thống cập nhật trạng thái đơn hàng thành "Đã hủy";
+  if (Đơn hàng đã thanh toán?) then (Yes)
+    :Hệ thống tiến hành quy trình hoàn tiền;
+  else (No)
+  endif
+  :Thông báo hủy đơn hàng thành công;
+else (No)
+  :Hệ thống thông báo không thể hủy do đơn hàng đang giao/đã hoàn thành;
+endif
+stop
+@enduml
+
+@startuml
+title AD34 - Cập nhật trạng thái đơn hàng (Module Đơn hàng)
+|Actor|
+start
+:Admin/Nhân viên chọn đơn hàng cần cập nhật;
+repeat
+  :Chọn trạng thái mới cho đơn hàng;
+|System|
+  :Hệ thống kiểm tra tính logic của trạng thái mới;
+  if (Trạng thái mới hợp lệ so với trạng thái cũ?) then (No)
+    :Hệ thống cảnh báo lỗi chuyển đổi trạng thái;
+  else (Yes)
+  endif
+repeat while (Trạng thái mới hợp lệ so với trạng thái cũ?) is (No) not (Yes)
+:Hệ thống cập nhật trạng thái đơn hàng;
+:Lưu lại lịch sử thay đổi trạng thái;
+:Gửi thông báo cập nhật trạng thái cho khách hàng;
+:Thông báo cập nhật thành công cho nhân viên;
+stop
+@enduml
+
+@startuml
+title AD35 - Xem hàng đợi thực hiện đơn
+|Actor|
+start
+:Nhân viên/Admin truy cập chức năng Hàng đợi thực hiện đơn;
+|System|
+:Hệ thống lấy danh sách đơn hàng đang chờ xử lý theo thứ tự ưu tiên/thời gian;
+:Hệ thống phân trang và hiển thị danh sách;
+|Actor|
+if (Nhân viên chọn xem chi tiết đơn hàng?) then (Yes)
+|System|
+  :Hệ thống hiển thị chi tiết đơn hàng tương ứng;
+else (No)
+endif
+stop
+@enduml
+
+@startuml
+title AD36 - Thanh toán qua MoMo
+|Actor|
+start
+:Khách hàng chọn phương thức thanh toán MoMo;
+:Xác nhận thanh toán;
+|System|
+:Hệ thống gửi yêu cầu tạo giao dịch thanh toán sang MoMo;
+if (MoMo phản hồi tạo giao dịch thành công?) then (Yes)
+  :Hệ thống chuyển hướng khách hàng tới cổng thanh toán MoMo;
+  |Actor|
+  :Khách hàng thực hiện thanh toán trên MoMo;
+  |System|
+  if (Thanh toán thành công trên MoMo?) then (Yes)
+    :MoMo chuyển hướng về trang kết quả với trạng thái thành công;
+    :Hệ thống ghi nhận giao dịch thành công (tạm thời);
+  else (No)
+    :MoMo chuyển hướng về trang kết quả với trạng thái thất bại/hủy;
+    :Hệ thống hiển thị lỗi thanh toán thất bại;
+  endif
+else (No)
+  :Hệ thống thông báo lỗi kết nối cổng thanh toán;
+endif
+stop
+@enduml
+
+@startuml
+title AD37 - Xử lý IPN MoMo
+|Actor|
+start
+:Máy chủ MoMo gửi thông báo (IPN);
+|System|
+:Hệ thống nhận thông báo (IPN) từ máy chủ MoMo;
+:Hệ thống xác thực chữ ký (Signature) của IPN;
+if (Chữ ký hợp lệ?) then (Yes)
+  :Hệ thống kiểm tra mã đơn hàng và mã giao dịch;
+  if (Đơn hàng tồn tại và chưa xử lý thanh toán?) then (Yes)
+    :Hệ thống kiểm tra số tiền thanh toán;
+    if (Số tiền khớp với đơn hàng?) then (Yes)
+      if (Trạng thái IPN là thành công?) then (Yes)
+        :Cập nhật trạng thái thanh toán đơn hàng thành "Đã thanh toán";
+      else (No)
+        :Cập nhật trạng thái thanh toán đơn hàng thành "Thất bại";
+      endif
+      :Trả kết quả HTTP 200 cho MoMo;
+    else (No)
+      :Ghi log lỗi sai lệch số tiền;
+      :Trả kết quả HTTP 200 cho MoMo;
+    endif
+  else (No)
+    :Ghi log đơn hàng không tồn tại hoặc đã xử lý;
+    :Trả kết quả HTTP 200 cho MoMo;
+  endif
+else (No)
+  :Ghi log lỗi chữ ký không hợp lệ;
+  :Bỏ qua yêu cầu;
+endif
+stop
+@enduml
+
+@startuml
+title AD38 - Thanh toán qua VNPay
+|Actor|
+start
+:Khách hàng chọn phương thức thanh toán VNPay;
+:Xác nhận thanh toán;
+|System|
+:Hệ thống tạo URL thanh toán gửi sang VNPay;
+if (Tạo URL thành công?) then (Yes)
+  :Hệ thống chuyển hướng khách hàng tới cổng thanh toán VNPay;
+  |Actor|
+  :Khách hàng thực hiện thanh toán trên VNPay;
+  |System|
+  if (Thanh toán thành công trên VNPay?) then (Yes)
+    :VNPay chuyển hướng về trang kết quả với trạng thái thành công;
+    :Hệ thống ghi nhận giao dịch thành công (tạm thời);
+  else (No)
+    :VNPay chuyển hướng về trang kết quả với trạng thái thất bại/hủy;
+    :Hệ thống hiển thị lỗi thanh toán thất bại;
+  endif
+else (No)
+  :Hệ thống thông báo lỗi kết nối cổng thanh toán;
+endif
+stop
+@enduml
+
+@startuml
+title AD39 - Xử lý IPN VNPay
+|Actor|
+start
+:Máy chủ VNPay gửi yêu cầu IPN;
+|System|
+:Hệ thống nhận yêu cầu IPN từ máy chủ VNPay;
+:Hệ thống xác thực mã băm (Secure Hash) của IPN;
+if (Mã băm hợp lệ?) then (Yes)
+  :Kiểm tra mã đơn hàng (vnp_TxnRef);
+  if (Đơn hàng tồn tại và trạng thái hợp lệ?) then (Yes)
+    :Kiểm tra số tiền thanh toán;
+    if (Số tiền khớp với đơn hàng?) then (Yes)
+      if (Mã phản hồi vnp_ResponseCode là 00 (Thành công)?) then (Yes)
+        :Cập nhật trạng thái thanh toán đơn hàng thành "Đã thanh toán";
+      else (No)
+        :Cập nhật trạng thái thanh toán đơn hàng thành "Thất bại";
+      endif
+      :Trả mã phản hồi RspCode="00" cho VNPay;
+    else (No)
+      :Ghi log lỗi số tiền không khớp;
+      :Trả mã phản hồi RspCode="04" cho VNPay;
+    endif
+  else (No)
+    :Ghi log lỗi đơn hàng không hợp lệ;
+    :Trả mã phản hồi RspCode="01" hoặc "02" cho VNPay;
+  endif
+else (No)
+  :Ghi log lỗi xác thực sai (Invalid Checksum);
+  :Trả mã phản hồi RspCode="97" cho VNPay;
+endif
+stop
+@enduml
+
+@startuml
+title AD40 - Thanh toán khi nhận hàng (COD)
+|Actor|
+start
+:Khách hàng chọn phương thức thanh toán COD;
+:Xác nhận đặt hàng;
+|System|
+:Hệ thống tạo đơn hàng với trạng thái "Đang chờ xử lý";
+:Phương thức thanh toán được ghi nhận là "Thanh toán khi nhận hàng";
+:Thông báo đặt hàng thành công tới khách hàng;
+:Đơn hàng được chuyển sang bộ phận xử lý và giao hàng;
+stop
+@enduml
+
+@startuml
+title AD41 - Xem đánh giá sản phẩm
+|Actor|
+start
+:Khách hàng truy cập trang chi tiết sản phẩm;
+|System|
+:Hệ thống truy xuất danh sách đánh giá của sản phẩm;
+if (Có đánh giá nào không?) then (Yes)
+  :Hệ thống tính toán điểm đánh giá trung bình;
+  :Hiển thị danh sách đánh giá (phân trang/sắp xếp);
+else (No)
+  :Hệ thống hiển thị thông báo "Chưa có đánh giá nào";
+endif
+stop
+@enduml
+
+@startuml
+title AD42 - Thêm đánh giá
+|Actor|
+start
+:Khách hàng chọn sản phẩm đã mua để đánh giá;
+|System|
+:Hệ thống kiểm tra điều kiện đánh giá (đã mua, đã giao hàng...);
+if (Đủ điều kiện đánh giá?) then (Yes)
+  |Actor|
+  repeat
+    :Khách hàng nhập số sao và nội dung đánh giá;
+    :Khách hàng đính kèm hình ảnh/video (tùy chọn);
+    :Bấm gửi đánh giá;
+  |System|
+    :Hệ thống kiểm tra tính hợp lệ của nội dung;
+    if (Nội dung hợp lệ (không chứa từ ngữ vi phạm)?) then (No)
+      :Hiển thị lỗi nội dung vi phạm chính sách;
+    else (Yes)
+    endif
+  repeat while (Nội dung hợp lệ (không chứa từ ngữ vi phạm)?) is (No) not (Yes)
+  :Lưu đánh giá vào cơ sở dữ liệu;
+  :Cập nhật lại điểm đánh giá trung bình của sản phẩm;
+  :Hiển thị thông báo thêm đánh giá thành công;
+else (No)
+  :Hiển thị thông báo không đủ điều kiện đánh giá;
+endif
+stop
+@enduml
+
+@startuml
+title AD43 - Chỉnh sửa đánh giá
+|Actor|
+start
+:Khách hàng chọn đánh giá của mình cần chỉnh sửa;
+|System|
+:Hệ thống kiểm tra điều kiện chỉnh sửa (thời gian cho phép...);
+if (Cho phép chỉnh sửa?) then (Yes)
+  :Hiển thị form với nội dung đánh giá cũ;
+  |Actor|
+  repeat
+    :Khách hàng thay đổi nội dung/số sao và lưu;
+  |System|
+    :Hệ thống kiểm tra nội dung mới;
+    if (Nội dung hợp lệ?) then (No)
+      :Báo lỗi nội dung vi phạm;
+    else (Yes)
+    endif
+  repeat while (Nội dung hợp lệ?) is (No) not (Yes)
+  :Cập nhật đánh giá trong hệ thống;
+  :Cập nhật lại điểm đánh giá trung bình sản phẩm;
+  :Thông báo chỉnh sửa thành công;
+else (No)
+  :Thông báo đã quá thời gian hoặc không thể chỉnh sửa;
+endif
+stop
+@enduml
+
+@startuml
+title AD44 - Xóa đánh giá
+|Actor|
+start
+:Khách hàng chọn đánh giá của mình cần xóa;
+|System|
+:Hệ thống yêu cầu xác nhận xóa;
+|Actor|
+:Khách hàng xác nhận;
+|System|
+:Hệ thống xóa/ẩn đánh giá khỏi danh sách;
+:Cập nhật lại điểm đánh giá trung bình của sản phẩm;
+:Thông báo xóa đánh giá thành công;
+stop
+@enduml
+
+@startuml
+title AD45 - Thích đánh giá
+|Actor|
+start
+:Người dùng bấm nút "Thích" (Hữu ích) trên một đánh giá;
+|System|
+:Hệ thống kiểm tra trạng thái đăng nhập;
+if (Đã đăng nhập?) then (Yes)
+  :Hệ thống kiểm tra người dùng đã thích đánh giá này chưa;
+  if (Chưa thích?) then (Yes)
+    :Tăng số lượt thích của đánh giá lên 1;
+    :Lưu thông tin người dùng đã thích;
+    :Cập nhật hiển thị nút "Đã thích";
+  else (No)
+    :Hủy thích (giảm số lượt thích đi 1);
+    :Cập nhật hiển thị nút "Thích";
+  endif
+else (No)
+  :Yêu cầu người dùng đăng nhập;
+endif
+stop
+@enduml
+
+@startuml
+title AD46 - Không thích đánh giá
+|Actor|
+start
+:Người dùng bấm nút "Không thích" trên một đánh giá;
+|System|
+:Hệ thống kiểm tra trạng thái đăng nhập;
+if (Đã đăng nhập?) then (Yes)
+  :Hệ thống kiểm tra người dùng đã không thích đánh giá này chưa;
+  if (Chưa không thích?) then (Yes)
+    :Tăng số lượt không thích lên 1;
+    :Lưu thông tin người dùng;
+    :Cập nhật hiển thị nút "Đã không thích";
+  else (No)
+    :Hủy không thích (giảm số lượng đi 1);
+    :Cập nhật hiển thị nút "Không thích";
+  endif
+else (No)
+  :Yêu cầu người dùng đăng nhập;
+endif
+stop
+@enduml
+
+@startuml
+title AD47 - Trả lời đánh giá
+|Actor|
+start
+:Quản trị viên/Người bán chọn đánh giá cần trả lời;
+repeat
+  :Nhập nội dung trả lời;
+  :Bấm gửi trả lời;
+|System|
+  :Hệ thống kiểm tra nội dung;
+  if (Nội dung hợp lệ?) then (No)
+    :Thông báo lỗi nội dung không hợp lệ;
+  else (Yes)
+  endif
+repeat while (Nội dung hợp lệ?) is (No) not (Yes)
+:Lưu câu trả lời vào hệ thống, liên kết với đánh giá;
+:Gửi thông báo cho khách hàng đã viết đánh giá;
+:Hiển thị câu trả lời bên dưới đánh giá;
+stop
+@enduml
+
+@startuml
+title AD48 - Xem tất cả đánh giá (admin)
+|Actor|
+start
+:Admin truy cập Quản lý đánh giá;
+|System|
+:Hệ thống lấy danh sách toàn bộ đánh giá từ hệ thống;
+:Hiển thị danh sách với các bộ lọc (số sao, ngày, trạng thái...);
+|Actor|
+if (Admin chọn một đánh giá?) then (Yes)
+|System|
+  :Hệ thống hiển thị chi tiết nội dung, người đăng, sản phẩm;
+else (No)
+endif
+stop
+@enduml
+
+@startuml
+title AD49 - Chỉnh sửa đánh giá (admin)
+|Actor|
+start
+:Admin chọn một đánh giá cần chỉnh sửa (hoặc duyệt/ẩn);
+:Admin thay đổi trạng thái (Hiển thị/Ẩn) hoặc chỉnh sửa nội dung vi phạm;
+:Bấm lưu thay đổi;
+|System|
+:Hệ thống cập nhật thông tin đánh giá;
+if (Đánh giá bị ẩn/xóa?) then (Yes)
+  :Hệ thống cập nhật lại điểm đánh giá trung bình của sản phẩm;
+else (No)
+endif
+:Hiển thị thông báo cập nhật thành công;
+stop
+@enduml
+
+@startuml
+title AD50 - Xóa đánh giá (admin)
+|Actor|
+start
+:Admin chọn đánh giá vi phạm cần xóa;
+|System|
+:Hệ thống yêu cầu xác nhận xóa;
+|Actor|
+:Admin xác nhận;
+|System|
+:Hệ thống đánh dấu xóa/ẩn vĩnh viễn đánh giá;
+:Cập nhật lại điểm đánh giá trung bình của sản phẩm tương ứng;
+:Thông báo xóa thành công;
+stop
+@enduml
+
+@startuml
+title AD51 - Tạo yêu cầu hỗ trợ
+|Actor|
+start
+:Khách hàng chọn chức năng Tạo yêu cầu hỗ trợ (Ticket);
+|System|
+:Hiển thị form nhập thông tin (Chủ đề, Nội dung, Hình ảnh đính kèm);
+|Actor|
+repeat
+  :Khách hàng nhập thông tin và bấm gửi;
+|System|
+  :Hệ thống kiểm tra tính hợp lệ của dữ liệu đầu vào;
+  if (Dữ liệu hợp lệ?) then (No)
+    :Báo lỗi dữ liệu không đầy đủ/hợp lệ;
+  else (Yes)
+  endif
+repeat while (Dữ liệu hợp lệ?) is (No) not (Yes)
+:Lưu yêu cầu hỗ trợ với trạng thái "Chờ xử lý";
+:Gửi thông báo xác nhận cho khách hàng;
+:Thông báo cho bộ phận CSKH có yêu cầu mới;
+stop
+@enduml
+
+@startuml
+title AD52 - Xóa tin nhắn
+|Actor|
+start
+:Người dùng chọn tin nhắn của mình đã gửi;
+:Chọn chức năng Xóa tin nhắn (Thu hồi);
+|System|
+:Hệ thống kiểm tra điều kiện xóa (thời gian cho phép...);
+if (Cho phép xóa?) then (Yes)
+  :Hệ thống đánh dấu tin nhắn là "Đã thu hồi/Xóa";
+  :Cập nhật giao diện của người gửi và người nhận (hiển thị "Tin nhắn đã bị thu hồi");
+else (No)
+  :Thông báo không thể xóa tin nhắn lúc này;
+endif
+stop
+@enduml
+
+@startuml
+title AD53 - Thả cảm xúc tin nhắn
+|Actor|
+start
+:Người dùng chọn tin nhắn muốn thả cảm xúc;
+|System|
+:Hệ thống hiển thị danh sách biểu tượng cảm xúc;
+|Actor|
+:Người dùng chọn một biểu tượng;
+|System|
+:Hệ thống lưu lại cảm xúc của người dùng cho tin nhắn đó;
+:Cập nhật hiển thị cảm xúc trên tin nhắn cho cả hai bên;
+stop
+@enduml
+
+@startuml
+title AD54 - Tìm kiếm người dùng
+|Actor|
+start
+:Người dùng nhập từ khóa vào ô tìm kiếm người dùng/cửa hàng;
+:Bấm nút tìm kiếm hoặc gõ phím;
+|System|
+:Hệ thống truy vấn cơ sở dữ liệu dựa trên từ khóa;
+if (Tìm thấy kết quả phù hợp?) then (Yes)
+  :Hệ thống hiển thị danh sách người dùng/cửa hàng khớp từ khóa;
+else (No)
+  :Hệ thống hiển thị thông báo "Không tìm thấy người dùng";
+endif
+stop
+@enduml
+
+@startuml
+title AD55 - Tạo cuộc trò chuyện trực tiếp
+|Actor|
+start
+:Người dùng xem trang thông tin cửa hàng hoặc người dùng khác;
+:Bấm nút "Chat" hoặc "Nhắn tin";
+|System|
+:Hệ thống kiểm tra xem cuộc trò chuyện giữa 2 bên đã tồn tại chưa;
+if (Đã tồn tại?) then (Yes)
+  :Mở lại lịch sử cuộc trò chuyện cũ;
+else (No)
+  :Hệ thống khởi tạo một cuộc trò chuyện mới;
+  :Hiển thị giao diện phòng chat trống;
+endif
+stop
+@enduml
+
+@startuml
+title AD56 - Gửi tin nhắn
+|Actor|
+start
+repeat
+  :Người dùng nhập nội dung tin nhắn hoặc đính kèm ảnh;
+  :Bấm gửi;
+|System|
+  :Hệ thống kiểm tra kết nối mạng và tính hợp lệ của tin nhắn;
+  if (Tin nhắn hợp lệ?) then (No)
+    :Báo lỗi không thể gửi tin nhắn;
+  else (Yes)
+  endif
+repeat while (Tin nhắn hợp lệ?) is (No) not (Yes)
+:Lưu tin nhắn vào cơ sở dữ liệu;
+:Gửi thông báo (Push notification/Socket) tới người nhận;
+:Hiển thị tin nhắn lên màn hình trò chuyện của người gửi với trạng thái "Đã gửi";
+stop
+@enduml
+
+@startuml
+title AD57 - Xem tin nhắn
+|Actor|
+start
+:Người nhận mở ứng dụng/trang web;
+|System|
+:Hệ thống hiển thị thông báo tin nhắn chưa đọc;
+|Actor|
+:Người nhận bấm vào thông báo hoặc mở danh sách trò chuyện;
+|System|
+:Hệ thống tải lịch sử tin nhắn của cuộc trò chuyện;
+:Đánh dấu các tin nhắn mới là "Đã đọc";
+:Cập nhật trạng thái "Đã đọc" cho người gửi;
+stop
+@enduml
+
+@startuml
+title AD58 - Kiểm tra mã giảm giá
+|Actor|
+start
+repeat
+  :Khách hàng nhập hoặc chọn mã giảm giá trong giỏ hàng/thanh toán;
+  :Bấm nút "Áp dụng";
+|System|
+  :Hệ thống kiểm tra mã giảm giá trong cơ sở dữ liệu;
+  if (Mã tồn tại?) then (Yes)
+    :Kiểm tra điều kiện áp dụng (số lượng còn, hạn sử dụng, giá trị đơn hàng tối thiểu...);
+    if (Đủ điều kiện áp dụng?) then (Yes)
+      :Hệ thống thông báo mã hợp lệ;
+      :Tính toán số tiền được giảm;
+      break
+    else (No)
+      :Hệ thống thông báo mã không đủ điều kiện (chưa đạt giá trị tối thiểu, hết lượt...);
+    endif
+  else (No)
+    :Hệ thống báo lỗi mã giảm giá không tồn tại;
+  endif
+repeat while (Nhập mã khác?) is (Yes) not (No)
+stop
+@enduml
+
+@startuml
+title AD59 - Áp dụng mã giảm giá
+|System|
+start
+:Từ quy trình Kiểm tra mã giảm giá (Mã hợp lệ);
+:Hệ thống áp dụng số tiền giảm vào tổng giá trị đơn hàng;
+:Cập nhật lại tổng tiền cần thanh toán hiển thị cho khách hàng;
+|Actor|
+:Khách hàng tiến hành đặt hàng;
+|System|
+if (Đặt hàng thành công?) then (Yes)
+  :Hệ thống trừ đi 1 lượt sử dụng của mã giảm giá đó;
+  :Ghi nhận mã giảm giá đã được sử dụng trong chi tiết đơn hàng;
+else (No)
+  :Mã giảm giá không bị trừ lượt sử dụng;
+endif
+stop
+@enduml
+
+@startuml
+title AD60 - Xem thông báo mã giảm giá
+|Actor|
+start
+:Khách hàng truy cập mục Thông báo hoặc Kho Voucher;
+|System|
+:Hệ thống truy xuất danh sách các mã giảm giá dành cho khách hàng hoặc thông báo mã mới;
+if (Có mã giảm giá/thông báo mới?) then (Yes)
+  :Hiển thị danh sách mã giảm giá kèm điều kiện và hạn sử dụng;
+else (No)
+  :Hiển thị "Bạn chưa có mã giảm giá nào";
+endif
+stop
+@enduml
+@startuml
+title AD61 - Xem danh sách mã giảm giá (Module Mã giảm giá)
+|Actor|
+start
+:Người bán chọn chức năng "Mã giảm giá";
+|System|
+:Hệ thống kiểm tra danh sách mã giảm giá của người bán;
+if (Có mã giảm giá không?) then (Yes)
+  :Hệ thống hiển thị danh sách mã giảm giá;
+else (No)
+  :Hệ thống thông báo danh sách trống;
+endif
+stop
+@enduml
+
+@startuml
+title AD62 - Tạo mã giảm giá (Module Mã giảm giá)
+|Actor|
+start
+:Người bán chọn "Tạo mã giảm giá";
+|System|
+:Hệ thống hiển thị biểu mẫu tạo mã giảm giá;
+repeat
+  |Actor|
+  :Người bán nhập thông tin (Mã, Loại, Giá trị, Điều kiện, Hạn sử dụng);
+  :Người bán chọn "Lưu";
+  |System|
+  :Hệ thống kiểm tra thông tin hợp lệ;
+  if (Thông tin hợp lệ?) then (Yes)
+    :Hệ thống kiểm tra mã giảm giá trùng lặp;
+    if (Mã đã tồn tại?) then (Yes)
+      :Hệ thống thông báo lỗi "Mã đã tồn tại";
+      :Yêu cầu nhập lại mã;
+    else (No)
+      :Hệ thống lưu mã giảm giá mới;
+      :Hệ thống thông báo tạo thành công;
+      break
+    endif
+  else (No)
+    :Hệ thống thông báo lỗi "Thông tin không hợp lệ";
+    :Yêu cầu chỉnh sửa lại;
+  endif
+repeat while (Nhập lại thông tin) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD63 - Cập nhật mã giảm giá (Module Mã giảm giá)
+|Actor|
+start
+:Người bán chọn mã giảm giá cần cập nhật;
+|System|
+:Hệ thống hiển thị thông tin hiện tại của mã giảm giá;
+repeat
+  |Actor|
+  :Người bán thay đổi thông tin (Giá trị, Hạn sử dụng, Điều kiện);
+  :Người bán chọn "Cập nhật";
+  |System|
+  :Hệ thống kiểm tra thông tin mới hợp lệ;
+  if (Thông tin hợp lệ?) then (Yes)
+    :Hệ thống lưu thông tin thay đổi;
+    :Hệ thống thông báo cập nhật thành công;
+    break
+  else (No)
+    :Hệ thống thông báo lỗi "Thông tin không hợp lệ";
+    :Yêu cầu nhập lại thông tin hợp lệ;
+  endif
+repeat while (Nhập lại thông tin) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD64 - Phát hành mã giảm giá cho người dùng (Module Mã giảm giá)
+|Actor|
+start
+:Người bán chọn mã giảm giá cần phát hành;
+:Người bán chọn chức năng "Phát hành";
+|System|
+:Hệ thống hiển thị danh sách khách hàng hoặc tùy chọn phát hành công khai;
+repeat
+  |Actor|
+  :Người bán chọn đối tượng và xác nhận;
+  |System|
+  :Hệ thống kiểm tra điều kiện phát hành (số lượng còn lại, hiệu lực);
+  if (Đủ điều kiện?) then (Yes)
+    :Hệ thống cập nhật trạng thái đã phát hành;
+    :Hệ thống gửi thông báo đến người dùng nhận được mã (nếu có);
+    :Hệ thống thông báo phát hành thành công;
+    break
+  else (No)
+    :Hệ thống thông báo lỗi "Không đủ điều kiện phát hành";
+    :Yêu cầu kiểm tra lại số lượng hoặc chọn đối tượng khác;
+  endif
+repeat while (Chọn lại đối tượng) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD65 - Gửi yêu cầu trở thành người bán
+|Actor|
+start
+:Khách hàng chọn chức năng "Đăng ký bán hàng";
+|System|
+:Hệ thống hiển thị biểu mẫu đăng ký;
+repeat
+  |Actor|
+  :Khách hàng nhập thông tin cửa hàng, thông tin cá nhân và tài liệu xác minh;
+  :Khách hàng xác nhận gửi yêu cầu;
+  |System|
+  :Hệ thống kiểm tra thông tin có đầy đủ không;
+  if (Thông tin đầy đủ và hợp lệ?) then (Yes)
+    :Hệ thống lưu yêu cầu vào trạng thái "Chờ duyệt";
+    :Hệ thống gửi thông báo đã tiếp nhận yêu cầu;
+    break
+  else (No)
+    :Hệ thống thông báo lỗi "Cần điền đầy đủ và chính xác thông tin";
+    :Yêu cầu khách hàng hoàn thiện biểu mẫu;
+  endif
+repeat while (Bổ sung thông tin) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD66 - Xem trạng thái yêu cầu
+|Actor|
+start
+:Khách hàng chọn chức năng "Trạng thái đăng ký bán hàng";
+|System|
+:Hệ thống kiểm tra trạng thái yêu cầu hiện tại của khách hàng;
+if (Có yêu cầu đang xử lý hoặc đã duyệt/từ chối?) then (Yes)
+  :Hệ thống hiển thị chi tiết trạng thái yêu cầu;
+else (No)
+  :Hệ thống thông báo "Bạn chưa gửi yêu cầu nào";
+endif
+stop
+@enduml
+
+@startuml
+title AD67 - Xem yêu cầu trở thành người bán (Admin)
+|Actor|
+start
+:Admin chọn chức năng "Quản lý yêu cầu người bán";
+|System|
+:Hệ thống lấy danh sách các yêu cầu đang chờ duyệt;
+if (Có yêu cầu nào không?) then (Yes)
+  :Hệ thống hiển thị danh sách yêu cầu;
+  |Actor|
+  :Admin chọn một yêu cầu để xem chi tiết;
+  |System|
+  :Hệ thống hiển thị thông tin cửa hàng, cá nhân và tài liệu đính kèm;
+else (No)
+  :Hệ thống thông báo danh sách trống;
+endif
+stop
+@enduml
+
+@startuml
+title AD68 - Phê duyệt yêu cầu người bán (Admin)
+|Actor|
+start
+:Admin xem chi tiết yêu cầu trở thành người bán;
+:Admin xác minh thông tin và tài liệu;
+:Admin chọn "Phê duyệt";
+|System|
+:Hệ thống cập nhật trạng thái yêu cầu thành "Đã duyệt";
+:Hệ thống cấp quyền "Người bán" cho tài khoản khách hàng;
+:Hệ thống gửi thông báo phê duyệt thành công cho khách hàng;
+stop
+@enduml
+
+@startuml
+title AD69 - Từ chối yêu cầu người bán (Admin)
+|Actor|
+start
+:Admin xem chi tiết yêu cầu trở thành người bán;
+:Admin nhận thấy thông tin không đạt yêu cầu;
+:Admin chọn "Từ chối";
+|System|
+:Hệ thống yêu cầu nhập lý do từ chối;
+|Actor|
+:Admin nhập lý do và xác nhận;
+|System|
+:Hệ thống cập nhật trạng thái yêu cầu thành "Bị từ chối";
+:Hệ thống gửi thông báo từ chối và lý do cho khách hàng;
+stop
+@enduml
+
+@startuml
+title AD70 - Xem sản phẩm của cửa hàng
+|Actor|
+start
+:Người bán chọn chức năng "Sản phẩm của tôi";
+|System|
+:Hệ thống lấy danh sách sản phẩm thuộc cửa hàng;
+if (Có sản phẩm nào không?) then (Yes)
+  :Hệ thống hiển thị danh sách sản phẩm;
+else (No)
+  :Hệ thống hiển thị thông báo "Cửa hàng chưa có sản phẩm nào";
+endif
+stop
+@enduml
+
+@startuml
+title AD71 - Gửi yêu cầu thêm sản phẩm (Module Người bán)
+|Actor|
+start
+:Người bán chọn "Thêm sản phẩm mới";
+|System|
+:Hệ thống hiển thị biểu mẫu nhập thông tin sản phẩm;
+repeat
+  |Actor|
+  :Người bán nhập tên, giá, mô tả, phân loại, hình ảnh;
+  :Người bán gửi yêu cầu;
+  |System|
+  :Hệ thống kiểm tra tính hợp lệ của dữ liệu;
+  if (Thông tin hợp lệ?) then (Yes)
+    :Hệ thống tạo yêu cầu thêm sản phẩm ở trạng thái "Chờ duyệt";
+    :Hệ thống thông báo gửi yêu cầu thành công;
+    break
+  else (No)
+    :Hệ thống thông báo lỗi nhập liệu;
+    :Yêu cầu người bán chỉnh sửa lại;
+  endif
+repeat while (Nhập lại thông tin) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD72 - Gửi yêu cầu cập nhật sản phẩm (Module Người bán)
+|Actor|
+start
+:Người bán chọn sản phẩm cần chỉnh sửa;
+|System|
+:Hệ thống hiển thị thông tin hiện tại của sản phẩm;
+repeat
+  |Actor|
+  :Người bán sửa đổi thông tin sản phẩm;
+  :Người bán gửi yêu cầu cập nhật;
+  |System|
+  :Hệ thống kiểm tra tính hợp lệ của dữ liệu mới;
+  if (Dữ liệu hợp lệ?) then (Yes)
+    :Hệ thống tạo yêu cầu cập nhật sản phẩm ở trạng thái "Chờ duyệt";
+    :Hệ thống thông báo gửi yêu cầu thành công;
+    break
+  else (No)
+    :Hệ thống thông báo lỗi dữ liệu không hợp lệ;
+    :Yêu cầu người bán điều chỉnh lại;
+  endif
+repeat while (Nhập lại thông tin) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD73 - Gửi yêu cầu xóa sản phẩm (Module Người bán)
+|Actor|
+start
+:Người bán chọn sản phẩm muốn xóa khỏi cửa hàng;
+:Người bán chọn chức năng "Yêu cầu xóa sản phẩm";
+|System|
+:Hệ thống yêu cầu xác nhận và nhập lý do (nếu có);
+|Actor|
+:Người bán nhập lý do và bấm xác nhận;
+|System|
+:Hệ thống lưu yêu cầu xóa ở trạng thái "Chờ duyệt";
+:Hệ thống thông báo gửi yêu cầu thành công;
+stop
+@enduml
+
+@startuml
+title AD74 - Xem lịch sử giao dịch
+|Actor|
+start
+:Người bán chọn chức năng "Lịch sử giao dịch" / "Doanh thu";
+|System|
+:Hệ thống truy xuất dữ liệu số dư và các giao dịch tài chính;
+if (Có giao dịch nào không?) then (Yes)
+  :Hệ thống hiển thị danh sách biến động số dư theo thời gian;
+else (No)
+  :Hệ thống thông báo "Chưa có giao dịch nào";
+endif
+stop
+@enduml
+
+@startuml
+title AD75 - Xem danh sách đơn hàng (Admin)
+|Actor|
+start
+:Admin truy cập trang Quản lý đơn hàng;
+|System|
+:Hệ thống lấy toàn bộ danh sách đơn hàng trong hệ thống;
+if (Có đơn hàng không?) then (Yes)
+  :Hệ thống hiển thị danh sách đơn hàng kèm bộ lọc trạng thái;
+  |Actor|
+  if (Admin chọn một đơn hàng?) then (Yes)
+    |System|
+    :Hệ thống hiển thị chi tiết đơn hàng đã chọn;
+  else (No)
+  endif
+else (No)
+  :Hệ thống hiển thị danh sách trống;
+endif
+stop
+@enduml
+
+@startuml
+title AD76 - Cập nhật trạng thái đơn hàng (Admin)
+|Actor|
+start
+:Admin chọn đơn hàng cần cập nhật trạng thái;
+repeat
+  :Admin chọn trạng thái xử lý mới;
+  |System|
+  :Hệ thống kiểm tra tính hợp lệ của luồng trạng thái;
+  if (Trạng thái chuyển đổi hợp lệ?) then (Yes)
+    :Hệ thống cập nhật trạng thái mới cho đơn hàng;
+    :Hệ thống ghi log lịch sử đơn hàng;
+    :Hệ thống gửi thông báo cập nhật cho khách hàng;
+    :Hệ thống thông báo cập nhật thành công;
+    break
+  else (No)
+    :Hệ thống báo lỗi luồng trạng thái không hợp lệ;
+    :Yêu cầu chọn lại trạng thái;
+  endif
+repeat while (Chọn lại trạng thái) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD77 - Cập nhật trạng thái thanh toán
+|Actor|
+start
+:Admin chọn đơn hàng cần cập nhật trạng thái thanh toán;
+repeat
+  :Admin chọn trạng thái thanh toán mới (Chưa thanh toán, Đã thanh toán, Hoàn tiền);
+  |System|
+  :Hệ thống kiểm tra thông tin hợp lệ;
+  if (Thông tin hợp lệ?) then (Yes)
+    :Hệ thống cập nhật trạng thái thanh toán của đơn hàng;
+    :Hệ thống thông báo cập nhật thành công;
+    break
+  else (No)
+    :Hệ thống thông báo lỗi;
+    :Yêu cầu chọn lại;
+  endif
+repeat while (Chọn lại) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD78 - Cập nhật thông tin vận chuyển
+|Actor|
+start
+:Admin chọn đơn hàng cần cập nhật thông tin vận chuyển;
+repeat
+  :Admin nhập đơn vị vận chuyển và mã vận đơn (Tracking number);
+  :Admin bấm lưu thông tin vận chuyển;
+  |System|
+  :Hệ thống kiểm tra tính hợp lệ của mã vận đơn;
+  if (Mã vận đơn hợp lệ?) then (Yes)
+    :Hệ thống lưu thông tin vận chuyển vào đơn hàng;
+    :Hệ thống gửi thông tin theo dõi cho khách hàng;
+    :Hệ thống thông báo cập nhật thành công;
+    break
+  else (No)
+    :Hệ thống báo lỗi mã vận đơn không hợp lệ;
+    :Yêu cầu kiểm tra và nhập lại;
+  endif
+repeat while (Nhập lại mã vận đơn) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD79 - Xem đánh giá (Admin)
+|Actor|
+start
+:Admin truy cập chức năng Quản lý đánh giá;
+|System|
+:Hệ thống lấy toàn bộ danh sách đánh giá từ hệ thống;
+if (Có đánh giá nào không?) then (Yes)
+  :Hệ thống hiển thị danh sách đánh giá kèm các bộ lọc;
+  |Actor|
+  if (Admin chọn xem chi tiết một đánh giá?) then (Yes)
+    |System|
+    :Hệ thống hiển thị chi tiết đánh giá, khách hàng và sản phẩm tương ứng;
+  else (No)
+  endif
+else (No)
+  :Hệ thống thông báo chưa có đánh giá nào;
+endif
+stop
+@enduml
+
+@startuml
+title AD80 - Chỉnh sửa đánh giá (Admin)
+|Actor|
+start
+:Admin chọn đánh giá cần chỉnh sửa hoặc kiểm duyệt;
+|System|
+:Hệ thống hiển thị thông tin đánh giá;
+repeat
+  |Actor|
+  :Admin chỉnh sửa nội dung hoặc thay đổi trạng thái (Hiển thị/Ẩn);
+  :Admin bấm lưu thay đổi;
+  |System|
+  :Hệ thống kiểm tra tính hợp lệ;
+  if (Thông tin hợp lệ?) then (Yes)
+    :Hệ thống cập nhật nội dung/trạng thái của đánh giá;
+    :Hệ thống tính toán lại điểm trung bình nếu đánh giá bị ẩn;
+    :Hệ thống thông báo cập nhật thành công;
+    break
+  else (No)
+    :Hệ thống báo lỗi thông tin không hợp lệ;
+    :Yêu cầu chỉnh sửa lại;
+  endif
+repeat while (Chỉnh sửa lại) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD81 - Xóa đánh giá (Admin)
+|Actor|
+start
+:Admin chọn đánh giá vi phạm cần xóa;
+|System|
+:Hệ thống yêu cầu xác nhận xóa vĩnh viễn;
+|Actor|
+if (Admin xác nhận xóa?) then (Yes)
+  |System|
+  :Hệ thống xóa đánh giá khỏi cơ sở dữ liệu;
+  :Hệ thống cập nhật lại điểm đánh giá trung bình của sản phẩm;
+  :Hệ thống thông báo xóa thành công;
+else (No)
+  |System|
+  :Hủy thao tác xóa;
+endif
+stop
+@enduml
+
+@startuml
+title AD82 - Xem danh sách mã giảm giá (Admin)
+|Actor|
+start
+:Admin chọn chức năng Quản lý mã giảm giá;
+|System|
+:Hệ thống lấy danh sách tất cả mã giảm giá trong hệ thống;
+if (Có mã giảm giá không?) then (Yes)
+  :Hệ thống hiển thị danh sách mã giảm giá;
+else (No)
+  :Hệ thống thông báo danh sách trống;
+endif
+stop
+@enduml
+
+@startuml
+title AD83 - Tạo mã giảm giá (Admin)
+|Actor|
+start
+:Admin chọn "Thêm mã giảm giá mới";
+|System|
+:Hệ thống hiển thị biểu mẫu tạo mã giảm giá hệ thống;
+repeat
+  |Actor|
+  :Admin nhập mã, tỉ lệ/mức giảm, giới hạn sử dụng, thời gian hiệu lực;
+  :Admin bấm lưu;
+  |System|
+  :Hệ thống kiểm tra tính hợp lệ và trùng lặp mã;
+  if (Mã hợp lệ và chưa tồn tại?) then (Yes)
+    :Hệ thống lưu mã giảm giá mới;
+    :Hệ thống thông báo tạo mã thành công;
+    break
+  else (No)
+    :Hệ thống thông báo lỗi trùng mã hoặc thông tin không hợp lệ;
+    :Yêu cầu nhập lại;
+  endif
+repeat while (Nhập lại thông tin) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD84 - Cập nhật mã giảm giá (Admin)
+|Actor|
+start
+:Admin chọn mã giảm giá cần cập nhật;
+|System|
+:Hệ thống hiển thị chi tiết mã giảm giá;
+repeat
+  |Actor|
+  :Admin thay đổi thông tin (Hạn sử dụng, Mức giảm, Trạng thái kích hoạt);
+  :Admin bấm cập nhật;
+  |System|
+  :Hệ thống kiểm tra tính hợp lệ;
+  if (Thông tin hợp lệ?) then (Yes)
+    :Hệ thống lưu thông tin thay đổi;
+    :Hệ thống thông báo cập nhật thành công;
+    break
+  else (No)
+    :Hệ thống thông báo lỗi;
+    :Yêu cầu nhập lại;
+  endif
+repeat while (Nhập lại thông tin) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD85 - Phát hành mã cho người dùng (Admin)
+|Actor|
+start
+:Admin chọn mã giảm giá cần phát hành;
+:Admin chọn chức năng Phát hành mã;
+|System|
+:Hệ thống hiển thị danh sách người dùng hoặc nhóm đối tượng;
+repeat
+  |Actor|
+  :Admin chọn người dùng mục tiêu và xác nhận;
+  |System|
+  :Hệ thống kiểm tra người dùng hợp lệ;
+  if (Người dùng hợp lệ?) then (Yes)
+    :Hệ thống gán mã giảm giá vào ví voucher của người dùng;
+    :Hệ thống gửi thông báo/email cho người dùng;
+    :Hệ thống thông báo phát hành thành công;
+    break
+  else (No)
+    :Hệ thống thông báo lỗi không tìm thấy người dùng;
+    :Yêu cầu chọn lại đối tượng;
+  endif
+repeat while (Chọn lại đối tượng) is (Yes)
+stop
+@enduml
+
+@startuml
+title AD86 - Xem yêu cầu người bán (Admin)
+|Actor|
+start
+:Admin truy cập Quản lý yêu cầu người bán;
+|System|
+:Hệ thống tải danh sách yêu cầu đăng ký người bán;
+if (Có yêu cầu nào không?) then (Yes)
+  :Hệ thống hiển thị danh sách các yêu cầu;
+  |Actor|
+  :Admin chọn xem chi tiết một yêu cầu;
+  |System|
+  :Hệ thống hiển thị đầy đủ thông tin đăng ký của khách hàng;
+else (No)
+  :Hệ thống thông báo danh sách trống;
+endif
+stop
+@enduml
+
+@startuml
+title AD87 - Duyệt / Từ chối người bán (Admin)
+|Actor|
+start
+:Admin xem chi tiết hồ sơ đăng ký người bán;
+if (Hồ sơ đạt yêu cầu?) then (Yes)
+  :Admin chọn "Phê duyệt";
+  |System|
+  :Hệ thống cập nhật trạng thái "Đã duyệt";
+  :Hệ thống phân quyền "Người bán" cho tài khoản;
+  :Hệ thống gửi thông báo chúc mừng tới người dùng;
+else (No)
+  |Actor|
+  :Admin chọn "Từ chối";
+  :Admin nhập lý do từ chối;
+  |System|
+  :Hệ thống cập nhật trạng thái "Bị từ chối";
+  :Hệ thống gửi thông báo từ chối kèm lý do cho người dùng;
+endif
+stop
+@enduml
+
+@startuml
+title AD88 - Xem yêu cầu thay đổi sản phẩm (Admin)
+|Actor|
+start
+:Admin truy cập Quản lý yêu cầu thay đổi sản phẩm;
+|System|
+:Hệ thống lấy danh sách các yêu cầu (Thêm/Sửa/Xóa sản phẩm) đang chờ duyệt;
+if (Có yêu cầu nào không?) then (Yes)
+  :Hệ thống hiển thị danh sách yêu cầu;
+  |Actor|
+  :Admin chọn một yêu cầu để xem chi tiết;
+  |System|
+  :Hệ thống hiển thị nội dung thay đổi và thông tin sản phẩm liên quan;
+else (No)
+  :Hệ thống thông báo không có yêu cầu nào chờ duyệt;
+endif
+stop
+@enduml
+
+@startuml
+title AD89 - Duyệt / Từ chối thay đổi sản phẩm (Admin)
+|Actor|
+start
+:Admin xem xét chi tiết yêu cầu thay đổi sản phẩm;
+if (Nội dung thay đổi hợp lệ?) then (Yes)
+  :Admin chọn "Phê duyệt";
+  |System|
+  :Hệ thống áp dụng các thay đổi vào danh mục sản phẩm chính;
+  :Hệ thống cập nhật trạng thái yêu cầu thành "Đã duyệt";
+  :Hệ thống gửi thông báo phê duyệt cho người bán;
+else (No)
+  |Actor|
+  :Admin chọn "Từ chối";
+  :Admin nhập lý do từ chối;
+  |System|
+  :Hệ thống cập nhật trạng thái yêu cầu thành "Bị từ chối";
+  :Hệ thống gửi thông báo từ chối kèm lý do cho người bán;
+endif
+stop
+@enduml

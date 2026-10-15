@@ -17,17 +17,24 @@ import java.util.Map;
  * Resend-backed implementation of the EmailService.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 @ConditionalOnProperty(name = "application.mail.provider", havingValue = "resend")
 public class ResendEmailService implements EmailService {
 
     private final EmailTemplateService templateService;
+    private final RestClient restClient;
 
-    private final RestClient restClient = RestClient.builder()
-            .baseUrl("https://api.resend.com")
-            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .build();
+    public ResendEmailService(EmailTemplateService templateService) {
+        this.templateService = templateService;
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(java.time.Duration.ofSeconds(5));
+        factory.setReadTimeout(java.time.Duration.ofSeconds(15));
+        this.restClient = RestClient.builder()
+                .requestFactory(factory)
+                .baseUrl("https://api.resend.com")
+                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .build();
+    }
 
     @Value("${application.mail.resend.api-key:}")
     private String resendApiKey;

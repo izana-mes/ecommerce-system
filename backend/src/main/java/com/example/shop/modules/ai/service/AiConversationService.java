@@ -23,15 +23,42 @@ public class AiConversationService {
 
     @Transactional
     public ChatbotConversation open(String requestedId, User user, String audience) {
-        requireUser(user);
-        String owner = user.getId().toString();
-        if (requestedId != null && !requestedId.isBlank()) {
-            return conversations.findByConversationIdAndOwnerUserIdAndAudience(requestedId, owner, audience)
-                    .orElseThrow(() -> new AccessDeniedException("Conversation is unavailable"));
-        }
         LocalDateTime now = LocalDateTime.now();
-        return conversations.save(ChatbotConversation.builder().conversationId(UUID.randomUUID().toString()).ownerUserId(owner)
-                .userEmail(user.getEmail()).audience(audience).createdAt(now).updatedAt(now).lastMessageAt(now).build());
+        if (user != null && user.getId() != null) {
+            String owner = user.getId().toString();
+            if (requestedId != null && !requestedId.isBlank()) {
+                return conversations.findByConversationIdAndOwnerUserIdAndAudience(requestedId, owner, audience)
+                        .orElseGet(() -> conversations.save(ChatbotConversation.builder()
+                                .conversationId(UUID.randomUUID().toString())
+                                .ownerUserId(owner)
+                                .userEmail(user.getEmail())
+                                .audience(audience)
+                                .createdAt(now).updatedAt(now).lastMessageAt(now).build()));
+            }
+            return conversations.save(ChatbotConversation.builder()
+                    .conversationId(UUID.randomUUID().toString())
+                    .ownerUserId(owner)
+                    .userEmail(user.getEmail())
+                    .audience(audience)
+                    .createdAt(now).updatedAt(now).lastMessageAt(now).build());
+        }
+
+        // Guest / anonymous flow (audience is always CUSTOMER for unauthenticated users)
+        String guestAudience = "CUSTOMER";
+        if (requestedId != null && !requestedId.isBlank()) {
+            return conversations.findByConversationIdAndAudience(requestedId, guestAudience)
+                    .filter(c -> c.getOwnerUserId() == null) // Do not allow guests to attach to owned conversations
+                    .orElseGet(() -> conversations.save(ChatbotConversation.builder()
+                            .conversationId(UUID.randomUUID().toString())
+                            .guestId("guest-" + UUID.randomUUID())
+                            .audience(guestAudience)
+                            .createdAt(now).updatedAt(now).lastMessageAt(now).build()));
+        }
+        return conversations.save(ChatbotConversation.builder()
+                .conversationId(UUID.randomUUID().toString())
+                .guestId("guest-" + UUID.randomUUID())
+                .audience(guestAudience)
+                .createdAt(now).updatedAt(now).lastMessageAt(now).build());
     }
 
     @Transactional

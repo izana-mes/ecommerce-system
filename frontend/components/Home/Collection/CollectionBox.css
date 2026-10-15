@@ -1,12 +1,17 @@
 .collection-wrapper {
-  margin: 85px 160px;
+  max-width: 1600px;
+  width: 100%;
+  margin: 48px auto;
+  padding: 0 clamp(16px, 3vw, 40px);
+  box-sizing: border-box;
 }
 
 .collection {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  height: 30rem;
-  grid-gap: 30px;
+  min-height: 25rem;
+  height: clamp(25rem, 37vw, 32rem);
+  grid-gap: clamp(14px, 1.6vw, 24px);
   animation: collectionReveal 0.7s ease both;
 }
 
@@ -21,7 +26,7 @@
   gap: 10px;
   background-color: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   animation: collectionPanelIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s;
 }
@@ -90,8 +95,9 @@
 
 .collectionRight {
   display: grid;
-  grid-template-rows: 1fr 1fr;
-  grid-gap: 30px;
+  grid-template-rows: 1fr 1.2fr;
+  min-height: 0;
+  grid-gap: clamp(12px, 1.4vw, 20px);
   animation: collectionPanelIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
 }
 
@@ -106,7 +112,7 @@
   gap: 5px;
   background-color: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   animation: collectionPanelIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s;
 }
@@ -120,7 +126,7 @@
 .collectionBottom {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-gap: 30px;
+  grid-gap: clamp(12px, 1.4vw, 20px);
 }
 
 .box1 {
@@ -134,7 +140,7 @@
   gap: 5px;
   background-color: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   animation: collectionPanelIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s;
 }
@@ -148,7 +154,7 @@
 .box2 {
   position: relative;
   overflow: hidden;
-  background-color: #f4e5e0;
+  background-color: var(--accent-soft);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -156,7 +162,7 @@
   padding: 30px;
   gap: 5px;
   border: 1px solid var(--border-soft);
-  border-radius: 12px;
+  border-radius: 8px;
   animation: collectionPanelIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s, border-color 0.4s;
 }
@@ -164,8 +170,8 @@
 .box2:hover {
   transform: translateY(-4px);
   border-color: var(--border-strong);
-  box-shadow: 0 16px 36px rgba(244, 229, 224, 0.25);
-  background-color: #ebdcd7;
+  box-shadow: var(--shadow-sm);
+  background-color: color-mix(in srgb, var(--accent-soft) 88%, var(--accent) 12%);
 }
 
 .collectionTop::before,
@@ -266,5 +272,79 @@
   .box1::before,
   .box2::before {
     animation: none !important;
+  }
+}
+
+@media (max-width: 1200px) {
+  .collection-wrapper {
+    margin: 40px auto;
+  }
+  .collection {
+    height: 27rem;
+    grid-gap: 20px;
+  }
+  .collectionRight {
+    grid-gap: 20px;
+  }
+  .collectionBottom {
+    grid-gap: 20px;
+  }
+}
+
+@media (max-width: 900px) {
+  .collection {
+    grid-template-columns: 1fr;
+    height: auto;
+    grid-gap: 20px;
+  }
+  .collectionLeft {
+    height: auto;
+    min-height: 20rem;
+  }
+  .collectionRight {
+    grid-gap: 20px;
+  }
+  .collectionTop {
+    min-height: 14rem;
+    height: auto;
+  }
+  .collectionBottom {
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 16px;
+  }
+  .box1,
+  .box2 {
+    min-height: 14rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .collection-wrapper {
+    margin: 32px auto;
+  }
+  .collection {
+    grid-gap: 16px;
+  }
+  .collectionLeft {
+    min-height: 17rem;
+    height: auto;
+    padding: 20px;
+  }
+  .collectionRight {
+    grid-gap: 16px;
+  }
+  .collectionTop {
+    min-height: 12rem;
+    height: auto;
+    padding: 20px;
+  }
+  .collectionBottom {
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 16px;
+  }
+  .box1,
+  .box2 {
+    min-height: 11rem;
+    padding: 20px;
   }
 }

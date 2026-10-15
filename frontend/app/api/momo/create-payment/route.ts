@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rateLimit";
+import { backendApiBaseUrl } from "@/lib/backendApiBase";
 import {
   MOMO_MAX_AMOUNT_VND,
   MOMO_MIN_AMOUNT_VND,
@@ -35,6 +36,36 @@ export async function POST(request: NextRequest) {
     const amountNumber = Number(amount);
     if (!amount || isNaN(amountNumber) || amountNumber <= 0) {
       return NextResponse.json({ error: "Missing or invalid amount (USD)" }, { status: 400 });
+    }
+
+    // 1. Attempt to create payment securely via Spring backend
+    try {
+      const backendUrl = `${backendApiBaseUrl()}/payments/momo/create-payment?orderNumber=${encodeURIComponent(orderNumber)}`;
+      const backendRes = await fetch(backendUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(request.headers.get("cookie") ? { cookie: request.headers.get("cookie")! } : {}),
+          ...(request.headers.get("authorization") ? { authorization: request.headers.get("authorization")! } : {}),
+        },
+        body: JSON.stringify({ orderNumber, amount: amountNumber }),
+        signal: AbortSignal.timeout(15_000),
+      });
+
+      if (backendRes.ok) {
+        const backendData = (await backendRes.json().catch(() => null)) as {
+          payUrl?: string;
+          data?: { paymentUrl?: string };
+          success?: boolean;
+          message?: string;
+        } | null;
+        const paymentUrl = backendData?.payUrl || backendData?.data?.paymentUrl;
+        if (paymentUrl) {
+          return NextResponse.json({ data: { paymentUrl } }, { status: 200 });
+        }
+      }
+    } catch {
+      // Backend unreachable or standalone test environment, proceed to direct gateway caller
     }
 
     const partnerCode = process.env.MOMO_PARTNER_CODE;

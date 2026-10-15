@@ -155,7 +155,7 @@ export default function DealTimer() {
 
   if (isLoad) {
     return (
-      <div className="maiDeal">
+      <div className="mainDeal">
         <div className="dealTimer" style={{ backgroundImage: `url("${dealBackgroundUrl}")` }}>
           <div className="dealTimerMainContent">
             <p>Loading...</p>
@@ -167,7 +167,7 @@ export default function DealTimer() {
 
   if (error) {
     return (
-      <div className="maiDeal">
+      <div className="mainDeal">
         <div className="dealTimer" style={{ backgroundImage: `url("${dealBackgroundUrl}")` }}>
           <div className="dealTimerMainContent">
             <p>Error : {error}</p>

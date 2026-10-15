@@ -51,6 +51,61 @@ public final class MomoIpnSupport {
         }
     }
 
+    public static String encodeOrderNumber(String orderNumber) {
+        if (orderNumber == null || orderNumber.isBlank()) {
+            return "";
+        }
+        try {
+            String json = "{\"orderNumber\":\"" + orderNumber.replace("\"", "\\\"") + "\"}";
+            return Base64.getEncoder().encodeToString(json.getBytes(StandardCharsets.UTF_8));
+        } catch (Exception ignored) {
+            return "";
+        }
+    }
+
+    /**
+     * Create-payment signature raw string (MoMo One-Time Payments / Collection Link).
+     * Keys sorted a-z: accessKey, amount, extraData, ipnUrl, orderId, orderInfo,
+     * partnerCode, redirectUrl, requestId, requestType.
+     */
+    public static String buildCreateRawSignature(
+            String accessKey,
+            long amount,
+            String extraData,
+            String ipnUrl,
+            String orderId,
+            String orderInfo,
+            String partnerCode,
+            String redirectUrl,
+            String requestId,
+            String requestType) {
+        return "accessKey=" + nullToEmpty(accessKey)
+                + "&amount=" + amount
+                + "&extraData=" + nullToEmpty(extraData)
+                + "&ipnUrl=" + nullToEmpty(ipnUrl)
+                + "&orderId=" + nullToEmpty(orderId)
+                + "&orderInfo=" + nullToEmpty(orderInfo)
+                + "&partnerCode=" + nullToEmpty(partnerCode)
+                + "&redirectUrl=" + nullToEmpty(redirectUrl)
+                + "&requestId=" + nullToEmpty(requestId)
+                + "&requestType=" + nullToEmpty(requestType);
+    }
+
+    /**
+     * Transaction status query signature raw string.
+     * Keys sorted a-z: accessKey, orderId, partnerCode, requestId.
+     */
+    public static String buildQueryRawSignature(
+            String accessKey,
+            String orderId,
+            String partnerCode,
+            String requestId) {
+        return "accessKey=" + nullToEmpty(accessKey)
+                + "&orderId=" + nullToEmpty(orderId)
+                + "&partnerCode=" + nullToEmpty(partnerCode)
+                + "&requestId=" + nullToEmpty(requestId);
+    }
+
     /**
      * IPN/redirect signature raw string (MoMo One-Time Payments result).
      * Keys sorted a-z: accessKey, amount, extraData, message, orderId, orderInfo,

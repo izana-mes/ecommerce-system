@@ -23,6 +23,7 @@ import java.util.Map;
 public class RedisCacheConfig implements CachingConfigurer {
 
     public static final String PRODUCTS_ALL = "products:all";
+    public static final String PRODUCTS_ACTIVE = "products:active";
     public static final String PRODUCTS_SEARCH = "products:search";
     public static final String PRODUCTS_SUGGEST = "products:suggest";
     public static final String PRODUCTS_INVENTORY_HEALTH = "products:inventory-health";
@@ -33,6 +34,9 @@ public class RedisCacheConfig implements CachingConfigurer {
 
     @Value("${application.cache.ttl.products-all-seconds:300}")
     private long productsAllTtlSeconds;
+
+    @Value("${application.cache.ttl.products-active-seconds:120}")
+    private long productsActiveTtlSeconds;
 
     @Value("${application.cache.ttl.products-search-seconds:180}")
     private long productsSearchTtlSeconds;
@@ -62,6 +66,7 @@ public class RedisCacheConfig implements CachingConfigurer {
 
         Map<String, RedisCacheConfiguration> perCacheConfig = new HashMap<>();
         perCacheConfig.put(PRODUCTS_ALL, base.entryTtl(Duration.ofSeconds(normalizeTtl(productsAllTtlSeconds))));
+        perCacheConfig.put(PRODUCTS_ACTIVE, base.entryTtl(Duration.ofSeconds(normalizeTtl(productsActiveTtlSeconds))));
         perCacheConfig.put(PRODUCTS_SEARCH, base.entryTtl(Duration.ofSeconds(normalizeTtl(productsSearchTtlSeconds))));
         perCacheConfig.put(PRODUCTS_SUGGEST, base.entryTtl(Duration.ofSeconds(normalizeTtl(productsSuggestTtlSeconds))));
         perCacheConfig.put(PRODUCTS_INVENTORY_HEALTH, base.entryTtl(Duration.ofSeconds(normalizeTtl(productsInventoryHealthTtlSeconds))));

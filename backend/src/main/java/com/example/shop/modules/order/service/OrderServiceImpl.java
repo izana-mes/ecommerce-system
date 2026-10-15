@@ -6,7 +6,7 @@ import com.example.shop.modules.cart.repository.CartItemRepository;
 import com.example.shop.modules.inventory.dto.InventoryReservationDtos;
 import com.example.shop.modules.inventory.service.InventoryReservationService;
 import com.example.shop.modules.messaging.order.OrderCreatedEvent;
-import com.example.shop.modules.messaging.order.OrderCreatedEventPublisher;
+import com.example.shop.modules.messaging.outbox.MessageOutboxService;
 import com.example.shop.modules.order.dto.OrderCreateRequest;
 import com.example.shop.modules.order.dto.OrderCreateResponse;
 import com.example.shop.modules.order.dto.OrderHistoryItemDto;
@@ -51,10 +51,13 @@ public class OrderServiceImpl implements OrderService {
     private final CartItemRepository cartItemRepository;
     private final UserRepository userRepository;
     private final JdbcTemplate jdbcTemplate;
-    private final OrderCreatedEventPublisher orderCreatedEventPublisher;
+    private final MessageOutboxService messageOutboxService;
     private final InventoryReservationService inventoryReservationService;
     private final OrderCheckoutHistoryService orderCheckoutHistoryService;
     private final SimpMessagingTemplate messagingTemplate;
+
+    @Value("${application.messaging.routing-key.order-created}")
+    private String orderCreatedRoutingKey;
 
     private static final int POINTS_PER_USD_DISCOUNT = 100;
     private static final BigDecimal MAX_POINTS_DISCOUNT_RATE = new BigDecimal("0.25");
@@ -162,9 +165,8 @@ public class OrderServiceImpl implements OrderService {
         long remainingPoints = applyLoyaltyChanges(user, redemption.pointsRedeemed(), pointsEarned);
         orderCheckoutHistoryService.saveCheckoutInfo(user, request, effectiveEmail);
 
-        // Publish order created event for async notification
-        try {
-            orderCreatedEventPublisher.publish(OrderCreatedEvent.builder()
+        // Stored in the same transaction as the order; the dispatcher publishes only after commit.
+        messageOutboxService.enqueue("order.created", orderCreatedRoutingKey, OrderCreatedEvent.builder()
                     .orderId(orderId)
                     .orderNumber(orderNumber)
                     .trackingSecret(trackingSecret)
@@ -196,9 +198,6 @@ public class OrderServiceImpl implements OrderService {
                                     .build())
                             .toList())
                     .build());
-        } catch (Exception e) {
-            log.error("Failed to publish order created event for order {}", orderNumber, e);
-        }
 
         return OrderCreateResponse.builder()
                 .orderId(orderId)
@@ -718,31 +717,39 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void insertOrderItems(Long orderId, List<OrderLine> lines) {
-        LocalDateTime now = LocalDateTime.now();
-        for (OrderLine line : lines) {
-            jdbcTemplate.update(
-                    """
-                            INSERT INTO order_items (
-                                order_id,
-                                product_id,
-                                product_name,
-                                unit_price,
-                                quantity,
-                                line_total,
-                                created_at,
-                                updated_at
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                            """,
-                    orderId,
-                    line.product().getProductID(),
-                    line.product().getProductName(),
-                    line.unitPrice(),
-                    line.quantity(),
-                    line.lineTotal(),
-                    Timestamp.valueOf(now),
-                    Timestamp.valueOf(now)
-            );
+        if (lines == null || lines.isEmpty()) {
+            return;
         }
+        LocalDateTime now = LocalDateTime.now();
+        Timestamp timestamp = Timestamp.valueOf(now);
+        String sql = """
+                INSERT INTO order_items (
+                    order_id,
+                    product_id,
+                    product_name,
+                    unit_price,
+                    quantity,
+                    line_total,
+                    created_at,
+                    updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+
+        jdbcTemplate.batchUpdate(
+                sql,
+                lines,
+                lines.size(),
+                (PreparedStatement ps, OrderLine line) -> {
+                    ps.setLong(1, orderId);
+                    ps.setString(2, line.product().getProductID());
+                    ps.setString(3, line.product().getProductName());
+                    ps.setBigDecimal(4, line.unitPrice());
+                    ps.setInt(5, line.quantity());
+                    ps.setBigDecimal(6, line.lineTotal());
+                    ps.setTimestamp(7, timestamp);
+                    ps.setTimestamp(8, timestamp);
+                }
+        );
     }
 
     private void insertPayment(Long orderId,

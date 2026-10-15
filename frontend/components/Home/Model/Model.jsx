@@ -6,16 +6,17 @@ export function Model({ color, ...props }) {
   const { nodes, materials } = useGLTF("/shirt_baked_2.glb");
   const modelRef = useRef();
 
-  const [scale, setScale] = useState([1, 1, 1]);
+  const [scale, setScale] = useState([12, 12, 12]);
   const [position, setPosition] = useState([1, 1, 1]);
 
   useEffect(() => {
     function updateScale() {
       const width = window.innerWidth;
       if (width < 600) {
-        setScale([13, 13, 13]);
+        setScale([10, 10, 10]);
         setPosition([0, -1, 0]);
       } else if (width >= 600 && width < 1200) {
+        setScale([11, 11, 11]);
         setPosition([0, 0, 0]);
       } else {
         setScale([12, 12, 12]);

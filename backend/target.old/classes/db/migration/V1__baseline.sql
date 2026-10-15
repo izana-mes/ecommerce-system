@@ -1,0 +1,2 @@
+-- Baseline migration placeholder.
+-- Add concrete, incremental schema changes in V2+ migrations.

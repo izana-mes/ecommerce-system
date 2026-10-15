@@ -1,23 +1,26 @@
 .mainDeal {
-  margin: 85px 160px;
-  padding-top: 0;
+  max-width: 1600px;
+  width: 100%;
+  margin: 48px auto;
+  padding: 0 clamp(16px, 3vw, 40px);
+  box-sizing: border-box;
   animation: dealSectionIn 0.7s ease both;
 }
 
 .dealTimer {
   background-image: url("/Deal/dealbg.jpg");
   background-size: cover;
-  background-position: center;
+  background-position: center right;
   background-color: var(--surface-2);
-  min-height: 400px;
-  padding: 60px 80px;
+  min-height: 18rem;
+  padding: clamp(24px, 4vw, 52px) clamp(24px, 5vw, 72px);
   color: var(--foreground);
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s;
   animation: dealParallaxIn 0.9s cubic-bezier(0.22, 0.61, 0.36, 1) 0.08s both;
@@ -31,9 +34,12 @@
 
 .dealTimerMainContent {
   display: flex;
-  flex-direction: column;
-  padding: 60px 0;
-  gap: 40px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  gap: clamp(24px, 4vw, 64px);
   animation: dealContentRise 0.75s ease 0.16s both;
 }
 
@@ -41,6 +47,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-width: 42%;
   animation: dealCopyIn 0.8s ease 0.25s both;
 }
 
@@ -250,24 +257,33 @@
 
 @media (max-width: 1200px) {
   .mainDeal {
-    margin: 60px 40px;
+    margin: 48px auto;
+    padding: 0 24px;
   }
   .dealTimer {
-    padding: 50px 40px;
-    min-height: auto;
+    padding: 36px;
+    min-height: 17rem;
   }
 }
 
 @media (max-width: 768px) {
   .mainDeal {
-    margin: 40px 16px;
+    margin: 36px auto;
+    padding: 0 16px;
   }
   .dealTimer {
-    padding: 40px 24px;
+    padding: 28px 20px;
+    min-height: 0;
+    flex-direction: column;
+    align-items: flex-start;
   }
   .dealTimerMainContent {
-    gap: 30px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 0;
   }
+  .dealTimerContent { max-width: 100%; }
   .dealTimeCounter h4,
   .dealTimeDigit h4 {
     font-size: 24px;

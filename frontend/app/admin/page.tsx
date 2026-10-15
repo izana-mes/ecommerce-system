@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {getUser, subscribeToAuthChanges } from "@/lib/auth";
+import { invalidateProductsCache } from "@/hooks/useProducts";
 import toast from "react-hot-toast";
 import "./admin.css";
 
@@ -2346,6 +2347,7 @@ export default function AdminPage() {
       if (!response.ok) {
         throw new Error(data?.message || data?.error || "Failed to save product");
       }
+      invalidateProductsCache();
 
       toast.success(editingProductId ? "Product updated" : "Product created", {
         duration: 2000,
@@ -2395,6 +2397,7 @@ export default function AdminPage() {
       if (!response.ok) {
         throw new Error(data?.message || data?.error || "Failed to delete product");
       }
+      invalidateProductsCache();
 
       setProducts((prev) => prev.filter((item) => item.productID !== productID));
       toast.success("Product deleted", {

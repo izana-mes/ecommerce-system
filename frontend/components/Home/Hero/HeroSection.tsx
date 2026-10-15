@@ -6,6 +6,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { Canvas } from "@react-three/fiber";
 import { Model } from "../Model/Model";
 import { OrbitControls } from "@react-three/drei";
+import "../DealTimer/DealTimer.css";
 import "./HeroSection.css";
 
 export default function HeroSection() {
@@ -34,9 +35,10 @@ export default function HeroSection() {
   };
 
     return (
-    <>
+    <div className="mainDeal">
       <div className="heroSection" data-floating-banner style={{ backgroundImage: `url("${heroBackgroundUrl}")` }}>
         <div className="sectionLeft">
+          <span className="jp-subtitle" style={{ alignSelf: "flex-start", marginBottom: 2 }}>COLLECTION / 新作コレクション</span>
           <p>{t("home_new_trend")}</p>
           <h1>{t("home_summer_sale")}</h1>
           <span>{t("home_limited_offer")}</span>
@@ -89,6 +91,6 @@ export default function HeroSection() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

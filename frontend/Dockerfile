@@ -32,7 +32,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup -S nextjs && adduser -S -G nextjs nextjs
 
 COPY package*.json ./
-RUN npm install --omit=dev --no-audit --no-fund && npm cache clean --force
+RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
 
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public

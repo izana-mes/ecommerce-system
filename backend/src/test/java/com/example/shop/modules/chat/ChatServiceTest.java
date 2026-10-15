@@ -18,6 +18,7 @@ import com.example.shop.modules.chat.repository.SocialReactionRepository;
 import com.example.shop.modules.chat.service.ChatServiceImpl;
 import com.example.shop.modules.user.entity.User;
 import com.example.shop.modules.user.repository.UserRepository;
+import com.example.shop.modules.notification.service.CustomerNotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,6 +34,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,6 +47,7 @@ class ChatServiceTest {
     @Mock private SocialReactionCountRepository reactionCountRepository;
     @Mock private UserRepository userRepository;
     @Mock private ChatRealtimePublisher realtimePublisher;
+    @Mock private CustomerNotificationService customerNotificationService;
 
     @InjectMocks private ChatServiceImpl chatService;
 
@@ -53,6 +56,7 @@ class ChatServiceTest {
     private final String conversationId = "conv_100";
     private final UUID aliceId = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private final UUID bobId = UUID.fromString("22222222-2222-2222-2222-222222222222");
+    private final UUID carolId = UUID.fromString("33333333-3333-3333-3333-333333333333");
 
     @BeforeEach
     void setUp() {
@@ -67,8 +71,10 @@ class ChatServiceTest {
         when(conversationRepository.findById(conversationId)).thenReturn(Optional.of(
                 SocialConversation.builder().conversationId(conversationId).type("direct").build()));
         when(memberRepository.findByIdConversationIdAndDeletedAtIsNull(conversationId)).thenReturn(List.of(
-                SocialConversationMember.builder().id(new SocialConversationMemberId(conversationId, bobId.toString())).build()
+                SocialConversationMember.builder().id(new SocialConversationMemberId(conversationId, bobId.toString())).build(),
+                SocialConversationMember.builder().id(new SocialConversationMemberId(conversationId, carolId.toString())).build()
         ));
+        when(userRepository.findAllById(any(Iterable.class))).thenReturn(List.of(userBob));
 
         SendMessageRequest request = SendMessageRequest.builder().body("Hello Bob!").build();
         MessageDto result = chatService.sendMessage(conversationId, userAlice, request);
@@ -77,7 +83,11 @@ class ChatServiceTest {
         assertEquals("Hello Bob!", result.getBody());
         assertEquals(aliceId.toString(), result.getSenderUserId());
         verify(messageRepository).save(any(SocialMessage.class));
+        verify(conversationRepository, times(1)).findById(conversationId);
+        verify(userRepository, times(1)).findAllById(any(Iterable.class));
         verify(realtimePublisher).publishNewMessage(eq(conversationId), any(MessageDto.class));
+        verify(customerNotificationService).createForUser(eq(bobId), startsWith("chat-message:"),
+                eq("New message from Alice"), eq("Hello Bob!"), eq("/messages?conversationId=" + conversationId));
     }
 
     @Test
@@ -211,17 +221,20 @@ class ChatServiceTest {
         when(memberRepository.existsByIdConversationIdAndIdUserIdAndDeletedAtIsNull(conversationId, aliceId.toString()))
                 .thenReturn(true);
 
-        SocialMessage m1 = SocialMessage.builder().messageId("m1").conversationId(conversationId).body("One").createdAt(LocalDateTime.now().minusMinutes(5)).build();
-        SocialMessage m2 = SocialMessage.builder().messageId("m2").conversationId(conversationId).body("Two").createdAt(LocalDateTime.now().minusMinutes(2)).build();
+        SocialMessage m1 = SocialMessage.builder().messageId("m1").conversationId(conversationId).senderUserId(aliceId.toString()).body("One").createdAt(LocalDateTime.now().minusMinutes(5)).build();
+        SocialMessage m2 = SocialMessage.builder().messageId("m2").conversationId(conversationId).senderUserId(aliceId.toString()).body("Two").createdAt(LocalDateTime.now().minusMinutes(2)).build();
 
         when(messageRepository.findRecentByConversationId(eq(conversationId), any(Pageable.class)))
                 .thenReturn(List.of(m2, m1));
+        when(userRepository.findAllById(any(Iterable.class))).thenReturn(List.of());
 
         List<MessageDto> result = chatService.getMessages(conversationId, userAlice, null, 20);
         assertEquals(2, result.size());
         // Ordered chronologically
         assertEquals("m1", result.get(0).getMessageId());
         assertEquals("m2", result.get(1).getMessageId());
+        verify(userRepository, times(1)).findAllById(any(Iterable.class));
+        verify(userRepository, never()).findById(any(UUID.class));
     }
 
     @Test
@@ -231,6 +244,38 @@ class ChatServiceTest {
 
         assertThrows(BusinessException.class, () -> chatService.getMessages(conversationId, userBob, null, 20));
         verify(messageRepository, never()).findRecentByConversationId(any(), any());
+    }
+
+    @Test
+    void getConversations_batchesMembersUsersAndLastMessages() {
+        SocialConversation conversation = SocialConversation.builder()
+                .conversationId(conversationId)
+                .type("direct")
+                .lastMessageId("msg-last")
+                .createdAt(LocalDateTime.now())
+                .build();
+        SocialConversationMember aliceMembership = SocialConversationMember.builder()
+                .id(new SocialConversationMemberId(conversationId, aliceId.toString()))
+                .messageUnreadCount(0)
+                .build();
+        SocialConversationMember bobMembership = SocialConversationMember.builder()
+                .id(new SocialConversationMemberId(conversationId, bobId.toString()))
+                .messageUnreadCount(2)
+                .build();
+
+        when(conversationRepository.findConversationsForUser(aliceId.toString())).thenReturn(List.of(conversation));
+        when(memberRepository.findByIdConversationIdInAndDeletedAtIsNull(List.of(conversationId)))
+                .thenReturn(List.of(aliceMembership, bobMembership));
+        when(userRepository.findAllById(any(Iterable.class))).thenReturn(List.of(userAlice, userBob));
+        lenient().doReturn(List.of(
+                SocialMessage.builder().messageId("msg-last").body("Latest message").build()))
+                .when(messageRepository).findAllById(any(Iterable.class));
+
+        assertEquals(1, chatService.getConversations(userAlice, null).size());
+        verify(memberRepository).findByIdConversationIdInAndDeletedAtIsNull(List.of(conversationId));
+        verify(memberRepository, never()).findByIdConversationIdAndDeletedAtIsNull(conversationId);
+        verify(userRepository).findAllById(any(Iterable.class));
+        verify(messageRepository).findAllById(any(Iterable.class));
     }
 
     @Test
@@ -262,6 +307,7 @@ class ChatServiceTest {
 
         verify(memberRepository, never()).save(any());
         verify(realtimePublisher, never()).publishReadUpdate(any(), any());
+        verify(customerNotificationService).markConversationMessagesRead(aliceId, conversationId);
     }
 
     @Test

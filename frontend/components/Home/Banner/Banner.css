@@ -1,30 +1,17 @@
+/* ============================================================
+   Banner.css — Japanese Editorial Hero Banners
+   ============================================================ */
+
 .banner {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  height: 24.875rem;
-  margin: 85px 160px;
-  grid-gap: 30px;
-  animation: bannerReveal 0.65s ease both;
-}
-
-.bannerLeft {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-end;
-  padding: 30px;
-  gap: 15px;
-  animation: jpSlideInLeft 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.bannerRight {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-end;
-  padding: 30px;
-  gap: 15px;
-  animation: jpSlideInRight 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  height: clamp(20rem, 30vw, 27rem);
+  max-width: 1600px;
+  width: 100%;
+  margin: 32px auto 44px;
+  padding: 0 clamp(16px, 3vw, 40px);
+  grid-gap: clamp(14px, 1.6vw, 24px);
+  box-sizing: border-box;
 }
 
 .bannerPanel {
@@ -32,8 +19,19 @@
   overflow: hidden;
   isolation: isolate;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s;
+  border-radius: 8px;
+  background-color: var(--surface-2);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+.bannerLeft,
+.bannerRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 36px;
+  gap: 12px;
 }
 
 .bannerBg {
@@ -42,11 +40,16 @@
   background-position: center;
   background-size: cover;
   z-index: 1;
-  transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .bannerPanel:hover .bannerBg {
-  transform: scale(1.06);
+  transform: scale(1.04);
+}
+
+.bannerPanel:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
 }
 
 .bannerContent {
@@ -55,172 +58,135 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.bannerPanel::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.bannerPanel::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -140%;
-  width: 55%;
-  height: 100%;
-  transform: skewX(-22deg);
-  pointer-events: none;
-  z-index: 1;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    var(--surface-1) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  transition: left 0.8s ease;
-}
-
-.bannerPanel:hover {
-  transform: translateY(-4px);
-  border-color: var(--border-strong);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.05);
-}
-
-.bannerPanel:hover::after {
-  left: 160%;
+  gap: 8px;
 }
 
 .bannerPanelDark::before {
-  background: radial-gradient(circle at 18% 78%, rgba(245, 38, 60, 0.35) 0%, rgba(245, 38, 60, 0) 55%),
-    linear-gradient(120deg, rgba(0, 0, 0, 0.28) 0%, rgba(0, 0, 0, 0.12) 100%);
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, rgba(20, 20, 20, 0.55) 100%);
+  pointer-events: none;
 }
 
 .bannerPanelLight::before {
-  background: radial-gradient(circle at 78% 20%, var(--surface-1) 0%, rgba(255, 255, 255, 0) 52%),
-    linear-gradient(120deg, var(--surface-1) 0%, var(--surface-1) 100%);
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(250, 250, 247, 0.65) 100%);
+  pointer-events: none;
 }
 
 .bannerh6 {
-  color: var(--color, var(--background));
-  font-size: 17px;
+  font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
+  margin: 0;
   position: relative;
-  z-index: 2;
+  z-index: 3;
 }
 
 .bannerh3 {
-  color: var(--color, var(--background));
-  font-size: 27px;
-  font-weight: 600;
+  font-size: clamp(22px, 2.2vw, 28px);
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  margin: 0 0 4px;
   position: relative;
-  z-index: 2;
+  z-index: 3;
 }
 
 .bannerh5 {
-  color: var(--color, var(--background));
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  margin: 6px 0 0;
   position: relative;
-  z-index: 2;
+  z-index: 3;
 }
 
 .bannerh5 a {
   display: inline-block;
   text-decoration: none;
   position: relative;
-  transition: transform 0.3s ease;
-  color: inherit;
+  padding-bottom: 2px;
+  transition: opacity 0.2s ease;
 }
 
-.bannerPanelDark .bannerh6,
-.bannerPanelDark .bannerh3,
-.bannerPanelDark .bannerh5,
-.bannerPanelDark .bannerh5 a {
-  color: var(--background);
-  text-shadow: 0 0 18px rgba(255, 96, 120, 0.32);
-}
-
-.bannerPanelLight .bannerh6,
-.bannerPanelLight .bannerh3,
-.bannerPanelLight .bannerh5,
-.bannerPanelLight .bannerh5 a {
-  color: var(--foreground);
-  text-shadow: 0 0 14px rgba(255, 255, 255, 0.55);
-}
-
-.bannerh5 a:hover {
-  transform: scale(1.1);
-}
-
-.bannerh5 a:after {
+.bannerh5 a::after {
   content: "";
   position: absolute;
   left: 0;
-  bottom: -4px;
+  bottom: 0;
   width: 0;
-  height: 3px;
-  background-color: var(--foreground);
-  transition: width 0.4s ease-out;
+  height: 1.5px;
+  background-color: currentColor;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .bannerh5 a:hover::after {
   width: 100%;
-  transition-delay: 0.2s;
 }
 
-@keyframes bannerReveal {
-  0% {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.bannerPanelDark .bannerh6 {
+  color: rgba(255, 255, 255, 0.85);
 }
 
-@keyframes bannerPanelUp {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.bannerPanelDark .bannerh3,
+.bannerPanelDark .bannerh5,
+.bannerPanelDark .bannerh5 a {
+  color: #ffffff;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .banner,
-  .bannerLeft,
-  .bannerRight {
-    animation: none !important;
-    transform: none !important;
-    opacity: 1 !important;
-  }
+.bannerPanelLight .bannerh6 {
+  color: var(--foreground-3);
+}
+
+.bannerPanelLight .bannerh3,
+.bannerPanelLight .bannerh5,
+.bannerPanelLight .bannerh5 a {
+  color: var(--foreground);
 }
 
 @media (max-width: 1200px) {
   .banner {
-    margin: 60px 40px;
+    padding: 0 24px;
+    margin: 28px auto 36px;
+    height: clamp(19rem, 35vw, 24rem);
+    grid-gap: 20px;
   }
 }
 
 @media (max-width: 768px) {
   .banner {
-    margin: 40px 16px;
     grid-template-columns: 1fr;
     height: auto;
-    grid-gap: 20px;
+    padding: 0 16px;
+    margin: 24px auto 36px;
+    grid-gap: 16px;
   }
+
   .bannerPanel {
-    height: 18rem;
+    aspect-ratio: 1.55 / 1;
+    height: auto;
+    min-height: 15rem;
+  }
+
+  .bannerLeft,
+  .bannerRight {
+    padding: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bannerPanel,
+  .bannerBg,
+  .bannerh5 a::after {
+    transition: none !important;
+    transform: none !important;
   }
 }

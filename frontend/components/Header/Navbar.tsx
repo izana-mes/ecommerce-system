@@ -6,7 +6,7 @@ import { RootState } from "@/store";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import "./Navbar.css";
-import { getUser, refreshCurrentUserFromServer, subscribeToAuthChanges } from "@/lib/auth";
+import { accountPathForUser, getUser, refreshCurrentUserFromServer, subscribeToAuthChanges } from "@/lib/auth";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TranslationKey } from "@/lib/i18n";
 import confetti from "canvas-confetti";
@@ -21,6 +21,10 @@ import { FiHeart } from "react-icons/fi";
 import { FiMoon, FiSun } from "react-icons/fi";
 
 import Badge from "@mui/material/Badge";
+import { Bell, Check, Circle, ExternalLink } from "lucide-react";
+import { createOrdersStompClient } from "@/lib/ordersSocket";
+
+type CenterItem = { id: string; kind: "order" | "payment" | "message" | "coupon"; title: string; message: string; createdAt: string; read: boolean; href: string; couponId?: number; couponStatus?: string; coupon?: { title: string; code: string; discountType: string; discountValue: number; minOrderAmount: number; startsAt: string | null; expiresAt: string | null; isActive: boolean } };
 
 const BASE_LINKS = [
   { href: "/", key: "nav_home" as TranslationKey },
@@ -95,8 +99,63 @@ export default function Navbar() {
   const [isOverHomeBanner, setIsOverHomeBanner] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [shopCategories, setShopCategories] = useState<string[]>([]);
+  const [centerOpen, setCenterOpen] = useState(false);
+  const [centerFilter, setCenterFilter] = useState("all");
+  const [centerItems, setCenterItems] = useState<CenterItem[]>([]);
+  const [centerUnread, setCenterUnread] = useState(0);
   const lastScrollY = useRef(0);
   const navRef = useRef<HTMLElement | null>(null);
+
+  const loadCenter = useCallback(async () => {
+    if (!getUser() || getUser()?.role !== "user") { setCenterItems([]); setCenterUnread(0); return; }
+    try {
+      const [noticeResponse, couponResponse] = await Promise.all([
+        fetch("/api/notifications", { credentials: "include", cache: "no-store" }),
+        fetch("/api/coupons/notifications", { credentials: "include", cache: "no-store" }),
+      ]);
+      const noticePayload = noticeResponse.ok ? await noticeResponse.json() : { items: [], unreadCount: 0 };
+      const couponPayload = couponResponse.ok ? await couponResponse.json() : { content: [] };
+      const notices: CenterItem[] = (Array.isArray(noticePayload.items) ? noticePayload.items : []).map((n: { id: number; category: CenterItem["kind"]; title: string; message: string; createdAt: string; readAt: string | null; targetUrl: string | null }) => ({
+        id: `n-${n.id}`, kind: n.category, title: n.title, message: n.message, createdAt: n.createdAt, read: Boolean(n.readAt), href: n.targetUrl || "/orders",
+      }));
+      const coupons: CenterItem[] = (Array.isArray(couponPayload.content) ? couponPayload.content : []).map((c: { id: number; notificationTitle: string | null; notificationMessage: string | null; issuedAt: string; acknowledgedAt: string | null; status: string; coupon: CenterItem["coupon"] }) => ({
+        id: `c-${c.id}`, kind: "coupon", title: c.notificationTitle || `${c.coupon?.title || "Coupon"} available`,
+        message: c.notificationMessage || `${c.coupon?.discountValue ?? ""}${c.coupon?.discountType === "percentage" ? "% off" : " discount"} · Minimum order $${c.coupon?.minOrderAmount ?? 0}`,
+        createdAt: c.issuedAt, read: Boolean(c.acknowledgedAt) || c.status !== "pending", href: "/coupons/redeem", couponId: c.id, couponStatus: c.status, coupon: c.coupon,
+      }));
+      setCenterItems([...notices, ...coupons].sort((a,b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)));
+      setCenterUnread(Number(noticePayload.unreadCount || 0) + coupons.filter(c => !c.read && c.couponStatus === "pending").length);
+    } catch { /* Keep the header usable during API outages. */ }
+  }, []);
+
+  useEffect(() => {
+    void loadCenter();
+    const timer = window.setInterval(() => void loadCenter(), 45000);
+    const userId = getUser()?.id;
+    let client: ReturnType<typeof createOrdersStompClient> | null = null;
+    if (hasUser && userId) {
+      client = createOrdersStompClient(() => {
+        client?.subscribe(`/topic/customer-notifications/${userId}`, () => void loadCenter());
+      });
+      client.activate();
+    }
+    return () => { window.clearInterval(timer); void client?.deactivate(); };
+  }, [loadCenter, hasUser]);
+
+  const markCenterRead = async (item: CenterItem) => {
+    try {
+      if (item.kind === "coupon" && item.couponId) {
+        await fetch("/api/coupons/notifications", { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ assignmentId: item.couponId }) });
+      } else {
+        await fetch(`/api/notifications/${item.id.slice(2)}/read`, { method: "PATCH", credentials: "include" });
+      }
+    } finally { await loadCenter(); }
+  };
+  const markCenterUnread = async (item: CenterItem) => {
+    if (item.kind === "coupon") return;
+    await fetch(`/api/notifications/${item.id.slice(2)}/unread`, { method: "PATCH", credentials: "include" });
+    await loadCenter();
+  };
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -308,37 +367,47 @@ export default function Navbar() {
       setIsOverHomeBanner(overlapsBanner);
     };
 
+    let ticking = false;
+
     const handleScroll = () => {
-      if (menuMobileOpen) {
-        setIsNavHidden(false);
-        updateBannerOverlap();
-        return;
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          if (menuMobileOpen) {
+            setIsNavHidden(false);
+            updateBannerOverlap();
+            ticking = false;
+            return;
+          }
+
+          const currentY = window.scrollY;
+          if (currentY <= 16) {
+            setIsNavHidden(false);
+            lastScrollY.current = currentY;
+            updateBannerOverlap();
+            ticking = false;
+            return;
+          }
+
+          const scrollingDown = currentY > lastScrollY.current + 6;
+          const scrollingUp = currentY < lastScrollY.current - 6;
+
+          if (scrollingDown) {
+            setIsNavHidden(true);
+          } else if (scrollingUp) {
+            setIsNavHidden(false);
+          }
+
+          lastScrollY.current = currentY;
+          updateBannerOverlap();
+          ticking = false;
+        });
+        ticking = true;
       }
-
-      const currentY = window.scrollY;
-      if (currentY <= 16) {
-        setIsNavHidden(false);
-        lastScrollY.current = currentY;
-        updateBannerOverlap();
-        return;
-      }
-
-      const scrollingDown = currentY > lastScrollY.current + 4;
-      const scrollingUp = currentY < lastScrollY.current - 4;
-
-      if (scrollingDown) {
-        setIsNavHidden(true);
-      } else if (scrollingUp) {
-        setIsNavHidden(false);
-      }
-
-      lastScrollY.current = currentY;
-      updateBannerOverlap();
     };
 
     updateBannerOverlap();
     window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", updateBannerOverlap);
+    window.addEventListener("resize", updateBannerOverlap, { passive: true });
     return () => {
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", updateBannerOverlap);
@@ -561,10 +630,48 @@ export default function Navbar() {
             </div>
           ) : null}
           <span>
-            <Link href={hasUser ? "/profile" : "/login"} aria-label={t("account_aria")}>
-              <FaRegUser size={22} onClick={scrollToTop} />
+            <Link href={accountPathForUser(getUser())} aria-label={t("account_aria")} onClick={async (event) => {
+              // Use the live auth cache at click time; navbar state can lag during hydration or refresh.
+              event.preventDefault();
+              scrollToTop();
+              const user = getUser() ?? await refreshCurrentUserFromServer();
+              router.push(accountPathForUser(user));
+            }}>
+              <FaRegUser size={22} />
             </Link>
           </span>
+          {hasUser && !isAdminUser && !isStaffUser && !isShipperUser && !isSupplierUser ? (
+            <div className="notificationCenter">
+              <button type="button" className="notificationBell" aria-label={`Notifications${centerUnread ? `, ${centerUnread} unread` : ""}`} aria-expanded={centerOpen} onClick={() => { setCenterOpen(value => !value); if (!centerOpen) void loadCenter(); }}>
+                <Badge badgeContent={centerUnread > 99 ? "99+" : centerUnread} color="error"><Bell size={21} /></Badge>
+              </button>
+              {centerOpen ? <>
+                <button type="button" className="notificationDismiss" aria-label="Close notifications" onClick={() => setCenterOpen(false)} />
+                <section className="notificationPanel" aria-label="Notifications">
+                  <header><div><strong>Notifications</strong><small>{centerUnread} unread</small></div><button type="button" onClick={async () => { await fetch("/api/notifications/read-all", { method: "POST", credentials: "include" }); await Promise.all(centerItems.filter(item => item.kind === "coupon" && !item.read && item.couponId).map(item => fetch("/api/coupons/notifications", { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ assignmentId: item.couponId }) }))); await loadCenter(); }}>Mark all read</button></header>
+                  <nav aria-label="Notification categories">{["all", "message", "coupon", "order", "payment"].map(category => <button type="button" key={category} aria-pressed={centerFilter === category} onClick={() => setCenterFilter(category)}>{category === "all" ? "All" : category === "message" ? "Messages" : category === "coupon" ? "Coupons" : category === "payment" ? "Payments" : "Orders"}</button>)}</nav>
+                  <div className="notificationList">
+                    {centerItems.filter(item => centerFilter === "all" || item.kind === centerFilter).map(item => {
+                      const expired = item.coupon?.expiresAt ? Date.parse(item.coupon.expiresAt) < Date.now() : false;
+                      const upcoming = item.coupon?.startsAt ? Date.parse(item.coupon.startsAt) > Date.now() : false;
+                      const eligible = item.coupon?.isActive !== false && !expired && !upcoming && item.couponStatus !== "used";
+                      return <article key={item.id} className={`notificationItem ${item.read ? "" : "unread"}`}>
+                        <button type="button" className="notificationContent" onClick={async () => { if (!item.read) await markCenterRead(item); setCenterOpen(false); router.push(item.href); }}>
+                          <strong>{item.title}</strong><span>{item.message}</span>
+                          {item.kind === "coupon" && item.coupon ? <><span className="notificationCouponCode">{item.coupon.code} · {eligible ? "Available" : expired ? "Expired" : item.couponStatus === "used" ? "Used" : "Not currently eligible"}</span>{item.coupon.expiresAt && <time dateTime={item.coupon.expiresAt}>Expires {new Date(item.coupon.expiresAt).toLocaleDateString()}</time>}</> : null}
+                          <time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString()}</time>
+                        </button>
+                        <button className="notificationReadButton" type="button" aria-label={item.read ? "Mark as unread" : "Mark as read"} title={item.read ? "Mark as unread" : "Mark as read"} onClick={() => void (item.read ? markCenterUnread(item) : markCenterRead(item))}>{item.read ? <Circle size={14} /> : <Check size={15} />}</button>
+                        <ExternalLink size={13} className="notificationExternal" aria-hidden="true" />
+                      </article>;
+                    })}
+                    {!centerItems.some(item => centerFilter === "all" || item.kind === centerFilter) && <p className="notificationEmpty">You're all caught up.</p>}
+                  </div>
+                  <Link href="/profile#coupons" onClick={() => setCenterOpen(false)}>View coupons and account activity</Link>
+                </section>
+              </> : null}
+            </div>
+          ) : null}
           {!isPureShipper ? (
             <>
               <span>

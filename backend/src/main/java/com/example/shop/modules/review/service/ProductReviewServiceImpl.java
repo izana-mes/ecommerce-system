@@ -1,6 +1,8 @@
 package com.example.shop.modules.review.service;
 
 import com.example.shop.common.exception.BusinessException;
+import com.example.shop.modules.messaging.review.ReviewSubmittedEvent;
+import com.example.shop.modules.messaging.review.ReviewSubmittedPublisher;
 import com.example.shop.modules.product.repository.ProductRepository;
 import com.example.shop.modules.review.dto.AdminProductReviewItemDto;
 import com.example.shop.modules.review.dto.AdminProductReviewPageDto;
@@ -39,12 +41,14 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final ProductRepository productRepository;
+    private final ReviewSubmittedPublisher reviewSubmittedPublisher;
 
     @Value("${application.reviews.max-entries:200}")
     private int maxEntries;
 
     @Value("${application.reviews.ttl-days:180}")
     private long ttlDays;
+
 
     @Override
     public ProductReviewSummaryDto getReviews(String productID, int limit, Object principal) {
@@ -103,6 +107,22 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         } catch (DataAccessException | IllegalStateException | JsonProcessingException ex) {
             throw new BusinessException("Review service is temporarily unavailable", HttpStatus.SERVICE_UNAVAILABLE);
         }
+
+        // Resolve product name for the event (best-effort; does not affect the review write).
+        String productName = productRepository.findByProductID(normalizedProductID)
+                .map(p -> p.getProductName() != null ? p.getProductName() : normalizedProductID)
+                .orElse(normalizedProductID);
+        String customerEmail = resolveEmail(principal);
+
+        reviewSubmittedPublisher.publish(ReviewSubmittedEvent.builder()
+                .productId(normalizedProductID)
+                .productName(productName)
+                .reviewId(review.getId())
+                .author(review.getAuthor())
+                .rating(rating)
+                .comment(comment.trim())
+                .customerEmail(customerEmail)
+                .build());
 
         return getReviews(normalizedProductID, 10, principal);
     }
@@ -622,5 +642,27 @@ public class ProductReviewServiceImpl implements ProductReviewService {
 
     private double roundTo1Decimal(double value) {
         return Math.round(value * 10.0) / 10.0;
+    }
+
+    /**
+     * Extracts a best-effort email address from the principal for event enrichment.
+     * Returns null when the principal is anonymous or does not carry an email.
+     */
+    private String resolveEmail(Object principal) {
+        if (principal instanceof User user && StringUtils.hasText(user.getEmail())) {
+            return user.getEmail().trim();
+        }
+        if (principal instanceof OAuth2User oauth2User) {
+            String email = oauth2User.getAttribute("email");
+            if (StringUtils.hasText(email)) {
+                return email.trim();
+            }
+        }
+        if (principal instanceof UserDetails userDetails
+                && StringUtils.hasText(userDetails.getUsername())
+                && userDetails.getUsername().contains("@")) {
+            return userDetails.getUsername().trim();
+        }
+        return null;
     }
 }

@@ -1,21 +1,33 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
 
-function backendOrigin(): string {
-  const publicBackend = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
-  return publicBackend.replace(/\/+$/, "");
+function getRequestOrigin(request: Request, requestUrl: URL): string {
+  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || "https";
+  if (forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`;
+  }
+  const host = request.headers.get("host")?.split(",")[0]?.trim();
+  if (host) {
+    const proto = requestUrl.protocol ? requestUrl.protocol.replace(":", "") : "http";
+    return `${proto}://${host}`;
+  }
+  return requestUrl.origin;
 }
 
 export async function GET(request: Request) {
   try {
     const requestUrl = new URL(request.url);
+    const origin = getRequestOrigin(request, requestUrl);
     const redirectUriFromQuery = requestUrl.searchParams.get("frontend_redirect_uri")?.trim();
     const frontendRedirectUri =
       redirectUriFromQuery && /^https?:\/\//i.test(redirectUriFromQuery)
         ? redirectUriFromQuery
-        : `${requestUrl.origin}/oauth/callback`;
+        : `${origin}/oauth/callback`;
 
-    const oauthUrl = new URL("/oauth2/authorization/google", backendOrigin());
+    // Direct browser through Next.js proxy route /oauth2/authorization/google on the current origin
+    // or to public backend origin if available
+    const oauthUrl = new URL("/oauth2/authorization/google", origin);
     oauthUrl.searchParams.set("frontend_redirect_uri", frontendRedirectUri);
 
     return NextResponse.redirect(oauthUrl.toString(), { status: 302 });

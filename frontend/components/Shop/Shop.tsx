@@ -992,11 +992,15 @@ export default function Shop() {
                             src={frontImage}
                             alt={product.productName}
                             className="sdProduct_front"
+                            loading="lazy"
+                            decoding="async"
                           />
                           <img
                             src={backImage}
                             alt={product.productName}
                             className="sdProduct_back"
+                            loading="lazy"
+                            decoding="async"
                           />
                         </button>
                         <button type="button" className="sdAiProductButton" onClick={() => void askProductAi(product)} aria-label={`Ask AI about ${product.productName}`}><FaMagic /> AI</button>
@@ -1226,14 +1230,35 @@ export default function Shop() {
                     {selectedSize ? `Selected size: ${selectedSize}` : "Choose a size to preview availability."}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  className="sdBuyNowButton animate-sheen"
-                  disabled={resolveAvailableStock(selectedProduct) <= 0 || buyNowProductId === selectedProduct.productID}
-                  onClick={() => void handleBuyNow(selectedProduct)}
-                >
-                  {buyNowProductId === selectedProduct.productID ? t("shop_processing") : t("shop_buy_now")}
-                </button>
+                <div className="sdModalActions">
+                  <button
+                    type="button"
+                    className="sdModalAddToCartButton"
+                    disabled={
+                      resolveAvailableStock(selectedProduct) <= 0 ||
+                      (cartItems[selectedProduct.productID]?.quantity ?? 0) >= resolveAvailableStock(selectedProduct)
+                    }
+                    onClick={() => handleAddToCart(selectedProduct)}
+                    aria-label={`Add ${selectedProduct.productName} to cart`}
+                  >
+                    <FaCartPlus />
+                    <span>
+                      {resolveAvailableStock(selectedProduct) <= 0
+                        ? t("shop_unavailable")
+                        : (cartItems[selectedProduct.productID]?.quantity ?? 0) >= resolveAvailableStock(selectedProduct)
+                          ? t("shop_limit_reached")
+                          : t("shop_add_to_cart")}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="sdBuyNowButton animate-sheen"
+                    disabled={resolveAvailableStock(selectedProduct) <= 0 || buyNowProductId === selectedProduct.productID}
+                    onClick={() => void handleBuyNow(selectedProduct)}
+                  >
+                    {buyNowProductId === selectedProduct.productID ? t("shop_processing") : t("shop_buy_now")}
+                  </button>
+                </div>
                 <p>
                   <strong>{t("shop_focus_link")}</strong>{" "}
                   <Link
@@ -1248,181 +1273,194 @@ export default function Shop() {
                 </p>
 
                 <div className="sdReviewSection">
-                  <h4>{t("shop_rate_comment")}</h4>
-                  <div className="sdReviewRatingInput" role="group" aria-label="Product rating">
-                    {Array.from({ length: 5 }, (_, index) => {
-                      const ratingValue = index + 1;
-                      const selected = ratingValue <= reviewRatingDraft;
-                      return (
-                        <button
-                          type="button"
-                          key={`review-rate-${ratingValue}`}
-                          className="sdReviewStarButton"
-                          onClick={() => setReviewRatingDraft(ratingValue)}
-                          aria-label={`Rate ${ratingValue} star${ratingValue > 1 ? "s" : ""}`}
-                        >
-                          {selected ? <FaStar color="#F59E0B" size={16} /> : <FaRegStar color="#9CA3AF" size={16} />}
-                        </button>
-                      );
-                    })}
+                  {/* Rating summary */}
+                  <div className="sdReviewSummary">
+                    <span className="sdReviewSummaryHeading">{t("shop_rate_comment")}</span>
+                    {getReviewCount(selectedProduct.productID) > 0 && (
+                      <span className="sdReviewSummaryMeta">
+                        <span className="sdReviewSummaryStars">
+                          {Array.from({ length: 5 }, (_, i) =>
+                            i < Math.round(getAverageRating(selectedProduct.productID)) ? (
+                              <FaStar key={i} color="#F59E0B" size={12} />
+                            ) : (
+                              <FaRegStar key={i} color="#D1D5DB" size={12} />
+                            )
+                          )}
+                        </span>
+                        <span className="sdReviewSummaryCount">
+                          {getAverageRating(selectedProduct.productID).toFixed(1)} · {getReviewCount(selectedProduct.productID)} {getReviewCount(selectedProduct.productID) === 1 ? t("shop_user_review") : t("shop_user_reviews")}
+                        </span>
+                      </span>
+                    )}
                   </div>
 
-                  <textarea
-                    value={reviewCommentDraft}
-                    onChange={(event) => setReviewCommentDraft(event.target.value)}
-                    placeholder={t("shop_write_comment")}
-                    rows={4}
-                  />
-
-                  <button
-                    type="button"
-                    className="sdSaveDescriptionButton"
-                    onClick={handleSubmitReview}
-                  >
-                    {t("shop_submit_review")}
-                  </button>
-
+                  {/* Review list */}
                   <div className="sdReviewList">
                     {isLoadingReviews ? (
                       <p className="sdReviewEmptyState">{t("shop_loading_reviews")}</p>
                     ) : getProductReviews(selectedProduct.productID).length === 0 ? (
                       <p className="sdReviewEmptyState">{t("shop_no_reviews")}</p>
                     ) : (
-                      getProductReviews(selectedProduct.productID).map((review) => (
-                        <article key={review.id} className="sdReviewCard">
-                          {(() => {
-                            const replyDraft = replyDraftByReviewId[review.id] ?? "";
-                            const isReplyOpen = activeReplyReviewId === review.id;
-                            const replies = review.replies || [];
-                            return (
-                              <>
-                          <div className="sdReviewCardHeader">
-                            <strong>{review.author}</strong>
-                            <span>{formatReviewDateTime(review.createdAt)}</span>
-                          </div>
-                          <div className="sdReviewCardStars">
-                            {Array.from({ length: 5 }, (_, index) =>
-                              index < review.rating ? (
-                                <FaStar key={`${review.id}-star-${index}`} color="#F59E0B" size={12} />
-                              ) : (
-                                <FaRegStar key={`${review.id}-star-${index}`} color="#D1D5DB" size={12} />
-                              )
-                            )}
-                          </div>
-                          <p>{review.comment}</p>
-                          <div className="sdReviewMetaActions">
-                            <button
-                              type="button"
-                              className={`sdReviewMetaButton ${review.likedByCurrentUser ? 'active' : ''}`}
-                              onClick={() => toggleLikeReview(review.id)}
-                              title={review.likedByCurrentUser ? t("shop_unlike") : t("shop_like")}
-                            >
-                              <FiThumbsUp /> <span>{review.likes ?? 0}</span>
-                            </button>
-                            <button
-                              type="button"
-                              className="sdReviewMetaButton"
-                              onClick={() => handleDislikeReview(review.id)}
-                              title={t("shop_dislike")}
-                            >
-                              <FiThumbsDown /> <span>{review.dislikes ?? 0}</span>
-                            </button>
-                            <button
-                              type="button"
-                              className="sdReviewMetaButton"
-                              onClick={() => toggleReplyDraft(review.id)}
-                              title={t("shop_reply")}
-                            >
-                              <FiMessageCircle /> <span>{replies.length}</span>
-                            </button>
-                          </div>
-                          {isReplyOpen && (
-                            <div className="sdReviewReplyComposer">
-                              <textarea
-                                value={replyDraft}
-                                onChange={(event) =>
-                                  handleReplyDraftChange(review.id, event.target.value)
-                                }
-                                placeholder={t("shop_write_reply")}
-                                rows={2}
-                              />
-                              <div className="sdReviewReplyComposerActions">
-                                <button type="button" onClick={() => void submitReply(review.id)}>
-                                  {t("shop_post_reply")}
-                                </button>
-                                <button type="button" onClick={() => setActiveReplyReviewId(null)}>
-                                  {t("shop_cancel")}
-                                </button>
+                      getProductReviews(selectedProduct.productID).map((review) => {
+                        const replyDraft = replyDraftByReviewId[review.id] ?? "";
+                        const isReplyOpen = activeReplyReviewId === review.id;
+                        const replies = review.replies || [];
+                        return (
+                          <article key={review.id} className="sdReviewCard">
+                            <div className="sdReviewCardHeader">
+                              <div className="sdReviewCardHeaderLeft">
+                                <span className="sdReviewAuthor">{review.author}</span>
+                                <div className="sdReviewCardStars">
+                                  {Array.from({ length: 5 }, (_, i) =>
+                                    i < review.rating ? (
+                                      <FaStar key={`${review.id}-s-${i}`} color="#F59E0B" size={11} />
+                                    ) : (
+                                      <FaRegStar key={`${review.id}-s-${i}`} color="#D1D5DB" size={11} />
+                                    )
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )}
-                          {replies.length > 0 && (
-                            <div className="sdReviewReplyList">
-                              {replies.map((reply) => (
-                                <article key={reply.id} className="sdReviewReplyCard">
-                                  <div className="sdReviewReplyHeader">
-                                    <strong>{reply.author}</strong>
-                                    <span>{formatReviewDateTime(reply.createdAt)}</span>
-                                  </div>
-                                  <p>{reply.content}</p>
-                                </article>
-                              ))}
-                            </div>
-                          )}
-                          {review.ownedByCurrentUser && (
-                            <div className="sdReviewCardActions">
-                              <button type="button" onClick={() => beginEditReview(review)} title="Edit">
-                                <FiEdit2 size={15} />
-                              </button>
-                              <button type="button" onClick={() => handleDeleteReview(review.id)} title="Delete">
-                                <FiTrash2 size={15} />
-                              </button>
-                            </div>
-                          )}
-                          {review.ownedByCurrentUser && editingReviewId === review.id && (
-                            <div className="sdReviewEditForm">
-                              <div className="sdReviewRatingInput" role="group" aria-label="Edit product rating">
-                                {Array.from({ length: 5 }, (_, index) => {
-                                  const ratingValue = index + 1;
-                                  const selected = ratingValue <= reviewEditRatingDraft;
-                                  return (
-                                    <button
-                                      type="button"
-                                      key={`${review.id}-edit-star-${ratingValue}`}
-                                      className="sdReviewStarButton"
-                                      onClick={() => setReviewEditRatingDraft(ratingValue)}
-                                      aria-label={`Rate ${ratingValue} star${ratingValue > 1 ? "s" : ""}`}
-                                    >
-                                      {selected ? (
-                                        <FaStar color="#F59E0B" size={16} />
-                                      ) : (
-                                        <FaRegStar color="#9CA3AF" size={16} />
-                                      )}
+                              <div className="sdReviewCardHeaderRight">
+                                <span className="sdReviewDate">{formatReviewDateTime(review.createdAt)}</span>
+                                {review.ownedByCurrentUser && (
+                                  <div className="sdReviewCardActions">
+                                    <button type="button" onClick={() => beginEditReview(review)} title="Edit">
+                                      <FiEdit2 size={13} />
                                     </button>
-                                  );
-                                })}
-                              </div>
-                              <textarea
-                                value={reviewEditCommentDraft}
-                                onChange={(event) => setReviewEditCommentDraft(event.target.value)}
-                                rows={3}
-                              />
-                              <div className="sdReviewEditActions">
-                                <button type="button" onClick={() => handleUpdateReview(review.id)}>
-                                  {t("shop_save")}
-                                </button>
-                                <button type="button" onClick={cancelEditReview}>
-                                  {t("shop_cancel")}
-                                </button>
+                                    <button type="button" onClick={() => handleDeleteReview(review.id)} title="Delete">
+                                      <FiTrash2 size={13} />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
-                          )}
-                              </>
-                            );
-                          })()}
-                        </article>
-                      ))
+
+                            <p className="sdReviewComment">{review.comment}</p>
+
+                            <div className="sdReviewMetaActions">
+                              <button
+                                type="button"
+                                className={`sdReviewMetaButton${review.likedByCurrentUser ? " active" : ""}`}
+                                onClick={() => toggleLikeReview(review.id)}
+                                title={review.likedByCurrentUser ? t("shop_unlike") : t("shop_like")}
+                              >
+                                <FiThumbsUp size={13} /> {review.likes ?? 0}
+                              </button>
+                              <button
+                                type="button"
+                                className="sdReviewMetaButton"
+                                onClick={() => handleDislikeReview(review.id)}
+                                title={t("shop_dislike")}
+                              >
+                                <FiThumbsDown size={13} /> {review.dislikes ?? 0}
+                              </button>
+                              <button
+                                type="button"
+                                className="sdReviewMetaButton"
+                                onClick={() => toggleReplyDraft(review.id)}
+                                title={t("shop_reply")}
+                              >
+                                <FiMessageCircle size={13} /> {replies.length > 0 ? replies.length : t("shop_reply")}
+                              </button>
+                            </div>
+
+                            {replies.length > 0 && (
+                              <div className="sdReviewReplyList">
+                                {replies.map((reply) => (
+                                  <div key={reply.id} className="sdReviewReplyCard">
+                                    <span className="sdReviewReplyAuthor">{reply.author}</span>
+                                    <span className="sdReviewReplyDate">{formatReviewDateTime(reply.createdAt)}</span>
+                                    <p>{reply.content}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {isReplyOpen && (
+                              <div className="sdReviewReplyComposer">
+                                <textarea
+                                  value={replyDraft}
+                                  onChange={(e) => handleReplyDraftChange(review.id, e.target.value)}
+                                  placeholder={t("shop_write_reply")}
+                                  rows={2}
+                                />
+                                <div className="sdReviewReplyComposerActions">
+                                  <button type="button" onClick={() => void submitReply(review.id)}>
+                                    {t("shop_post_reply")}
+                                  </button>
+                                  <button type="button" onClick={() => setActiveReplyReviewId(null)}>
+                                    {t("shop_cancel")}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
+                            {review.ownedByCurrentUser && editingReviewId === review.id && (
+                              <div className="sdReviewEditForm">
+                                <div className="sdReviewRatingInput" role="group" aria-label="Edit rating">
+                                  {Array.from({ length: 5 }, (_, i) => {
+                                    const rv = i + 1;
+                                    return (
+                                      <button
+                                        type="button"
+                                        key={`${review.id}-es-${rv}`}
+                                        className="sdReviewStarButton"
+                                        onClick={() => setReviewEditRatingDraft(rv)}
+                                        aria-label={`Rate ${rv} star${rv > 1 ? "s" : ""}`}
+                                      >
+                                        {rv <= reviewEditRatingDraft
+                                          ? <FaStar color="#F59E0B" size={16} />
+                                          : <FaRegStar color="#9CA3AF" size={16} />}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                                <textarea
+                                  value={reviewEditCommentDraft}
+                                  onChange={(e) => setReviewEditCommentDraft(e.target.value)}
+                                  rows={3}
+                                />
+                                <div className="sdReviewEditActions">
+                                  <button type="button" onClick={() => handleUpdateReview(review.id)}>{t("shop_save")}</button>
+                                  <button type="button" onClick={cancelEditReview}>{t("shop_cancel")}</button>
+                                </div>
+                              </div>
+                            )}
+                          </article>
+                        );
+                      })
                     )}
+                  </div>
+
+                  {/* Write a review form */}
+                  <div className="sdReviewForm">
+                    <div className="sdReviewRatingInput" role="group" aria-label="Product rating">
+                      {Array.from({ length: 5 }, (_, i) => {
+                        const rv = i + 1;
+                        return (
+                          <button
+                            type="button"
+                            key={`review-rate-${rv}`}
+                            className="sdReviewStarButton"
+                            onClick={() => setReviewRatingDraft(rv)}
+                            aria-label={`Rate ${rv} star${rv > 1 ? "s" : ""}`}
+                          >
+                            {rv <= reviewRatingDraft
+                              ? <FaStar color="#F59E0B" size={18} />
+                              : <FaRegStar color="#9CA3AF" size={18} />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <textarea
+                      value={reviewCommentDraft}
+                      onChange={(e) => setReviewCommentDraft(e.target.value)}
+                      placeholder={t("shop_write_comment")}
+                      rows={3}
+                    />
+                    <button type="button" className="sdSaveDescriptionButton" onClick={handleSubmitReview}>
+                      {t("shop_submit_review")}
+                    </button>
                   </div>
                 </div>
 

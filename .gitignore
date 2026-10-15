@@ -36,3 +36,4 @@ secrets/
 security/reports/
 security/sbom/
 .env*
+.deploy/

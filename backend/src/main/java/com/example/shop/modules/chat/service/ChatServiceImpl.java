@@ -7,6 +7,7 @@ import com.example.shop.modules.chat.realtime.ChatRealtimePublisher;
 import com.example.shop.modules.chat.repository.*;
 import com.example.shop.modules.user.entity.User;
 import com.example.shop.modules.user.repository.UserRepository;
+import com.example.shop.modules.notification.service.CustomerNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -30,6 +31,7 @@ public class ChatServiceImpl implements ChatService {
     private final SocialReactionCountRepository reactionCountRepository;
     private final UserRepository userRepository;
     private final ChatRealtimePublisher realtimePublisher;
+    private final CustomerNotificationService customerNotificationService;
 
     private static final Set<String> VALID_REACTIONS = Set.of("like", "love", "care", "haha", "wow", "sad", "angry");
 
@@ -38,8 +40,46 @@ public class ChatServiceImpl implements ChatService {
     public List<ConversationDto> getConversations(User currentUser, String search) {
         String userId = currentUser.getId().toString();
         List<SocialConversation> conversations = conversationRepository.findConversationsForUser(userId);
+        if (conversations.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> conversationIds = conversations.stream()
+                .map(SocialConversation::getConversationId)
+                .toList();
+        Map<String, List<SocialConversationMember>> membersByConversation = memberRepository
+                .findByIdConversationIdInAndDeletedAtIsNull(conversationIds)
+                .stream()
+                .collect(Collectors.groupingBy(member -> member.getId().getConversationId()));
+
+        Set<UUID> memberUserIds = new HashSet<>();
+        for (List<SocialConversationMember> members : membersByConversation.values()) {
+            for (SocialConversationMember member : members) {
+                try {
+                    memberUserIds.add(UUID.fromString(member.getId().getUserId()));
+                } catch (IllegalArgumentException ignored) {
+                    // Preserve the existing mapper behavior: malformed legacy member IDs are omitted.
+                }
+            }
+        }
+        Map<String, User> usersById = userRepository.findAllById(memberUserIds).stream()
+                .collect(Collectors.toMap(user -> user.getId().toString(), user -> user));
+
+        Set<String> lastMessageIds = conversations.stream()
+                .map(SocialConversation::getLastMessageId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, SocialMessage> lastMessagesById = messageRepository.findAllById(lastMessageIds).stream()
+                .collect(Collectors.toMap(SocialMessage::getMessageId, message -> message));
+
         return conversations.stream()
-                .map(c -> toConversationDto(c, userId, search))
+                .map(conversation -> toConversationDto(
+                        conversation,
+                        userId,
+                        search,
+                        membersByConversation.getOrDefault(conversation.getConversationId(), List.of()),
+                        usersById,
+                        lastMessagesById))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
@@ -206,10 +246,14 @@ public class ChatServiceImpl implements ChatService {
             reactionCountRepository.findByIdTargetTypeAndIdTargetIdIn("message", messageIds)
                     .forEach(rc -> countsMap.computeIfAbsent(rc.getId().getTargetId(), k -> new ArrayList<>()).add(rc));
         }
+        Map<String, User> sendersById = findUsersByStringId(chronological.stream()
+                .map(SocialMessage::getSenderUserId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet()));
 
         return chronological.stream()
                 .map(m -> toMessageDto(m, userId, reactionsMap.getOrDefault(m.getMessageId(), List.of()),
-                        countsMap.getOrDefault(m.getMessageId(), List.of())))
+                        countsMap.getOrDefault(m.getMessageId(), List.of()), sendersById))
                 .collect(Collectors.toList());
     }
 
@@ -241,21 +285,48 @@ public class ChatServiceImpl implements ChatService {
                 .build();
         messageRepository.save(msg);
 
-        conversationRepository.findById(conversationId).ifPresent(c -> {
-            c.setLastMessageId(msgId);
-            c.setLastMessageAt(msg.getCreatedAt());
-            c.setUpdatedAt(LocalDateTime.now());
-            conversationRepository.save(c);
-        });
+        SocialConversation conversation = conversationRepository.findById(conversationId).orElse(null);
+        if (conversation != null) {
+            conversation.setLastMessageId(msgId);
+            conversation.setLastMessageAt(msg.getCreatedAt());
+            conversation.setUpdatedAt(LocalDateTime.now());
+            conversationRepository.save(conversation);
+        }
 
         // Increment unread for all other members
-        memberRepository.findByIdConversationIdAndDeletedAtIsNull(conversationId).forEach(m -> {
+        List<SocialConversationMember> conversationMembers = memberRepository
+                .findByIdConversationIdAndDeletedAtIsNull(conversationId);
+        Set<UUID> participantIds = new HashSet<>();
+        for (SocialConversationMember member : conversationMembers) {
+            try {
+                participantIds.add(UUID.fromString(member.getId().getUserId()));
+            } catch (IllegalArgumentException ignored) {
+                // Ignore malformed legacy IDs as the conversation DTO mapper does.
+            }
+        }
+        Map<String, User> participantsById = userRepository.findAllById(participantIds).stream()
+                .collect(Collectors.toMap(participant -> participant.getId().toString(), participant -> participant));
+        Map<String, SocialMessage> latestMessage = Map.of(msgId, msg);
+
+        conversationMembers.forEach(m -> {
             if (!m.getId().getUserId().equals(userId)) {
                 int currentUnread = m.getMessageUnreadCount() == null ? 0 : m.getMessageUnreadCount();
                 m.setMessageUnreadCount(currentUnread + 1);
                 memberRepository.save(m);
-                realtimePublisher.publishConversationUpdate(m.getId().getUserId(), toConversationDto(
-                        conversationRepository.findById(conversationId).orElse(null), m.getId().getUserId(), null));
+                User recipient = participantsById.get(m.getId().getUserId());
+                if (recipient != null) {
+                    String senderName = ((currentUser.getFirstName() == null ? "" : currentUser.getFirstName()) + " "
+                            + (currentUser.getLastName() == null ? "" : currentUser.getLastName())).trim();
+                    if (senderName.isBlank()) senderName = currentUser.getUsername() != null ? currentUser.getUsername() : currentUser.getEmail();
+                    if (senderName.length() > 140) senderName = senderName.substring(0, 140);
+                    String preview = body.length() > 180 ? body.substring(0, 177) + "..." : body;
+                    customerNotificationService.createForUser(recipient.getId(), "chat-message:" + msgId + ":" + recipient.getId(),
+                            "New message from " + senderName, preview, "/messages?conversationId=" + conversationId);
+                }
+                realtimePublisher.publishConversationUpdate(
+                        m.getId().getUserId(),
+                        toConversationDto(conversation, m.getId().getUserId(), null,
+                                conversationMembers, participantsById, latestMessage));
             }
         });
 
@@ -387,6 +458,7 @@ public class ChatServiceImpl implements ChatService {
         assertAccess(conversationId, currentUser);
 
         memberRepository.findByIdConversationIdAndIdUserIdAndDeletedAtIsNull(conversationId, userId).ifPresent(m -> {
+            customerNotificationService.markConversationMessagesRead(currentUser.getId(), conversationId);
             String latestMessageId = messageRepository.findFirstByConversationIdOrderByCreatedAtDesc(conversationId)
                     .map(SocialMessage::getMessageId)
                     .orElse(null);
@@ -564,13 +636,40 @@ public class ChatServiceImpl implements ChatService {
         return "customer";
     }
 
+    private Map<String, User> findUsersByStringId(Collection<String> userIds) {
+        Set<UUID> parsedIds = new HashSet<>();
+        for (String userId : userIds) {
+            try {
+                parsedIds.add(UUID.fromString(userId));
+            } catch (IllegalArgumentException ignored) {
+                // Ignore malformed legacy IDs, consistent with the conversation mapper.
+            }
+        }
+        if (parsedIds.isEmpty()) {
+            return Map.of();
+        }
+        return userRepository.findAllById(parsedIds).stream()
+                .collect(Collectors.toMap(user -> user.getId().toString(), user -> user));
+    }
+
     private ConversationDto toConversationDto(SocialConversation conv, String userId, String search) {
+        return toConversationDto(conv, userId, search, null, null, null);
+    }
+
+    private ConversationDto toConversationDto(SocialConversation conv, String userId, String search,
+                                              List<SocialConversationMember> preloadedMembers,
+                                              Map<String, User> preloadedUsers,
+                                              Map<String, SocialMessage> preloadedLastMessages) {
         if (conv == null) return null;
 
-        List<SocialConversationMember> members = memberRepository.findByIdConversationIdAndDeletedAtIsNull(conv.getConversationId());
+        List<SocialConversationMember> members = preloadedMembers != null
+                ? preloadedMembers
+                : memberRepository.findByIdConversationIdAndDeletedAtIsNull(conv.getConversationId());
         List<MemberDto> memberDtos = members.stream().map(m -> {
             try {
-                User u = userRepository.findById(UUID.fromString(m.getId().getUserId())).orElse(null);
+                User u = preloadedUsers != null
+                        ? preloadedUsers.get(m.getId().getUserId())
+                        : userRepository.findById(UUID.fromString(m.getId().getUserId())).orElse(null);
                 String fullName = u != null
                         ? ((u.getFirstName() != null ? u.getFirstName() : "") + " "
                         + (u.getLastName() != null ? u.getLastName() : "")).trim()
@@ -620,7 +719,9 @@ public class ChatServiceImpl implements ChatService {
 
         String lastMessagePreview = null;
         if (conv.getLastMessageId() != null) {
-            SocialMessage last = messageRepository.findById(conv.getLastMessageId()).orElse(null);
+            SocialMessage last = preloadedLastMessages != null
+                    ? preloadedLastMessages.get(conv.getLastMessageId())
+                    : messageRepository.findById(conv.getLastMessageId()).orElse(null);
             if (last != null) {
                 if (last.getDeletedForEveryoneAt() != null) {
                     lastMessagePreview = "Message deleted";
@@ -651,6 +752,12 @@ public class ChatServiceImpl implements ChatService {
 
     private MessageDto toMessageDto(SocialMessage msg, String currentUserId,
                                     List<SocialReaction> reactions, List<SocialReactionCount> counts) {
+        return toMessageDto(msg, currentUserId, reactions, counts, null);
+    }
+
+    private MessageDto toMessageDto(SocialMessage msg, String currentUserId,
+                                    List<SocialReaction> reactions, List<SocialReactionCount> counts,
+                                    Map<String, User> preloadedSenders) {
         List<ReactionSummaryDto> reactionSummaries = buildReactionSummaries(reactions, counts, currentUserId);
         String myReaction = reactions.stream()
                 .filter(r -> currentUserId.equals(r.getUserId()))
@@ -660,7 +767,9 @@ public class ChatServiceImpl implements ChatService {
         String senderName = null;
         if (msg.getSenderUserId() != null) {
             try {
-                User sender = userRepository.findById(UUID.fromString(msg.getSenderUserId())).orElse(null);
+                User sender = preloadedSenders != null
+                        ? preloadedSenders.get(msg.getSenderUserId())
+                        : userRepository.findById(UUID.fromString(msg.getSenderUserId())).orElse(null);
                 if (sender != null) {
                     senderName = ((sender.getFirstName() != null ? sender.getFirstName() : "") + " "
                             + (sender.getLastName() != null ? sender.getLastName() : "")).trim();

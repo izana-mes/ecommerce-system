@@ -41,8 +41,17 @@ const Filter: React.FC<FilterProps> = ({
   availableSizes,
   brandsData: brandsDataProp,
   minPrice = 0,
-  maxPrice = 300}) => {
+  maxPrice = 300,
+}) => {
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const brandsData = useMemo<Brand[]>(
     () =>
@@ -92,9 +101,13 @@ const Filter: React.FC<FilterProps> = ({
       priceRange: newValue as [number, number]});
   };
 
-  const filteredBrands = brandsData.filter((brand) =>
-    brand.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredBrands = useMemo(() => {
+    const term = debouncedSearchTerm.trim().toLowerCase();
+    if (!term) return brandsData;
+    return brandsData.filter((brand) =>
+      brand.name.toLowerCase().includes(term)
+    );
+  }, [brandsData, debouncedSearchTerm]);
 
   const filterCategories: string[] = availableCategories ?? [
     "Dresses",

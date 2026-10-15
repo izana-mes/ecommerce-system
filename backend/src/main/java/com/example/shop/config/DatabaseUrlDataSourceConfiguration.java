@@ -28,6 +28,12 @@ public class DatabaseUrlDataSourceConfiguration {
         ds.setUsername(parsed.username());
         ds.setPassword(parsed.password());
         ds.setDriverClassName("org.postgresql.Driver");
+        ds.setMaximumPoolSize(20);
+        ds.setMinimumIdle(5);
+        ds.setConnectionTimeout(20000);
+        ds.setIdleTimeout(300000);
+        ds.setMaxLifetime(1200000);
+        ds.setLeakDetectionThreshold(30000);
         return ds;
     }
 }

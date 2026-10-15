@@ -1,28 +1,24 @@
 .heroSection {
-  background-image: url("/slideshow-pattern.png");
-  background-color: #f4e5e0;
-  background-size: cover;
-  background-position: center;
-  height: 600px;
-  padding: 0 80px;
-  margin: 85px 160px;
+  background-color: var(--surface-2);
+  min-height: 22rem;
+  height: clamp(22rem, 34vw, 30rem);
+  padding: 0 clamp(24px, 5vw, 72px);
+  margin: 0;
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
   color: var(--foreground);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s;
-  animation: heroFadeUp 0.7s ease both;
   position: relative;
   isolation: isolate;
+  transition: border-color 0.3s ease;
 }
 
 .heroSection:hover {
-  transform: translateY(-4px);
   border-color: var(--border-strong);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.05);
 }
 
 .heroSection::before {
@@ -31,47 +27,27 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: radial-gradient(circle at 15% 28%, var(--surface-1) 0%, rgba(255, 255, 255, 0) 50%),
-    radial-gradient(circle at 78% 72%, rgba(195, 41, 41, 0.16) 0%, rgba(195, 41, 41, 0) 42%);
-}
-
-.heroSection::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -125%;
-  width: 50%;
-  height: 100%;
-  transform: skewX(-20deg);
-  z-index: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    var(--surface-1) 55%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  animation: heroSheen 7.8s ease-in-out infinite;
+  background: radial-gradient(circle at 10% 20%, var(--surface-1) 0%, transparent 60%);
 }
 
 .sectionLeft {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding-left: 15px;
-  width: 50%;
-  animation: heroSlideLeft 0.75s cubic-bezier(0.22, 0.61, 0.36, 1) 0.12s both;
+  gap: 16px;
+  padding-left: 20px;
+  width: min(46%, 36rem);
   position: relative;
   z-index: 1;
 }
 
 .sectionLeft p {
   position: relative;
-  color: #c32929;
-  padding-left: 45px;
+  color: var(--accent);
+  padding-left: 36px;
   text-transform: uppercase;
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  font-weight: 600;
 }
 
 .sectionLeft p::before {
@@ -79,174 +55,132 @@
   position: absolute;
   left: 0;
   top: 50%;
-  width: 35px;
-  height: 3px;
+  width: 24px;
+  height: 1.5px;
   transform: translateY(-50%);
-  background-color: #c32929;
+  background-color: var(--accent);
 }
 
 .sectionLeft h1 {
   text-transform: uppercase;
   font-weight: 700;
-  font-size: 70px;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.35);
+  font-size: clamp(2.2rem, 4vw, 3.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
 }
 
 .heroLink {
   display: flex;
+  margin-top: 12px;
 }
 
 .heroLink a {
   position: relative;
   text-decoration: none;
-  transition: transform 0.2s ease;
-  transition: font-weight 0.2s ease;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--foreground);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1.5px solid var(--foreground);
+  transition: opacity 0.2s ease, border-color 0.2s ease;
 }
 
 .heroLink a:hover {
-  transform: scale(1.1);
-  font-weight: 600;
-}
-
-.heroLink a::after {
-  content: "";
-  position: absolute;
-  background-color: var(--foreground);
-  left: 0;
-  bottom: -2px;
-  width: 0;
-  height: 3px;
-  transition: width 0.3s ease-out;
-}
-
-.heroLink a:hover::after {
-  width: 100%;
+  opacity: 0.7;
 }
 
 .sectionLeft h5 {
   text-transform: uppercase;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
+  letter-spacing: 0.05em;
+  color: var(--foreground-2);
 }
 
-.sectionright {
+.sectionright,
+.sectionRight {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   width: 50%;
-  bottom: 100px;
+  height: 100%;
   position: relative;
-  animation: heroSlideRight 0.75s cubic-bezier(0.22, 0.61, 0.36, 1) 0.18s both;
   z-index: 1;
 }
 
 .canvasModel {
-  height: 700px !important ;
+  height: 100% !important;
+  min-height: 22rem;
 }
 
 .heroColorBtn {
   display: flex;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 12px;
+  margin-top: 16px;
   justify-content: center;
   position: absolute;
-  bottom: 100px;
+  bottom: 24px;
 }
 
 .heroColorBtn button {
-  padding: 10px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  border: 1px solid white;
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.28);
+  border: 2px solid var(--surface-1);
+  outline: 1px solid var(--border);
+  box-shadow: var(--shadow-xs);
+  cursor: pointer;
+  transition: transform 0.2s ease;
 }
 
-@keyframes heroFadeUp {
-  0% {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes heroSlideLeft {
-  0% {
-    opacity: 0;
-    transform: translateX(-24px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes heroSlideRight {
-  0% {
-    opacity: 0;
-    transform: translateX(24px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes heroSheen {
-  0% {
-    left: -125%;
-  }
-  52% {
-    left: 155%;
-  }
-  100% {
-    left: 155%;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .heroSection,
-  .sectionLeft,
-  .sectionright {
-    animation: none !important;
-    transform: none !important;
-    opacity: 1 !important;
-  }
-
-  .heroSection::after {
-    animation: none !important;
-    left: 0;
-  }
+.heroColorBtn button:hover {
+  transform: scale(1.15);
 }
 
 @media (max-width: 1200px) {
   .heroSection {
-    margin: 60px 40px;
-    padding: 0 40px;
-  }
-}
-
-@media (max-width: 768px) {
-  .heroSection {
-    margin: 40px 16px;
-    padding: 40px 24px;
-    height: auto;
-    flex-direction: column;
-    gap: 30px;
-  }
-  .sectionLeft,
-  .sectionright {
-    width: 100%;
+    padding: 0 36px;
+    height: 26rem;
   }
   .sectionLeft h1 {
     font-size: 40px;
   }
   .canvasModel {
-    height: 400px !important;
+    height: 100% !important;
+    min-height: 20rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .heroSection {
+    padding: 36px 20px;
+    min-height: 0;
+    height: auto;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .sectionLeft,
+  .sectionright,
+  .sectionRight {
+    width: 100%;
+    padding-left: 0;
+  }
+  .sectionLeft h1 {
+    font-size: 32px;
+  }
+  .canvasModel {
+    height: 16rem !important;
+    min-height: 0;
   }
   .heroColorBtn {
-    bottom: 20px;
+    position: static;
+    margin-top: 12px;
   }
 }

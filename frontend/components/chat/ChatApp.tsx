@@ -17,6 +17,7 @@ import {
   searchUsersApi,
 } from "@/lib/chat/chatApi";
 import { useChatSocket } from "@/lib/chat/useChatSocket";
+import { HiOutlineChatBubbleLeftRight } from "react-icons/hi2";
 import { ConversationList } from "./ConversationList";
 import { ChatHeader } from "./ChatHeader";
 import { MessageList } from "./MessageList";
@@ -104,7 +105,13 @@ export function ChatApp({ currentUser, initialConversationId }: ChatAppProps) {
     try {
       const data = await fetchConversations(search);
       setConversations(data);
-      setActiveConversationId((current) => current || (data[0]?.conversationId ?? null));
+      const requestedConversation = typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("conversationId")
+        : null;
+      setActiveConversationId((current) => current ||
+        (requestedConversation && data.some((conversation) => conversation.conversationId === requestedConversation)
+          ? requestedConversation
+          : data[0]?.conversationId ?? null));
     } catch (e) {
       console.error("Failed to load conversations:", e);
       setConversationError(e instanceof Error ? e.message : "Unable to load conversations.");
@@ -432,9 +439,11 @@ export function ChatApp({ currentUser, initialConversationId }: ChatAppProps) {
             </>
           ) : (
             <div className="chatEmptyState">
-              <div className="chatEmptyIcon">💬</div>
+              <div className="chatEmptyIconWrap">
+                <HiOutlineChatBubbleLeftRight size={24} />
+              </div>
               <h3>Select a conversation</h3>
-              <p>Choose from your existing conversations on the left or start a new one.</p>
+              <p>Choose an existing conversation on the left or begin a new dialogue.</p>
               <button
                 type="button"
                 className="chatBtnSmall primary"
@@ -448,10 +457,17 @@ export function ChatApp({ currentUser, initialConversationId }: ChatAppProps) {
         </div>
 
         {showDetails && activeConversation && (
-          <ChatDetails
-            conversation={activeConversation}
-            onClose={() => setShowDetails(false)}
-          />
+          <>
+            <div
+              className="chatDetailsBackdrop"
+              onClick={() => setShowDetails(false)}
+              aria-hidden="true"
+            />
+            <ChatDetails
+              conversation={activeConversation}
+              onClose={() => setShowDetails(false)}
+            />
+          </>
         )}
       </div>
 

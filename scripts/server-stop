@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+
+repo_dir=/home/izana/ecommerce-system
+docker compose --env-file "$repo_dir/.env.prod" -f "$repo_dir/docker-compose.prod.yml" down --remove-orphans
+
+pids=$(pgrep -f 'ngrok start.*ecommerce' || true)
+if [ -n "$pids" ]; then
+  kill $pids
+fi
+
+echo "Application containers and ecommerce ngrok tunnel stopped."
+sudo sv down /var/service/docker
+echo "Docker stopped through runit."

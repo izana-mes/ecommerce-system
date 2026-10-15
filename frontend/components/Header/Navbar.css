@@ -2,40 +2,19 @@
    ANNOUNCEMENT BAR — Japanese lacquer-red style
 ══════════════════════════════════════════════════════════= */
 .announcementBar {
-  background: linear-gradient(90deg, #1a0a0a 0%, #2d0808 40%, #1a0a0a 100%);
-  color: rgba(255,255,255,0.92);
+  background: var(--announcement-bg);
+  color: var(--announcement-text);
   text-align: center;
-  font-size: 12.5px;
+  font-size: 11.5px;
   font-weight: 500;
-  letter-spacing: 0.12em;
-  padding: 11px 16px;
-  position: relative;
-  overflow: hidden;
-  border-bottom: 1px solid rgba(255, 2, 17, 0.4);
-}
-.announcementBar::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: url('/19-Seigaiha-Background-Pattern.jpg');
-  background-size: 80px;
-  opacity: 0.06;
-  pointer-events: none;
-  filter: invert(1);
-}
-.announcementBar::after {
-  content: "❖";
-  position: absolute;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: rgba(255,2,17,0.55);
-  font-size: 10px;
-  letter-spacing: 0;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--border);
 }
 html[data-theme="dark"] .announcementBar {
-  background: linear-gradient(90deg, #0a0005 0%, #150010 40%, #0a0005 100%);
-  border-bottom-color: rgba(255,34,51,0.3);
+  background: var(--announcement-bg);
+  border-bottom-color: var(--border);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -46,103 +25,28 @@ html[data-theme="dark"] .announcementBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255,255,255,0.86) 0%,
-      rgba(255,255,255,0.72) 100%
-    );
-  backdrop-filter: blur(36px) saturate(210%) brightness(1.04);
-  -webkit-backdrop-filter: blur(36px) saturate(210%) brightness(1.04);
+  background: var(--surface-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   position: sticky;
   top: 0;
-  padding: 0 80px;
-  height: 72px;             /* Taller — more presence */
+  padding: 0 48px;
+  height: 68px;
   z-index: 100;
-  /* Red lacquer top stripe — 3px vivid */
-  border-top: 3px solid #e8001a;
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.95) inset,
-    0 10px 40px rgba(0,0,0,0.07),
-    0 2px  8px rgba(0,0,0,0.04);
-  border-bottom: 1px solid rgba(220,220,220,0.6);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-xs);
   transform: translateY(0);
   transition:
-    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    background 0.4s ease,
-    box-shadow 0.4s ease;
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    background 0.3s ease,
+    box-shadow 0.3s ease;
   will-change: transform;
-  overflow: visible;
 }
 
 html[data-theme="dark"] .navBar {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(20,23,30,0.92) 0%,
-      rgba(14,16,22,0.84) 100%
-    );
-  border-top-color: #cc0016;
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.05) inset,
-    0 10px 40px rgba(0,0,0,0.55),
-    0 2px  8px rgba(0,0,0,0.4);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-
-.navBar > * {
-  position: relative;
-  z-index: 3;
-}
-
-/* ── Layer 1: Seigaiha animated drift ── */
-.navBar::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: url('/19-Seigaiha-Background-Pattern.jpg');
-  background-repeat: repeat;
-  background-size: 130px;
-  opacity: 0.13;
-  pointer-events: none;
-  z-index: 1;
-  transition: opacity 0.5s ease, filter 0.5s ease;
-  animation: navSeigahaDrift 55s linear infinite;
-  will-change: background-position;
-}
-html[data-theme="dark"] .navBar::before {
-  opacity: 0.07;
-  filter: invert(1) hue-rotate(200deg);
-}
-
-/* ── Layer 2: Indigo colour wash ── */
-.navBar::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    105deg,
-    rgba(80,90,220,0.05) 0%,
-    transparent           45%,
-    transparent           55%,
-    rgba(80,90,220,0.04) 100%
-  );
-  pointer-events: none;
-  z-index: 2;
-}
-html[data-theme="dark"] .navBar::after {
-  background: linear-gradient(
-    105deg,
-    rgba(120,140,255,0.06) 0%,
-    transparent             45%,
-    transparent             55%,
-    rgba(120,140,255,0.05) 100%
-  );
-}
-
-@keyframes navSeigahaDrift {
-  0%   { background-position: 0 0; }
-  100% { background-position: 130px 130px; }
+  background: var(--surface-glass);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-xs);
 }
 
 .navBarHidden {
@@ -150,19 +54,9 @@ html[data-theme="dark"] .navBar::after {
 }
 
 .navBarOverBanner {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255,255,255,0.94) 0%,
-      rgba(255,255,255,0.84) 100%
-    );
-  backdrop-filter: blur(40px) saturate(220%) brightness(1.06);
-  -webkit-backdrop-filter: blur(40px) saturate(220%) brightness(1.06);
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.98) inset,
-    0 20px 60px rgba(0,0,0,0.07),
-    0 2px 8px rgba(0,0,0,0.04);
-  border-bottom: 1px solid rgba(255,255,255,0.8);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+  border-bottom: 1px solid var(--border);
 }
 
 /* ─────────────────────────────────────────────
@@ -171,27 +65,13 @@ html[data-theme="dark"] .navBar::after {
 ───────────────────────────────────────────── */
 .navJpDivider {
   width: 1px;
-  height: 32px;
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgba(180,0,20,0.25) 30%,
-    rgba(180,0,20,0.35) 50%,
-    rgba(180,0,20,0.25) 70%,
-    transparent 100%
-  );
+  height: 24px;
+  background: var(--border);
   flex-shrink: 0;
-  margin: 0 8px;
+  margin: 0 16px;
 }
 html[data-theme="dark"] .navJpDivider {
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgba(255,60,80,0.2) 30%,
-    rgba(255,60,80,0.3) 50%,
-    rgba(255,60,80,0.2) 70%,
-    transparent 100%
-  );
+  background: var(--border);
 }
 
 .logoContainer {
@@ -202,13 +82,13 @@ html[data-theme="dark"] .navJpDivider {
 }
 
 .logoContainer img {
-  width: 136px;             /* slightly larger logo */
+  width: 124px;
   height: auto;
   background: none !important;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease;
+  transition: opacity 0.2s ease;
 }
 .logoContainer img:hover {
-  transform: scale(1.07);
+  opacity: 0.8;
 }
 
 .linkContainer ul {
@@ -256,6 +136,11 @@ html[data-theme="dark"] .navJpDivider {
   padding: 2px 0;
   letter-spacing: 0.03em;
 }
+.linkContainer ul li a:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 5px;
+  border-radius: 1px;
+}
 .linkContainer ul li a:hover {
   color: var(--foreground);
 }
@@ -264,36 +149,37 @@ html[data-theme="dark"] .navJpDivider {
   font-weight: 700;
 }
 
-/* Japanese sub-label (ホーム etc.) */
+/* Japanese sub-label */
 .navJpLabel {
   display: block;
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.18em;
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
   color: var(--foreground-muted);
   text-transform: none;
   line-height: 1;
-  transition: color 0.25s ease;
+  transition: color 0.2s ease;
   font-family: "Noto Sans JP", sans-serif;
   pointer-events: none;
   user-select: none;
+  opacity: 0.75;
 }
 .linkContainer ul li a:hover .navJpLabel,
 .linkContainer ul li a.activeLink .navJpLabel {
-  color: rgba(220, 0, 20, 0.65);
+  color: var(--foreground);
+  opacity: 1;
 }
 
-/* Brushstroke underline — ink sweep effect */
+/* Hairline underline */
 .linkContainer ul li a::after {
   content: "";
   position: absolute;
   left: 0;
-  bottom: -3px;
-  height: 2px;
+  bottom: -4px;
+  height: 1.5px;
   width: 0;
-  background: linear-gradient(90deg, #e8001a 0%, #ff4455 100%);
-  border-radius: 2px;
-  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--foreground);
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .linkContainer ul li a:hover::after,
 .linkContainer ul li a.activeLink::after {
@@ -314,34 +200,32 @@ html[data-theme="dark"] .navJpDivider {
   position: absolute;
   top: calc(100% + 12px);
   left: 50%;
-  transform: translateX(-50%) translateY(10px);
+  transform: translateX(-50%) translateY(8px);
   min-width: 180px;
-  background: var(--surface-glass);
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.02);
-  padding: 8px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: var(--shadow-md);
+  padding: 6px;
   display: grid;
-  gap: 3px;
+  gap: 2px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.2s ease, transform 0.2s ease;
   z-index: 120;
 }
 
 .shopCategoryDropdown::before {
   content: "";
   position: absolute;
-  top: -6px;
+  top: -5px;
   left: 50%;
   transform: translateX(-50%) rotate(45deg);
-  width: 12px;
-  height: 12px;
-  background: var(--surface-glass);
-  border-left: 1px solid var(--border-soft);
-  border-top: 1px solid var(--border-soft);
+  width: 10px;
+  height: 10px;
+  background: var(--surface-1);
+  border-left: 1px solid var(--border);
+  border-top: 1px solid var(--border);
   z-index: -1;
 }
 
@@ -350,11 +234,11 @@ html[data-theme="dark"] .navJpDivider {
   text-decoration: none;
   color: var(--foreground-2);
   font-weight: 500;
-  font-size: 12.5px;
-  border-radius: 8px;
-  padding: 8px 12px;
-  transition: all 0.2s ease;
-  letter-spacing: 0.01em;
+  font-size: 12px;
+  border-radius: 2px;
+  padding: 7px 12px;
+  transition: all 0.15s ease;
+  letter-spacing: 0.02em;
 }
 
 .shopCategoryDropdown a::after {
@@ -375,25 +259,23 @@ html[data-theme="dark"] .navJpDivider {
 }
 
 .themeToggleButton {
-  border: 1px solid var(--border-soft);
-  background: var(--surface-2);
+  border: 1px solid var(--border-strong, var(--border));
+  background: var(--surface-1);
   color: var(--foreground-2);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
+  border-radius: 4px;
+  width: 34px;
+  height: 34px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.2s ease;
   flex-shrink: 0;
 }
 .themeToggleButton:hover {
-  background: var(--surface-3);
-  color: var(--accent);
-  border-color: var(--border-strong);
-  transform: rotate(20deg) scale(1.08);
-  box-shadow: 0 0 0 3px rgba(232,0,26,0.1);
+  background: var(--surface-2);
+  color: var(--foreground);
+  border-color: var(--border-strong, var(--border));
 }
 
 .localeSelectWrap {
@@ -402,76 +284,82 @@ html[data-theme="dark"] .navJpDivider {
 }
 
 .localeSelect {
-  border: 1px solid var(--border-soft);
-  background: var(--surface-2);
+  border: 1px solid var(--border-strong, var(--border));
+  background: var(--surface-1);
   color: var(--foreground-2);
-  border-radius: 24px;
-  padding: 7px 14px;
-  font-size: 12px;
-  font-weight: 600;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 11.5px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.2s ease;
   font-family: "Noto Sans JP", inherit;
   outline: none;
   letter-spacing: 0.04em;
 }
 .localeSelect:hover {
-  background: var(--surface-3);
-  border-color: var(--border-strong);
+  background: var(--surface-2);
+  border-color: var(--border-strong, var(--border));
   color: var(--foreground);
+}
+.localeSelect:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 3px;
 }
 
 .navSearchForm {
   display: flex;
   align-items: center;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 2px;
   overflow: hidden;
-  background: var(--surface-2);
-  width: 210px;
+  background: var(--surface-1);
+  width: 200px;
   transition:
-    width 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.25s,
-    box-shadow 0.25s,
-    background-color 0.25s;
+    width 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s;
 }
 .navSearchForm:focus-within {
-  border-color: #e8001a;
+  border-color: var(--border-strong, var(--foreground));
   background: var(--surface-1);
-  box-shadow: 0 0 0 4px rgba(232, 0, 26, 0.09);
-  width: 270px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--foreground) 18%, transparent);
+  width: 250px;
 }
 .navSearchForm input {
   border: none;
   outline: none;
-  padding: 8px 14px;
+  padding: 7px 12px;
   width: 100%;
-  font-size: 13px;           /* bigger search text */
+  font-size: 12.5px;
   background: transparent;
   color: var(--foreground);
   font-family: "Noto Sans JP", inherit;
 }
 .navSearchForm input::placeholder {
   color: var(--foreground-muted);
-  font-size: 12.5px;
+  font-size: 12px;
 }
 .navSearchForm button {
   border: none;
   background: transparent;
   color: var(--foreground-3);
-  padding: 7px 14px;
+  padding: 7px 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.25s, color 0.25s;
-  border-radius: 999px;
-  margin-right: 2px;
+  transition: background 0.2s, color 0.2s;
+  border-radius: 0;
   flex-shrink: 0;
 }
 .navSearchForm button:hover {
-  background: #e8001a;
-  color: #fff;
+  background: var(--foreground);
+  color: var(--background);
+}
+.navSearchForm button:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: -3px;
+  border-radius: 3px;
 }
 
 .navSearchWrap {
@@ -484,15 +372,13 @@ html[data-theme="dark"] .navJpDivider {
   left: 0;
   width: 100%;
   min-width: 240px;
-  background: var(--surface-glass);
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
   z-index: 20;
-  animation: dropdownIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: dropdownIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .searchHistoryItem {
@@ -500,55 +386,68 @@ html[data-theme="dark"] .navJpDivider {
   border: none;
   background: transparent;
   text-align: left;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 400;
   color: var(--foreground-2);
-  padding: 9px 14px;
+  padding: 8px 14px;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s, padding-left 0.2s;
+  transition: background 0.15s, color 0.15s, padding-left 0.15s;
 }
 
 .searchHistoryItem:hover {
-  background: var(--surface-3);
-  color: var(--accent);
-  padding-left: 18px;
+  background: var(--surface-2);
+  color: var(--foreground);
+  padding-left: 16px;
 }
 
-.iconContainer span {
+.iconContainer > span {
   color: var(--foreground-2);
-  border-radius: 10px;
-  padding: 8px;
+  border-radius: 2px;
+  padding: 0;
   opacity: 1;
   animation: navItemReveal 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  transition: color 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
 }
-.iconContainer span:nth-of-type(1) { animation-delay: 0.1s; }
-.iconContainer span:nth-of-type(2) { animation-delay: 0.15s; }
-.iconContainer span:nth-of-type(3) { animation-delay: 0.2s; }
-.iconContainer span:hover {
-  background-color: var(--surface-2);
+.iconContainer > span:nth-of-type(1) { animation-delay: 0.1s; }
+.iconContainer > span:nth-of-type(2) { animation-delay: 0.15s; }
+.iconContainer > span:nth-of-type(3) { animation-delay: 0.2s; }
+.iconContainer > span:hover {
   color: var(--foreground);
-  transform: translateY(-2px);
+}
+.iconContainer > span a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px;
+  border-radius: 4px;
+  color: inherit;
+}
+.iconContainer > span a:focus-visible,
+.notificationBell:focus-visible,
+.mobileMenuButton:focus-visible,
+.themeToggleButton:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 3px;
 }
 
 .mobileMenuButton {
   display: none;
-  border: 1px solid var(--border);
-  background: var(--surface-2);
-  color: var(--foreground-2);
-  border-radius: 10px;
-  padding: 9px;
+  border: 1px solid var(--border-strong, var(--border));
+  background: var(--surface-1);
+  color: var(--foreground);
+  border-radius: 4px;
+  padding: 7px;
   cursor: pointer;
   transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 .mobileMenuButton:hover {
-  background: var(--surface-3);
-  border-color: var(--border-strong);
-  color: var(--accent);
+  background: var(--surface-2);
+  border-color: var(--border-strong, var(--border));
+  color: var(--foreground);
 }
 
 .mobileBackdrop {
@@ -592,7 +491,7 @@ html[data-theme="dark"] .navJpDivider {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .navBar, .linkContainer ul li, .iconContainer span, .searchHistoryDropdown {
+  .navBar, .linkContainer ul li, .iconContainer > span, .searchHistoryDropdown {
     animation: none !important;
     transform: none !important;
     opacity: 1 !important;
@@ -627,7 +526,7 @@ html[data-theme="dark"] .navJpDivider {
     z-index: 40;
     transform: translateX(-105%);
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    border-right: 1px solid rgba(216, 229, 255, 0.8);
+    border-right: 1px solid var(--border);
     box-shadow: 20px 0 60px rgba(15, 61, 173, 0.1);
     padding: 100px 30px 40px;
     /* Closed drawer must not steal taps meant for the header (hamburger, logo, icons). */
@@ -652,8 +551,9 @@ html[data-theme="dark"] .navJpDivider {
   .navJpDivider { display: none; }
   
   .iconContainer { gap: 14px; }
-  .iconContainer span { animation: none; opacity: 1; transform: none; padding: 8px; }
-  .iconContainer span:hover { transform: translateY(-2px); }
+  .iconContainer > span { animation: none; opacity: 1; transform: none; }
+  .iconContainer > span a { padding: 8px; }
+  .iconContainer > span:hover { transform: translateY(-2px); }
   
   .navSearchForm { flex: 1; margin: 0 16px; }
   .navSearchForm input { min-width: 100%; }
@@ -680,3 +580,4 @@ html[data-theme="dark"] .navJpDivider {
   .navSearchWrap { display: none; }
   .logoContainer img { width: 104px; }
 }
+.notificationCenter{position:relative;display:flex;align-items:center;z-index:80}.notificationBell{border:0;background:transparent;color:inherit;display:grid;place-items:center;padding:8px;cursor:pointer}.notificationBell .MuiBadge-badge{font-size:10px;min-width:17px;height:17px}.notificationDismiss{position:fixed;inset:0;z-index:80;border:0;background:transparent;cursor:default}.notificationPanel{position:absolute;right:-60px;top:calc(100% + 12px);width:min(390px,calc(100vw - 24px));max-height:min(620px,calc(100vh - 100px));overflow:hidden;background:var(--background,#fff);color:var(--foreground,#171717);border:1px solid rgba(120,120,120,.25);border-radius:14px;box-shadow:0 16px 50px rgba(0,0,0,.2);z-index:81;display:flex;flex-direction:column}.notificationPanel>header{display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid rgba(120,120,120,.18)}.notificationPanel>header div{display:grid;gap:3px}.notificationPanel>header small{opacity:.65;font-size:12px}.notificationPanel button{font:inherit;color:inherit}.notificationPanel>header button{border:0;background:none;color:#316cbe;font-size:12px;cursor:pointer}.notificationPanel>nav{display:flex;gap:4px;padding:10px 12px;overflow:auto;border-bottom:1px solid rgba(120,120,120,.14)}.notificationPanel>nav button{white-space:nowrap;padding:6px 9px;border-radius:20px;border:0;background:transparent;opacity:.7;cursor:pointer;font-size:12px}.notificationPanel>nav button[aria-pressed=true]{background:rgba(58,119,190,.15);color:#2463a9;opacity:1}.notificationList{overflow:auto;min-height:120px}.notificationItem{position:relative;display:flex;align-items:flex-start;padding:2px 36px 2px 0;border-bottom:1px solid rgba(120,120,120,.12)}.notificationItem.unread{background:rgba(67,130,207,.07)}.notificationContent{display:grid;gap:6px;text-align:left;flex:1;padding:13px 14px;border:0;background:transparent;cursor:pointer}.notificationContent strong{font-size:13px}.notificationContent span{font-size:12px;opacity:.78;line-height:1.45}.notificationContent time{font-size:11px;opacity:.55}.notificationCouponCode{font-weight:600;color:#306db5}.notificationReadButton{position:absolute;right:9px;top:12px;border:1px solid rgba(120,120,120,.3);background:transparent;border-radius:50%;width:25px;height:25px;display:grid;place-items:center;cursor:pointer}.notificationExternal{position:absolute;right:13px;bottom:15px;opacity:.4}.notificationItem:has(.notificationReadButton) .notificationExternal{display:none}.notificationEmpty{text-align:center;padding:28px 12px;font-size:13px;opacity:.6}.notificationPanel>a{padding:13px;text-align:center;border-top:1px solid rgba(120,120,120,.16);font-size:12px;color:#316cbe;text-decoration:none}@media(max-width:600px){.notificationPanel{position:fixed;top:72px;right:12px;width:calc(100vw - 24px);max-height:calc(100dvh - 90px)}.notificationBell{padding:7px}}

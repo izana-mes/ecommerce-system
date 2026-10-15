@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { HiOutlineXMark, HiOutlineMagnifyingGlass } from "react-icons/hi2";
+import { HiOutlineXMark, HiOutlineMagnifyingGlass, HiOutlineQuestionMarkCircle } from "react-icons/hi2";
 import { UserSearchResult } from "@/lib/chat/types";
 import { searchUsersApi } from "@/lib/chat/chatApi";
 
@@ -47,31 +47,32 @@ export function NewConversationModal({
   };
 
   return (
-    <div className="chatModalOverlay" onClick={onClose}>
+    <div className="chatModalOverlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <div className="chatModalContent" onClick={(e) => e.stopPropagation()}>
         <div className="chatModalHeader">
-          <h2>New Conversation</h2>
-          <button type="button" className="chatIconBtn" onClick={onClose}>
-            <HiOutlineXMark size={20} />
+          <h2 id="modal-title">New Conversation</h2>
+          <button type="button" className="chatIconBtn" aria-label="Close dialog" onClick={onClose}>
+            <HiOutlineXMark size={18} />
           </button>
         </div>
 
         <div className="chatModalBody">
           <button
             type="button"
+            className="chatConversationItem"
             style={{
-              padding: "12px 16px",
-              background: "var(--chat-primary-light)",
-              color: "var(--chat-primary)",
-              border: "1px solid var(--chat-primary)",
-              borderRadius: "10px",
-              fontWeight: 600,
-              cursor: "pointer",
-              textAlign: "center",
+              padding: "10px 14px",
+              backgroundColor: "var(--chat-paper-wash)",
+              border: "1px solid var(--chat-border)",
+              borderRadius: "var(--chat-radius-md)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: "8px",
+              gap: 8,
+              fontSize: 13.5,
+              fontWeight: 500,
+              color: "var(--chat-ink)",
+              cursor: "pointer",
             }}
             disabled={creating}
             onClick={async () => {
@@ -87,22 +88,25 @@ export function NewConversationModal({
               }
             }}
           >
-            💬 Contact Customer Support Desk
+            <HiOutlineQuestionMarkCircle size={18} />
+            <span>{creating ? "Connecting..." : "Contact Customer Support Desk"}</span>
           </button>
 
           <div style={{ position: "relative" }}>
             <HiOutlineMagnifyingGlass
-              size={18}
-              style={{ position: "absolute", left: 12, top: 12, color: "var(--chat-text-muted)" }}
+              size={16}
+              style={{ position: "absolute", left: 12, top: 12, color: "var(--chat-ink-subtle)" }}
+              aria-hidden="true"
             />
             <input
               type="text"
               className="chatSidebarSearchInput"
-              style={{ paddingLeft: 38 }}
+              style={{ paddingLeft: 36 }}
               placeholder="Search by name, username, or email..."
               value={query}
               onChange={(e) => handleSearch(e.target.value)}
               autoFocus
+              aria-label="Search users"
             />
           </div>
 
@@ -112,13 +116,20 @@ export function NewConversationModal({
             placeholder="Optional: Initial message..."
             value={initialMsg}
             onChange={(e) => setInitialMsg(e.target.value)}
+            aria-label="Initial message"
           />
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {error && <p className="chatComposerError" role="alert">{error}</p>}
-            {loading && <p style={{ fontSize: 13, color: "var(--chat-text-muted)", textAlign: "center" }}>Searching...</p>}
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {error && <div className="chatComposerError" role="alert">{error}</div>}
+            {loading && (
+              <div style={{ padding: 12, textAlign: "center" }}>
+                <span className="chatSendingSpinner" style={{ borderColor: "rgba(0,0,0,0.15)", borderTopColor: "var(--chat-ink)" }} />
+              </div>
+            )}
             {!loading && query && results.length === 0 && (
-              <p style={{ fontSize: 13, color: "var(--chat-text-muted)", textAlign: "center" }}>No users found.</p>
+              <p style={{ fontSize: 13, color: "var(--chat-ink-subtle)", textAlign: "center", margin: "8px 0" }}>
+                No users found.
+              </p>
             )}
             {results.map((u) => (
               <button
@@ -140,13 +151,23 @@ export function NewConversationModal({
                   }
                 }}
               >
-                <div className="chatAvatar" style={{ width: 36, height: 36, fontSize: 14 }}>
-                  {u.fullName ? u.fullName.charAt(0).toUpperCase() : "?"}
+                <div className="chatAvatarWrap" style={{ width: 34, height: 34 }}>
+                  <div className="chatAvatar" style={{ fontSize: 12 }}>
+                    {(u.fullName || u.username || u.email || "?").charAt(0).toUpperCase()}
+                  </div>
+                  {u.isOnline && <span className="chatOnlineDot" />}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{u.fullName}</div>
-                  <div style={{ fontSize: 12, color: "var(--chat-text-muted)" }}>
-                    {u.email} {u.role ? `(${u.role})` : ""}
+                <div className="chatItemContent">
+                  <div className="chatItemTopRow">
+                    <span className="chatItemTitle" style={{ fontSize: 13.5 }}>
+                      {u.fullName || u.username || u.email}
+                    </span>
+                    {u.isOnline && <span className="chatPresenceText">Online</span>}
+                  </div>
+                  <div className="chatItemBottomRow">
+                    <span className="chatItemSnippet" style={{ fontSize: 12 }}>
+                      {u.username ? `@${u.username}` : u.email}
+                    </span>
                   </div>
                 </div>
               </button>

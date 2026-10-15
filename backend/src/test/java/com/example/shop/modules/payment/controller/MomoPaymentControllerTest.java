@@ -49,4 +49,26 @@ class MomoPaymentControllerTest {
                         .content("{\"orderId\":\"ORD-1\"}"))
                 .andExpect(status().isNoContent());
     }
+
+    @Test
+    void confirmRedirect_whenSuccessful_returnsOkWithSuccessTrue() throws Exception {
+        org.mockito.Mockito.when(momoPaymentService.processRedirect(org.mockito.ArgumentMatchers.anyMap())).thenReturn(true);
+
+        mockMvc.perform(post("/api/payments/momo/confirm-redirect")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"orderId\":\"ORD-1\",\"resultCode\":\"0\"}"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void confirmRedirect_whenDeclined_returnsOkWithSuccessFalse() throws Exception {
+        org.mockito.Mockito.when(momoPaymentService.processRedirect(org.mockito.ArgumentMatchers.anyMap())).thenReturn(false);
+
+        mockMvc.perform(post("/api/payments/momo/confirm-redirect")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"orderId\":\"ORD-1\",\"resultCode\":\"1002\"}"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.success").value(false));
+    }
 }

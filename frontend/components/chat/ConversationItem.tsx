@@ -29,12 +29,13 @@ export function ConversationItem({ conversation, isActive, onSelect }: Conversat
   return (
     <button
       type="button"
-      className={`chatConversationItem ${isActive ? "active" : ""}`}
+      className={`chatConversationItem ${isActive ? "active" : ""} ${hasUnread ? "hasUnread" : ""}`}
       onClick={() => onSelect(conversation.conversationId)}
+      aria-selected={isActive}
     >
       <div className="chatAvatarWrap">
         <div className="chatAvatar">{initial}</div>
-        {conversation.isOnline && <span className="chatOnlineDot" />}
+        {conversation.isOnline && <span className="chatOnlineDot" aria-label="Online" />}
       </div>
 
       <div className="chatItemContent">
@@ -48,7 +49,7 @@ export function ConversationItem({ conversation, isActive, onSelect }: Conversat
             {conversation.lastMessagePreview || "No messages yet"}
           </span>
           {hasUnread && (
-            <span className="chatUnreadBadge">
+            <span className="chatUnreadBadge" aria-label={`${conversation.unreadCount} unread messages`}>
               {conversation.unreadCount! > 99 ? "99+" : conversation.unreadCount}
             </span>
           )}

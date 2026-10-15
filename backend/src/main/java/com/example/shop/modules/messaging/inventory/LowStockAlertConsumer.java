@@ -4,9 +4,13 @@ import com.example.shop.common.mail.EmailService;
 import com.example.shop.config.ConditionalOnRabbitEnabled;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
+
+import java.time.Duration;
 
 @Component
 @RequiredArgsConstructor
@@ -15,6 +19,9 @@ import org.springframework.stereotype.Component;
 public class LowStockAlertConsumer {
 
     private final EmailService emailService;
+    private final ObjectProvider<StringRedisTemplate> redisTemplateProvider;
+
+    private static final Duration DEDUP_TTL = Duration.ofHours(2);
 
     @Value("${application.bootstrap.admin.email:admin@example.com}")
     private String adminEmail;
@@ -26,8 +33,26 @@ public class LowStockAlertConsumer {
             return;
         }
 
+        String productId = event.getProductId();
+        if (productId != null && !productId.isBlank()) {
+            StringRedisTemplate redis = redisTemplateProvider.getIfAvailable();
+            if (redis != null) {
+                String dedupKey = "msg:idemp:low-stock:" + productId.trim() + ":" + event.getRemainingStock();
+                try {
+                    Boolean isNew = redis.opsForValue().setIfAbsent(dedupKey, "1", DEDUP_TTL);
+                    if (Boolean.FALSE.equals(isNew)) {
+                        log.info("Duplicate low stock alert skipped for product {} at stock {}", productId, event.getRemainingStock());
+                        return;
+                    }
+                } catch (Exception ex) {
+                    log.warn("Redis dedup check failed for low stock alert {}, processing anyway: {}", productId, ex.getMessage());
+                }
+            }
+        }
+
         log.warn("Low stock detected: product={} name={} remaining={}",
                 event.getProductId(), event.getProductName(), event.getRemainingStock());
+
 
         String subject = "⚠️ Low Stock Alert - " + event.getProductName();
         String content = """

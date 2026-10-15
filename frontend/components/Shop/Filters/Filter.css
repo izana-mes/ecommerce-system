@@ -1,42 +1,57 @@
 .filterSection {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 .clearFiltersButton {
   align-self: flex-start;
-  border: 1px solid var(--border-soft);
-  background: transparent;
-  padding: 8px 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--foreground);
+  padding: 6px 12px;
+  border-radius: 2px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .clearFiltersButton:hover {
   background: var(--surface-2);
+  border-color: var(--foreground);
 }
 
 .categoryItem {
-  box-shadow: white;
+  box-shadow: none;
   border: none;
 }
 
 .filterHeading {
-  font-size: 18px;
+  font-size: 13px;
   font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--foreground);
+  margin-bottom: 8px;
 }
 
 .filterCategoryItem {
-  font-size: 14px;
-  padding-bottom: 10px;
+  font-size: 13px;
+  padding: 6px 0;
   cursor: pointer;
+  color: var(--foreground-2);
+  transition: color 0.2s ease;
+}
+
+.filterCategoryItem:hover {
+  color: var(--foreground);
 }
 
 .filterCategoryItem.selected {
-  font-weight: 700;
-  color: var(--primary);
+  font-weight: 600;
+  color: var(--foreground);
 }
 
 /* Filter Color */
@@ -44,139 +59,165 @@
 .filterColorBtn {
   display: flex;
   flex-wrap: wrap;
-  gap: 25px;
+  gap: 12px;
 }
 
 .filterColorBtn button {
   background-color: var(--surface-1);
   border-radius: 50%;
-  padding: 8px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
   cursor: pointer;
-  transition: all 0.3s ease;
   outline: none;
-  border: none;
+  border: 1px solid var(--border);
   position: relative;
+  transition: transform 0.15s ease;
+}
+
+.filterColorBtn button:hover {
+  transform: scale(1.1);
 }
 
 .filterColorBtn button.selected::after {
   content: "";
   position: absolute;
   box-sizing: border-box;
-  border: 2px solid var(--foreground);
+  border: 1.5px solid var(--foreground);
   border-radius: 50%;
-  width: calc(100% + 12px);
-  height: calc(100% + 12px);
-  left: -6px;
-  top: -6px;
-  transition: all 0.3s ease;
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
+  left: -4px;
+  top: -4px;
 }
 
-/* filter Sizes */
+/* Filter Sizes */
 
 .sizeButtons {
   display: flex;
   flex-wrap: wrap;
-  gap: 15px;
+  gap: 8px;
 }
 
 .sizeButton {
   background-color: var(--surface-1);
-  padding: 6px 20px;
+  color: var(--foreground);
+  padding: 6px 14px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
-  border: 1px solid var(--border-soft);
+  border: 1px solid var(--border);
+  border-radius: 2px;
   outline: none;
-  font-size: 14px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 .sizeButton:hover {
+  border-color: var(--foreground);
   background-color: var(--surface-2);
 }
 
 .sizeButton.selected {
-  background-color: var(--surface-2);
+  background-color: var(--foreground);
+  color: var(--background);
+  border-color: var(--foreground);
 }
 
-/* filter brands */
+/* Filter Brands */
 
 .searchBar {
   position: relative;
   display: flex;
   align-items: center;
-  margin-bottom: 25px;
+  margin-bottom: 16px;
 }
 
 .searchIcon {
   position: absolute;
-  right: 10px;
+  right: 12px;
+  color: var(--foreground-muted);
 }
 
 .searchBar input {
-  width: calc(100% - 30px);
-  padding: 12px 18px 9.6px;
-  padding-right: 30px;
-  border: 2px solid var(--border-soft);
+  width: 100%;
+  padding: 8px 36px 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
   outline: none;
-  font-size: 14px;
-  text-transform: uppercase;
+  font-size: 13px;
+  background-color: var(--surface-1);
+  color: var(--foreground);
+  transition: border-color 0.2s ease;
+}
+
+.searchBar input:focus {
+  border-color: var(--foreground);
 }
 
 .brandList {
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .brandItem {
   display: flex;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
 .brandRadio {
-  margin-right: 15px;
+  margin-right: 10px;
   appearance: none;
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--border-soft);
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
   position: relative;
   cursor: pointer;
   outline: none;
 }
 
 .brandRadio:checked {
-  border: 2px solid var(--foreground);
+  border-color: var(--foreground);
+  background-color: var(--foreground);
 }
 
 .brandRadio::after {
   content: "";
   display: block;
-  width: 8px;
-  height: 8px;
-  background-color: var(--foreground);
+  width: 4px;
+  height: 7px;
+  border: solid var(--background);
+  border-width: 0 1.5px 1.5px 0;
   position: absolute;
-  top: 50%;
+  top: 40%;
   left: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  transition: transform 0.2s ease-in-out;
+  transform: translate(-50%, -50%) rotate(45deg) scale(0);
+  transition: transform 0.15s ease-in-out;
 }
 
 .brandRadio:checked::after {
-  transform: translate(-50%, -50%) scale(1);
+  transform: translate(-50%, -50%) rotate(45deg) scale(1);
 }
 
 .notFoundMessage {
-  font-size: 14px;
-  color: red;
-  margin-top: 10px;
+  font-size: 13px;
+  color: var(--danger);
+  margin-top: 8px;
 }
 
 .brandLabel {
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
+  color: var(--foreground-2);
+}
+
+.brandLabel:hover {
+  color: var(--foreground);
 }
 
 .brandCount {
   margin-left: auto;
-  font-size: 14px;
+  font-size: 12px;
   color: var(--muted-text);
 }
 
@@ -184,17 +225,18 @@
 
 .priceRange {
   display: flex;
-  gap: 20px;
+  gap: 16px;
   align-items: center;
   justify-content: space-between;
 }
 
 .priceRange p {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--muted-text);
   font-weight: 400;
 }
 
 .priceRange p span {
   color: var(--foreground);
+  font-weight: 500;
 }

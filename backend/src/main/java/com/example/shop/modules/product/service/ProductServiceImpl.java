@@ -5,12 +5,15 @@ import com.example.shop.config.CacheInvalidationEventPublisher;
 import com.example.shop.config.RedisCacheConfig;
 import com.example.shop.modules.cart.repository.CartItemRepository;
 import com.example.shop.modules.cart.repository.CartReservedStockProjection;
+import com.example.shop.modules.messaging.inventory.LowStockAlertEvent;
+import com.example.shop.modules.messaging.inventory.LowStockAlertPublisher;
 import com.example.shop.modules.product.dto.ProductDto;
 import com.example.shop.modules.product.dto.StockAdjustmentItemDto;
 import com.example.shop.modules.product.entity.Product;
 import com.example.shop.modules.product.mapper.ProductMapper;
 import com.example.shop.modules.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -44,6 +47,11 @@ public class ProductServiceImpl implements ProductService {
     private final ProductMapper productMapper;
     private final CartItemRepository cartItemRepository;
     private final CacheInvalidationEventPublisher cacheInvalidationEventPublisher;
+    private final LowStockAlertPublisher lowStockAlertPublisher;
+
+    @Value("${application.inventory.low-stock-threshold:5}")
+    private int lowStockThreshold;
+
 
     @Override
     @Transactional(readOnly = true)
@@ -81,6 +89,10 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = RedisCacheConfig.PRODUCTS_ACTIVE,
+            key = "T(java.lang.Math).max(1, T(java.lang.Math).min(#limit, 50))"
+    )
     public List<ProductDto> getActiveProducts(int limit) {
         return productRepository.findByActiveTrueOrderByIdAsc(PageRequest.of(0, Math.max(1, Math.min(limit, 50))))
                 .stream().map(productMapper::toDto).toList();
@@ -131,6 +143,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Caching(evict = {
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_ALL, allEntries = true),
+            @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_ACTIVE, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SEARCH, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SUGGEST, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_INVENTORY_HEALTH, allEntries = true),
@@ -159,6 +172,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Caching(evict = {
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_ALL, allEntries = true),
+            @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_ACTIVE, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SEARCH, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SUGGEST, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_INVENTORY_HEALTH, allEntries = true),
@@ -202,6 +216,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Caching(evict = {
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_ALL, allEntries = true),
+            @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_ACTIVE, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SEARCH, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SUGGEST, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_INVENTORY_HEALTH, allEntries = true),
@@ -260,6 +275,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Caching(evict = {
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_ALL, allEntries = true),
+            @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_ACTIVE, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SEARCH, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SUGGEST, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_INVENTORY_HEALTH, allEntries = true),
@@ -279,6 +295,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Caching(evict = {
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_ALL, allEntries = true),
+            @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_ACTIVE, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SEARCH, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SUGGEST, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_INVENTORY_HEALTH, allEntries = true),
@@ -298,6 +315,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Caching(evict = {
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_ALL, allEntries = true),
+            @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_ACTIVE, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SEARCH, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SUGGEST, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_INVENTORY_HEALTH, allEntries = true),
@@ -378,6 +396,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Caching(evict = {
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_ALL, allEntries = true),
+            @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_ACTIVE, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SEARCH, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SUGGEST, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_INVENTORY_HEALTH, allEntries = true),
@@ -417,11 +436,25 @@ public class ProductServiceImpl implements ProductService {
         }
         productRepository.saveAll(products);
         publishProductCacheInvalidation();
+
+        // Publish low-stock alerts after the DB write (fire-and-forget; non-critical).
+        for (Product product : products) {
+            int remaining = Math.max(0, defaultStock(product.getStockQuantity()));
+            if (remaining <= lowStockThreshold) {
+                lowStockAlertPublisher.publish(LowStockAlertEvent.builder()
+                        .productId(product.getProductID())
+                        .productName(product.getProductName())
+                        .remainingStock(remaining)
+                        .orderNumber("") // order number not available here; populated when called from order flow
+                        .build());
+            }
+        }
     }
 
     @Override
     @Caching(evict = {
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_ALL, allEntries = true),
+            @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_ACTIVE, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SEARCH, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_SUGGEST, allEntries = true),
             @CacheEvict(cacheNames = RedisCacheConfig.PRODUCTS_INVENTORY_HEALTH, allEntries = true),
@@ -545,6 +578,7 @@ public class ProductServiceImpl implements ProductService {
     private void publishProductCacheInvalidation() {
         cacheInvalidationEventPublisher.publish(List.of(
                 RedisCacheConfig.PRODUCTS_ALL,
+                RedisCacheConfig.PRODUCTS_ACTIVE,
                 RedisCacheConfig.PRODUCTS_SEARCH,
                 RedisCacheConfig.PRODUCTS_SUGGEST,
                 RedisCacheConfig.PRODUCTS_INVENTORY_HEALTH,

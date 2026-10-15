@@ -1,15 +1,15 @@
 .profilePage {
   min-height: 60vh;
-  padding: 40px 16px;
-  background-color: #f9f9fb;
+  padding: 40px 24px;
+  background-color: var(--background);
 }
 
 .profileLayout {
   max-width: 1120px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
-  gap: 24px;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 32px;
   align-items: start;
 }
 
@@ -22,9 +22,10 @@
 .profileCard {
   width: 100%;
   background-color: var(--surface-1);
-  border-radius: 12px;
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
-  padding: 32px 24px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  box-sizing: border-box;
+  padding: 32px 28px;
 }
 
 .profileHistoryCard {
@@ -36,27 +37,32 @@
 }
 
 .profileCard h2 {
-  margin: 0 0 24px;
-  font-size: 24px;
+  margin: 0 0 20px;
+  font-size: 20px;
   font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
 }
 
 .profileField {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  font-size: 14px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-soft);
+  padding-bottom: 10px;
 }
 
 .profileLabel {
-  font-weight: 600;
-  color: var(--muted-text);
+  font-weight: 500;
+  color: var(--foreground-3);
 }
 
 .profileValue {
   color: var(--foreground);
   word-break: break-word;
+  font-weight: 500;
 }
 
 .profilePointsRow {
@@ -64,30 +70,34 @@
 }
 
 .profilePointsValue {
-  font-weight: 700;
-  color: #0f7a34;
-  background: #e8f7ee;
-  border: 1px solid #bde7cc;
-  border-radius: 999px;
-  padding: 4px 10px;
+  font-weight: 600;
+  color: var(--success);
+  background: var(--success-soft);
+  border: 1px solid var(--success-soft);
+  border-radius: 2px;
+  padding: 2px 8px;
+  font-size: 12px;
 }
 
 .profileLogoutButton {
   width: 100%;
   margin-top: 24px;
   padding: 10px 16px;
-  border-radius: 999px;
-  border: none;
-  background-color: #c32929;
-  color: var(--background);
+  border-radius: 2px;
+  border: 1px solid var(--danger);
+  background-color: transparent;
+  color: var(--danger);
   font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .profileLogoutButton:hover {
-  background-color: #a42121;
-  box-shadow: 0 8px 20px rgba(195, 41, 41, 0.35);
+  background-color: var(--danger);
+  color: #fff;
 }
 
 .profileCouponsCard {
@@ -104,7 +114,7 @@
   justify-content: space-between;
   gap: 16px;
   align-items: flex-start;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .profileSupplierHeader p,
@@ -112,33 +122,36 @@
 .profileHistoryHeader p {
   margin: 6px 0 0;
   color: var(--muted-text);
+  font-size: 13px;
 }
 
 .profileSupplierMetrics {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .profileMetric {
-  border: 1px solid rgba(16, 24, 40, 0.08);
-  border-radius: 14px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
   padding: 14px 16px;
-  background: #f8fafc;
+  background: var(--surface-2);
 }
 
 .profileMetric strong {
   display: block;
-  font-size: 24px;
+  font-size: 22px;
+  font-weight: 600;
   line-height: 1;
+  color: var(--foreground);
 }
 
 .profileMetric span {
   display: block;
   margin-top: 6px;
   color: var(--muted-text);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .profilePendingList,
@@ -152,15 +165,15 @@
 }
 
 .profilePendingList {
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .profileMiniSection {
-  margin-bottom: 18px;
-  border: 1px solid rgba(16, 24, 40, 0.08);
-  border-radius: 16px;
-  padding: 16px;
-  background: #f8fafc;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 18px;
+  background: var(--surface-2);
 }
 
 .profileMiniSectionHeader {
@@ -168,17 +181,20 @@
   justify-content: space-between;
   gap: 12px;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .profileMiniSectionHeader h3 {
   margin: 0;
-  font-size: 17px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--foreground);
 }
 
 .profileMiniSectionHeader p {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   color: var(--muted-text);
+  font-size: 12px;
 }
 
 .profileMiniHistoryList {
@@ -187,18 +203,18 @@
 }
 
 .profileMiniHistoryItem {
-  border: 1px solid rgba(16, 24, 40, 0.08);
-  border-radius: 12px;
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 12px 14px;
+  background: var(--surface-1);
 }
 
 .profilePendingItem,
 .profileHistoryItem {
-  border: 1px solid rgba(16, 24, 40, 0.08);
-  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 2px;
   padding: 16px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 247, 251, 0.92));
+  background: var(--surface-1);
 }
 
 .profileHistoryItemCompact {
@@ -217,13 +233,15 @@
 
 .profilePendingItemHeader h3 {
   margin: 0;
-  font-size: 17px;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .profilePendingItemHeader p,
 .profileHistoryItem p {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   color: var(--muted-text);
+  font-size: 13px;
 }
 
 .profilePendingMeta,
@@ -233,7 +251,7 @@
   flex-wrap: wrap;
   gap: 12px;
   color: var(--foreground);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .profileHistoryHeader {
@@ -241,11 +259,8 @@
 }
 
 .profileHistoryItem strong {
-  font-size: 15px;
-}
-
-.profileHistoryItem p {
   font-size: 14px;
+  font-weight: 600;
 }
 
 .profileHistoryCardCompact h2 {
@@ -255,38 +270,38 @@
 .profileHistoryPayment,
 .profileHistoryEmpty {
   color: var(--muted-text);
+  font-size: 13px;
 }
 
 .profileHistoryPayment {
   display: inline-block;
-  margin-top: 10px;
-  font-size: 13px;
+  margin-top: 8px;
 }
 
 .profileSupplierStatus {
   display: inline-flex;
   align-items: center;
-  border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 12px;
-  font-weight: 700;
+  border-radius: 2px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .profileSupplierStatuspending {
-  background: #fff4db;
-  color: #8a5a00;
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 
 .profileSupplierStatusapproved {
-  background: #dff7e8;
-  color: #17663a;
+  background: var(--success-soft);
+  color: var(--success);
 }
 
 .profileSupplierStatusrejected {
-  background: #fde8e8;
-  color: #b42318;
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .profileSupplierForm {
@@ -297,16 +312,24 @@
 .profileTextInput,
 .profileTextarea {
   width: 100%;
-  border: 1px solid rgba(16, 24, 40, 0.12);
-  border-radius: 12px;
-  padding: 12px 14px;
-  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 10px 12px;
+  background: var(--surface-1);
   color: var(--foreground);
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.profileTextInput:focus,
+.profileTextarea:focus {
+  outline: none;
+  border-color: var(--foreground);
 }
 
 .profileTextarea {
   resize: vertical;
-  min-height: 120px;
+  min-height: 100px;
 }
 
 .profileCouponsHeader {
@@ -318,30 +341,33 @@
 }
 
 .profileCouponsHeader p {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   color: var(--muted-text);
+  font-size: 13px;
 }
 
 .profileCouponList {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .profileCouponItem {
-  border: 1px solid rgba(16, 24, 40, 0.08);
-  border-radius: 14px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
   padding: 16px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(244, 247, 251, 0.9));
+  background: var(--surface-1);
 }
 
 .profileCouponItem h3 {
-  margin: 0 0 8px;
-  font-size: 18px;
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .profileCouponItem p {
   margin: 0;
   color: var(--muted-text);
+  font-size: 13px;
 }
 
 .profileCouponStatusRow,
@@ -354,17 +380,18 @@
 }
 
 .profileCouponStatusRow {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .profileCouponMeta {
-  margin-top: 14px;
-  color: var(--foreground);
+  margin-top: 12px;
+  color: var(--foreground-2);
+  font-size: 13px;
   flex-wrap: wrap;
 }
 
 .profileCouponActions {
-  margin-top: 18px;
+  margin-top: 16px;
   justify-content: flex-start;
   flex-wrap: wrap;
 }
@@ -372,85 +399,98 @@
 .profileCouponStatus {
   display: inline-flex;
   align-items: center;
-  border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 12px;
-  font-weight: 700;
+  border-radius: 2px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .profileCouponStatuspending {
-  background: #fff4db;
-  color: #8a5a00;
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 
 .profileCouponStatusready {
-  background: #dff7e8;
-  color: #17663a;
+  background: var(--success-soft);
+  color: var(--success);
 }
 
 .profileCouponStatusused {
-  background: #eceff3;
-  color: #475467;
+  background: var(--surface-3);
+  color: var(--foreground-muted);
 }
 
 .profileCouponStatusexpired {
-  background: #fde8e8;
-  color: #b42318;
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .profileCouponCode {
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.08em;
 }
 
 .profilePrimaryButton,
 .profileSecondaryButton,
 .profileLinkButton {
-  border-radius: 999px;
-  padding: 10px 16px;
+  border-radius: 2px;
+  padding: 8px 16px;
   font-weight: 600;
-  border: none;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
   cursor: pointer;
   text-decoration: none;
+  transition: opacity 0.2s ease;
 }
 
 .profilePrimaryButton,
 .profileLinkButton {
-  background: #101828;
-  color: #fff;
+  background: var(--foreground);
+  color: var(--background);
+}
+
+.profilePrimaryButton:hover,
+.profileLinkButton:hover {
+  opacity: 0.85;
 }
 
 .profileSecondaryButton {
-  background: #eef2f6;
-  color: #101828;
+  background: var(--surface-2);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+.profileSecondaryButton:hover {
+  background: var(--surface-3);
 }
 
 .profileHistoryHeader .profileLinkButton {
-  background: #eef2f6;
-  color: #101828;
+  background: var(--surface-2);
+  color: var(--foreground);
+  border-color: var(--border);
 }
 
 .profileCouponsEmpty,
 .profileUsedText {
   color: var(--muted-text);
+  font-size: 13px;
 }
 
 @media (max-width: 900px) {
   .profileLayout {
     grid-template-columns: 1fr;
   }
-
   .profileCouponsCard,
   .profileHistoryCard {
     grid-column: auto;
   }
-
   .profileMiniSectionHeader {
     flex-direction: column;
   }
-
   .profileMetricsRow {
     grid-template-columns: 1fr;
   }
@@ -460,85 +500,88 @@
 .profileDashboardHeader {
   margin-bottom: 24px;
 }
+
 .profileDashboardHeader h2 {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 600;
 }
+
 .profileDashboardHeader p {
   margin: 0;
   color: var(--muted-text);
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .profileMetricsRow {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .profileMetricCard {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 20px;
-  background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(244,247,251,0.6));
-  border: 1px solid rgba(16, 24, 40, 0.08);
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.02);
-  transition: transform 0.2s;
+  padding: 16px 20px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  transition: border-color 0.2s;
 }
 
 .profileMetricCard.profileChatPromoCard:hover {
   cursor: pointer;
-  transform: translateY(-2px);
-  background: linear-gradient(135deg, rgba(238, 242, 255, 0.9), rgba(224, 231, 255, 0.6));
-  border-color: rgba(99, 102, 241, 0.3);
+  border-color: var(--brand);
 }
 
 .profileMetricIcon {
-  font-size: 28px;
-  background: rgba(255,255,255,0.7);
-  padding: 10px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  font-size: 22px;
+  background: var(--surface-2);
+  color: var(--foreground);
+  padding: 8px;
+  border-radius: 4px;
 }
 
 .profileAiGlow {
-  background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
-  border-radius: 12px;
+  background: var(--brand-soft);
+  color: var(--brand);
 }
 
 .profileMetricCard strong {
   display: block;
-  font-size: 20px;
+  font-size: 18px;
+  font-weight: 600;
   line-height: 1.2;
 }
 
 .profileMetricCard span {
   display: block;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--muted-text);
   margin-top: 4px;
 }
 
 .profileWishlistPreview {
-  margin-bottom: 32px;
-  background: #f8fafc;
-  border-radius: 16px;
+  margin-bottom: 28px;
+  background: var(--surface-2);
+  border-radius: 4px;
   padding: 20px;
-  border: 1px solid rgba(16, 24, 40, 0.08);
+  border: 1px solid var(--border);
 }
 
 .profileWishlistHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .profileWishlistHeader h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .profileWishlistGrid {
@@ -548,20 +591,19 @@
 }
 
 .profileWishlistItem {
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  border: 1px solid rgba(16, 24, 40, 0.05);
+  background: var(--surface-1);
+  border-radius: 2px;
+  padding: 14px;
+  border: 1px solid var(--border-soft);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  gap: 10px;
 }
 
 .profileWishlistInfo h4 {
-  margin: 0 0 6px;
-  font-size: 14px;
+  margin: 0 0 4px;
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -571,40 +613,47 @@
 .profileWishlistInfo p {
   margin: 0;
   color: var(--muted-text);
-  font-size: 13.5px;
+  font-size: 13px;
 }
 
 .profileSmallBtn {
-  font-size: 12px;
-  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 6px 10px;
   display: inline-block;
   text-align: center;
 }
 
 .profileSupplierNotice {
-  padding: 16px;
-  background: rgba(255, 244, 219, 0.3);
-  border: 1px solid rgba(138, 90, 0, 0.15);
-  border-radius: 12px;
+  padding: 14px;
+  background: var(--warning-soft);
+  border: 1px solid var(--warning);
+  border-radius: 2px;
 }
+
 .profileSupplierNotice h3 {
-  margin: 0 0 8px;
-  font-size: 16px;
+  margin: 0 0 6px;
+  font-size: 15px;
 }
+
 .profileSupplierNotice p {
   margin: 4px 0;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .profileSupplierMiniForm h3 {
   margin: 0 0 4px;
-  font-size: 16px;
+  font-size: 15px;
 }
+
 .profileSubtitle {
-  margin: 0 0 16px;
+  margin: 0 0 14px;
   font-size: 13px;
   color: var(--muted-text);
 }
+
 .profileSupplierFormGrid {
   display: grid;
   gap: 10px;

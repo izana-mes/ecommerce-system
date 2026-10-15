@@ -96,8 +96,17 @@ function OAuthCallbackContent() {
         dispatch(fetchCartAsync());
         dispatch(fetchWishlistAsync());
 
+        const returnToParam = (searchParams.get("returnTo") || "").trim();
+        const returnTo =
+          returnToParam.startsWith("/") &&
+          !returnToParam.startsWith("//") &&
+          !returnToParam.startsWith("/login") &&
+          !returnToParam.startsWith("/oauth")
+            ? returnToParam
+            : "/";
+
         toast.success("Logged in with Google");
-        router.replace("/");
+        router.replace(returnTo);
         router.refresh();
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "OAuth login sync failed");

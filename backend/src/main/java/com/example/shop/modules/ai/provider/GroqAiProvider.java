@@ -10,8 +10,20 @@ import java.util.*;
 
 @Component
 public class GroqAiProvider implements AiProvider {
-    private final String key, model, baseUrl; private final ObjectMapper mapper; private final RestClient client=RestClient.builder().build();
-    public GroqAiProvider(@Value("${application.ai.groq-api-key:${CHATBOT_AI_API_KEY:}}") String key, @Value("${application.ai.groq-model:${CHATBOT_AI_MODEL:llama-3.3-70b-versatile}}") String model, @Value("${application.ai.groq-base-url:${CHATBOT_AI_BASE_URL:https://api.groq.com/openai/v1}}") String baseUrl, ObjectMapper mapper) {this.key=key.trim();this.model=model;this.baseUrl=baseUrl.replaceAll("/+$","");this.mapper=mapper;}
+    private final String key, model, baseUrl;
+    private final ObjectMapper mapper;
+    private final RestClient client;
+
+    public GroqAiProvider(@Value("${application.ai.groq-api-key:${CHATBOT_AI_API_KEY:}}") String key, @Value("${application.ai.groq-model:${CHATBOT_AI_MODEL:llama-3.3-70b-versatile}}") String model, @Value("${application.ai.groq-base-url:${CHATBOT_AI_BASE_URL:https://api.groq.com/openai/v1}}") String baseUrl, ObjectMapper mapper) {
+        this.key = key.trim();
+        this.model = model;
+        this.baseUrl = baseUrl.replaceAll("/+$","");
+        this.mapper = mapper;
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(java.time.Duration.ofSeconds(10));
+        factory.setReadTimeout(java.time.Duration.ofSeconds(25));
+        this.client = RestClient.builder().requestFactory(factory).build();
+    }
     public String name(){return "groq";}
     public AiModelResponse chat(String system,List<Map<String,Object>> messages,List<AiToolDefinition> tools){
         if(key.isBlank()) throw new AiProviderException("Groq is not configured",true);

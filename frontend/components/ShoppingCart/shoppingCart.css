@@ -1,14 +1,20 @@
 .shoppingCartSection {
-  padding: 30px 160px;
+  padding: 40px 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
 }
 
 .shoppingCartSection h2 {
-  font-size: 35px;
-  font-weight: 700;
+  font-size: 26px;
+  font-weight: 600;
   text-transform: uppercase;
-  margin-bottom: 40px;
+  letter-spacing: 0.1em;
+  margin-bottom: 32px;
+  color: var(--foreground);
 }
 
 .shoppingCartTabsContainer {
@@ -187,7 +193,7 @@
   display: flex;
   gap: 10px;
   align-items: center;
-  border: 2px solid #e0e0e0;
+  border: 1px solid var(--border-soft);
   padding: 0 10px;
   width: 70px;
 }
@@ -237,13 +243,14 @@
 /* shopping Bag total Side */
 
 .shoppingBagTotal {
-  width: 30%;
-  height: 30%;
-  padding: 40px;
-  border: 1px solid var(--foreground);
+  width: 32%;
+  padding: 24px;
+  border: 1px solid var(--border);
+  background-color: var(--surface-1);
+  border-radius: 2px;
   display: flex;
   flex-direction: column;
-  gap: 25px;
+  gap: 20px;
 }
 
 .shoppingBagTotal h3 {
@@ -287,11 +294,19 @@
 .shoppingBagTotal button {
   background-color: var(--foreground);
   color: var(--background);
-  padding: 20px 10px;
-  border: none;
+  padding: 14px 20px;
+  border: 1px solid var(--foreground);
+  border-radius: 2px;
   cursor: pointer;
   text-transform: uppercase;
+  font-size: 13px;
   font-weight: 600;
+  letter-spacing: 0.08em;
+  transition: opacity 0.2s ease;
+}
+
+.shoppingBagTotal button:hover:not(:disabled) {
+  opacity: 0.88;
 }
 
 .shoppingBagTotal button:disabled {
@@ -314,7 +329,9 @@
 .shopCartFooterContainer form {
   display: flex;
   gap: 10px;
-  border: 2px solid var(--border-soft);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
 }
 
 .shopCartFooterContainer form input {
@@ -322,6 +339,9 @@
   padding: 0 20px;
   border: none;
   outline: none;
+  min-width: 0;
+  background: var(--surface-1);
+  color: var(--foreground);
 }
 
 .shopCartFooterContainer form button {
@@ -332,6 +352,7 @@
   font-size: 14px;
   font-weight: 600;
   text-transform: uppercase;
+  color: var(--foreground);
 }
 
 .shopCartFooterbutton {
@@ -501,32 +522,57 @@
 }
 
 .checkoutDetailsForm input {
-  height: 52px;
-  padding: 0px 20px;
-  border: 2px solid var(--border-soft);
-  outline-color: var(--foreground);
+  height: 48px;
+  padding: 0px 16px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--surface-1);
+  color: var(--foreground);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.checkoutDetailsForm input:focus {
+  border-color: var(--foreground);
 }
 
 .checkoutDetailsForm select {
-  height: 52px;
-  padding: 0px 20px;
-  border: 2px solid var(--border-soft);
+  height: 48px;
+  padding: 0px 16px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background-color: var(--surface-1);
+  color: var(--foreground);
+  font-size: 14px;
   outline: none;
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 20 20"><path fill="%23000000" stroke-width="0" d="M14.17 6.17l-4.17 4.17-4.17-4.17-1.83 1.83 6 6 6-6z"/></svg>');
   background-repeat: no-repeat;
-  background-repeat: no-repeat;
-  background-position: right 8px top 50%;
-  background-size: 20px 20px;
-  outline-color: var(--foreground);
+  background-position: right 14px top 50%;
+  background-size: 14px 14px;
+  transition: border-color 0.2s ease;
+}
+
+.checkoutDetailsForm select:focus {
+  border-color: var(--foreground);
 }
 
 .checkoutDetailsForm textarea {
-  padding: 10px 20px;
-  border: 2px solid var(--border-soft);
-  outline-color: var(--foreground);
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--surface-1);
+  color: var(--foreground);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.checkoutDetailsForm textarea:focus {
+  border-color: var(--foreground);
 }
 
 .checkoutDetailsFormRow {
@@ -598,11 +644,13 @@
 }
 
 .checkoutTotalContainer {
-  border: 1px solid var(--foreground);
-  padding: 40px;
+  border: 1px solid var(--border);
+  background-color: var(--surface-1);
+  border-radius: 2px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 8px;
 }
 
 .checkoutTotalContainer h3 {
@@ -629,7 +677,7 @@
 .checkoutItems table td {
   padding: 12px 0;
   font-size: 14px;
-  color: #595858;
+  color: var(--foreground-2);
 }
 
 .checkoutItems table tbody {
@@ -764,17 +812,30 @@
 
 .policyText a {
   text-decoration: none;
-  color: #c32929;
+  color: var(--accent);
 }
 
 .checkoutPaymentSection button {
   background-color: var(--foreground);
   color: var(--background);
-  padding: 20px 10px;
-  border: none;
+  padding: 14px 20px;
+  border: 1px solid var(--foreground);
+  border-radius: 2px;
   cursor: pointer;
   text-transform: uppercase;
+  font-size: 13px;
   font-weight: 600;
+  letter-spacing: 0.08em;
+  transition: opacity 0.2s ease;
+}
+
+.checkoutPaymentSection button:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.checkoutPaymentSection button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 /* -------------------------------- */
@@ -841,30 +902,35 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  border: 2px dashed var(--foreground);
+  border: 1px dashed var(--border-strong);
+  background-color: var(--surface-1);
+  border-radius: 2px;
 }
 
 .orderInfoItem {
   display: flex;
   flex-direction: column;
-  padding: 40px;
-  gap: 10px;
+  padding: 24px 28px;
+  gap: 8px;
 }
 
 .orderInfoItem p {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--muted-text);
 }
 
 .orderInfoItem h4 {
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--foreground);
 }
 
 /* order total */
 
 .orderTotalContainer {
-  border: 1px solid var(--foreground);
+  border: 1px solid var(--border);
+  background-color: var(--surface-1);
+  border-radius: 2px;
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -872,14 +938,16 @@
 }
 
 .orderTotalContainer h3 {
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   text-transform: uppercase;
-  padding: 30px 40px;
+  letter-spacing: 0.06em;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .orderItems {
-  padding: 0 40px;
+  padding: 0 24px;
 }
 
 .orderItems table {
@@ -889,17 +957,18 @@
 
 .orderItems table th {
   text-align: left;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   border-bottom: 1px solid var(--border-soft);
   text-transform: uppercase;
+  letter-spacing: 0.04em;
   padding: 10px 0;
 }
 
 .orderItems table td {
   padding: 12px 0;
   font-size: 14px;
-  color: #595858;
+  color: var(--foreground-2);
 }
 
 .orderItems table tbody {
@@ -907,8 +976,7 @@
 }
 
 .orderTotal {
-  padding: 0 40px;
-  padding-bottom: 40px;
+  padding: 0 24px 24px;
 }
 
 .orderTotal table {
@@ -938,7 +1006,7 @@
 
 @media screen and (max-width: 1210px) {
   .shoppingCartSection {
-    padding: 30px 60px;
+    padding: 30px 24px;
   }
 
   .shoppingBagSection {
@@ -954,7 +1022,7 @@
 
 @media screen and (max-width: 768px) {
   .shoppingCartSection h2 {
-    font-size: 30px;
+    font-size: 22px;
   }
 
   .shoppingCartTabsContainer {
@@ -1038,17 +1106,17 @@
   }
 
   .orderInfoItem {
-    padding: 0px 40px;
+    padding: 0 16px;
   }
 }
 
-@media screen and (max-width: 450px) {
+@media screen and (max-width: 600px) {
   .shoppingCartSection {
-    padding: 30px 15px;
+    padding: 24px 16px;
   }
 
   .shoppingCartSection h2 {
-    font-size: 25px;
+    font-size: 20px;
   }
 
   .shoppingBagTable {
@@ -1061,16 +1129,18 @@
 
   .shoppingBagTableMobileItems {
     display: flex;
-    align-items: center;
-    gap: 20px;
+    align-items: flex-start;
+    gap: 12px;
     border-top: 1px solid var(--border-soft);
-    border-bottom: 0.5px solid #e4e4e4;
+    border-bottom: 1px solid var(--border-soft);
     padding: 20px 0;
   }
 
   .shoppingBagTableMobileItemsImg {
-    width: 100px;
-    height: 100px;
+    flex: 0 0 76px;
+    width: 76px;
+    aspect-ratio: 3 / 4;
+    height: auto;
   }
 
   .shoppingBagTableMobileItemsImg img {
@@ -1082,7 +1152,9 @@
 
   .shoppingBagTableMobileItemsDetail {
     display: flex;
-    width: 70%;
+    flex: 1;
+    min-width: 0;
+    width: auto;
     justify-content: space-between;
     align-items: center;
   }
@@ -1094,7 +1166,7 @@
   }
 
   .shoppingBagTableMobileItemsDetailMain h4 {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 400;
   }
 
@@ -1159,7 +1231,7 @@
   }
 
   .shopCartFooterContainer form input {
-    padding: 0 20px;
+    padding: 0 12px;
   }
 
   .shopCartFooterContainer form button {
@@ -1168,7 +1240,7 @@
 
   .shopCartFooterbutton {
     padding: 15px 20px;
-    width: 50%;
+    width: 100%;
   }
 
   /* -------------------------------- */
@@ -1217,9 +1289,9 @@
 .checkoutDeliveryEstimate {
   margin: 12px 0 4px;
   padding: 12px 14px;
-  border-radius: 6px;
-  background: var(--muted-bg, #f6f6f6);
-  border: 1px solid var(--border-soft, #e5e5e5);
+  border-radius: 2px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
 }
 
 .checkoutDeliveryEstimateTitle {
@@ -1232,7 +1304,7 @@
   margin: 0 0 6px;
   font-size: 13px;
   line-height: 1.45;
-  color: var(--muted-foreground, #555);
+  color: var(--foreground-2);
 }
 
 .checkoutDeliveryEstimateBody:last-child {
@@ -1242,16 +1314,16 @@
 .checkoutDeliveryCapturedNote {
   margin: 8px 0 0;
   font-size: 13px;
-  color: var(--muted-foreground, #555);
+  color: var(--foreground-2);
   line-height: 1.4;
 }
 
 .checkoutTrustPanel {
   margin-top: 18px;
   padding: 14px 16px;
-  border-radius: 6px;
-  border: 1px solid var(--border-soft, #e5e5e5);
-  background: var(--card, #fff);
+  border-radius: 2px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-1);
 }
 
 .checkoutTrustTitle {
@@ -1265,25 +1337,25 @@
   padding-left: 18px;
   font-size: 13px;
   line-height: 1.55;
-  color: var(--muted-foreground, #444);
+  color: var(--foreground-2);
 }
 
 .orderTrackCallout {
   margin: 20px 0 8px;
   padding: 14px 16px;
-  border-radius: 6px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  border-radius: 2px;
+  background: var(--success-soft);
+  border: 1px solid var(--success);
 }
 
 .orderTrackCallout a {
   font-weight: 600;
-  color: #047857;
+  color: var(--success);
   text-decoration: underline;
 }
 
 .orderTrackHint {
   margin: 8px 0 0;
   font-size: 12px;
-  color: #166534;
+  color: var(--success);
 }

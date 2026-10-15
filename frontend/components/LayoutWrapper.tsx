@@ -1,14 +1,27 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import dynamic from "next/dynamic";
 import Navbar from "@/components/Header/Navbar";
 import Footer from "@/components/Footer/Footer";
 import GlobalScrollReveal from "@/components/GlobalScrollReveal";
-import GlobalFloatingBanners from "@/components/GlobalFloatingBanners";
 import PageTransition from "@/components/PageTransition";
-import FloatingChatButtons from "@/components/Common/FloatingChatButtons";
-import ChatbotWidget from "@/components/Chatbot/ChatbotWidget";
 import { Toaster } from "react-hot-toast";
+
+const FloatingChatButtons = dynamic(
+  () => import("@/components/Common/FloatingChatButtons"),
+  { ssr: false }
+);
+
+const ChatbotWidget = dynamic(
+  () => import("@/components/Chatbot/ChatbotWidget"),
+  { ssr: false }
+);
+
+const GlobalFloatingBanners = dynamic(
+  () => import("@/components/GlobalFloatingBanners"),
+  { ssr: false }
+);
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

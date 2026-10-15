@@ -73,7 +73,10 @@ public class ChatbotAiClient {
         this.objectMapper = objectMapper.copy().registerModule(new JavaTimeModule());
         this.observabilityMetrics = observabilityMetrics;
         this.tracer = tracer;
-        this.restClient = RestClient.builder().build();
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(java.time.Duration.ofSeconds(10));
+        factory.setReadTimeout(java.time.Duration.ofSeconds(25));
+        this.restClient = RestClient.builder().requestFactory(factory).build();
     }
 
     public Optional<String> generateCustomerAnswer(

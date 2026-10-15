@@ -5,6 +5,7 @@ import com.example.shop.modules.chat.entity.SocialConversationMemberId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,6 +13,8 @@ import java.util.Optional;
 public interface SocialConversationMemberRepository extends JpaRepository<SocialConversationMember, SocialConversationMemberId> {
 
     List<SocialConversationMember> findByIdConversationIdAndDeletedAtIsNull(String conversationId);
+
+    List<SocialConversationMember> findByIdConversationIdInAndDeletedAtIsNull(Collection<String> conversationIds);
 
     List<SocialConversationMember> findByIdUserIdAndDeletedAtIsNull(String userId);
 

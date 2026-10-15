@@ -101,7 +101,10 @@ export default function WishList() {
   return (
     <>
       <div className="wishListSection">
-        <h2>{t("wishlist_title")}</h2>
+        <div className="jp-title-wrap" style={{ alignItems: "flex-start", marginBottom: 28 }}>
+          <span className="jp-subtitle">FAVORITES / お気に入りリスト</span>
+          <h2>{t("wishlist_title")}</h2>
+        </div>
         <div className="wishListContainer">
           {Object.keys(wishlistItems).length > 0 ? (
             <div className="wishListGrid">

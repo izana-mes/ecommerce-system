@@ -37,6 +37,8 @@ public class WebSocketJwtAuthChannelInterceptor implements ChannelInterceptor {
             Pattern.compile("^/topic/chat/conversations/([^/]+)/(messages|typing)$");
     private static final Pattern CHAT_USER_INBOX_TOPIC =
             Pattern.compile("^/topic/chat/users/([^/]+)/conversations$");
+    private static final Pattern CUSTOMER_NOTIFICATION_TOPIC =
+            Pattern.compile("^/topic/customer-notifications/([^/]+)$");
 
     private final JwtProvider jwtProvider;
     private final UserDetailsService userDetailsService;
@@ -137,7 +139,7 @@ public class WebSocketJwtAuthChannelInterceptor implements ChannelInterceptor {
 
     private void authorizeSubscribe(StompHeaderAccessor accessor) {
         String destination = accessor.getDestination();
-        if (destination == null || !destination.startsWith("/topic/chat/")) {
+        if (destination == null || (!destination.startsWith("/topic/chat/") && !destination.startsWith("/topic/customer-notifications/"))) {
             return;
         }
 
@@ -162,6 +164,10 @@ public class WebSocketJwtAuthChannelInterceptor implements ChannelInterceptor {
             if (!requestedUserId.equals(user.getId().toString())) {
                 throw new MessagingException("Access denied to another user's chat inbox");
             }
+        }
+        Matcher notificationMatcher = CUSTOMER_NOTIFICATION_TOPIC.matcher(destination);
+        if (notificationMatcher.matches() && !notificationMatcher.group(1).equals(user.getId().toString())) {
+            throw new MessagingException("Access denied to another user's notifications");
         }
     }
 

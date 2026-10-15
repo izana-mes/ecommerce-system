@@ -1188,7 +1188,10 @@ export default function ShoppingCart() {
 
   return (
     <div className="shoppingCartSection">
-      <h2>{t("cart_title")}</h2>
+      <div className="jp-title-wrap" style={{ alignItems: "flex-start", marginBottom: 28 }}>
+        <span className="jp-subtitle">BAG & CHECKOUT / ご注文手続き</span>
+        <h2>{t("cart_title")}</h2>
+      </div>
 
       <div className="shoppingCartTabsContainer">
         <div className={`shoppingCartTabs ${activeTab}`}>

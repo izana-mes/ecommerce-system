@@ -11,8 +11,19 @@ import java.util.*;
 
 @Component
 public class GeminiAiProvider implements AiProvider {
-    private final String key, model; private final ObjectMapper mapper; private final RestClient client = RestClient.builder().build();
-    public GeminiAiProvider(@Value("${application.ai.gemini-api-key:}") String key, @Value("${application.ai.gemini-model:gemini-2.0-flash}") String model, ObjectMapper mapper) { this.key=key.trim(); this.model=model; this.mapper=mapper; }
+    private final String key, model;
+    private final ObjectMapper mapper;
+    private final RestClient client;
+
+    public GeminiAiProvider(@Value("${application.ai.gemini-api-key:}") String key, @Value("${application.ai.gemini-model:gemini-2.0-flash}") String model, ObjectMapper mapper) {
+        this.key = key.trim();
+        this.model = model;
+        this.mapper = mapper;
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(java.time.Duration.ofSeconds(10));
+        factory.setReadTimeout(java.time.Duration.ofSeconds(25));
+        this.client = RestClient.builder().requestFactory(factory).build();
+    }
     public String name(){ return "gemini"; }
     public AiModelResponse chat(String system, List<Map<String,Object>> messages, List<AiToolDefinition> tools) {
         if (key.isBlank()) throw new AiProviderException("Gemini is not configured", true);

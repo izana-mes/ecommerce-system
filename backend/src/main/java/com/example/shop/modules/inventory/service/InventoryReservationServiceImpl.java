@@ -256,6 +256,7 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
     }
 
     @Scheduled(fixedDelayString = "${application.inventory.reservation.expire-fixed-delay-ms:5000}")
+    @Transactional
     public void runExpiry() {
         int count = expireReservations();
         if (count > 0) {
@@ -427,6 +428,7 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
         try {
             List<String> caches = List.of(
                     com.example.shop.config.RedisCacheConfig.PRODUCTS_ALL,
+                    com.example.shop.config.RedisCacheConfig.PRODUCTS_ACTIVE,
                     com.example.shop.config.RedisCacheConfig.PRODUCTS_SEARCH,
                     com.example.shop.config.RedisCacheConfig.PRODUCTS_SUGGEST,
                     com.example.shop.config.RedisCacheConfig.PRODUCTS_INVENTORY_HEALTH,

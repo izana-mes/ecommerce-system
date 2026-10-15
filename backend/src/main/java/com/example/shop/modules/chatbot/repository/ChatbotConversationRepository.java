@@ -14,5 +14,7 @@ public interface ChatbotConversationRepository extends JpaRepository<ChatbotConv
 
     Optional<ChatbotConversation> findByConversationIdAndOwnerUserIdAndAudience(String conversationId, String ownerUserId, String audience);
 
+    Optional<ChatbotConversation> findByConversationIdAndAudience(String conversationId, String audience);
+
     List<ChatbotConversation> findTop30ByOwnerUserIdAndAudienceOrderByLastMessageAtDesc(String ownerUserId, String audience);
 }

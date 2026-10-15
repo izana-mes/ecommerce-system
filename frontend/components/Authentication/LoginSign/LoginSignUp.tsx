@@ -52,9 +52,13 @@ const LoginSignUp = () => {
     return "user";
   };
   const returnToParam = (searchParams.get("returnTo") || "").trim();
-  const returnTo = returnToParam.startsWith("/") && !returnToParam.startsWith("//")
-    ? returnToParam
-    : "/";
+  const returnTo =
+    returnToParam.startsWith("/") &&
+    !returnToParam.startsWith("//") &&
+    !returnToParam.startsWith("/login") &&
+    !returnToParam.startsWith("/oauth")
+      ? returnToParam
+      : "/";
 
   const handleTab = (tab: string) => {
     setActiveTab(tab);
@@ -320,7 +324,11 @@ const LoginSignUp = () => {
   };
 
   const handleGoogleLogin = () => {
-    const frontendRedirectUri = `${window.location.origin}/oauth/callback`;
+    const callbackPath =
+      returnTo !== "/"
+        ? `/oauth/callback?returnTo=${encodeURIComponent(returnTo)}`
+        : "/oauth/callback";
+    const frontendRedirectUri = `${window.location.origin}${callbackPath}`;
     const oauthStartUrl = new URL("/api/auth/oauth/google/start", window.location.origin);
     oauthStartUrl.searchParams.set("frontend_redirect_uri", frontendRedirectUri);
     window.location.href = oauthStartUrl.toString();
@@ -330,6 +338,9 @@ const LoginSignUp = () => {
     <>
       <div className="loginSignUpSection">
         <div className="loginSignUpContainer">
+          <div className="jp-title-wrap" style={{ marginBottom: 16 }}>
+            <span className="jp-subtitle">AUTHENTICATION / 会員認証</span>
+          </div>
           <div className="loginSignUpTabs">
             <p
               onClick={() => handleTab("tabButton1")}

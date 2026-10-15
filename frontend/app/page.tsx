@@ -1,21 +1,31 @@
 "use client";
+
+import dynamic from "next/dynamic";
 import Banner from "@/components/Home/Banner/Banner";
 import CollectionBox from "@/components/Home/Collection/CollectionBox";
 import DealTimer from "@/components/Home/DealTimer/DealTimer";
 import CampaignBanners from "@/components/Home/Campaign/CampaignBanners";
-import HeroSection from "@/components/Home/Hero/HeroSection";
 import Trendy from "@/components/Home/Trendy/Trendy";
 import LimitedEdition from "@/components/Home/Limited/LimitedEdition";
-import Instagram from "@/components/Home/Instagram/Instagram";
 import { useLocale } from "@/components/providers/LocaleProvider";
+
+const HeroSection = dynamic(() => import("@/components/Home/Hero/HeroSection"), {
+  ssr: false,
+  loading: () => (
+    <div className="mainDeal" style={{ minHeight: "360px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="sdProductSkeleton" style={{ width: "92%", height: "320px", borderRadius: "4px" }} />
+    </div>
+  ),
+});
+
+const Instagram = dynamic(() => import("@/components/Home/Instagram/Instagram"), {
+  ssr: false,
+});
 
 export default function HomePage() {
   const { t } = useLocale();
   return (
     <div className="jp-seigaiha-bg">
-      <div className="jp-vertical-badge">NEW COLLECTION // 新着アイテム</div>
-      <div className="jp-vertical-badge-right">SUMMER SALE // 春夏物セール</div>
-      
       <Banner />
       <section className="homeTrustStrip">
         <article>
@@ -32,18 +42,18 @@ export default function HomePage() {
         </article>
       </section>
 
-      {/* Infinite Japanese Marquee Ticker */}
+      {/* Editorial Announcement Strip */}
       <div className="jp-marquee" aria-hidden="true">
         <div className="jp-marquee-track">
-          <div className="jp-marquee-item">SUMMER SALE NOW ON // <span>春夏セール開催中</span></div>
-          <div className="jp-marquee-item">NEW ARRIVALS EVERY DAY // <span>新作アイテム毎日入荷</span></div>
-          <div className="jp-marquee-item">FREE SHIPPING ON ALL ORDERS // <span>全国一律送料無料</span></div>
-          <div className="jp-marquee-item">10% OFF YOUR FIRST PURCHASE // <span>新規登録で10%割引</span></div>
-          {/* Loop repeat */}
-          <div className="jp-marquee-item">SUMMER SALE NOW ON // <span>春夏セール開催中</span></div>
-          <div className="jp-marquee-item">NEW ARRIVALS EVERY DAY // <span>新作アイテム毎日入荷</span></div>
-          <div className="jp-marquee-item">FREE SHIPPING ON ALL ORDERS // <span>全国一律送料無料</span></div>
-          <div className="jp-marquee-item">10% OFF YOUR FIRST PURCHASE // <span>新規登録で10%割引</span></div>
+          <div className="jp-marquee-item">Seasonal Essentials <span>· 厳選アイテム</span></div>
+          <div className="jp-marquee-item">Carefully Crafted Apparel <span>· 上質な日常着</span></div>
+          <div className="jp-marquee-item">Complimentary Delivery Nationwide <span>· 全国送料無料</span></div>
+          <div className="jp-marquee-item">Members Reward Privilege <span>· 会員限定特典</span></div>
+          {/* Loop repeat for seamless scroll */}
+          <div className="jp-marquee-item">Seasonal Essentials <span>· 厳選アイテム</span></div>
+          <div className="jp-marquee-item">Carefully Crafted Apparel <span>· 上質な日常着</span></div>
+          <div className="jp-marquee-item">Complimentary Delivery Nationwide <span>· 全国送料無料</span></div>
+          <div className="jp-marquee-item">Members Reward Privilege <span>· 会員限定特典</span></div>
         </div>
       </div>
 

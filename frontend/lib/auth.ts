@@ -38,6 +38,10 @@ export function getUser(): User | null {
   return cachedUser;
 }
 
+export function accountPathForUser(user: User | null): "/profile" | "/login" {
+  return user ? "/profile" : "/login";
+}
+
 async function resolveMe(): Promise<User | null> {
   const res = await fetch("/api/auth/me", { credentials: "include", cache: "no-store" });
   if (!res.ok) return null;
@@ -86,7 +90,7 @@ export function isAdmin(): boolean {
 /** Clear local session immediately (UI); prefer logoutServerSession for full sign-out. */
 export function logout(): void {
   cachedUser = null;
-  logoutInProgress = true;
+  logoutInProgress = false;
   clearCsrfTokenCache();
   notifyAuthStateChanged();
 }
@@ -118,11 +122,13 @@ export async function logoutServerSession(): Promise<boolean> {
 }
 
 export function setAuth(_token: string, user: User, _remember: boolean = false): void {
+  logoutInProgress = false;
   cachedUser = user;
   notifyAuthStateChanged();
 }
 
 export function setUserFromCookieSession(user: User, _remember: boolean = false): void {
+  logoutInProgress = false;
   cachedUser = user;
   notifyAuthStateChanged();
 }

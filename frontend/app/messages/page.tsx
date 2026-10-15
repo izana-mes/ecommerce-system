@@ -18,29 +18,44 @@ export default function MessagesPage() {
 
   if (loadingAuth) {
     return (
-      <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>
-        Loading messaging center...
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh", color: "#71717a", gap: 12 }}>
+        <span
+          style={{
+            width: 20,
+            height: 20,
+            border: "2px solid #e4e4e7",
+            borderTopColor: "#18181b",
+            borderRadius: "50%",
+            animation: "chatSpin 0.7s linear infinite",
+            display: "inline-block",
+          }}
+        />
+        <span style={{ fontSize: 13, letterSpacing: "0.02em" }}>Loading messages...</span>
       </div>
     );
   }
 
   if (!currentUser) {
     return (
-      <div style={{ padding: "60px 20px", textAlign: "center", maxWidth: 480, margin: "0 auto" }}>
-        <h2>Sign In Required</h2>
-        <p style={{ color: "#64748b", margin: "12px 0 24px" }}>
-          You need to be signed in to access the messaging center and chat with team members or support.
+      <div style={{ padding: "80px 24px", textAlign: "center", maxWidth: 440, margin: "0 auto" }}>
+        <h2 style={{ fontSize: 20, fontWeight: 600, color: "#18181b", margin: "0 0 8px", letterSpacing: "-0.01em" }}>
+          Sign In Required
+        </h2>
+        <p style={{ color: "#71717a", margin: "0 0 24px", fontSize: 14, lineHeight: 1.5 }}>
+          Please sign in to access conversations, message teammates, or contact customer support.
         </p>
         <Link
           href="/login"
           style={{
             display: "inline-block",
-            padding: "10px 24px",
-            backgroundColor: "#0f3dad",
-            color: "#fff",
+            padding: "10px 22px",
+            backgroundColor: "#18181b",
+            color: "#ffffff",
             borderRadius: 8,
             textDecoration: "none",
-            fontWeight: 600,
+            fontWeight: 500,
+            fontSize: 14,
+            transition: "background-color 0.15s ease",
           }}
         >
           Sign In

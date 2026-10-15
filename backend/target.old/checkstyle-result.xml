@@ -1,0 +1,1015 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<checkstyle version="9.3">
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/ShopApplication.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/WebSocketRevocationEvent.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/DatabaseUrlPresentCondition.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/RetryConfig.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/RedisCacheConfig.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/RabbitMqConfig.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/OAuthTokenExchangeDiagnosticsConfiguration.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/DatabaseUrlParser.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/SecurityStartupValidator.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/JpaConfig.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/WebSocketHandshakeJwtInterceptor.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/ConditionalOnRabbitEnabled.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/WebSocketRevocationEventPublisher.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/WebSocketRevocationSubscriber.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/CacheInvalidationRedisConfig.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/DatabaseUrlDataSourceConfiguration.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/CacheInvalidationEvent.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/WebSocketTrackingDecorator.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/DatabaseUrlSupport.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/SimpleCacheBackendConfig.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/CacheInvalidationSubscriber.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/SecurityConfig.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/WebSocketJwtAuthChannelInterceptor.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/CacheErrorHandlerConfiguration.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/WebSocketRevocationRedisConfig.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/CacheInvalidationEventPublisher.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/WebSocketSessionLifecycleListener.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/AdminAccountInitializer.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/RenderIntegrationEnvironmentPostProcessor.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/JwtConfig.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/WebSocketConfig.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/config/WebSocketSessionRegistry.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/common/web/RequestObservabilityFilter.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/common/web/HealthController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/common/web/ClientIpExtractor.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/common/web/RateLimitFilter.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/common/util/HashUtil.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/common/util/JwtUtil.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/common/exception/UnauthorizedException.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/common/exception/BusinessException.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/common/exception/GlobalExceptionHandler.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/common/observability/ObservabilityMetrics.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/common/response/ApiResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/common/audit/AdminAuditLogger.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/common/mail/SmtpEmailService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/common/mail/ResendEmailService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/common/mail/EmailTemplateService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/common/mail/EmailService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shift/repository/ShiftRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shift/repository/ShiftSwapRequestRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shift/repository/ShiftLeaveRequestRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shift/repository/ShiftImportBatchRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shift/entity/ShiftStatus.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shift/entity/ShiftRole.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shift/entity/Shift.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shift/entity/ShiftImportBatch.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shift/entity/ShiftSource.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shift/entity/ShiftLeaveRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shift/entity/ShiftSwapRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shift/entity/ShiftImportStatus.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shift/entity/RequestStatus.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shift/service/ShiftImportService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shift/service/ShiftService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shift/controller/ShiftController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shift/dto/ShiftDtos.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/inventory/service/SellerInventoryServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/inventory/service/SellerInventoryService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/inventory/controller/SellerInventoryController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/inventory/dto/BulkStockUpdateRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/inventory/dto/StockUpdateRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/inventory/dto/InventoryItemDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/finance/repository/SellerBalanceRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/finance/repository/SellerTransactionRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/finance/entity/SellerBalance.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/finance/entity/SellerTransaction.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/finance/service/SellerFinanceServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/finance/service/SellerFinanceService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/finance/controller/SellerFinanceController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/finance/dto/SellerTransactionDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/finance/dto/SellerBalanceDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/finance/dto/TransactionPageDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/order/service/SellerOrderServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/order/service/SellerOrderService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/order/controller/SellerOrderController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/order/dto/SellerOrderDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/catalog/service/SellerPromotionServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/catalog/service/SellerPromotionService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/catalog/service/SellerCatalogService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/catalog/service/SellerCatalogServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/catalog/controller/SellerPromotionController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/catalog/controller/SellerCatalogController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/catalog/dto/PromotionResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/catalog/dto/PromotionRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/review/controller/SellerReviewController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/dashboard/service/SellerDashboardService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/dashboard/service/SellerDashboardServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/dashboard/controller/SellerDashboardController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/seller/dashboard/dto/SellerDashboardResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/inventory/service/SupplierInventoryService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/inventory/service/SupplierInventoryServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/inventory/controller/SupplierInventoryController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/inventory/dto/RestockRequestDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/inventory/dto/RestockRequestResponseDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/inventory/dto/StockUpdateRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/inventory/dto/InventoryItemDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/finance/repository/SupplierBalanceRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/finance/repository/SupplierTransactionRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/finance/entity/SupplierTransaction.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/finance/entity/SupplierBalance.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/finance/service/SupplierFinanceServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/finance/service/SupplierFinanceService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/finance/controller/SupplierFinanceController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/finance/dto/SupplierBalanceDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/finance/dto/TransactionPageDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/finance/dto/SupplierTransactionDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/catalog/controller/SupplierCatalogController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/review/controller/SupplierReviewController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/dashboard/service/SupplierDashboardServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/dashboard/service/SupplierDashboardService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/dashboard/controller/SupplierDashboardController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplier/dashboard/dto/SupplierDashboardResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/expense/repository/UserExpenseRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/expense/entity/UserExpense.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/expense/service/ExpenseService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/expense/service/ExpenseServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/expense/controller/MeExpenseController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/expense/dto/ExpenseUpdateRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/expense/dto/ExpenseDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/expense/dto/ExpenseCreateRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/expense/dto/ExpensePageDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/coupon/repository/CouponRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/coupon/repository/CouponAssignmentRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/coupon/entity/CouponAssignment.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/coupon/entity/Coupon.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/coupon/service/CouponService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/coupon/controller/AdminCouponController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/coupon/controller/CouponController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/inventory/repository/InventoryReservationItemRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/inventory/repository/InventoryRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/inventory/repository/InventoryReservationRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/inventory/repository/InventoryTransactionRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/inventory/entity/InventoryReservationStatus.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/inventory/entity/InventoryTransaction.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/inventory/entity/Inventory.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/inventory/entity/InventoryReservation.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/inventory/entity/InventoryReservationItem.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/inventory/service/InventoryReservationService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/inventory/service/InventoryReservationServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/inventory/controller/InventoryReservationController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/inventory/dto/InventoryReservationDtos.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/inventory/messaging/InventoryReservationEvent.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/inventory/messaging/InventoryReservationEventPublisher.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplieraccess/repository/SupplierAccessRequestRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplieraccess/entity/SupplierAccessRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplieraccess/entity/SupplierAccessRequestStatus.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplieraccess/service/SupplierAccessRequestService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplieraccess/controller/SupplierAccessRequestController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplieraccess/dto/SupplierAccessRequestResponseDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplieraccess/dto/request/ReviewSupplierAccessRequestDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supplieraccess/dto/request/CreateSupplierAccessRequestDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/meeting/service/MeetingService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/meeting/controller/MeetingController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/meeting/realtime/MeetingRealtimePublisher.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/product/repository/ProductRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/product/entity/Product.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/product/service/RecentlyViewedProductService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/product/service/ProductService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/product/service/ProductServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/product/service/RecentlyViewedProductServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/product/service/ProductTrendingService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/product/service/ProductTrendingServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/product/controller/ProductController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/product/mapper/ProductMapper.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/product/dto/ProductDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/product/dto/StockAdjustmentRequestDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/product/dto/StockAdjustmentItemDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/security/RequestIdHolder.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/security/SecurityEventLogger.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/service/MomoPaymentServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/service/VnpayPaymentServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/service/VnpayPaymentService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/service/MomoPaymentService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/paypal/service/PayPalPaymentService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/paypal/service/PayPalPaymentServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/paypal/controller/PayPalPaymentController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/paypal/config/PayPalClientConfig.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/paypal/config/PayPalProperties.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/paypal/exception/PayPalApiException.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/paypal/dto/PayPalCaptureResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/paypal/dto/PayPalCreateOrderResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/paypal/dto/PayPalCaptureRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/controller/VnpayPaymentController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/controller/MomoPaymentController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/momo/dto/MomoPaymentStatusResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/momo/dto/MomoCreatePaymentResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/momo/MomoProperties.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/momo/MomoIpnSupport.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/payment/dto/VnpayIpnResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/token/repository/PasswordResetTokenRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/token/repository/EmailVerificationTokenRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/token/repository/RefreshTokenRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/token/entity/EmailVerificationToken.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/token/entity/PasswordResetToken.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/token/entity/RefreshTokenRevocationReason.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/token/entity/RefreshToken.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/token/service/TokenService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/token/service/SessionClientMetadata.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/token/controller/TokenController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/token/dto/response/ActiveSessionResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/token/dto/response/RefreshTokenResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/service/SlaService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/service/SlaServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/service/IssueService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/service/StaffDashboardService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/service/StaffOrderServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/service/ShipperService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/service/ShipperServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/service/StaffOrderService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/service/IssueServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/controller/StaffIssueController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/controller/StaffSlaController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/controller/StaffDashboardController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/controller/StaffShipperController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/controller/StaffOrderController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/dto/AssignShipperRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/dto/AdminOrderStatusRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/dto/StaffOrderDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/dto/StaffOrderPageDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/dto/ShipperDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/dto/IssueDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/dto/RespondIssueRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/dto/StaffOrderFilterRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/dto/SlaOrderDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/dto/StaffDashboardDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/staff/dto/ShipperLocationDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supportchat/repository/SupportChatMessageRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supportchat/repository/SupportChatConversationRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supportchat/entity/SupportChatMessage.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supportchat/entity/SupportChatConversation.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supportchat/service/SupportChatServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supportchat/service/SupportChatService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supportchat/controller/SupportChatController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supportchat/controller/SupportChatStompController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supportchat/realtime/SupportChatRealtimePublisher.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supportchat/dto/ChatMessageDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supportchat/dto/SendMessageRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supportchat/dto/SupportChatResponseDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supportchat/dto/ConversationSummaryDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/supportchat/dto/UpdateConversationRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/notification/service/OrderNotificationService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/notification/service/CouponNotificationService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/notification/service/OrderCreatedNotificationService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/notification/controller/CouponNotificationController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/notification/controller/OrderNotificationController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/notification/dto/CouponIssuedEmailRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/notification/dto/OrderPaidEmailRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/order/service/OrderService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/order/service/OrderServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/order/service/FulfillmentNotificationService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/order/controller/OrderStatusController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/order/controller/OrderController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/order/dto/OrderEditRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/order/dto/OrderCreateResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/order/dto/OrderTrackingDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/order/dto/OrderHistoryItemDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/order/dto/OrderCreateRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/order/dto/OrderTrackingLineDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/cart/repository/AbandonedCartCandidateProjection.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/cart/repository/CartItemRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/cart/repository/CartReservedStockProjection.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/cart/entity/CartItem.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/cart/service/CartServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/cart/service/CartService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/cart/service/CartAbandonmentReminderService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/cart/controller/CartController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/cart/mapper/CartMapper.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/cart/dto/CartAddRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/cart/dto/CartUpdateQuantityRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/cart/dto/CartCheckoutHealthResponseDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/cart/dto/CartCheckoutHealthItemDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/cart/dto/CartItemDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/wishlist/repository/WishlistItemRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/wishlist/entity/WishlistItem.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/wishlist/service/WishlistServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/wishlist/service/WishlistService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/wishlist/controller/WishlistController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/wishlist/mapper/WishlistMapper.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/wishlist/dto/WishlistItemDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/productapproval/repository/ProductChangeRequestRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/productapproval/entity/ProductChangeAction.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/productapproval/entity/ProductChangeRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/productapproval/entity/ProductChangeRequestStatus.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/productapproval/service/ProductChangeRequestService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/productapproval/dto/request/ReviewProductChangeRequestDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/productapproval/dto/ProductChangeRequestResponseDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ordercheckouthistory/service/OrderCheckoutHistoryServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ordercheckouthistory/service/OrderCheckoutHistoryService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ordercheckouthistory/dto/CheckoutHistoryEntryDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/role/repository/RoleRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/role/entity/Role.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/role/service/RoleService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/role/controller/RoleController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/role/dto/request/CreateRoleRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/role/dto/request/AssignRoleRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/role/dto/response/RoleResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/admin/repository/AdminSettingRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/admin/repository/AdminNoteRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/admin/entity/AdminNote.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/admin/entity/AdminSetting.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/admin/service/AdminDashboardService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/admin/service/AdminSettingService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/admin/service/AdminFraudService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/admin/service/AdminNoteService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/admin/controller/AdminReviewController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/admin/controller/AdminFraudController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/admin/controller/AdminOrderController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/admin/controller/AdminDashboardController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/admin/controller/AdminSettingsController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/admin/controller/AdminAuditController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/admin/controller/AdminNotesController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/admin/dto/AdminFraudAssessmentPageResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/admin/dto/AdminDashboardResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/workspace/service/WorkspaceService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/workspace/controller/WorkspaceController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/workspace/realtime/WorkspaceRealtimePublisher.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ai/service/AiConversationService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ai/service/AiRateLimitService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ai/service/AiToolRegistry.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ai/service/AiAssistantService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ai/service/AiRagService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ai/controller/AiAssistantController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ai/provider/AiToolDefinition.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ai/provider/GeminiAiProvider.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ai/provider/AiModelResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ai/provider/AiProviderException.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ai/provider/AiProvider.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ai/provider/AiToolCall.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ai/provider/GroqAiProvider.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ai/dto/AiChatRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ai/dto/AiConversationMessageDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ai/dto/AiConversationDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ai/dto/AiProductDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/ai/dto/AiChatResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/review/service/ProductReviewService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/review/service/ProductReviewServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/review/controller/ProductReviewController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/review/dto/ProductReviewReplyDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/review/dto/AdminProductReviewItemDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/review/dto/ProductReviewDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/review/dto/ProductReviewRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/review/dto/ProductReviewSummaryDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/review/dto/AdminProductReviewPageDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chatbot/repository/ChatbotConversationRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chatbot/repository/ChatbotMessageRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chatbot/repository/ChatbotReturnRequestRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chatbot/entity/ChatbotReturnRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chatbot/entity/ChatbotConversation.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chatbot/entity/ChatbotMessage.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chatbot/service/ChatbotService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chatbot/service/ChatbotAiClient.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chatbot/service/StaffChatbotService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chatbot/controller/ChatbotToolController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chatbot/controller/ChatbotController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chatbot/controller/StaffChatbotController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chatbot/security/McpServiceTokenFilter.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chatbot/dto/McpToolResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/repository/ShipperHelpRequestRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/repository/ShipperIssueLogRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/repository/OrderShipperRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/repository/OrderStatusLogRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/repository/ShipperPerformanceProjection.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/repository/ShipperOrderListProjection.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/repository/ShipperLocationHistoryRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/entity/ShipperIssueLog.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/entity/ShipperIssueType.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/entity/ShipperLocationHistory.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/entity/ShipperHelpRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/entity/IssueStatus.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/entity/HelpRequestPriority.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/entity/OrderShipperView.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/entity/OrderStatusLog.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/entity/HelpRequestStatus.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/service/ShipperRealtimeService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/controller/ShipperFeatureController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/controller/ShipperTrackingWsController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/shipper/dto/ShipperDtos.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/repository/SocialConversationRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/repository/SocialConversationMemberRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/repository/SocialReactionRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/repository/SocialMessageRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/repository/SocialReactionCountRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/entity/SocialReactionCountId.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/entity/SocialConversationMember.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/entity/SocialMessage.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/entity/SocialReaction.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/entity/SocialConversation.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/entity/SocialReactionCount.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/entity/SocialConversationMemberId.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/service/ChatServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/service/ChatService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/controller/ChatStompController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/controller/ChatController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/realtime/ChatRealtimePublisher.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/dto/WebSocketMessageEvent.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/dto/ReactionSummaryDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/dto/UserSearchResultDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/dto/MemberDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/dto/SendMessageRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/dto/MessageDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/dto/ReactionRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/dto/TypingEvent.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/dto/ConversationDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/dto/WebSocketStompRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/dto/EditMessageRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/chat/dto/CreateConversationRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/user/repository/UserRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/user/entity/User.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/user/service/UserService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/user/controller/UserController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/user/dto/request/UpdateProfileRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/user/dto/request/ChangePasswordRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/user/dto/request/UpdateUserRoleRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/user/dto/response/UserResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/user/dto/response/UserSummaryResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/operations/controller/StaffFulfillmentInsightsController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/operations/controller/ShipperIncidentController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/analytics/OrderAnalyticsConsumer.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/retry/RetryableMessageHandler.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/inventory/LowStockAlertConsumer.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/inventory/LowStockAlertPublisher.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/inventory/LowStockAlertEvent.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/fraud/FraudCheckConsumer.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/email/EmailMessage.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/email/EmailMessageConsumer.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/email/EmailMessagePublisher.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/payment/PaymentIpnMessagePublisher.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/payment/VnpayIpnMessage.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/payment/PaymentIpnMessageConsumer.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/notification/OrderPaidEmailMessageConsumer.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/notification/OrderPaidEmailMessagePublisher.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/order/OrderStatusChangedEvent.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/order/OrderCreatedEventPublisher.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/order/OrderCreatedEventConsumer.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/order/OrderStatusChangedPublisher.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/order/OrderStatusChangedConsumer.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/order/OrderCreatedEvent.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/cart/CartAbandonedEventPublisher.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/cart/CartAbandonedEventConsumer.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/cart/CartAbandonedEvent.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/outbox/MessageOutboxService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/outbox/MessageOutboxDispatcher.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/review/ReviewSubmittedEvent.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/review/ReviewSubmittedPublisher.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/review/ReviewSubmittedConsumer.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/audit/AuditEvent.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/audit/AuditEventConsumer.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/messaging/audit/AuditEventPublisher.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/selleraccess/repository/SellerAccessRequestRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/selleraccess/entity/SellerAccessRequestStatus.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/selleraccess/entity/SellerAccessRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/selleraccess/service/SellerAccessRequestService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/selleraccess/controller/SellerAccessRequestController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/selleraccess/dto/SellerAccessRequestResponseDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/selleraccess/dto/request/CreateSellerAccessRequestDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/selleraccess/dto/request/ReviewSellerAccessRequestDto.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/dashboard/service/DashboardStatsServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/dashboard/service/DashboardStatsService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/dashboard/controller/DashboardStatsController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/dashboard/event/DatabaseChangeEventListener.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/dashboard/event/DatabaseChangeEvent.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/dashboard/websocket/DashboardStatsBroadcaster.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/dashboard/dto/DashboardStatsResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/attendance/service/AttendanceService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/attendance/controller/AttendanceController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/attendance/controller/AdminAttendanceController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/oauth/OAuth2GoogleCallbackAliasFilter.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/oauth/SerializationUtils.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/oauth/OAuth2CookieAuthorizationRequestRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/oauth/OAuth2AuthenticationSuccessHandler.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/oauth/OAuth2AuthenticationFailureHandler.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/service/AuthServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/service/AuthService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/controller/AuthMeController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/controller/AuthController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/controller/CsrfController.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/security/AuthCookieService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/security/AccessTokenCookieWriter.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/security/UserDetailsServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/security/AccessTokenRevocationService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/security/JwtAuthenticationFilter.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/security/AuthAbuseProtectionService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/security/JwtProvider.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/dto/request/ResendVerificationRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/dto/request/LoginRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/dto/request/RefreshTokenRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/dto/request/VerifyOtpRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/dto/request/VerifyEmailRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/dto/request/RegisterRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/dto/request/ForgotPasswordRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/dto/request/ResetPasswordRequest.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/auth/dto/response/AuthenticationResponse.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/searchhistory/service/SearchHistoryService.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/searchhistory/service/SearchHistoryServiceImpl.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/otp/repository/OtpVerificationRepository.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/otp/entity/OtpVerification.java">
+</file>
+<file name="/home/izana/ecommerce-system/backend/src/main/java/com/example/shop/modules/otp/service/OtpService.java">
+</file>
+</checkstyle>

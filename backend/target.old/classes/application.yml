@@ -1,0 +1,284 @@
+spring:
+  application:
+    name: shop-backend
+  config:
+    # Load local env files automatically so running from IDE picks up OAuth/SMTP secrets.
+    import: optional:file:.env[.properties],optional:file:../.env[.properties],optional:file:../CONFIG_TO_FILL.env[.properties]
+  threads:
+    virtual:
+      enabled: true
+  lifecycle:
+    timeout-per-shutdown-phase: ${SHUTDOWN_TIMEOUT_PER_PHASE:30s}
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:shop}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${HIKARI_MAX_POOL_SIZE:20}
+      minimum-idle: ${HIKARI_MIN_IDLE:5}
+      connection-timeout: ${HIKARI_CONNECTION_TIMEOUT:20000}
+      idle-timeout: ${HIKARI_IDLE_TIMEOUT:300000}
+      max-lifetime: ${HIKARI_MAX_LIFETIME:1200000}
+      leak-detection-threshold: ${HIKARI_LEAK_DETECTION_THRESHOLD:30000}
+
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:${REDIS_HOST:localhost}}
+      port: ${SPRING_DATA_REDIS_PORT:${REDIS_PORT:6379}}
+      password: ${SPRING_DATA_REDIS_PASSWORD:${REDIS_PASSWORD:}}
+      timeout: ${SPRING_DATA_REDIS_TIMEOUT:3000ms}
+      connect-timeout: ${SPRING_DATA_REDIS_CONNECT_TIMEOUT:3000ms}
+      client-type: lettuce
+      lettuce:
+        pool:
+          max-active: ${REDIS_POOL_MAX_ACTIVE:16}
+          max-idle: ${REDIS_POOL_MAX_IDLE:8}
+          min-idle: ${REDIS_POOL_MIN_IDLE:2}
+          max-wait: ${REDIS_POOL_MAX_WAIT:3000ms}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+    show-sql: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  rabbitmq:
+    addresses: ${SPRING_RABBITMQ_URI:}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+    listener:
+      simple:
+        default-requeue-rejected: false
+        acknowledge-mode: manual
+
+  mail:
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        debug: ${SPRING_MAIL_DEBUG:false}
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: ${SPRING_MAIL_CONNECTION_TIMEOUT:10000}
+          timeout: ${SPRING_MAIL_TIMEOUT:10000}
+          writetimeout: ${SPRING_MAIL_WRITE_TIMEOUT:10000}
+    provider: ${MAIL_PROVIDER:smtp}
+    resend:
+      api-key: ${RESEND_API_KEY:}
+      from-email: ${RESEND_FROM_EMAIL:}
+      from-name: ${RESEND_FROM_NAME:Shop}
+
+  # Google OAuth: credentials are read from SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID / _SECRET.
+  # When these are blank the OAuth route simply won't work, but the app still starts.
+application:
+    frontend:
+      url: ${FRONTEND_URL:http://localhost:3000}
+    cors:
+      # Browser origins are intentionally separate from internal Docker URLs.
+      # Compose supplies the host-facing frontend origin (http://localhost:3000).
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+    security:
+      # Comma-separated IPs of trusted reverse proxies (so we can safely honor X-Forwarded-For).
+      # Example: "10.0.0.1,10.0.0.2". Empty means: never trust proxy headers.
+      trusted-proxies: ${TRUSTED_PROXIES:}
+      auth-cookie:
+        access-name: ${AUTH_COOKIE_ACCESS_NAME:${AUTH_COOKIE_NAME:access_token}}
+        refresh-name: ${AUTH_COOKIE_REFRESH_NAME:refresh_token}
+        same-site: ${AUTH_COOKIE_SAME_SITE:Lax}
+        secure: ${AUTH_COOKIE_SECURE:true}
+        access-path: ${AUTH_COOKIE_ACCESS_PATH:/}
+        refresh-path: ${AUTH_COOKIE_REFRESH_PATH:/api/v1/auth}
+      jwt:
+        secret-key: ${JWT_SECRET_KEY:}
+        expiration: ${JWT_ACCESS_TOKEN_EXPIRATION_MS:900000}
+        revocation:
+          fail-closed: ${JWT_REVOCATION_FAIL_CLOSED:false}
+          max-ttl-seconds: ${JWT_REVOCATION_MAX_TTL_SECONDS:7200}
+        refresh-token:
+          expiration: ${JWT_REFRESH_TOKEN_EXPIRATION_MS:1209600000}
+        email-verification:
+          expiration: 86400000
+        password-reset:
+          expiration: 3600000
+    bootstrap:
+      admin:
+        enabled: ${ADMIN_BOOTSTRAP_ENABLED:true}
+        email: ${ADMIN_BOOTSTRAP_EMAIL:admin@example.com}
+        password: ${ADMIN_BOOTSTRAP_PASSWORD:admin123}
+        first-name: ${ADMIN_BOOTSTRAP_FIRST_NAME:Admin}
+        last-name: ${ADMIN_BOOTSTRAP_LAST_NAME:User}
+    search-history:
+      max-entries: ${SEARCH_HISTORY_MAX_ENTRIES:10}
+      ttl-days: ${SEARCH_HISTORY_TTL_DAYS:30}
+    trending:
+      products:
+        default-limit: ${TRENDING_PRODUCTS_DEFAULT_LIMIT:12}
+        max-limit: ${TRENDING_PRODUCTS_MAX_LIMIT:50}
+        ttl-days: ${TRENDING_PRODUCTS_TTL_DAYS:30}
+    recently-viewed:
+      max-entries: ${RECENTLY_VIEWED_MAX_ENTRIES:20}
+      ttl-days: ${RECENTLY_VIEWED_TTL_DAYS:30}
+    cache:
+      invalidation:
+        channel: ${CACHE_INVALIDATION_CHANNEL:cache:invalidate:all}
+        node-id: ${CACHE_INVALIDATION_NODE_ID:${HOSTNAME:node-unknown}}
+      ttl:
+        products-all-seconds: ${CACHE_TTL_PRODUCTS_ALL_SECONDS:300}
+        products-active-seconds: ${CACHE_TTL_PRODUCTS_ACTIVE_SECONDS:120}
+        products-search-seconds: ${CACHE_TTL_PRODUCTS_SEARCH_SECONDS:180}
+        products-suggest-seconds: ${CACHE_TTL_PRODUCTS_SUGGEST_SECONDS:180}
+        products-inventory-health-seconds: ${CACHE_TTL_PRODUCTS_INVENTORY_HEALTH_SECONDS:30}
+        admin-dashboard-seconds: ${CACHE_TTL_ADMIN_DASHBOARD_SECONDS:30}
+        staff-dashboard-seconds: ${CACHE_TTL_STAFF_DASHBOARD_SECONDS:30}
+        seller-dashboard-seconds: ${CACHE_TTL_SELLER_DASHBOARD_SECONDS:30}
+        supplier-dashboard-seconds: ${CACHE_TTL_SUPPLIER_DASHBOARD_SECONDS:30}
+    internal:
+      notify-token: ${INTERNAL_NOTIFY_TOKEN:}
+  
+    reviews:
+      max-entries: ${REVIEWS_MAX_ENTRIES:200}
+      ttl-days: ${REVIEWS_TTL_DAYS:180}
+    payment:
+      vnpay:
+        hash-secret: ${VNPAY_HASH_SECRET:}
+        usd-to-vnd-rate: ${VNPAY_USD_TO_VND_RATE:26000}
+      momo:
+        partner-code: ${MOMO_PARTNER_CODE:}
+        access-key: ${MOMO_ACCESS_KEY:}
+        secret-key: ${MOMO_SECRET_KEY:}
+        endpoint: ${MOMO_ENDPOINT:https://test-payment.momo.vn}
+        redirect-url: ${MOMO_REDIRECT_URL:http://localhost:3000/payment/momo-return}
+        ipn-url: ${MOMO_IPN_URL:http://localhost:8080/api/payments/momo/ipn}
+        request-type: ${MOMO_REQUEST_TYPE:payWithMethod}
+        usd-to-vnd-rate: ${MOMO_USD_TO_VND_RATE:26000}
+        partner-name: ${MOMO_PARTNER_NAME:Shop}
+        store-id: ${MOMO_STORE_ID:MoMoTestStore}
+      paypal:
+        client-id: ${PAYPAL_CLIENT_ID:}
+        client-secret: ${PAYPAL_CLIENT_SECRET:}
+        mode: ${PAYPAL_MODE:sandbox}
+    messaging:
+      outbox:
+        fixed-delay-ms: ${MESSAGING_OUTBOX_FIXED_DELAY_MS:1000}
+        batch-size: ${MESSAGING_OUTBOX_BATCH_SIZE:50}
+      exchange: ${MESSAGING_EXCHANGE:shop.events}
+      queue:
+        payment-ipn: ${MESSAGING_QUEUE_PAYMENT_IPN:payment.ipn.process}
+        payment-ipn-dlq: ${MESSAGING_QUEUE_PAYMENT_IPN_DLQ:payment.ipn.process.dlq}
+        order-paid-email: ${MESSAGING_QUEUE_ORDER_PAID_EMAIL:order.paid.email}
+        order-paid-email-dlq: ${MESSAGING_QUEUE_ORDER_PAID_EMAIL_DLQ:order.paid.email.dlq}
+        order-created: ${MESSAGING_QUEUE_ORDER_CREATED:order.created}
+        order-created-dlq: ${MESSAGING_QUEUE_ORDER_CREATED_DLQ:order.created.dlq}
+        order-created-analytics: ${MESSAGING_QUEUE_ORDER_CREATED_ANALYTICS:order.created.analytics}
+        order-created-analytics-dlq: ${MESSAGING_QUEUE_ORDER_CREATED_ANALYTICS_DLQ:order.created.analytics.dlq}
+        order-created-fraud-check: ${MESSAGING_QUEUE_ORDER_CREATED_FRAUD_CHECK:order.created.fraud.check}
+        order-created-fraud-check-dlq: ${MESSAGING_QUEUE_ORDER_CREATED_FRAUD_CHECK_DLQ:order.created.fraud.check.dlq}
+        email-general: ${MESSAGING_QUEUE_EMAIL_GENERAL:email.general}
+        email-general-dlq: ${MESSAGING_QUEUE_EMAIL_GENERAL_DLQ:email.general.dlq}
+        low-stock-alert: ${MESSAGING_QUEUE_LOW_STOCK_ALERT:inventory.low-stock.alert}
+        low-stock-alert-dlq: ${MESSAGING_QUEUE_LOW_STOCK_ALERT_DLQ:inventory.low-stock.alert.dlq}
+        cart-abandoned: ${MESSAGING_QUEUE_CART_ABANDONED:cart.abandoned}
+        cart-abandoned-dlq: ${MESSAGING_QUEUE_CART_ABANDONED_DLQ:cart.abandoned.dlq}
+        order-status-changed: ${MESSAGING_QUEUE_ORDER_STATUS_CHANGED:order.status.changed}
+        order-status-changed-dlq: ${MESSAGING_QUEUE_ORDER_STATUS_CHANGED_DLQ:order.status.changed.dlq}
+        review-submitted: ${MESSAGING_QUEUE_REVIEW_SUBMITTED:review.submitted}
+        review-submitted-dlq: ${MESSAGING_QUEUE_REVIEW_SUBMITTED_DLQ:review.submitted.dlq}
+        audit-event: ${MESSAGING_QUEUE_AUDIT_EVENT:audit.event}
+        audit-event-dlq: ${MESSAGING_QUEUE_AUDIT_EVENT_DLQ:audit.event.dlq}
+      routing-key:
+        payment-ipn: ${MESSAGING_ROUTING_KEY_PAYMENT_IPN:payment.vnpay.ipn}
+        order-paid-email: ${MESSAGING_ROUTING_KEY_ORDER_PAID_EMAIL:notification.order.paid.email}
+        order-created: ${MESSAGING_ROUTING_KEY_ORDER_CREATED:order.created}
+        order-created-analytics: ${MESSAGING_ROUTING_KEY_ORDER_CREATED_ANALYTICS:order.created}
+        order-created-fraud-check: ${MESSAGING_ROUTING_KEY_ORDER_CREATED_FRAUD_CHECK:order.created}
+        email-general: ${MESSAGING_ROUTING_KEY_EMAIL_GENERAL:email.general.send}
+        low-stock-alert: ${MESSAGING_ROUTING_KEY_LOW_STOCK_ALERT:inventory.low-stock.alert}
+        cart-abandoned: ${MESSAGING_ROUTING_KEY_CART_ABANDONED:cart.abandoned}
+        order-status-changed: ${MESSAGING_ROUTING_KEY_ORDER_STATUS_CHANGED:order.status.changed}
+        review-submitted: ${MESSAGING_ROUTING_KEY_REVIEW_SUBMITTED:review.submitted}
+        audit-event: ${MESSAGING_ROUTING_KEY_AUDIT_EVENT:audit.event}
+        inventory-reserved: ${MESSAGING_ROUTING_KEY_INVENTORY_RESERVED:inventory.reserved}
+        inventory-released: ${MESSAGING_ROUTING_KEY_INVENTORY_RELEASED:inventory.released}
+    inventory:
+      low-stock-threshold: ${LOW_STOCK_THRESHOLD:5}
+    cart:
+      reminder:
+        enabled: ${CART_REMINDER_ENABLED:true}
+        fixed-delay-ms: ${CART_REMINDER_FIXED_DELAY_MS:900000}
+        idle-minutes: ${CART_REMINDER_IDLE_MINUTES:120}
+        cooldown-hours: ${CART_REMINDER_COOLDOWN_HOURS:24}
+    fulfillment:
+      delivery-reminder:
+        enabled: ${FULFILLMENT_DELIVERY_REMINDER_ENABLED:true}
+        cron: ${FULFILLMENT_DELIVERY_REMINDER_CRON:0 */30 * * * *}
+    attendance:
+      monitor:
+        enabled: ${ATTENDANCE_MONITOR_ENABLED:true}
+        fixed-delay-ms: ${ATTENDANCE_MONITOR_FIXED_DELAY_MS:900000}
+      policy:
+        long-break-minutes: ${ATTENDANCE_LONG_BREAK_MINUTES:30}
+        break-reminder-interval-minutes: ${ATTENDANCE_BREAK_REMINDER_INTERVAL_MINUTES:30}
+        min-daily-work-minutes: ${ATTENDANCE_MIN_DAILY_WORK_MINUTES:480}
+        low-hours-reminder-after-local-hour: ${ATTENDANCE_LOW_HOURS_REMINDER_AFTER_LOCAL_HOUR:16}
+    chatbot:
+      ai:
+        enabled: ${CHATBOT_AI_ENABLED:true}
+        base-url: ${CHATBOT_AI_BASE_URL:${GROQ_AI_BASE_URL:https://api.groq.com/openai/v1}}
+        api-key: ${CHATBOT_AI_API_KEY:${GROQ_AI_API_KEY:}}
+        model: ${CHATBOT_AI_MODEL:${CHATBOT_AI_GROQ_MODEL:openai/gpt-oss-120b}}
+        temperature: ${CHATBOT_AI_TEMPERATURE:0.2}
+        max-tokens: ${CHATBOT_AI_MAX_TOKENS:600}
+    ai:
+      primary-provider: ${AI_PRIMARY_PROVIDER:${CHATBOT_AI_PRIMARY_PROVIDER:groq}}
+      fallback-provider: ${AI_FALLBACK_PROVIDER:${CHATBOT_AI_FALLBACK_PROVIDER:gemini}}
+      gemini-api-key: ${GEMINI_AI_API_KEY:}
+      groq-api-key: ${GROQ_AI_API_KEY:${CHATBOT_AI_API_KEY:}}
+      gemini-model: ${CHATBOT_AI_GEMINI_MODEL:${GEMINI_AI_MODEL:gemini-3.8-flash}}
+      groq-model: ${CHATBOT_AI_GROQ_MODEL:${GROQ_AI_MODEL:openai/gpt-oss-120b}}
+      groq-base-url: ${GROQ_AI_BASE_URL:${CHATBOT_AI_BASE_URL:https://api.groq.com/openai/v1}}
+    mcp:
+      server-url: ${MCP_SERVER_URL:http://localhost:3100}
+      service-token: ${MCP_SERVICE_TOKEN:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+  metrics:
+    tags:
+      service: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        ai.request.latency: true
+        mcp.tool.execution.latency: true
+        payment.ipn.processing.latency: true
+  tracing:
+    sampling:
+      probability: ${OTEL_TRACES_SAMPLER_PROBABILITY:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://tempo:4318}/v1/traces

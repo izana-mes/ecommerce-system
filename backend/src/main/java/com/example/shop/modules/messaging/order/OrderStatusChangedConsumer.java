@@ -3,13 +3,17 @@ package com.example.shop.modules.messaging.order;
 import com.example.shop.common.mail.EmailService;
 import com.example.shop.config.ConditionalOnRabbitEnabled;
 import com.example.shop.modules.order.service.FulfillmentNotificationService;
+import com.example.shop.modules.notification.service.CustomerNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.time.Duration;
 import java.util.Map;
 
 @Component
@@ -20,6 +24,10 @@ public class OrderStatusChangedConsumer {
 
     private final EmailService emailService;
     private final FulfillmentNotificationService fulfillmentNotificationService;
+    private final CustomerNotificationService customerNotificationService;
+    private final ObjectProvider<StringRedisTemplate> redisTemplateProvider;
+
+    private static final Duration DEDUP_TTL = Duration.ofHours(24);
 
     @Value("${application.bootstrap.admin.email}")
     private String adminEmail;
@@ -47,7 +55,40 @@ public class OrderStatusChangedConsumer {
             return;
         }
 
+        StringRedisTemplate redis = redisTemplateProvider.getIfAvailable();
+        if (redis != null) {
+            String dedupKey = "msg:idemp:order-status:" + safe(event.getOrderNumber()) + ":"
+                    + safe(event.getOldStatus()).toLowerCase() + ":"
+                    + safe(event.getNewStatus()).toLowerCase() + ":"
+                    + safe(event.getNewPaymentStatus()).toLowerCase();
+            try {
+                Boolean isNew = redis.opsForValue().setIfAbsent(dedupKey, "1", DEDUP_TTL);
+                if (Boolean.FALSE.equals(isNew)) {
+                    log.info("Duplicate order status changed event skipped for order {} ({} -> {})",
+                            event.getOrderNumber(), event.getOldStatus(), event.getNewStatus());
+                    return;
+                }
+            } catch (Exception ex) {
+                log.warn("Redis dedup check failed for order status changed {}, processing anyway: {}",
+                        event.getOrderNumber(), ex.getMessage());
+            }
+        }
+
+
         String newStatus = safe(event.getNewStatus()).toLowerCase();
+        String newPaymentStatus = safe(event.getNewPaymentStatus()).toLowerCase();
+        if (!newStatus.isBlank() && !newStatus.equals(safe(event.getOldStatus()).toLowerCase())) {
+            customerNotificationService.createForEmail(event.getCustomerEmail(), "order-status:" + safe(event.getOrderNumber()) + ":" + newStatus,
+                    "order", "Order " + safe(event.getOrderNumber()) + " updated",
+                    "Your order status is now " + capitalize(newStatus) + ".", "/orders");
+        }
+        if ("paid".equals(newPaymentStatus) && !"paid".equals(safe(event.getOldPaymentStatus()).toLowerCase())) {
+            customerNotificationService.createForEmail(event.getCustomerEmail(), "payment-paid:" + safe(event.getOrderNumber()),
+                    "payment", "Payment confirmed", "Payment for order " + safe(event.getOrderNumber()) + " was successful.", "/orders");
+        } else if ("failed".equals(newPaymentStatus) && !"failed".equals(safe(event.getOldPaymentStatus()).toLowerCase())) {
+            customerNotificationService.createForEmail(event.getCustomerEmail(), "payment-failed:" + safe(event.getOrderNumber()),
+                    "payment", "Payment failed", "Payment for order " + safe(event.getOrderNumber()) + " could not be completed.", "/orders");
+        }
         String label = STATUS_LABELS.getOrDefault(newStatus, capitalize(newStatus));
         String color = STATUS_COLORS.getOrDefault(newStatus, "#6b7280");
 

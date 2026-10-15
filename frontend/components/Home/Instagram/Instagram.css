@@ -1,10 +1,13 @@
 .instagram {
-  padding: 0 11%;
-  margin: 100px 0;
+  max-width: 1600px;
+  width: 100%;
+  margin: 48px auto;
+  padding: 0 clamp(16px, 3vw, 40px);
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 30px;
+  gap: 20px;
   animation: instaSectionIn 0.7s ease both;
 }
 
@@ -17,13 +20,15 @@
 .instagramTiles {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  grid-template-rows: repeat(2, 1fr);
-  gap: 5px;
+  gap: 12px;
+  width: 100%;
 }
 
 .instagramtile {
   position: relative;
   overflow: hidden;
+  aspect-ratio: 1.2 / 1;
+  border-radius: 4px;
   opacity: 0;
   transform: translateY(14px);
   animation: instaTileIn 0.5s ease forwards;
@@ -122,5 +127,33 @@
   .instagramtile img {
     transition: none !important;
     transform: none !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .instagram {
+    margin: 40px auto;
+  }
+  .instagramTiles {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .instagram {
+    margin: 32px auto;
+    gap: 20px;
+  }
+  .instagramTiles {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .instagramTiles {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
   }
 }

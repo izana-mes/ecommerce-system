@@ -1,0 +1,42 @@
+#!/bin/sh
+set -eu
+
+repo_dir=/home/izana/ecommerce-system
+compose_file=$repo_dir/docker-compose.prod.yml
+env_file=$repo_dir/.env.prod
+ngrok_base=/home/izana/.config/ngrok/ngrok.yml
+ngrok_project=$repo_dir/ops/ngrok.yml
+runtime_dir=$repo_dir/.deploy
+
+if [ ! -f "$env_file" ] || [ ! -f "$repo_dir/secrets/postgres_password.txt" ]; then
+  echo "Missing production environment or PostgreSQL secret; run the deployment setup first." >&2
+  exit 1
+fi
+
+if ! docker info >/dev/null 2>&1; then
+  echo "Starting Docker through its existing runit service..."
+  sudo sv up /var/service/docker
+  tries=0
+  until docker info >/dev/null 2>&1; do
+    tries=$((tries + 1))
+    [ "$tries" -lt 30 ] || { echo "Docker did not become ready." >&2; exit 1; }
+    sleep 1
+  done
+fi
+
+mkdir -p "$runtime_dir"
+docker compose --env-file "$env_file" -f "$compose_file" up -d --remove-orphans
+
+tries=0
+until curl -fsS http://127.0.0.1:3000/api/health >/dev/null; do
+  tries=$((tries + 1))
+  [ "$tries" -lt 90 ] || { echo "Frontend/backend did not become ready; run scripts/server-status." >&2; exit 1; }
+  sleep 2
+done
+
+if ! pgrep -f 'ngrok start.*ecommerce' >/dev/null 2>&1; then
+  setsid ngrok start --config "$ngrok_base" --config "$ngrok_project" \
+    --log "$runtime_dir/ngrok.log" --log-format logfmt ecommerce </dev/null >/dev/null 2>&1 &
+fi
+
+echo "Stack is ready locally at http://127.0.0.1:3000"
