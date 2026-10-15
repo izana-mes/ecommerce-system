@@ -7,6 +7,7 @@
 # NEVER commit real credentials — use GitHub Actions secrets instead.
 backend/.env
 .env
+.env.prod
 .env.local
 ai-chatbot-platform/backend/.env
 ai-chatbot-platform/frontend/.env
@@ -34,3 +35,4 @@ node_modules
 secrets/
 security/reports/
 security/sbom/
+.env*

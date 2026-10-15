@@ -128,6 +128,7 @@ const LoginSignUp = () => {
       try {
         const meResponse = await fetch("/api/auth/me", {
           method: "GET",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json"}});
         const meData = await meResponse.json();

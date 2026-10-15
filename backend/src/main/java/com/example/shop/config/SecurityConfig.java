@@ -2,8 +2,10 @@ package com.example.shop.config;
 
 import com.example.shop.common.web.RateLimitFilter;
 import com.example.shop.common.web.RequestObservabilityFilter;
+import com.example.shop.modules.auth.oauth.OAuth2AuthenticationFailureHandler;
 import com.example.shop.modules.auth.oauth.OAuth2AuthenticationSuccessHandler;
 import com.example.shop.modules.auth.oauth.OAuth2CookieAuthorizationRequestRepository;
+import com.example.shop.modules.auth.oauth.OAuth2GoogleCallbackAliasFilter;
 import com.example.shop.modules.auth.security.JwtAuthenticationFilter;
 import com.example.shop.modules.chatbot.security.McpServiceTokenFilter;
 import com.example.shop.modules.security.RequestIdHolder;
@@ -28,6 +30,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
@@ -54,6 +59,7 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
     private final ObjectMapper objectMapper;
     private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
+    private final OAuth2AuthenticationFailureHandler oAuth2FailureHandler;
     private final OAuth2CookieAuthorizationRequestRepository authRequestRepository;
     private final ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider;
     private final RateLimitFilter rateLimitFilter;
@@ -64,7 +70,9 @@ public class SecurityConfig {
     private String corsAllowedOrigins;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> oauthTokenResponseClient) throws Exception {
         RequestMatcher csrfProtectedApiSubset = new OrRequestMatcher(
                 new AntPathRequestMatcher("/api/v1/auth/refresh", "POST"),
                 new AntPathRequestMatcher("/api/v1/auth/logout", "POST"),
@@ -80,7 +88,11 @@ public class SecurityConfig {
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         // Keep current API behavior for most routes, but enforce CSRF on
                         // selected cookie-auth state-changing endpoints.
-                        .ignoringRequestMatchers(apiRequestsExceptProtectedSubset))
+                        .ignoringRequestMatchers(
+                                apiRequestsExceptProtectedSubset,
+                                new AntPathRequestMatcher("/oauth2/**"),
+                                new AntPathRequestMatcher("/login/oauth2/**"),
+                                new AntPathRequestMatcher("/login")))
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
                                 "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; upgrade-insecure-requests"))
@@ -111,6 +123,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/payments/paypal/capture-order").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/deals/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/chatbot/customer/ask").permitAll()
+                        .requestMatchers("/api/ai/**").authenticated()
                         .requestMatchers("/api/chatbot/tools/**").permitAll()
                         .requestMatchers("/api/v1/supplier/**").authenticated()
                         .requestMatchers("/api/v1/staff/**").hasAnyRole("ADMIN", "STAFF", "EMPLOYEE")
@@ -128,7 +141,10 @@ public class SecurityConfig {
         if (clientRegistrationRepositoryProvider.getIfAvailable() != null) {
             http.oauth2Login(oauth -> oauth
                     .authorizationEndpoint(a -> a.authorizationRequestRepository(authRequestRepository))
-                    .successHandler(oAuth2SuccessHandler));
+                    .tokenEndpoint(token -> token.accessTokenResponseClient(oauthTokenResponseClient))
+                    .successHandler(oAuth2SuccessHandler)
+                    .failureHandler(oAuth2FailureHandler));
+            http.addFilterBefore(new OAuth2GoogleCallbackAliasFilter(), OAuth2AuthorizationRequestRedirectFilter.class);
         }
 
         return http.build();

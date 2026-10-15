@@ -62,11 +62,11 @@ export default function ChatbotWidget() {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/chatbot/customer/ask', {
+      const res = await fetch('/api/ai/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          question: text,
+          message: text,
           conversationId: conversationId ?? undefined}),
         credentials: 'include'});
 
@@ -80,7 +80,7 @@ export default function ChatbotWidget() {
       const botMessage: Message = {
         id: `bot-${Date.now()}`,
         role: 'assistant',
-        content: data.answer || data.error || 'Sorry, I couldn\'t understand that. Please try again.',
+        content: data.message || data.error || 'Sorry, I couldn\'t process that request. Please try again.',
         timestamp: new Date()};
 
       setMessages((prev) => [...prev, botMessage]);
@@ -108,17 +108,6 @@ export default function ChatbotWidget() {
       sendMessage();
     }
   };
-
-  const quickActions = [
-    { label: '📦 My Orders', text: 'Show me my recent orders' },
-    { label: '🔎 Track Order', text: 'Track order ORD-123' },
-    { label: '🛍️ Browse Products', text: 'What products do you have?' },
-    { label: '💡 Recommend', text: 'Recommend products under $100' },
-    { label: '💳 Payment Methods', text: 'What payment methods do you accept?' },
-    { label: '↩️ Return Item', text: 'I want to return an item' },
-    { label: '❓ Shipping Info', text: 'How does shipping work?' },
-    { label: '🆘 Help', text: 'What can you help me with?' },
-  ];
 
   const formatTime = (date: Date) =>
     date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -196,21 +185,6 @@ export default function ChatbotWidget() {
 
           <div ref={messagesEndRef} />
         </div>
-
-        {/* Quick actions */}
-        {messages.length <= 2 && !isLoading && (
-          <div className={styles.quickActions}>
-            {quickActions.map((qa) => (
-              <button
-                key={qa.label}
-                className={styles.quickBtn}
-                onClick={() => { setInput(qa.text); setTimeout(sendMessage, 50); }}
-              >
-                {qa.label}
-              </button>
-            ))}
-          </div>
-        )}
 
         {/* Input area */}
         <div className={styles.inputArea}>

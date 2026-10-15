@@ -2,12 +2,13 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    env_file:
+      - path: ./.env
+        required: true
     environment:
       POSTGRES_DB: ${DB_NAME:-shop}
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-    ports:
-      - "${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -19,12 +20,14 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    env_file:
+      - path: ./.env
+        required: true
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -32,12 +35,12 @@ services:
   rabbitmq:
     image: rabbitmq:3-management-alpine
     restart: unless-stopped
+    env_file:
+      - path: ./.env
+        required: true
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-guest}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
-    ports:
-      - "5672:5672"
-      - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -52,7 +55,8 @@ services:
     restart: unless-stopped
     # network_mode: host  # Removed to use bridge network for proper isolation
     env_file:
-      - ./.env
+      - path: ./.env
+        required: false
     environment:
       # Pin compose service hostnames so host/.env cloud URLs (Upstash, etc.) do not override them.
       DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-shop}
@@ -61,7 +65,13 @@ services:
       DB_NAME: ${DB_NAME:-shop}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      SPRING_DATA_REDIS_URL: redis://redis:6379
+      # This is a development-only default so a fresh clone is runnable. Replace
+      # it in .env for any shared or production deployment.
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-ZGV2ZWxvcG1lbnQtb25seS1qd3Qtc2VjcmV0LWtleS0zMi1ieXRlcyE=}
+      ADMIN_BOOTSTRAP_ENABLED: ${ADMIN_BOOTSTRAP_ENABLED:-true}
+      ADMIN_BOOTSTRAP_EMAIL: ${ADMIN_BOOTSTRAP_EMAIL:-admin@example.com}
+      ADMIN_BOOTSTRAP_PASSWORD: ${ADMIN_BOOTSTRAP_PASSWORD:-change-me-local-admin}
+      SPRING_DATA_REDIS_URL: ${LOCAL_REDIS_URL:-redis://:local-redis-password-change-me@redis:6379}
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       SPRING_RABBITMQ_ENABLED: "true"
@@ -71,18 +81,36 @@ services:
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
       APPLICATION_SERVER_URL: ${APPLICATION_SERVER_URL:-http://localhost:8080}
+      SPRING_PROFILES_INCLUDE: oauth
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID:-}
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET:-}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
       AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
-      MOMO_IPN_URL: http://backend:8080/api/payments/momo/ipn
+      MOMO_PARTNER_CODE: ${MOMO_PARTNER_CODE:-MOMO}
+      MOMO_ACCESS_KEY: ${MOMO_ACCESS_KEY:-}
+      MOMO_SECRET_KEY: ${MOMO_SECRET_KEY:-}
+      MOMO_ENDPOINT: ${MOMO_ENDPOINT:-https://test-payment.momo.vn}
       # PayPal — sourced from .env or host environment
       PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
       PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:-}
       PAYPAL_MODE: ${PAYPAL_MODE:-sandbox}
       CHATBOT_AI_REFERER: ${CHATBOT_AI_REFERER:-http://localhost:3000}
-      MCP_SERVICE_TOKEN: ${MCP_SERVICE_TOKEN}
+      GEMINI_AI_API_KEY: ${GEMINI_AI_API_KEY:-}
+      GROQ_AI_API_KEY: ${GROQ_AI_API_KEY:-}
+      AI_PRIMARY_PROVIDER: ${AI_PRIMARY_PROVIDER:-gemini}
+      AI_FALLBACK_PROVIDER: ${AI_FALLBACK_PROVIDER:-groq}
+      CHATBOT_AI_PRIMARY_PROVIDER: ${CHATBOT_AI_PRIMARY_PROVIDER:-gemini}
+      CHATBOT_AI_FALLBACK_PROVIDER: ${CHATBOT_AI_FALLBACK_PROVIDER:-groq}
+      GEMINI_AI_MODEL: ${GEMINI_AI_MODEL:-gemini-2.0-flash}
+      GROQ_AI_MODEL: ${GROQ_AI_MODEL:-llama-3.3-70b-versatile}
+      MCP_SERVICE_TOKEN: ${MCP_SERVICE_TOKEN:-change-me-mcp-service-token}
       MCP_SERVER_URL: http://mcp-server:3100
       MANAGEMENT_TRACING_ENABLED: "false"
+      # Prevent stale hosting flags from env_file activating Render-specific Spring defaults.
+      RENDER: "false"
+      RENDER_EXTERNAL_URL: ""
+      RENDER_SERVICE_ID: ""
     ports:
       - "8080:8080"
     healthcheck:
@@ -103,18 +131,20 @@ services:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8080/api
-        NEXT_PUBLIC_BACKEND_URL: http://localhost:8080
+        # NEXT_PUBLIC_* values are compiled into the browser bundle at build time.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api}
+        NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://localhost:8080}
         BACKEND_URL: http://backend:8080
     restart: unless-stopped
     env_file:
-      - ./.env
+      - path: ./.env
+        required: false
     environment:
       PORT: 3000
       BACKEND_API_BASE_URL: http://backend:8080/api
       BACKEND_URL: http://backend:8080
-      NEXT_PUBLIC_API_URL: http://localhost:8080/api
-      NEXT_PUBLIC_BACKEND_URL: http://localhost:8080
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api}
+      NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://localhost:8080}
       # FIX M2: Docker Compose does NOT evaluate nested variable substitution
       # (e.g., ${DATABASE_URL:-...${DB_USER:-postgres}...}). The inner variables
       # are emitted as literal strings. Provide DATABASE_URL as a flat value
@@ -127,13 +157,21 @@ services:
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       RABBITMQ_MANAGEMENT_URL: ${RABBITMQ_MANAGEMENT_URL:-http://rabbitmq:15672}
+      MOMO_ENV: ${MOMO_ENV:-sandbox}
+      MOMO_ENDPOINT: ${MOMO_ENDPOINT:-https://test-payment.momo.vn}
+      MOMO_REQUEST_TYPE: ${MOMO_REQUEST_TYPE:-payWithMethod}
       MOMO_REDIRECT_URL: ${MOMO_REDIRECT_URL:-http://localhost:3000/payment/momo-return}
       MOMO_PARTNER_CODE: ${MOMO_PARTNER_CODE:-MOMO}
+      MOMO_ACCESS_KEY: ${MOMO_ACCESS_KEY:-}
+      MOMO_SECRET_KEY: ${MOMO_SECRET_KEY:-}
+      MOMO_USD_TO_VND_RATE: ${MOMO_USD_TO_VND_RATE:-26000}
       AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
-      MOMO_IPN_URL: http://backend:8080/api/payments/momo/ipn
+      MOMO_IPN_URL: ${MOMO_IPN_URL:-http://localhost:8080/api/payments/momo/ipn}
       VNPAY_RETURN_URL: ${VNPAY_RETURN_URL:-http://localhost:3000/payment/vnpay-return}
       # PayPal — only the public client ID is needed in the frontend
       NEXT_PUBLIC_PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
+      # Prevent env_file's hosting flag from enabling hosted DB SSL behavior locally.
+      RENDER: "false"
     ports:
       - "3000:3000"
     depends_on:
@@ -146,19 +184,26 @@ services:
     build: ./mcp-server
     restart: unless-stopped
     env_file:
-      - ./.env
+      - path: ./.env
+        required: false
     environment:
       PORT: 3100
       BACKEND_URL: http://backend:8080
-      MCP_SERVICE_TOKEN: ${MCP_SERVICE_TOKEN}
+      MCP_SERVICE_TOKEN: ${MCP_SERVICE_TOKEN:-change-me-mcp-service-token}
       CHATBOT_AI_BASE_URL: ${CHATBOT_AI_BASE_URL:-https://openrouter.ai/api/v1}
-      CHATBOT_AI_API_KEY: ${CHATBOT_AI_API_KEY}
+      CHATBOT_AI_API_KEY: ${CHATBOT_AI_API_KEY:-}
       CHATBOT_AI_MODEL: ${CHATBOT_AI_MODEL:-google/gemma-3-4b-it:free}
-    ports:
-      - "3100:3100"
+    expose:
+      - "3100"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3100/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   postgres_data:

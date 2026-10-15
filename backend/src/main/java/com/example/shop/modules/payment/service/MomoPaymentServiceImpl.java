@@ -7,21 +7,19 @@ import com.example.shop.modules.messaging.notification.OrderPaidEmailMessagePubl
 import com.example.shop.modules.messaging.order.OrderStatusChangedEvent;
 import com.example.shop.modules.messaging.order.OrderStatusChangedPublisher;
 import com.example.shop.modules.notification.dto.OrderPaidEmailRequest;
+import com.example.shop.modules.payment.momo.MomoIpnSupport;
+import com.example.shop.modules.payment.momo.MomoProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -41,15 +39,7 @@ public class MomoPaymentServiceImpl implements MomoPaymentService {
     private final CouponService couponService;
     private final InventoryReservationService inventoryReservationService;
     private final ObservabilityMetrics observabilityMetrics;
-
-    @Value("${application.payment.momo.secret-key:}")
-    private String secretKey;
-
-    @Value("${application.payment.momo.access-key:}")
-    private String accessKey;
-
-    @Value("${application.payment.momo.usd-to-vnd-rate:26000}")
-    private long usdToVndRate;
+    private final MomoProperties momoProperties;
 
     @Override
     @Transactional
@@ -57,111 +47,112 @@ public class MomoPaymentServiceImpl implements MomoPaymentService {
         long startedAt = System.currentTimeMillis();
         String metricStatus = "error";
         try {
-            if (!StringUtils.hasText(secretKey)) {
+            String secretKey = momoProperties.getSecretKey();
+            String accessKey = momoProperties.getAccessKey();
+            if (!StringUtils.hasText(secretKey) || !StringUtils.hasText(accessKey)) {
                 metricStatus = "missing_config";
-                log.warn("Momo IPN: Missing secretKey config");
+                log.warn("Momo IPN: Missing accessKey/secretKey config");
                 return;
             }
 
         String signature = safeString(payload.get("signature"));
-        String orderIdStr = safeString(payload.get("orderId"));
+        String momoOrderId = safeString(payload.get("orderId"));
         long amount = parseLong(payload.get("amount"));
         int resultCode = parseInt(payload.get("resultCode"));
         String transId = safeString(payload.get("transId"));
+        String extraData = safeString(payload.get("extraData"));
+        String shopOrderNumber = MomoIpnSupport.resolveOrderNumber(momoOrderId, extraData);
 
-        if (!StringUtils.hasText(signature) || !StringUtils.hasText(orderIdStr)) {
+        log.info("Momo IPN received resultCode={} message={} transId={} orderId={} shopOrder={} amount={}",
+                resultCode, payload.get("message"), transId, momoOrderId, shopOrderNumber, amount);
+
+        if (!StringUtils.hasText(signature) || !StringUtils.hasText(momoOrderId)) {
             metricStatus = "invalid_request";
             log.warn("Momo IPN: Invalid payload (missing signature or orderId)");
             return;
         }
 
-        // Compute signature to verify
-        // Formula: accessKey=$accessKey&amount=$amount&extraData=$extraData&message=$message&orderId=$orderId&orderInfo=$orderInfo&orderType=$orderType&partnerCode=$partnerCode&payType=$payType&requestId=$requestId&responseTime=$responseTime&resultCode=$resultCode&transId=$transId
-        StringBuilder sb = new StringBuilder();
-        sb.append("accessKey=").append(accessKey)
-          .append("&amount=").append(amount)
-          .append("&extraData=").append(safeString(payload.get("extraData")))
-          .append("&message=").append(safeString(payload.get("message")))
-          .append("&orderId=").append(orderIdStr)
-          .append("&orderInfo=").append(safeString(payload.get("orderInfo")))
-          .append("&orderType=").append(safeString(payload.get("orderType")))
-          .append("&partnerCode=").append(safeString(payload.get("partnerCode")))
-          .append("&payType=").append(safeString(payload.get("payType")))
-          .append("&requestId=").append(safeString(payload.get("requestId")))
-          .append("&responseTime=").append(safeString(payload.get("responseTime")))
-          .append("&resultCode=").append(resultCode)
-          .append("&transId=").append(transId);
+        String configuredPartner = momoProperties.getPartnerCode();
+        String payloadPartner = safeString(payload.get("partnerCode"));
+        if (StringUtils.hasText(configuredPartner) && !configuredPartner.equals(payloadPartner)) {
+            metricStatus = "partner_mismatch";
+            log.warn("Momo IPN: partnerCode mismatch for order {}", momoOrderId);
+            return;
+        }
 
+        String rawSignature = MomoIpnSupport.buildIpnRawSignature(accessKey, payload);
         String computedHash;
         try {
-            Mac hmac = Mac.getInstance("HmacSHA256");
-            SecretKeySpec keySpec = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-            hmac.init(keySpec);
-            byte[] digest = hmac.doFinal(sb.toString().getBytes(StandardCharsets.UTF_8));
-            StringBuilder hexString = new StringBuilder(2 * digest.length);
-            for (byte b : digest) {
-                String hex = Integer.toHexString(0xff & b);
-                if(hex.length() == 1) {
-                    hexString.append('0');
-                }
-                hexString.append(hex);
-            }
-            computedHash = hexString.toString();
+            computedHash = MomoIpnSupport.hmacSha256Hex(secretKey, rawSignature);
         } catch (Exception e) {
             metricStatus = "hash_error";
             log.error("Failed to compute MoMo hash", e);
             return;
         }
 
-        if (!computedHash.equals(signature)) {
+        if (!MomoIpnSupport.signaturesMatch(computedHash, signature)) {
             metricStatus = "invalid_signature";
-            log.warn("Momo IPN: Invalid signature for order {}", orderIdStr);
+            log.warn("Momo IPN: Invalid signature for order {}", momoOrderId);
             return;
         }
 
-        OrderSnapshot order = findOrderByOrderNumber(orderIdStr);
+        OrderSnapshot order = findOrderByOrderNumber(shopOrderNumber);
         if (order == null) {
             metricStatus = "order_not_found";
-            log.warn("Momo IPN: Order not found {}", orderIdStr);
+            log.warn("Momo IPN: Order not found momoOrderId={} shopOrder={}", momoOrderId, shopOrderNumber);
             return;
         }
 
-        // Currency check
         String orderCurrency = order.currency() == null ? "USD" : order.currency().toUpperCase();
         long expectedVndAmount;
         if ("VND".equals(orderCurrency)) {
-            expectedVndAmount = order.totalAmount().longValue();
+            expectedVndAmount = order.totalAmount() == null ? 0L : order.totalAmount().setScale(0, java.math.RoundingMode.HALF_UP).longValue();
         } else if ("USD".equals(orderCurrency)) {
-            expectedVndAmount = Math.round(order.totalAmount().doubleValue() * usdToVndRate);
+            expectedVndAmount = MomoIpnSupport.toVndAmount(order.totalAmount(), momoProperties.getUsdToVndRate());
         } else {
-            log.warn("Momo IPN: unsupported currency {} for order {}, skipping amount check", orderCurrency, orderIdStr);
-            expectedVndAmount = amount; // skip check
+            log.warn("Momo IPN: unsupported currency {} for order {}, skipping amount check", orderCurrency, shopOrderNumber);
+            expectedVndAmount = amount;
         }
 
         if (expectedVndAmount != amount) {
             metricStatus = "amount_mismatch";
             log.warn("Momo IPN: amount mismatch for order {} – expected {} VND, got {}",
-                    orderIdStr, expectedVndAmount, amount);
+                    shopOrderNumber, expectedVndAmount, amount);
             return;
         }
 
         if ("paid".equalsIgnoreCase(order.paymentStatus())) {
              metricStatus = "already_paid";
-             log.warn("Momo IPN: Order already paid {}", orderIdStr);
+             log.info("Momo IPN: Order already paid {}", shopOrderNumber);
              return;
         }
 
-        String eventKey = StringUtils.hasText(transId) ? transId : orderIdStr + "-" + resultCode;
-        if (!tryAcquireWebhookIdempotency("momo", eventKey, orderIdStr, payload)) {
+        String eventKey = momoOrderId + ":" + transId + ":" + resultCode;
+        if (!tryAcquireWebhookIdempotency("momo", eventKey, shopOrderNumber, payload)) {
              metricStatus = "duplicate_event";
-             log.warn("Momo IPN: Event already processed {}", eventKey);
+             log.info("Momo IPN: Event already processed {}", eventKey);
              return;
         }
 
         boolean paid = (resultCode == 0);
-        String paymentStatus = paid ? "paid" : "failed";
+        if (!paid) {
+            metricStatus = "failed";
+            log.warn("Momo IPN: payment not successful shopOrder={} resultCode={} message={} transId={}",
+                    shopOrderNumber, resultCode, payload.get("message"), transId);
+            Map<String, Object> failedMetadata = parsePaymentMetadata(order.paymentMetadata());
+            failedMetadata.put("ipn", payload);
+            jdbcTemplate.update(
+                    "UPDATE payments SET provider = 'momo', method = 'MOMO', payment_reference = ?, metadata = ?::jsonb, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?",
+                    StringUtils.hasText(transId) ? transId : momoOrderId,
+                    writeJson(failedMetadata),
+                    order.id()
+            );
+            return;
+        }
+
+        String paymentStatus = "paid";
         metricStatus = paymentStatus;
-        String orderStatus = paid ? "paid" : "cancelled";
+        String orderStatus = "paid";
 
         jdbcTemplate.update(
                 "UPDATE orders SET payment_status = ?, order_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -175,31 +166,23 @@ public class MomoPaymentServiceImpl implements MomoPaymentService {
 
         jdbcTemplate.update(
                 "UPDATE payments SET provider = 'momo', method = 'MOMO', payment_reference = ?, status = ?, paid_at = ?, metadata = ?::jsonb, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?",
-                StringUtils.hasText(transId) ? transId : orderIdStr,
+                StringUtils.hasText(transId) ? transId : momoOrderId,
                 paymentStatus,
-                paid ? new Timestamp(System.currentTimeMillis()) : null,
+                new Timestamp(System.currentTimeMillis()),
                 writeJson(existingMetadata),
                 order.id()
         );
 
-        if (paid) {
-            try {
-                inventoryReservationService.confirmByOrderNumber(order.orderNumber());
-            } catch (Exception ex) {
-                log.warn("Reservation confirm skipped for order {}: {}", order.orderNumber(), ex.getMessage());
-            }
-            couponService.redeemCouponForPaidOrder(order.id());
-            sendPaidNotification(order.id());
-        } else {
-            try {
-                inventoryReservationService.releaseByOrderNumber(order.orderNumber(), "payment_failed");
-            } catch (Exception ex) {
-                log.warn("Reservation release skipped for order {}: {}", order.orderNumber(), ex.getMessage());
-            }
+        try {
+            inventoryReservationService.confirmByOrderNumber(order.orderNumber());
+        } catch (Exception ex) {
+            log.warn("Reservation confirm skipped for order {}: {}", order.orderNumber(), ex.getMessage());
         }
+        couponService.redeemCouponForPaidOrder(order.id());
+        sendPaidNotification(order.id());
         publishStatusChangedEvent(order, orderStatus, paymentStatus);
-        
-        log.info("Momo IPN: successfully processed order {} with status {}", orderIdStr, paymentStatus);
+
+        log.info("Momo IPN: successfully processed order {} with status {}", shopOrderNumber, paymentStatus);
         } finally {
             observabilityMetrics.recordPaymentIpn("momo", metricStatus, System.currentTimeMillis() - startedAt);
         }
@@ -362,8 +345,6 @@ public class MomoPaymentServiceImpl implements MomoPaymentService {
     }
 
     public OrderPaidEmailRequest buildOrderPaidEmailRequest(Map<String, Object> payload) {
-       // Currently not returning anything, notification is sent synchronously in IPN processing.
-       // Implemented just to fulfill interface if extended.
        return null;
     }
 }

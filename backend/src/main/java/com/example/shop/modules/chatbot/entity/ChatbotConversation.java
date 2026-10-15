@@ -31,6 +31,15 @@ public class ChatbotConversation {
     @Column(name = "guest_id", length = 128)
     private String guestId;
 
+    /** Immutable server-derived owner.  Never accept this value from a chat request. */
+    @Column(name = "owner_user_id", length = 36)
+    private String ownerUserId;
+
+    /** CUSTOMER and ADMIN histories are deliberately kept separate. */
+    @Builder.Default
+    @Column(name = "audience", length = 16, nullable = false)
+    private String audience = "CUSTOMER";
+
     @Builder.Default
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();

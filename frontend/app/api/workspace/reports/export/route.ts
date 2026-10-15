@@ -1,4 +1,5 @@
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
 
@@ -8,7 +9,7 @@ export async function GET(request: Request) {
 
   const response = await fetch(`${API_URL}/v1/workspace/reports/export?type=${encodeURIComponent(type)}`, {
     method: "GET",
-    headers: {    },
+    headers: backendAuthHeaders(request),
     cache: "no-store"});
 
   const blob = await response.arrayBuffer();

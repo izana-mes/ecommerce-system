@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
 
@@ -14,8 +15,7 @@ export async function PUT(request: Request, context: { params: Promise<{ product
 
     const response = await fetch(`${API_URL}/v1/seller/inventory/${encodeURIComponent(productId)}/stock`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json"},
+      headers: backendAuthHeaders(request),
       body: JSON.stringify(body)});
 
     const data = await response.json();

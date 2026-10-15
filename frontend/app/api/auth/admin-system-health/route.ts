@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
-export async function GET() {
+export async function GET(request: Request) {
   const startTime = Date.now();
   const apiBase = backendApiBaseUrl();
   let dbStatus = "unknown";
@@ -13,7 +14,7 @@ export async function GET() {
     const dbStart = Date.now();
     const response = await fetch(`${apiBase}/products?limit=1`, {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
+      headers: backendAuthHeaders(request),
       cache: "no-store"});
     dbLatencyMs = Date.now() - dbStart;
     if (!response.ok) {

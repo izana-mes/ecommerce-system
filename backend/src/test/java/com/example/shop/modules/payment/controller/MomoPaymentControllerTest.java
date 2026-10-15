@@ -4,6 +4,7 @@ import com.example.shop.common.web.ClientIpExtractor;
 import com.example.shop.common.web.RateLimitFilter;
 import com.example.shop.common.web.RequestObservabilityFilter;
 import com.example.shop.config.SecurityConfig;
+import com.example.shop.modules.auth.oauth.OAuth2AuthenticationFailureHandler;
 import com.example.shop.modules.auth.oauth.OAuth2AuthenticationSuccessHandler;
 import com.example.shop.modules.auth.oauth.OAuth2CookieAuthorizationRequestRepository;
 import com.example.shop.modules.auth.security.JwtAuthenticationFilter;
@@ -38,6 +39,7 @@ class MomoPaymentControllerTest {
     @MockBean private McpServiceTokenFilter mcpServiceTokenFilter;
     @MockBean private UserDetailsService userDetailsService;
     @MockBean private OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    @MockBean private OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
     @MockBean private OAuth2CookieAuthorizationRequestRepository oAuth2CookieAuthorizationRequestRepository;
 
     @Test

@@ -298,6 +298,17 @@
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.sdAiProductButton { position: absolute; right: 10px; bottom: 10px; z-index: 4; border: 0; border-radius: 999px; background: #252525; color: #fff; padding: 7px 10px; font-size: 12px; display: inline-flex; gap: 5px; align-items: center; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,.2); }
+.sdAiProductButton:hover { background: #b87948; }
+.sdAiInsightPanel { max-width: 560px; }
+.sdAiEyebrow { color: #b87948; font-size: 12px; font-weight: 700; letter-spacing: .08em; display: flex; gap: 6px; align-items: center; }
+.sdAiAnswer { white-space: pre-wrap; line-height: 1.6; max-height: 300px; overflow: auto; }
+.sdAiActions { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0; }
+.sdAiActions button { border: 1px solid #d9c1ab; background: #fffaf5; border-radius: 6px; padding: 8px 10px; cursor: pointer; }
+.sdAiQuestionForm { display: flex; gap: 8px; margin-top: 16px; }
+.sdAiQuestionForm input { flex: 1; min-width: 0; border: 1px solid #d9c1ab; border-radius: 6px; padding: 9px; }
+.sdAiQuestionForm button { border: 0; border-radius: 6px; background: #252525; color: white; padding: 9px 12px; }
+
 .sdStockBadge {
   position: absolute;
   top: 10px;

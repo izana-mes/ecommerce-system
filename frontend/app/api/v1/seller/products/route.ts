@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
 
@@ -18,8 +19,7 @@ export async function GET(request: Request) {
     const url = `${API_URL}/v1/seller/products${qs.toString() ? `?${qs.toString()}` : ""}`;
     const response = await fetch(url, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json"},
+      headers: backendAuthHeaders(request),
       cache: "no-store"});
 
     const data = await response.json();
@@ -38,8 +38,7 @@ export async function POST(request: Request) {
 
     const response = await fetch(`${API_URL}/v1/seller/products`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"},
+      headers: backendAuthHeaders(request),
       body: JSON.stringify(body)});
 
     const data = await response.json();

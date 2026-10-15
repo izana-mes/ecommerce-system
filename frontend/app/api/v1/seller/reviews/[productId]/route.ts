@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
 
@@ -19,8 +20,7 @@ export async function GET(request: Request, context: { params: Promise<{ product
     const url = `${API_URL}/v1/seller/reviews/${encodeURIComponent(productId)}${qs.toString() ? `?${qs.toString()}` : ""}`;
     const response = await fetch(url, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json"},
+      headers: backendAuthHeaders(request),
       cache: "no-store"});
 
     const data = await response.json();

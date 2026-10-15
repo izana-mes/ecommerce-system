@@ -2,6 +2,8 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    env_file:
+      - ../.env
     environment:
       POSTGRES_DB: ${DB_NAME:-shop}
       POSTGRES_USER: ${DB_USER:-postgres}
@@ -19,12 +21,15 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    env_file:
+      - ../.env
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -32,6 +37,8 @@ services:
   rabbitmq:
     image: rabbitmq:3-management-alpine
     restart: unless-stopped
+    env_file:
+      - ../.env
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-guest}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
@@ -66,7 +73,7 @@ services:
       DB_NAME: ${DB_NAME:-shop}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      SPRING_DATA_REDIS_URL: redis://redis:6379
+      SPRING_DATA_REDIS_URL: ${LOCAL_REDIS_URL:-redis://:local-redis-password-change-me@redis:6379}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       SPRING_RABBITMQ_ENABLED: ${SPRING_RABBITMQ_ENABLED:-true}
@@ -78,8 +85,14 @@ services:
       APPLICATION_SERVER_URL: http://localhost:8080
       FRONTEND_URL: http://localhost:3000
       CORS_ALLOWED_ORIGINS: http://localhost:3000
-      MOMO_IPN_URL: http://localhost:8080/api/payments/momo/ipn
+      MOMO_PARTNER_CODE: ${MOMO_PARTNER_CODE:-MOMO}
+      MOMO_ACCESS_KEY: ${MOMO_ACCESS_KEY:-}
+      MOMO_SECRET_KEY: ${MOMO_SECRET_KEY:-}
+      MOMO_ENDPOINT: ${MOMO_ENDPOINT:-https://test-payment.momo.vn}
       CHATBOT_AI_REFERER: http://localhost:3000
+      RENDER: "false"
+      RENDER_EXTERNAL_URL: ""
+      RENDER_SERVICE_ID: ""
     depends_on:
       postgres:
         condition: service_healthy
@@ -92,8 +105,8 @@ services:
     build:
       context: .
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8080/api
-        NEXT_PUBLIC_BACKEND_URL: http://localhost:8080
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api}
+        NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://localhost:8080}
         BACKEND_URL: http://backend:8080
     restart: unless-stopped
     env_file:
@@ -104,8 +117,8 @@ services:
       PORT: 3000
       BACKEND_API_BASE_URL: http://backend:8080/api
       BACKEND_URL: http://backend:8080
-      NEXT_PUBLIC_API_URL: http://localhost:8080/api
-      NEXT_PUBLIC_BACKEND_URL: http://localhost:8080
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api}
+      NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://localhost:8080}
       DB_CLIENT: postgres
       DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-shop}
       DB_HOST: postgres
@@ -114,9 +127,17 @@ services:
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       RABBITMQ_MANAGEMENT_URL: http://rabbitmq:15672
+      MOMO_ENV: ${MOMO_ENV:-sandbox}
+      MOMO_ENDPOINT: ${MOMO_ENDPOINT:-https://test-payment.momo.vn}
+      MOMO_REQUEST_TYPE: ${MOMO_REQUEST_TYPE:-payWithMethod}
       MOMO_REDIRECT_URL: http://localhost:3000/payment/momo-return
-      MOMO_IPN_URL: http://localhost:8080/api/payments/momo/ipn
+      MOMO_PARTNER_CODE: ${MOMO_PARTNER_CODE:-MOMO}
+      MOMO_ACCESS_KEY: ${MOMO_ACCESS_KEY:-}
+      MOMO_SECRET_KEY: ${MOMO_SECRET_KEY:-}
+      MOMO_USD_TO_VND_RATE: ${MOMO_USD_TO_VND_RATE:-26000}
+      MOMO_IPN_URL: ${MOMO_IPN_URL:-http://localhost:8080/api/payments/momo/ipn}
       VNPAY_RETURN_URL: http://localhost:3000/payment/vnpay-return
+      RENDER: "false"
     depends_on:
       backend:
         condition: service_healthy

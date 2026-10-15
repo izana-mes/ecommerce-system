@@ -16,15 +16,17 @@ import "swiper/css/effect-fade";
 import "swiper/css/pagination";
 import "./About.css";
 
-import about1 from "@/public/About/about-1.jpg";
-import about2 from "@/public/About/about-2.jpg";
-import brand1 from "@/public/Brands/brand1.png";
-import brand2 from "@/public/Brands/brand2.png";
-import brand3 from "@/public/Brands/brand3.png";
-import brand4 from "@/public/Brands/brand4.png";
-import brand5 from "@/public/Brands/brand5.png";
-import brand6 from "@/public/Brands/brand6.png";
-import brand7 from "@/public/Brands/brand7.png";
+// Files in Next's public directory are served from the site root.  Importing
+// them through the TypeScript path alias has no declaration and broke tsc.
+const about1 = "/About/about-1.jpg";
+const about2 = "/About/about-2.jpg";
+const brand1 = "/Brands/brand1.png";
+const brand2 = "/Brands/brand2.png";
+const brand3 = "/Brands/brand3.png";
+const brand4 = "/Brands/brand4.png";
+const brand5 = "/Brands/brand5.png";
+const brand6 = "/Brands/brand6.png";
+const brand7 = "/Brands/brand7.png";
 
 /* ── helpers ─────────────────────────────────────────── */
 function ScrollReveal({

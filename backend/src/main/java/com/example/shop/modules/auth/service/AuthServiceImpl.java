@@ -19,6 +19,7 @@ import com.example.shop.modules.security.SecurityEventLogger;
 import com.example.shop.modules.token.entity.EmailVerificationToken;
 import com.example.shop.modules.token.entity.PasswordResetToken;
 import com.example.shop.modules.token.entity.RefreshTokenRevocationReason;
+import com.example.shop.modules.token.repository.PasswordResetTokenRepository;
 import com.example.shop.modules.token.service.SessionClientMetadata;
 import com.example.shop.modules.token.service.TokenService;
 import com.example.shop.modules.user.entity.User;
@@ -51,6 +52,7 @@ public class AuthServiceImpl implements AuthService {
     private final SecurityEventLogger securityEventLogger;
     private final AuthAbuseProtectionService abuseProtectionService;
     private final AccessTokenRevocationService accessTokenRevocationService;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Value("${application.security.jwt.expiration}")
     private long jwtExpiration;
@@ -110,8 +112,13 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
 
         if (!user.isEmailVerified()) {
-            abuseProtectionService.recordLoginFailure(normalizedEmail, metadata.ipAddress());
-            throw new UnauthorizedException("Please verify your email before logging in");
+            if (passwordResetTokenRepository.existsByUser_IdAndIsUsedTrue(user.getId())) {
+                user.setEmailVerified(true);
+                user = userRepository.save(user);
+            } else {
+                abuseProtectionService.recordLoginFailure(normalizedEmail, metadata.ipAddress());
+                throw new UnauthorizedException("Please verify your email before logging in");
+            }
         }
         abuseProtectionService.recordLoginSuccess(normalizedEmail, metadata.ipAddress());
 
@@ -264,6 +271,7 @@ public class AuthServiceImpl implements AuthService {
         User user = resetToken.getUser();
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setEmailVerified(true);
         userRepository.save(user);
 
         tokenService.markPasswordResetTokenAsUsed(resetToken);

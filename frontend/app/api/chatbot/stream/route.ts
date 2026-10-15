@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 export async function POST(request: Request) {
   const cookieHeader = request.headers.get("cookie");

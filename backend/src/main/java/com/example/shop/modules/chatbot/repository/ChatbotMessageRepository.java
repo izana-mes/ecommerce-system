@@ -8,4 +8,8 @@ import java.util.List;
 public interface ChatbotMessageRepository extends JpaRepository<ChatbotMessage, String> {
 
     List<ChatbotMessage> findTop8ByConversationIdOrderByCreatedAtDesc(String conversationId);
+
+    List<ChatbotMessage> findTop16ByConversationIdOrderByCreatedAtDesc(String conversationId);
+
+    void deleteByConversationId(String conversationId);
 }

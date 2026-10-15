@@ -1,51 +1,77 @@
 import { NextRequest, NextResponse } from "next/server";
-import { backendApiBaseUrl } from "@/lib/backendApiBase";
-
-const API_URL = backendApiBaseUrl();
+import {
+  buildIpnRawSignature,
+  hmacSha256Hex,
+  resolveShopOrderNumber,
+  signaturesMatch,
+} from "@/lib/momo";
 
 /**
- * MoMo redirect callback. Forwards gateway params to the Spring IPN handler so
- * the order is marked paid and the confirmation email is sent when MoMo cannot
- * reach the backend IPN URL directly (e.g. misconfigured MOMO_IPN_URL).
+ * MoMo browser redirect after checkout. Verifies the result signature for display.
+ * Order payment status is updated only by the server-to-server IPN.
  */
 export async function GET(request: NextRequest) {
   const params = Object.fromEntries(request.nextUrl.searchParams.entries());
   const resultCode = params.resultCode;
-  const orderId = params.orderId;
+  const momoOrderId = params.orderId;
+  const accessKey = process.env.MOMO_ACCESS_KEY;
+  const secretKey = process.env.MOMO_SECRET_KEY;
+  const shopOrderNumber = resolveShopOrderNumber(momoOrderId || "", params.extraData);
 
-  if (!orderId) {
+  if (!momoOrderId) {
     return NextResponse.json({ valid: false, message: "Missing orderId" }, { status: 400 });
   }
 
-  const paid = resultCode === "0";
-
-  let backendConfirmed = false;
-  try {
-    const backendRes = await fetch(`${API_URL}/payments/momo/ipn`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(params),
-      signal: AbortSignal.timeout(15_000),
-    });
-    backendConfirmed = backendRes.ok || backendRes.status === 204;
-    if (!backendConfirmed) {
-      const errText = await backendRes.text().catch(() => "");
-      console.error(`MOMO_RETURN: backend IPN returned ${backendRes.status}: ${errText}`);
-    }
-  } catch (err) {
-    console.error("MOMO_RETURN: backend IPN call failed:", err instanceof Error ? err.message : err);
+  if (!accessKey || !secretKey) {
+    console.error("MOMO_RETURN: gateway keys not configured");
+    return NextResponse.json({ valid: false, message: "Missing config" }, { status: 500 });
   }
 
-  const success = paid && backendConfirmed;
+  const rawSignature = buildIpnRawSignature({
+    accessKey,
+    amount: params.amount ?? "",
+    extraData: params.extraData ?? "",
+    message: params.message ?? "",
+    orderId: momoOrderId,
+    orderInfo: params.orderInfo ?? "",
+    orderType: params.orderType ?? "",
+    partnerCode: params.partnerCode ?? "",
+    payType: params.payType ?? "",
+    requestId: params.requestId ?? "",
+    responseTime: params.responseTime ?? "",
+    resultCode: params.resultCode ?? "",
+    transId: params.transId ?? "",
+  });
+  const expected = hmacSha256Hex(secretKey, rawSignature);
+  const validSignature = signaturesMatch(expected, params.signature ?? "");
+  if (!validSignature) {
+    console.error("MOMO_RETURN: invalid signature", {
+      resultCode,
+      message: params.message,
+      transId: params.transId,
+      orderId: momoOrderId,
+    });
+    return NextResponse.json(
+      { valid: false, success: false, orderNumber: shopOrderNumber, message: "Invalid signature" },
+      { status: 400 }
+    );
+  }
+
+  const paid = resultCode === "0";
+  console.info("MoMo return callback", {
+    resultCode,
+    message: params.message,
+    transId: params.transId,
+    orderId: momoOrderId,
+    shopOrderNumber,
+    amount: params.amount,
+  });
+
   return NextResponse.json({
     valid: true,
-    success,
-    clearCart: success,
-    orderNumber: orderId,
-    message: success
-      ? "Payment successful"
-      : paid
-        ? "Payment received but order confirmation is still processing. Please refresh your orders shortly."
-        : params.message || "Payment failed or cancelled",
+    success: paid,
+    clearCart: paid,
+    orderNumber: shopOrderNumber,
+    message: paid ? "Payment successful" : params.message || "Payment failed or cancelled",
   });
 }

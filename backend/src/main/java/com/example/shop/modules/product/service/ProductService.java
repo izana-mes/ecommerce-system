@@ -13,6 +13,9 @@ public interface ProductService {
 
     List<ProductDto> searchProducts(String keyword);
 
+    /** Bounded catalog projection for trusted server-side integrations such as AI tools. */
+    List<ProductDto> getActiveProducts(int limit);
+
     List<String> searchSuggestions(String keyword, int limit);
 
     ProductDto createProduct(ProductDto productDto);

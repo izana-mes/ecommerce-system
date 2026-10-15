@@ -1,10 +1,12 @@
 package com.example.shop.modules.auth.oauth;
 
-import com.example.shop.modules.auth.security.AccessTokenCookieWriter;
 import com.example.shop.modules.auth.security.AccessTokenRevocationService;
+import com.example.shop.modules.auth.security.AuthCookieService;
 import com.example.shop.modules.auth.security.JwtProvider;
 import com.example.shop.modules.role.entity.Role;
 import com.example.shop.modules.role.repository.RoleRepository;
+import com.example.shop.modules.token.service.SessionClientMetadata;
+import com.example.shop.modules.token.service.TokenService;
 import com.example.shop.modules.user.entity.User;
 import com.example.shop.modules.user.repository.UserRepository;
 import jakarta.servlet.ServletException;
@@ -33,7 +35,8 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     private final JwtProvider jwtProvider;
     private final AccessTokenRevocationService accessTokenRevocationService;
     private final OAuth2CookieAuthorizationRequestRepository authRequestRepository;
-    private final AccessTokenCookieWriter accessTokenCookieWriter;
+    private final AuthCookieService authCookieService;
+    private final TokenService tokenService;
 
     @Value("${application.frontend.url:http://localhost:3000}")
     private String frontendUrl;
@@ -55,6 +58,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
 
         if (email == null || email.isBlank() || sub == null || sub.isBlank()) {
             log.warn("OAuth2 success but missing critical attributes: email={}, sub={}", email, sub);
+            authRequestRepository.removeAuthorizationRequestCookies(request, response);
             response.sendRedirect(redirectTarget + "?success=0&error=missing_email");
             return;
         }
@@ -71,7 +75,22 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                     return createGoogleUser(email, sub, givenName, familyName, emailVerified);
                 });
 
-        String jwt = jwtProvider.generateAccessToken(user);
+        // Build metadata for the OAuth session (no device-id / request-id available here)
+        SessionClientMetadata oauthMeta = new SessionClientMetadata(
+                request.getRemoteAddr(),
+                request.getHeader("User-Agent"),
+                null,
+                null
+        );
+
+        // Issue a refresh token so the session survives past the short-lived access token
+        TokenService.RefreshIssueResult refreshIssue = tokenService.createRefreshToken(user, oauthMeta);
+
+        String jwt = jwtProvider.generateAccessToken(user, new JwtProvider.AccessTokenContext(
+                String.valueOf(refreshIssue.tokenEntity().getId()),
+                String.valueOf(refreshIssue.tokenEntity().getTokenFamilyId()),
+                null
+        ));
         JwtProvider.AccessTokenParsed parsed = jwtProvider.parseAccessToken(jwt);
         accessTokenRevocationService.linkAccessToken(
                 parsed.jti(),
@@ -79,9 +98,14 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                 parsed.sessionId(),
                 parsed.familyId(),
                 String.valueOf(user.getId()),
-                request.getHeader("X-Request-Id")
+                null
         );
-        accessTokenCookieWriter.addCookie(request, response, jwt);
+
+        // Write both access and refresh cookies so token rotation works after OAuth login
+        authCookieService.writeAuthCookies(request, response, jwt, refreshIssue.rawToken());
+
+        // Clean up OAuth state/redirect-uri cookies
+        authRequestRepository.removeAuthorizationRequestCookies(request, response);
 
         // Fragment is not sent to the frontend server; needed when the SPA is on a different
         // origin than the API (e.g. Vercel + Render) because the HttpOnly cookie stays on the API host.

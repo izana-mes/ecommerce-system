@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
 
@@ -18,8 +19,7 @@ export async function GET(request: Request) {
     const url = `${API_URL}/v1/seller/inventory${qs.toString() ? `?${qs.toString()}` : ""}`;
     const response = await fetch(url, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json"},
+      headers: backendAuthHeaders(request),
       cache: "no-store"});
 
     const data = await response.json();

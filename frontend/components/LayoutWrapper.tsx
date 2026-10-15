@@ -13,6 +13,7 @@ import { Toaster } from "react-hot-toast";
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isLanding = pathname === "/landing" || pathname === "/experience";
+  const isMessaging = pathname === "/messages" || pathname?.startsWith("/messages/");
 
   if (isLanding) {
     return (
@@ -27,12 +28,12 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       <GlobalScrollReveal />
       <GlobalFloatingBanners />
       <Navbar />
-      <main id="page-content" className="jp-seigaiha-bg">
+      <main id="page-content" className={`jp-seigaiha-bg${isMessaging ? " chatPageShell" : ""}`}>
         <PageTransition>{children}</PageTransition>
       </main>
-      <FloatingChatButtons />
+      {!isMessaging ? <FloatingChatButtons /> : null}
       <ChatbotWidget />
-      <Footer />
+      {!isMessaging ? <Footer /> : null}
       <Toaster />
     </>
   );

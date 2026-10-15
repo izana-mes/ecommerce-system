@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
 
@@ -13,8 +14,7 @@ export async function POST(request: Request) {
         const body = await request.json();
     const response = await fetch(`${API_URL}/v1/seller/inventory/bulk-update`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"},
+      headers: backendAuthHeaders(request),
       body: JSON.stringify(body),
       cache: "no-store"});
     const data = await response.json();

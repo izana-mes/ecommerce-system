@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 
 const API_URL = backendApiBaseUrl();
 
@@ -19,8 +20,7 @@ export async function POST(
       `${API_URL}/v1/seller/reviews/${encodeURIComponent(productId)}/${encodeURIComponent(reviewId)}/reply`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"},
+        headers: backendAuthHeaders(request),
         body: JSON.stringify(body)}
     );
 

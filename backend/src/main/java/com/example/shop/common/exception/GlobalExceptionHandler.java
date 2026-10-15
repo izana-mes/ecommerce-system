@@ -46,7 +46,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({BadCredentialsException.class, DisabledException.class, LockedException.class,
             UnauthorizedException.class, ExpiredJwtException.class, SignatureException.class})
     public ResponseEntity<Map<String, Object>> handleAuthenticationException(Exception e) {
-        return build(HttpStatus.UNAUTHORIZED, "Unauthorized");
+        String message = (e instanceof UnauthorizedException && e.getMessage() != null && !e.getMessage().isBlank())
+                ? e.getMessage()
+                : "Unauthorized";
+        return build(HttpStatus.UNAUTHORIZED, message);
     }
 
     @ExceptionHandler(EntityNotFoundException.class)

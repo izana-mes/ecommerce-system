@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import {getUser } from "@/lib/auth";
 import { Client, StompSubscription } from "@stomp/stompjs";
 import { createSupportChatStompClient, parseStompJson } from "@/lib/supportChatSocket";
+import { ChatApp } from "@/components/chat/ChatApp";
 import "./support-chat.css";
 
 type SupportMessage = {
@@ -207,6 +208,10 @@ export default function SupportChatPage() {
     }
   };
 
+  if (customer) {
+    return <ChatApp currentUser={customer} />;
+  }
+
   return (
     <section className="supportChatPage">
       <div className="supportChatContainer">
@@ -215,7 +220,7 @@ export default function SupportChatPage() {
           <p>This page sends messages directly to staff and administrators. It is separate from the AI assistant.</p>
           <p className="supportChatIdentity">Realtime: {socketConnected ? "Connected" : "Connecting..."}</p>
           <p className="supportChatIdentity">
-            You are signed in as: {customer?.email || "Guest"}
+            You are signed in as: {"Guest"}
           </p>
         </header>
 

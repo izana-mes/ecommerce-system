@@ -98,6 +98,7 @@ export default function StaffSupportChatPage() {
       try {
         const response = await fetch("/api/auth/me", {
           method: "GET",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json"},
           cache: "no-store"});

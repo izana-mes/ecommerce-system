@@ -74,6 +74,12 @@ services:
       - key: VNPAY_HASH_SECRET
         sync: false
       # MoMo sandbox credentials (backend uses these for IPN signature verification)
+      - key: MOMO_ENV
+        value: sandbox
+      - key: MOMO_ENDPOINT
+        value: https://test-payment.momo.vn
+      - key: MOMO_PARTNER_CODE
+        sync: false
       - key: MOMO_ACCESS_KEY
         sync: false
       - key: MOMO_SECRET_KEY
@@ -128,6 +134,12 @@ services:
       - key: VNPAY_RETURN_URL
         sync: false
       # MoMo sandbox (frontend uses these to build the payment request)
+      - key: MOMO_ENV
+        value: sandbox
+      - key: MOMO_ENDPOINT
+        value: https://test-payment.momo.vn
+      - key: MOMO_REQUEST_TYPE
+        value: payWithMethod
       - key: MOMO_PARTNER_CODE
         sync: false
       - key: MOMO_ACCESS_KEY

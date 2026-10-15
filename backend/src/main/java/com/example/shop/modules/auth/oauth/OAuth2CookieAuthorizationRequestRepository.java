@@ -3,6 +3,8 @@ package com.example.shop.modules.auth.oauth;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.stereotype.Component;
@@ -44,14 +46,14 @@ public class OAuth2CookieAuthorizationRequestRepository implements Authorization
         
         log.debug("saveAuthorizationRequest: saving request for state={}", authorizationRequest.getState());
         String value = serialize(authorizationRequest);
-        addCookie(response, COOKIE_NAME, value, COOKIE_EXPIRE_SECONDS);
+        addCookie(request, response, COOKIE_NAME, value, COOKIE_EXPIRE_SECONDS);
 
         String frontendRedirectUri = request.getParameter("frontend_redirect_uri");
         log.debug("saveAuthorizationRequest: frontend_redirect_uri={}", frontendRedirectUri);
         if (isValidFrontendRedirectUri(frontendRedirectUri)) {
-            addCookie(response, FRONTEND_REDIRECT_URI_COOKIE_NAME, serialize(frontendRedirectUri), COOKIE_EXPIRE_SECONDS);
+            addCookie(request, response, FRONTEND_REDIRECT_URI_COOKIE_NAME, serialize(frontendRedirectUri), COOKIE_EXPIRE_SECONDS);
         } else {
-            deleteCookie(response, FRONTEND_REDIRECT_URI_COOKIE_NAME);
+            deleteCookie(request, response, FRONTEND_REDIRECT_URI_COOKIE_NAME);
         }
     }
 
@@ -64,8 +66,8 @@ public class OAuth2CookieAuthorizationRequestRepository implements Authorization
     }
 
     public void removeAuthorizationRequestCookies(HttpServletRequest request, HttpServletResponse response) {
-        deleteCookie(response, COOKIE_NAME);
-        deleteCookie(response, FRONTEND_REDIRECT_URI_COOKIE_NAME);
+        deleteCookie(request, response, COOKIE_NAME);
+        deleteCookie(request, response, FRONTEND_REDIRECT_URI_COOKIE_NAME);
     }
 
     public String loadFrontendRedirectUri(HttpServletRequest request) {
@@ -81,20 +83,23 @@ public class OAuth2CookieAuthorizationRequestRepository implements Authorization
         }
     }
 
-    private static void addCookie(HttpServletResponse response, String name, String value, int maxAgeSeconds) {
-        Cookie cookie = new Cookie(name, value);
-        cookie.setPath("/");
-        cookie.setHttpOnly(true);
-        cookie.setMaxAge(maxAgeSeconds);
-        response.addCookie(cookie);
+    private static void addCookie(
+            HttpServletRequest request, HttpServletResponse response, String name, String value, int maxAgeSeconds) {
+        response.addHeader(HttpHeaders.SET_COOKIE, cookieBuilder(request, name, value, maxAgeSeconds).toString());
     }
 
-    private static void deleteCookie(HttpServletResponse response, String name) {
-        Cookie cookie = new Cookie(name, "");
-        cookie.setPath("/");
-        cookie.setHttpOnly(true);
-        cookie.setMaxAge(0);
-        response.addCookie(cookie);
+    private static void deleteCookie(HttpServletRequest request, HttpServletResponse response, String name) {
+        response.addHeader(HttpHeaders.SET_COOKIE, cookieBuilder(request, name, "", 0).toString());
+    }
+
+    private static ResponseCookie cookieBuilder(HttpServletRequest request, String name, String value, int maxAgeSeconds) {
+        return ResponseCookie.from(name, value)
+                .path("/")
+                .httpOnly(true)
+                .maxAge(maxAgeSeconds)
+                .sameSite("Lax")
+                .secure(request.isSecure())
+                .build();
     }
 
     private static Cookie getCookie(HttpServletRequest request, String name) {

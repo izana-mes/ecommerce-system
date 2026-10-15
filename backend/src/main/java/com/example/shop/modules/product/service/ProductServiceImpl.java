@@ -16,6 +16,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -76,6 +77,13 @@ public class ProductServiceImpl implements ProductService {
                 .filter(product -> matchesAllTokens(product, tokens))
                 .map(productMapper::toDto)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductDto> getActiveProducts(int limit) {
+        return productRepository.findByActiveTrueOrderByIdAsc(PageRequest.of(0, Math.max(1, Math.min(limit, 50))))
+                .stream().map(productMapper::toDto).toList();
     }
 
     @Override

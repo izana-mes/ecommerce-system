@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { FiHeart, FiThumbsUp, FiThumbsDown, FiMessageCircle, FiEdit2, FiTrash2 } from "react-icons/fi";
-import { FaStar, FaRegStar, FaCartPlus } from "react-icons/fa";
+import { FaStar, FaRegStar, FaCartPlus, FaMagic } from "react-icons/fa";
 import { IoFilterSharp, IoClose } from "react-icons/io5";
 import { FaAngleRight, FaAngleLeft } from "react-icons/fa6";
 
@@ -143,6 +143,10 @@ export default function Shop() {
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState<DataStore | null>(null);
+  const [aiProduct, setAiProduct] = useState<DataStore | null>(null);
+  const [aiAnswer, setAiAnswer] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiQuestion, setAiQuestion] = useState("");
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [productDescriptions, setProductDescriptions] = useState<Record<string, string>>(() => {
     if (typeof window === "undefined") {
@@ -225,6 +229,12 @@ export default function Shop() {
     setReviewRatingDraft(5);
     setReviewCommentDraft("");
     void loadProductReviews(product.productID);
+  };
+
+  const askProductAi = async (product: DataStore, message = "Give me an AI product insight: why should I consider this, who is it suitable for, and who should promote it?") => {
+    setAiProduct(product); setAiAnswer(""); setAiLoading(true); setAiQuestion("");
+    try { const response = await fetch("/api/ai/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, productId: product.productID }) }); const data = await response.json().catch(() => ({})); setAiAnswer(String(data.message || data.error || "AI insight is unavailable right now.")); }
+    catch { setAiAnswer("AI insight is unavailable right now."); } finally { setAiLoading(false); }
   };
 
   const closeProductModal = () => {
@@ -989,6 +999,7 @@ export default function Shop() {
                             className="sdProduct_back"
                           />
                         </button>
+                        <button type="button" className="sdAiProductButton" onClick={() => void askProductAi(product)} aria-label={`Ask AI about ${product.productName}`}><FaMagic /> AI</button>
                         <h4
                           className={isOutOfStock || isCartLimitReached ? "sdAddDisabled" : ""}
                           onClick={() => {
@@ -1437,6 +1448,24 @@ export default function Shop() {
           </div>
         </div>,
         document.body
+      )}
+      {isClient && aiProduct && createPortal(
+        <div className="sdProductModalOverlay" role="presentation" onClick={() => !aiLoading && setAiProduct(null)}>
+          <section className="sdProductModal sdAiInsightPanel" role="dialog" aria-modal="true" aria-label={`AI insight for ${aiProduct.productName}`} onClick={(event) => event.stopPropagation()}>
+            <button type="button" className="sdProductModalClose" onClick={() => setAiProduct(null)} aria-label="Close AI insight"><IoClose /></button>
+            <p className="sdAiEyebrow"><FaMagic /> AI PRODUCT INSIGHT</p><h3>{aiProduct.productName}</h3>
+            {aiLoading ? <p>Checking verified product data…</p> : <p className="sdAiAnswer">{aiAnswer}</p>}
+            <div className="sdAiActions">
+              <button type="button" disabled={aiLoading} onClick={() => void askProductAi(aiProduct, "Why should I consider this product? Use verified store data.")}>Why consider it?</button>
+              <button type="button" disabled={aiLoading} onClick={() => void askProductAi(aiProduct, "Who is this product suitable for? Use verified store data.")}>Suitable for whom?</button>
+              <button type="button" disabled={aiLoading} onClick={() => void askProductAi(aiProduct, "Who should promote this product? Suggest only a creator profile, platform, content style and concept; do not invent real influencer names.")}>Who should promote it?</button>
+            </div><small>AI-generated recommendations are based on verified store data and are not endorsements.</small>
+            <form className="sdAiQuestionForm" onSubmit={(event) => { event.preventDefault(); if (aiQuestion.trim()) void askProductAi(aiProduct, aiQuestion.trim()); }}>
+              <input value={aiQuestion} onChange={(event) => setAiQuestion(event.target.value)} placeholder="Ask anything about this product…" maxLength={500} />
+              <button type="submit" disabled={aiLoading || !aiQuestion.trim()}>Ask AI</button>
+            </form>
+          </section>
+        </div>, document.body
       )}
       <AuthRequiredModal
         open={showAuthRequiredModal}

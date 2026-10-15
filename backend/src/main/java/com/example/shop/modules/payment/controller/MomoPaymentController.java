@@ -18,13 +18,16 @@ public class MomoPaymentController {
 
     @PostMapping("/ipn")
     public ResponseEntity<Void> handleIpn(@RequestBody Map<String, Object> payload) {
-        log.info("Received MoMo IPN: {}", payload);
+        log.info("Received MoMo IPN resultCode={} message={} transId={} orderId={} amount={}",
+                payload.get("resultCode"), payload.get("message"), payload.get("transId"),
+                payload.get("orderId"), payload.get("amount"));
         try {
             momoPaymentService.processIpn(payload);
         } catch (Exception ex) {
             log.error("MoMo IPN processing error: {}", ex.getMessage(), ex);
+            return ResponseEntity.internalServerError().build();
         }
-        // MoMo expects 204 No Content for successful receipt of IPN to stop retries.
+        // MoMo expects 204 No Content after the IPN is received (15s timeout).
         return ResponseEntity.noContent().build();
     }
 }

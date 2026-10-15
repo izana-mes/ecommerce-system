@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { backendAuthHeaders } from "@/lib/proxyAuth";
 import { requireAdminUser, withCouponTables } from "@/lib/coupons";
 
 type CouponRow = {

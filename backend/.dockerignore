@@ -1,7 +1,9 @@
-target
-.mvn
-.git
-.gitignore
-Dockerfile
-README.md
+target/
+.env
+.m2/
+.m2repo/
 *.log
+.classpath
+.factorypath
+.project
+.settings/

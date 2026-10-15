@@ -53,12 +53,18 @@ spring:
   # Google OAuth: credentials are read from SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID / _SECRET.
   # When these are blank the OAuth route simply won't work, but the app still starts.
 application:
+    frontend:
+      url: ${FRONTEND_URL:http://localhost:3000}
+    cors:
+      # Browser origins are intentionally separate from internal Docker URLs.
+      # Compose supplies the host-facing frontend origin (http://localhost:3000).
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
     security:
       # Comma-separated IPs of trusted reverse proxies (so we can safely honor X-Forwarded-For).
       # Example: "10.0.0.1,10.0.0.2". Empty means: never trust proxy headers.
       trusted-proxies: ${TRUSTED_PROXIES:}
       auth-cookie:
-        access-name: ${AUTH_COOKIE_ACCESS_NAME:access_token}
+        access-name: ${AUTH_COOKIE_ACCESS_NAME:${AUTH_COOKIE_NAME:access_token}}
         refresh-name: ${AUTH_COOKIE_REFRESH_NAME:refresh_token}
         same-site: ${AUTH_COOKIE_SAME_SITE:Lax}
         secure: ${AUTH_COOKIE_SECURE:true}
@@ -118,8 +124,10 @@ application:
         hash-secret: ${VNPAY_HASH_SECRET:}
         usd-to-vnd-rate: ${VNPAY_USD_TO_VND_RATE:26000}
       momo:
+        partner-code: ${MOMO_PARTNER_CODE:}
         access-key: ${MOMO_ACCESS_KEY:}
         secret-key: ${MOMO_SECRET_KEY:}
+        endpoint: ${MOMO_ENDPOINT:https://test-payment.momo.vn}
         usd-to-vnd-rate: ${MOMO_USD_TO_VND_RATE:26000}
       paypal:
         client-id: ${PAYPAL_CLIENT_ID:}
@@ -193,6 +201,14 @@ application:
         model: ${CHATBOT_AI_MODEL:gpt-4.1-mini}
         temperature: ${CHATBOT_AI_TEMPERATURE:0.2}
         max-tokens: ${CHATBOT_AI_MAX_TOKENS:300}
+    ai:
+      primary-provider: ${CHATBOT_AI_PRIMARY_PROVIDER:${AI_PRIMARY_PROVIDER:gemini}}
+      fallback-provider: ${CHATBOT_AI_FALLBACK_PROVIDER:${AI_FALLBACK_PROVIDER:groq}}
+      gemini-api-key: ${GEMINI_AI_API_KEY:}
+      groq-api-key: ${GROQ_AI_API_KEY:}
+      gemini-model: ${GEMINI_AI_MODEL:gemini-2.0-flash}
+      groq-model: ${GROQ_AI_MODEL:llama-3.3-70b-versatile}
+      groq-base-url: ${GROQ_AI_BASE_URL:${CHATBOT_AI_BASE_URL:https://api.groq.com/openai/v1}}
     mcp:
       server-url: ${MCP_SERVER_URL:http://localhost:3100}
       service-token: ${MCP_SERVICE_TOKEN:}

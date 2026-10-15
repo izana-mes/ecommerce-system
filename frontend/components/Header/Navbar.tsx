@@ -39,6 +39,7 @@ const JP_LABELS: Partial<Record<TranslationKey, string>> = {
   nav_contact:    "お問合せ",
   nav_chatbot:    "チャット",
   nav_support:    "サポート",
+  nav_messages:   "メッセージ",
   nav_attendance: "出勤",
   nav_workspace:  "作業場",
   nav_assistant:  "助手",
@@ -50,11 +51,13 @@ const JP_LABELS: Partial<Record<TranslationKey, string>> = {
 };
 
 const CUSTOMER_LINKS = [
+  { href: "/messages", key: "nav_messages" as TranslationKey },
   { href: "/chatbot", key: "nav_chatbot" as TranslationKey },
   { href: "/support-chat", key: "nav_support" as TranslationKey },
 ];
 
 const STAFF_LINKS = [
+  { href: "/messages", key: "nav_messages" as TranslationKey },
   { href: "/staff/attendance", key: "nav_attendance" as TranslationKey },
   { href: "/workspace", key: "nav_workspace" as TranslationKey },
   { href: "/staff/chatbot", key: "nav_assistant" as TranslationKey },

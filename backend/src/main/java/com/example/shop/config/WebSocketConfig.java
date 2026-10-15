@@ -19,6 +19,7 @@ import java.util.Arrays;
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final WebSocketJwtAuthChannelInterceptor webSocketJwtAuthChannelInterceptor;
+    private final WebSocketHandshakeJwtInterceptor webSocketHandshakeJwtInterceptor;
     private final WebSocketSessionRegistry webSocketSessionRegistry;
 
     @Value("${application.cors.allowed-origins:http://localhost:3000}")
@@ -38,6 +39,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .toArray(String[]::new);
 
         registry.addEndpoint("/ws")
+                .addInterceptors(webSocketHandshakeJwtInterceptor)
                 .setAllowedOriginPatterns(allowedOrigins.length == 0 ? new String[]{"*"} : allowedOrigins)
                 .withSockJS();
     }
