@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { MdBarChart, MdSearch, MdRefresh } from "react-icons/md";
+import { BarChart2, Search, RotateCw } from "lucide-react";
 import {getUser } from "@/lib/auth";
 import toast from "react-hot-toast";
 
@@ -32,8 +32,8 @@ function ProgressRow({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: 13, color: "#94a3b8" }}>{label}</span>
-        <span style={{ fontSize: 15, fontWeight: 700, color: "#f1f5f9" }}>
+        <span style={{ fontSize: 13, color: "#737373" }}>{label}</span>
+        <span style={{ fontSize: 15, fontWeight: 700, color: "#f5f5f4" }}>
           {value}
           {suffix}
         </span>
@@ -97,7 +97,6 @@ export default function ShipperPerformancePage() {
       <div className="sh-topbar">
         <div className="sh-topbar-title">
           <h1>Performance Analytics</h1>
-          <p>SLA tracking, delivery stats, and efficiency metrics</p>
         </div>
         <div className="sh-topbar-actions">
           <button
@@ -105,7 +104,7 @@ export default function ShipperPerformancePage() {
             onClick={() => void fetchPerf()}
             disabled={loading}
           >
-            <MdRefresh /> {loading ? "Loading…" : "Refresh"}
+            <RotateCw size={14} strokeWidth={1.75} /> {loading ? "Loading…" : "Refresh"}
           </button>
         </div>
       </div>
@@ -118,7 +117,6 @@ export default function ShipperPerformancePage() {
             <div className="sh-card-header">
               <div>
                 <h2 className="sh-card-title">Date Range</h2>
-                <p className="sh-card-subtitle">Filter performance stats by time window</p>
               </div>
             </div>
             <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
@@ -145,7 +143,7 @@ export default function ShipperPerformancePage() {
                 onClick={() => void fetchPerf()}
                 disabled={loading}
               >
-                <MdSearch /> {loading ? "Fetching…" : "Query Stats"}
+                <Search size={14} strokeWidth={1.75} /> {loading ? "Fetching…" : "Query Stats"}
               </button>
             </div>
           </div>
@@ -155,7 +153,7 @@ export default function ShipperPerformancePage() {
             <div className="sh-stats-grid">
               {[...Array(5)].map((_, i) => (
                 <div key={i} className="sh-stat-card" style={{ height: 120 }}>
-                  <div className="sh-skeleton" style={{ height: 40, width: 40, borderRadius: 10 }} />
+                  <div className="sh-skeleton" style={{ height: 40, width: 40, borderRadius: 5 }} />
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     <div className="sh-skeleton" style={{ height: 28, width: 80 }} />
                     <div className="sh-skeleton" style={{ height: 14, width: 120 }} />
@@ -175,7 +173,7 @@ export default function ShipperPerformancePage() {
                 ].map((stat) => (
                   <div key={stat.label} className={`sh-stat-card ${stat.color}`}>
                     <div className={`sh-stat-icon ${stat.color}`}>
-                      <MdBarChart />
+                      <BarChart2 size={18} strokeWidth={1.75} />
                     </div>
                     <div>
                       <div className="sh-stat-value">
@@ -236,7 +234,7 @@ export default function ShipperPerformancePage() {
                   style={{
                     marginTop: 24,
                     padding: 16,
-                    borderRadius: 12,
+                    borderRadius: 5,
                     background:
                       data.successRatePercent >= 90
                         ? "rgba(16, 185, 129, 0.08)"
@@ -251,18 +249,18 @@ export default function ShipperPerformancePage() {
                         : "rgba(239, 68, 68, 0.2)"
                     }`}}
                 >
-                  <p style={{ margin: 0, fontSize: 14, color: "#f1f5f9" }}>
+                  <p style={{ margin: 0, fontSize: 14, color: "#f5f5f4" }}>
                     {data.successRatePercent >= 90
                       ? "🏆 Excellent performance! You are maintaining a high delivery success rate."
                       : data.successRatePercent >= 70
                       ? "📊 Good performance. Room to improve on late and failed deliveries."
-                      : "⚠️ Performance needs attention. Focus on reducing failed and late deliveries."}
+                      : "Performance needs attention. Focus on reducing failed and late deliveries."}
                   </p>
                 </div>
               </div>
             </>
           ) : (
-            <div className="sh-card" style={{ textAlign: "center", padding: "48px 16px", color: "#475569" }}>
+            <div className="sh-card" style={{ textAlign: "center", padding: "48px 16px", color: "#737373" }}>
               No data available for the selected period.
             </div>
           )}

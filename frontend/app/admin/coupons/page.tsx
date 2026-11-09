@@ -343,7 +343,7 @@ export default function AdminCouponsPage() {
   return (
     <section className="jp-seigaiha-bg" style={{ maxWidth: 1180, margin: "30px auto", padding: "0 16px 40px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700 }}>Coupons & Discount Vouchers</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 600 }}>Coupons & Discount Vouchers</h1>
         <Link href="/admin" style={{ textDecoration: "underline" }}>Back to Admin</Link>
       </div>
 
@@ -356,7 +356,7 @@ export default function AdminCouponsPage() {
           marginTop: 18,
           padding: 14,
           border: "1px solid #d7d7d7",
-          borderRadius: 10}}
+          borderRadius: 5}}
       >
         <input placeholder="Code (WELCOME10)" value={form.code} onChange={(e) => setForm((p) => ({ ...p, code: e.target.value }))} required />
         <input placeholder="Title" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} required />
@@ -380,7 +380,7 @@ export default function AdminCouponsPage() {
           alignItems: "start"}}
       >
         <div style={{ display: "grid", gap: 18 }}>
-        <div style={{ border: "1px solid #d7d7d7", borderRadius: 10, overflowX: "auto" }}>
+        <div style={{ border: "1px solid #d7d7d7", borderRadius: 5, overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
@@ -448,7 +448,7 @@ export default function AdminCouponsPage() {
             </tbody>
           </table>
         </div>
-        <div style={{ border: "1px solid #d7d7d7", borderRadius: 10, overflowX: "auto" }}>
+        <div style={{ border: "1px solid #d7d7d7", borderRadius: 5, overflowX: "auto" }}>
           <div style={{ padding: "12px 14px", borderBottom: "1px solid #efefef" }}>
             <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Expired Coupon History</h2>
             <p style={{ margin: "6px 0 0", color: "#555" }}>
@@ -506,7 +506,7 @@ export default function AdminCouponsPage() {
         </div>
         </div>
 
-        <aside style={{ border: "1px solid #d7d7d7", borderRadius: 10, padding: 14 }}>
+        <aside style={{ border: "1px solid #d7d7d7", borderRadius: 5, padding: 14 }}>
           <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 10 }}>
             {selectedCouponExpired ? "Reactivate Expired Coupon" : "Issue to Customers"}
           </h2>
@@ -570,7 +570,7 @@ export default function AdminCouponsPage() {
               maxHeight: 220,
               overflowY: "auto",
               border: "1px solid #d7d7d7",
-              borderRadius: 8,
+              borderRadius: 5,
               padding: 10,
               marginBottom: 12,
               background: customers.length === 0 ? "#fafafa" : "#fff"}}

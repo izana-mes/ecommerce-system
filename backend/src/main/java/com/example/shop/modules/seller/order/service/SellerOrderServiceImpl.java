@@ -66,7 +66,7 @@ public class SellerOrderServiceImpl implements SellerOrderService {
                 FROM order_items oi
                 INNER JOIN orders o ON o.id = oi.order_id
                 INNER JOIN products p ON p.product_id = oi.product_id
-                WHERE p.seller_user_id = ?
+                WHERE COALESCE(oi.seller_user_id, p.seller_user_id) = ?
                 """);
 
         List<Object> params = new ArrayList<>();

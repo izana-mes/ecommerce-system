@@ -1,17 +1,17 @@
 .shift-admin {
   min-height: 100vh;
   padding: 28px;
-  background: #f6f7f9;
-  color: #17202a;
+  background: #fafaf9;
+  color: #171717;
 }
 
 .shift-toolbar,
 .shift-filters,
 .shift-panel,
 .shift-day {
-  border: 1px solid #d9dee7;
+  border: 1px solid #e5e5e5;
   background: #fff;
-  border-radius: 8px;
+  border-radius: 5px;
 }
 
 .shift-toolbar {
@@ -23,12 +23,12 @@
 
 .shift-toolbar h1 {
   margin: 0;
-  font-size: 28px;
+  font-size: 20px;
 }
 
 .shift-toolbar p,
 .shift-muted {
-  color: #607080;
+  color: #737373;
 }
 
 .shift-kpis {
@@ -40,10 +40,10 @@
 
 .shift-kpis span,
 .status {
-  border: 1px solid #cfd6e1;
-  border-radius: 999px;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
   padding: 6px 10px;
-  background: #f8fafc;
+  background: #fafaf9;
   font-size: 13px;
 }
 
@@ -67,8 +67,8 @@
 .shift-form input,
 .shift-form select,
 .shift-form textarea {
-  border: 1px solid #cfd6e1;
-  border-radius: 6px;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
   padding: 10px;
   background: #fff;
 }
@@ -80,9 +80,9 @@
 
 .shift-admin button {
   border: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   padding: 10px 14px;
-  background: #1f6feb;
+  background: #171717;
   color: #fff;
   cursor: pointer;
 }
@@ -95,18 +95,18 @@
 .shift-message,
 .shift-warning {
   margin-top: 14px;
-  border-radius: 8px;
+  border-radius: 5px;
   padding: 12px;
 }
 
 .shift-message {
-  background: #eef6ff;
-  border: 1px solid #b8d8ff;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
 }
 
 .shift-warning {
-  background: #fff7e6;
-  border: 1px solid #ffd58a;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
 }
 
 .shift-grid {
@@ -148,13 +148,13 @@
   display: grid;
   gap: 3px;
   padding: 8px;
-  border: 1px solid #d9dee7;
-  border-radius: 6px;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
 }
 
 .shift-preview-table .invalid {
-  border-color: #f2a3a3;
-  background: #fff5f5;
+  border-color: #b91c1c;
+  background: #fef2f2;
 }
 
 .shift-schedule {
@@ -172,7 +172,7 @@
   justify-content: space-between;
   gap: 14px;
   padding: 14px 0;
-  border-top: 1px solid #e7ebf0;
+  border-top: 1px solid #e5e5e5;
 }
 
 .shift-item div {
@@ -181,11 +181,11 @@
 }
 
 .shift-item small {
-  color: #667789;
+  color: #737373;
 }
 
 .shift-item .warn {
-  color: #9a5a00;
+  color: #b45309;
 }
 
 .shift-actions {
@@ -193,14 +193,14 @@
 }
 
 .accepted {
-  background: #e8f7ee;
-  color: #17613a;
+  background: #f0fdf4;
+  color: #15803d;
 }
 
 .absent,
 .rejected {
-  background: #fff0f0;
-  color: #9f1d1d;
+  background: #fef2f2;
+  color: #b91c1c;
 }
 
 @media (max-width: 880px) {

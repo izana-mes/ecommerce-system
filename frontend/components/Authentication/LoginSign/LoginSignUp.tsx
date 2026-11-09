@@ -6,9 +6,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { useAppDispatch } from "@/store";
-import { clearCart, fetchCartAsync } from "@/store/cartSlice";
-import { clearWishList, fetchWishlistAsync } from "@/store/wishListSlice";
-import { logout as clearAuth, setAuth } from "@/lib/auth";
+import { clearCart } from "@/store/cartSlice";
+import { clearWishList } from "@/store/wishListSlice";
+import { homePathForRole, logout as clearAuth, setAuth } from "@/lib/auth";
 import { csrfHeader, ensureCsrfToken } from "@/lib/csrf";
 import confetti from "canvas-confetti";
 import { useLocale } from "@/components/providers/LocaleProvider";
@@ -39,14 +39,16 @@ const LoginSignUp = () => {
     error instanceof Error ? error.message : fallback;
   const resolveRole = (
     profile: { role?: string; roles?: string[] } | null | undefined
-  ): "user" | "admin" | "employee" | "supplier" | "shipper" => {
+  ): "user" | "admin" | "employee" | "supplier" | "seller" | "shipper" => {
     if (profile?.role === "admin") return "admin";
     if (profile?.role === "employee") return "employee";
     if (profile?.role === "supplier") return "supplier";
+    if (profile?.role === "seller") return "seller";
     if (profile?.role === "shipper") return "shipper";
     if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_ADMIN")) return "admin";
     if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_EMPLOYEE")) return "employee";
     if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_SUPPLIER")) return "supplier";
+    if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_SELLER")) return "seller";
     if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_SHIPPER")) return "shipper";
 
     return "user";
@@ -124,7 +126,7 @@ const LoginSignUp = () => {
 
       let resolvedUser = {
         email: loginEmail,
-        role: "user" as "user" | "admin" | "employee" | "supplier" | "shipper",
+        role: "user" as "user" | "admin" | "employee" | "supplier" | "seller" | "shipper",
         firstName: undefined as string | undefined,
         lastName: undefined as string | undefined,
         id: undefined as string | number | undefined};
@@ -153,9 +155,7 @@ const LoginSignUp = () => {
       // Store token and user data using shared auth helper
       setAuth("", resolvedUser, rememberMe);
 
-      // Load cart and wishlist for the newly logged-in user
-      dispatch(fetchCartAsync());
-      dispatch(fetchWishlistAsync());
+      // The customer store boundary loads cart and wishlist only for USER accounts.
 
       toast.success("Login successful!", {
         duration: 2000,
@@ -174,7 +174,8 @@ const LoginSignUp = () => {
         zIndex: 9999});
 
       // Redirect to home page immediately after successful login
-      router.replace(returnTo);
+      // Authenticated role ownership takes precedence over a stale or cross-role return URL.
+      router.replace(resolvedUser.role === "user" && returnTo !== "/" ? returnTo : homePathForRole(resolvedUser.role));
       router.refresh();
     } catch (error: unknown) {
       console.error("Login error details:", error);

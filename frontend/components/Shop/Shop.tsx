@@ -1051,6 +1051,26 @@ export default function Shop() {
                             <h5>{product.productName}</h5>
                           </Link>
 
+                          {product.sellerUserId && (
+                            <div style={{ marginTop: 2, marginBottom: 4 }}>
+                              <Link
+                                href={`/store/${product.sellerUserId}`}
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  fontSize: 11,
+                                  color: "#4f46e5",
+                                  fontWeight: 600,
+                                  textDecoration: "none",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                }}
+                              >
+                                🏪 Store #{String(product.sellerUserId).slice(0, 8)}
+                              </Link>
+                            </div>
+                          )}
+
                           {priceChange ? (
                             <p className="priceChangeText">
                               <span className="priceOld">${priceChange.oldPrice}</span>
@@ -1211,6 +1231,30 @@ export default function Shop() {
                 </p>
                 <p>
                   <strong>{t("shop_status")}</strong> {selectedProduct.active === false ? t("shop_inactive") : t("shop_active")}
+                </p>
+                {selectedProduct.sellerUserId && (
+                  <p>
+                    <strong>Sold by:</strong>{" "}
+                    <Link
+                      href={`/store/${selectedProduct.sellerUserId}`}
+                      style={{ color: "#4f46e5", fontWeight: 600, textDecoration: "underline" }}
+                    >
+                      Seller Store #{String(selectedProduct.sellerUserId).slice(0, 8)} &rarr;
+                    </Link>
+                  </p>
+                )}
+                {selectedProduct.supplierUserId && (
+                  <p>
+                    <strong>Goods Source:</strong> Supplier #{String(selectedProduct.supplierUserId).slice(0, 8)}
+                  </p>
+                )}
+                <p>
+                  <Link
+                    href={`/shop/${encodeURIComponent(selectedProduct.productID)}`}
+                    style={{ fontSize: 13, color: "#4f46e5", fontWeight: 600, textDecoration: "underline", display: "inline-block", marginTop: 4 }}
+                  >
+                    Open Full Product Detail Page &rarr;
+                  </Link>
                 </p>
                 <div className="sdSizeSection">
                   <strong>Available Sizes</strong>

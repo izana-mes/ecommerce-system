@@ -1,9 +1,9 @@
 target/
 .env
+.env.*
+!.env.example
 .m2/
 .m2repo/
 *.log
-.classpath
-.factorypath
-.project
-.settings/
+.git/
+secrets/

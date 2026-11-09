@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { MdRefresh, MdCheckCircle, MdWarning, MdCancel, MdSearch } from "react-icons/md";
+import { RotateCw, CheckCircle2, AlertTriangle, XCircle, Search, PackageCheck } from "lucide-react";
 import {getUser } from "@/lib/auth";
 import toast from "react-hot-toast";
 import { useShipperSocket } from "@/hooks/useShipperSocket";
@@ -109,7 +109,7 @@ export default function ShipperOrdersPage() {
         body: JSON.stringify(body)});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed to update status");
-      toast.success(`✅ Status updated to ${statusValue}`);
+      toast.success(`Status updated to ${statusValue}`);
       // The WS event will trigger a refresh, but also do it immediately for snappy UX
       await fetchOrder(String(order.orderId));
       await fetchAssignedOrders();
@@ -128,9 +128,9 @@ export default function ShipperOrdersPage() {
   };
 
   const statusIcon = (s: string) => {
-    if (s === "completed") return <MdCheckCircle style={{ color: "#34d399" }} />;
-    if (s === "cancelled") return <MdCancel style={{ color: "#f87171" }} />;
-    return <MdWarning style={{ color: "#fcd34d" }} />;
+    if (s === "completed") return <CheckCircle2 size={16} strokeWidth={2} style={{ color: "#34d399" }} />;
+    if (s === "cancelled") return <XCircle size={16} strokeWidth={2} style={{ color: "#f87171" }} />;
+    return <AlertTriangle size={16} strokeWidth={2} style={{ color: "#fcd34d" }} />;
   };
 
   useEffect(() => { void fetchAssignedOrders(); }, [fetchAssignedOrders]);
@@ -148,7 +148,6 @@ export default function ShipperOrdersPage() {
       <div className="sh-topbar">
         <div className="sh-topbar-title">
           <h1>Order Management</h1>
-          <p>Look up orders and update delivery status</p>
         </div>
         <div className="sh-topbar-actions">
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -179,14 +178,14 @@ export default function ShipperOrdersPage() {
                 disabled={loadingAssigned}
                 title="Refresh"
               >
-                <MdRefresh />
+                <RotateCw size={14} strokeWidth={1.75} />
               </button>
             </div>
 
             {loadingAssigned ? (
-              <div style={{ padding: "10px 0", color: "#64748b", fontSize: 13 }}>Loading…</div>
+              <div style={{ padding: "10px 0", color: "#737373", fontSize: 13 }}>Loading…</div>
             ) : assignedOrders.length === 0 ? (
-              <div style={{ padding: "10px 0", color: "#64748b", fontSize: 13 }}>
+              <div style={{ padding: "10px 0", color: "#737373", fontSize: 13 }}>
                 No orders assigned to you yet.
               </div>
             ) : (
@@ -195,22 +194,22 @@ export default function ShipperOrdersPage() {
                   <button
                     key={o.orderId}
                     className="sh-btn sh-btn-secondary"
-                    style={{ justifyContent: "space-between", width: "100%", padding: "12px 14px", borderRadius: 12, textAlign: "left" }}
+                    style={{ justifyContent: "space-between", width: "100%", padding: "12px 14px", borderRadius: 5, textAlign: "left" }}
                     onClick={() => {
                       setOrderIdSearch(String(o.orderId));
                       void fetchOrder(String(o.orderId));
                     }}
                   >
                     <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                      <span style={{ fontWeight: 700, color: "#f1f5f9" }}>
-                        {o.orderNumber} <span style={{ color: "#64748b", fontWeight: 600 }}>#{o.orderId}</span>
+                      <span style={{ fontWeight: 700, color: "#f5f5f4" }}>
+                        {o.orderNumber} <span style={{ color: "#737373", fontWeight: 600 }}>#{o.orderId}</span>
                       </span>
                       {o.customerName && (
-                        <span style={{ fontSize: 13, color: "#cbd5e1", marginTop: 2, marginBottom: 2 }}>
-                          👤 {o.customerName} {o.customerPhone && <span style={{ color: "#94a3b8" }}>({o.customerPhone})</span>}
+                        <span style={{ fontSize: 13, color: "#d4d4d4", marginTop: 2, marginBottom: 2 }}>
+                          Customer: {o.customerName} {o.customerPhone && <span style={{ color: "#737373" }}>({o.customerPhone})</span>}
                         </span>
                       )}
-                      <span style={{ fontSize: 12, color: "#64748b" }}>
+                      <span style={{ fontSize: 12, color: "#737373" }}>
                         Expected: {fmt(o.expectedDeliveryAt)}
                       </span>
                     </span>
@@ -228,7 +227,6 @@ export default function ShipperOrdersPage() {
             <div className="sh-card-header">
               <div>
                 <h2 className="sh-card-title">Find Order</h2>
-                <p className="sh-card-subtitle">Enter the order ID to load tracking info</p>
               </div>
             </div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -245,7 +243,7 @@ export default function ShipperOrdersPage() {
                 onClick={() => void fetchOrder(orderIdSearch)}
                 disabled={loading || !orderIdSearch}
               >
-                <MdSearch /> {loading ? "Searching…" : "Load Order"}
+                <Search size={14} strokeWidth={1.75} /> {loading ? "Searching…" : "Load Order"}
               </button>
               {order && (
                 <button
@@ -253,7 +251,7 @@ export default function ShipperOrdersPage() {
                   onClick={() => void fetchOrder(String(order.orderId))}
                   disabled={loading}
                 >
-                  <MdRefresh />
+                  <RotateCw size={14} strokeWidth={1.75} />
                 </button>
               )}
             </div>
@@ -294,8 +292,8 @@ export default function ShipperOrdersPage() {
                       key={row.label}
                       style={{ display: "flex", justifyContent: "space-between", padding: "11px 0", borderBottom: "1px solid rgba(255,255,255,0.04)", gap: 12 }}
                     >
-                      <span style={{ fontSize: 13, color: "#64748b", flexShrink: 0 }}>{row.label}</span>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: "#f1f5f9", textAlign: "right" }}>
+                      <span style={{ fontSize: 13, color: "#737373", flexShrink: 0 }}>{row.label}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "#f5f5f4", textAlign: "right" }}>
                         {row.value}
                       </span>
                     </div>
@@ -307,15 +305,15 @@ export default function ShipperOrdersPage() {
                     style={{
                       marginTop: 16,
                       padding: "10px 14px",
-                      borderRadius: 10,
+                      borderRadius: 5,
                       background: new Date(order.expectedDeliveryAt) > new Date() ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
                       border: `1px solid ${new Date(order.expectedDeliveryAt) > new Date() ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)"}`,
                       fontSize: 13,
-                      color: "#f1f5f9"}}
+                      color: "#f5f5f4"}}
                   >
                     {new Date(order.expectedDeliveryAt) > new Date()
-                      ? `✅ On time — due ${fmt(order.expectedDeliveryAt)}`
-                      : `⚠️ LATE — was due ${fmt(order.expectedDeliveryAt)}`}
+                      ? `On time — due ${fmt(order.expectedDeliveryAt)}`
+                      : `Late — was due ${fmt(order.expectedDeliveryAt)}`}
                   </div>
                 )}
               </div>
@@ -325,7 +323,6 @@ export default function ShipperOrdersPage() {
                 <div className="sh-card-header">
                   <div>
                     <h2 className="sh-card-title">Update Delivery Status</h2>
-                    <p className="sh-card-subtitle">Mark the delivery outcome for this order</p>
                   </div>
                 </div>
 
@@ -333,9 +330,9 @@ export default function ShipperOrdersPage() {
                   <div className="sh-form-group">
                     <label className="sh-label">New Status *</label>
                     <select className="sh-select" value={statusValue} onChange={(e) => setStatusValue(e.target.value)}>
-                      <option value="PICKED_UP">📦 Picked Up</option>
-                      <option value="DELIVERED">✅ Delivered</option>
-                      <option value="FAILED">❌ Failed</option>
+                      <option value="PICKED_UP">Picked Up</option>
+                      <option value="DELIVERED">Delivered</option>
+                      <option value="FAILED">Failed</option>
                     </select>
                   </div>
 
@@ -378,15 +375,15 @@ export default function ShipperOrdersPage() {
                     className={`sh-btn ${statusValue === "DELIVERED" ? "sh-btn-success" : statusValue === "FAILED" ? "sh-btn-danger" : "sh-btn-primary"}`}
                     onClick={() => void updateStatus()}
                     disabled={submitting}
-                    style={{ width: "100%", ...(statusValue === "FAILED" ? { background: "linear-gradient(135deg,#ef4444,#dc2626)", color: "#fff" } : {}) }}
+                    style={{ width: "100%", ...(statusValue === "FAILED" ? { background: "#b91c1c", color: "#fff" } : {}) }}
                   >
                     {submitting
                       ? "Updating…"
                       : statusValue === "DELIVERED"
-                      ? "✅ Confirm Delivered"
+                      ? "Confirm Delivered"
                       : statusValue === "FAILED"
-                      ? "❌ Mark as Failed"
-                      : "📦 Mark as Picked Up"}
+                      ? "Mark as Failed"
+                      : "Mark as Picked Up"}
                   </button>
                 </div>
               </div>
@@ -395,8 +392,8 @@ export default function ShipperOrdersPage() {
           )}
 
           {!order && !loading && (
-            <div className="sh-card" style={{ textAlign: "center", padding: "48px 16px", color: "#475569" }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>📦</div>
+            <div className="sh-card" style={{ textAlign: "center", padding: "48px 16px", color: "#737373" }}>
+              <PackageCheck size={24} strokeWidth={1.6} aria-hidden="true" />
               <p>Search for an order above to load its tracking info and update the delivery status.</p>
             </div>
           )}

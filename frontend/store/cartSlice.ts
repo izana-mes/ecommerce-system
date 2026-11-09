@@ -31,7 +31,7 @@ const initialState: cartState = {
 const MAX_QUANTITY = 20;
 
 function shouldSyncCartWithBackend(): boolean {
-  return Boolean(getUser());
+  return getUser()?.role === "user";
 }
 
 // Async thunks for database operations
@@ -136,14 +136,15 @@ export const updateQuantityAsync = createAsyncThunk(
 
 export const fetchCartAsync = createAsyncThunk(
   "cart/fetchCartAsync",
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, signal }) => {
     try {
       if (!shouldSyncCartWithBackend()) {
         return [];
       }
       const response = await fetch("/api/cart", {
         credentials: "include",
-        headers: undefined});
+        headers: undefined,
+        signal});
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
@@ -311,7 +312,7 @@ const cartSlice = createSlice({
         });
       })
       .addCase(fetchCartAsync.rejected, (state, action) => {
-        console.error("Failed to fetch cart:", action.payload);
+        if (!action.meta.aborted) console.error("Failed to fetch cart:", action.payload);
       });
   }});
 

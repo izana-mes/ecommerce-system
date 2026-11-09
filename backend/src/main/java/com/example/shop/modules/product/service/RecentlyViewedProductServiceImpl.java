@@ -71,7 +71,7 @@ public class RecentlyViewedProductServiceImpl implements RecentlyViewedProductSe
             Map<String, ProductDto> ordered = new LinkedHashMap<>();
             for (String id : values) {
                 Product product = productsById.get(id);
-                if (product != null) {
+                if (product != null && Boolean.TRUE.equals(product.getActive())) {
                     ordered.put(id, productMapper.toDto(product));
                 }
             }

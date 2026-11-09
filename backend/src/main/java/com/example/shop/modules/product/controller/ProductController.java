@@ -3,6 +3,7 @@ package com.example.shop.modules.product.controller;
 import com.example.shop.common.audit.AdminAuditLogger;
 import com.example.shop.common.exception.UnauthorizedException;
 import com.example.shop.modules.product.dto.ProductDto;
+import com.example.shop.modules.product.dto.ProductSuggestionDto;
 import com.example.shop.modules.product.dto.StockAdjustmentRequestDto;
 import com.example.shop.modules.product.service.ProductService;
 import com.example.shop.modules.product.service.ProductTrendingService;
@@ -58,7 +59,7 @@ public class ProductController {
     }
 
     @GetMapping("/suggest")
-    public ResponseEntity<List<String>> getSearchSuggestions(
+    public ResponseEntity<List<ProductSuggestionDto>> getSearchSuggestions(
             @RequestParam(value = "q", required = false) String query,
             @RequestParam(value = "limit", required = false, defaultValue = "8") int limit
     ) {
@@ -108,6 +109,14 @@ public class ProductController {
     @PreAuthorize("hasRole('SELLER')")
     public ResponseEntity<List<ProductDto>> listSellerOwnedProducts(@AuthenticationPrincipal User actor) {
         return ResponseEntity.ok(productService.listProductsOwnedBySeller(actor.getId()));
+    }
+
+    @GetMapping("/{productID}")
+    public ResponseEntity<ProductDto> getProduct(
+            @PathVariable("productID") String productID,
+            @AuthenticationPrincipal User actor
+    ) {
+        return ResponseEntity.ok(productService.getProductForViewer(productID, actor));
     }
 
     @DeleteMapping("/search-history")
@@ -270,6 +279,26 @@ public class ProductController {
     ) {
         String note = request == null ? null : request.getNote();
         return ResponseEntity.ok(productChangeRequestService.reject(requestId, actor, note));
+    }
+
+    @PostMapping("/change-requests/{requestId}/request-changes")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProductChangeRequestResponseDto> requestChangesOnChangeRequest(
+            @PathVariable("requestId") UUID requestId,
+            @RequestBody ReviewProductChangeRequestDto request,
+            @AuthenticationPrincipal User actor
+    ) {
+        String note = request == null ? null : request.getNote();
+        return ResponseEntity.ok(productChangeRequestService.requestChanges(requestId, actor, note));
+    }
+
+    @PostMapping("/change-requests/{requestId}/resubmit")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE', 'SUPPLIER', 'SELLER')")
+    public ResponseEntity<ProductChangeRequestResponseDto> resubmitChangeRequest(
+            @PathVariable("requestId") UUID requestId,
+            @AuthenticationPrincipal User actor
+    ) {
+        return ResponseEntity.ok(productChangeRequestService.resubmit(requestId, actor));
     }
 
     private void requireInternalToken(String token) {

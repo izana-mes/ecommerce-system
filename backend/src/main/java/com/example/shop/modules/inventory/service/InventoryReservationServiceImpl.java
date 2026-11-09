@@ -70,15 +70,28 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
         LocalDateTime expiresAt = now.plusMinutes(ttlMinutes);
         String reservationCode = "RSV-" + UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase(Locale.ROOT);
 
-        Map<String, Integer> qtyByProduct = request.getItems().stream()
-                .collect(Collectors.toMap(i -> i.getProductId().trim(), InventoryReservationDtos.Item::getQuantity, Integer::sum, LinkedHashMap::new));
+        Map<ReservationKey, Integer> qtyByProduct = request.getItems().stream()
+                .collect(Collectors.toMap(i -> new ReservationKey(i.getProductId().trim(), i.getSupplierOfferId(), i.getSellerListingId()), InventoryReservationDtos.Item::getQuantity, Integer::sum, LinkedHashMap::new));
 
-        List<String> productIds = new ArrayList<>(qtyByProduct.keySet());
+        List<String> productIds = qtyByProduct.keySet().stream().map(ReservationKey::productId).distinct().toList();
         ensureProductsExist(productIds);
 
-        for (Map.Entry<String, Integer> entry : qtyByProduct.entrySet()) {
-            String productId = entry.getKey();
+        for (Map.Entry<ReservationKey, Integer> entry : qtyByProduct.entrySet()) {
+            String productId = entry.getKey().productId();
             int qty = entry.getValue();
+
+            UUID offerId = entry.getKey().supplierOfferId();
+            UUID listingId = entry.getKey().sellerListingId();
+            if (listingId != null) {
+                int changed = jdbcTemplate.update("UPDATE seller_product_allocations a SET reserved_quantity = a.reserved_quantity + ?, updated_at = CURRENT_TIMESTAMP WHERE a.listing_id = ? AND a.supplier_offer_id = ? AND a.status = 'ACTIVE' AND a.allocated_quantity - a.sold_quantity - a.reserved_quantity >= ? AND EXISTS (SELECT 1 FROM seller_product_listings l JOIN seller_resale_authorizations z ON z.id=l.authorization_id WHERE l.id=a.listing_id AND l.supplier_product_id=? AND l.active=TRUE AND z.is_active=TRUE)", qty, listingId, offerId, qty, productId);
+                if (changed != 1) throw new BusinessException("Seller allocation unavailable or insufficient", HttpStatus.CONFLICT);
+                continue;
+            }
+            if (offerId != null) {
+                int changed = jdbcTemplate.update("UPDATE supplier_products sp SET reserved_quantity = sp.reserved_quantity + ?, updated_at = CURRENT_TIMESTAMP WHERE sp.id = ? AND sp.product_id = ? AND sp.approved = TRUE AND sp.available = TRUE AND sp.stock_quantity - sp.reserved_quantity - COALESCE((SELECT SUM(a.allocated_quantity-a.sold_quantity) FROM seller_product_allocations a WHERE a.supplier_offer_id=sp.id),0) - COALESCE((SELECT SUM(z.initial_allocation_quantity) FROM seller_resale_authorizations z WHERE z.supplier_offer_id=sp.id AND z.is_active=TRUE AND NOT EXISTS(SELECT 1 FROM seller_product_listings l WHERE l.authorization_id=z.id)),0) >= ? AND ? >= sp.minimum_order_quantity", qty, offerId, productId, qty, qty);
+                if (changed != 1) throw new BusinessException("Supplier offer unavailable, out of stock, or below MOQ", HttpStatus.CONFLICT);
+                continue;
+            }
 
             Inventory inventory = lockOrCreateInventory(productId);
             int beforeAvailable = nz(inventory.getAvailableStock());
@@ -107,10 +120,13 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
                 .build();
         reservation = inventoryReservationRepository.save(reservation);
 
-        for (Map.Entry<String, Integer> entry : qtyByProduct.entrySet()) {
+        for (Map.Entry<ReservationKey, Integer> entry : qtyByProduct.entrySet()) {
+            UUID offerId = entry.getKey().supplierOfferId();
             inventoryReservationItemRepository.save(InventoryReservationItem.builder()
                     .reservation(reservation)
-                    .productId(entry.getKey())
+                    .productId(entry.getKey().productId())
+                    .supplierOffer(offerId == null ? null : com.example.shop.modules.resale.entity.SupplierProduct.builder().id(offerId).build())
+                    .sellerListingId(entry.getKey().sellerListingId())
                     .quantity(entry.getValue())
                     .build());
         }
@@ -120,8 +136,9 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
         try {
             List<Product> products = productRepository.findByProductIDIn(productIds);
             Map<String, Product> productsMap = products.stream().collect(Collectors.toMap(Product::getProductID, p -> p));
-            for (Map.Entry<String, Integer> entry : qtyByProduct.entrySet()) {
-                Product p = productsMap.get(entry.getKey());
+            for (Map.Entry<ReservationKey, Integer> entry : qtyByProduct.entrySet()) {
+                if (entry.getKey().supplierOfferId() != null) continue;
+                Product p = productsMap.get(entry.getKey().productId());
                 if (p != null) {
                     int newStock = Math.max(0, defaultStock(p.getStockQuantity()) - entry.getValue());
                     p.setStockQuantity(newStock);
@@ -175,6 +192,19 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
             for (InventoryReservationItem item : items) {
                 String productId = item.getProductId();
                 int qty = item.getQuantity();
+
+                if (item.getSupplierOffer() != null) {
+                    if (item.getSellerListingId() != null) {
+                        int stockChanged = jdbcTemplate.update("UPDATE supplier_products SET stock_quantity = stock_quantity - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND stock_quantity >= ?", qty, item.getSupplierOffer().getId(), qty);
+                        if (stockChanged != 1) throw new BusinessException("Supplier inventory is inconsistent with Seller allocation", HttpStatus.CONFLICT);
+                        int changed = jdbcTemplate.update("UPDATE seller_product_allocations SET reserved_quantity = reserved_quantity - ?, sold_quantity = sold_quantity + ?, updated_at = CURRENT_TIMESTAMP WHERE listing_id = ? AND reserved_quantity >= ?", qty, qty, item.getSellerListingId(), qty);
+                        if (changed != 1) throw new BusinessException("Seller allocation reservation is inconsistent", HttpStatus.CONFLICT);
+                        continue;
+                    }
+                    int changed = jdbcTemplate.update("UPDATE supplier_products SET reserved_quantity = reserved_quantity - ?, stock_quantity = stock_quantity - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND reserved_quantity >= ? AND stock_quantity >= ?", qty, qty, item.getSupplierOffer().getId(), qty, qty);
+                    if (changed != 1) throw new BusinessException("Supplier offer reservation is inconsistent", HttpStatus.CONFLICT);
+                    continue;
+                }
 
                 Inventory inventory = lockOrCreateInventory(productId);
                 int beforeAvailable = nz(inventory.getAvailableStock());
@@ -277,6 +307,27 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
                     .stream().collect(Collectors.toMap(Product::getProductID, p -> p));
 
             for (InventoryReservationItem item : items) {
+                if (item.getSupplierOffer() != null) {
+                    if (item.getSellerListingId() != null) {
+                        if (wasConfirmed) {
+                            int stockChanged = jdbcTemplate.update("UPDATE supplier_products SET stock_quantity = stock_quantity + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", item.getQuantity(), item.getSupplierOffer().getId());
+                            if (stockChanged != 1) throw new BusinessException("Supplier inventory could not be restored", HttpStatus.CONFLICT);
+                            int changed = jdbcTemplate.update("UPDATE seller_product_allocations SET sold_quantity = sold_quantity - ?, updated_at = CURRENT_TIMESTAMP WHERE listing_id = ? AND sold_quantity >= ?", item.getQuantity(), item.getSellerListingId(), item.getQuantity());
+                            if (changed != 1) throw new BusinessException("Seller allocation sold quantity is inconsistent", HttpStatus.CONFLICT);
+                        } else {
+                            int changed = jdbcTemplate.update("UPDATE seller_product_allocations SET reserved_quantity = reserved_quantity - ?, updated_at = CURRENT_TIMESTAMP WHERE listing_id = ? AND reserved_quantity >= ?", item.getQuantity(), item.getSellerListingId(), item.getQuantity());
+                            if (changed != 1) throw new BusinessException("Seller allocation reservation is inconsistent", HttpStatus.CONFLICT);
+                        }
+                        continue;
+                    }
+                    if (wasConfirmed) {
+                        jdbcTemplate.update("UPDATE supplier_products SET stock_quantity = stock_quantity + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", item.getQuantity(), item.getSupplierOffer().getId());
+                    } else {
+                        int changed = jdbcTemplate.update("UPDATE supplier_products SET reserved_quantity = reserved_quantity - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND reserved_quantity >= ?", item.getQuantity(), item.getSupplierOffer().getId(), item.getQuantity());
+                        if (changed != 1) throw new BusinessException("Supplier offer reservation is inconsistent", HttpStatus.CONFLICT);
+                    }
+                    continue;
+                }
                 Inventory inventory = lockOrCreateInventory(item.getProductId());
                 int qty = item.getQuantity();
 
@@ -553,4 +604,6 @@ public class InventoryReservationServiceImpl implements InventoryReservationServ
             }
         }
     }
+
+    private record ReservationKey(String productId, UUID supplierOfferId, UUID sellerListingId) { }
 }

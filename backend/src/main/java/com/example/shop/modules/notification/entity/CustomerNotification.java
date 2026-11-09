@@ -16,6 +16,7 @@ public class CustomerNotification {
     @Column(nullable=false, length=160) private String title;
     @Column(nullable=false, columnDefinition="TEXT") private String message;
     @Column(name="target_url", length=300) private String targetUrl;
+    @Column(name="related_entity_id", length=100) private String relatedEntityId;
     @Column(name="created_at", nullable=false) private LocalDateTime createdAt;
     @Column(name="read_at") private LocalDateTime readAt;
 }

@@ -2,6 +2,7 @@
 
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { csrfHeader, ensureCsrfToken } from "@/lib/csrf";
+import { getUser } from "@/lib/auth";
 
 export interface wishListProduct {
   productID: string;
@@ -26,6 +27,7 @@ export const addToWishlistAsync = createAsyncThunk(
   "wishlist/addToWishlistAsync",
   async (product: wishListProduct, { rejectWithValue }) => {
     try {
+      if (getUser()?.role !== "user") return rejectWithValue("Wishlist is available to customer accounts only");
       await ensureCsrfToken();
       const response = await fetch("/api/wishlist", {
         method: "POST",
@@ -58,6 +60,7 @@ export const removeFromWishlistAsync = createAsyncThunk(
   "wishlist/removeFromWishlistAsync",
   async (productID: string, { rejectWithValue }) => {
     try {
+      if (getUser()?.role !== "user") return rejectWithValue("Wishlist is available to customer accounts only");
       await ensureCsrfToken();
       const response = await fetch("/api/wishlist", {
         method: "DELETE",
@@ -92,11 +95,13 @@ export const removeFromWishlistAsync = createAsyncThunk(
 
 export const fetchWishlistAsync = createAsyncThunk(
   "wishlist/fetchWishlistAsync",
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, signal }) => {
     try {
+      if (getUser()?.role !== "user") return [];
       const response = await fetch("/api/wishlist", {
         credentials: "include",
         cache: "no-store",
+        signal,
       });
 
       if (!response.ok) {
@@ -195,7 +200,7 @@ const wishListSlice = createSlice({
         });
       })
       .addCase(fetchWishlistAsync.rejected, (state, action) => {
-        console.error("Failed to fetch wishlist:", action.payload);
+        if (!action.meta.aborted) console.error("Failed to fetch wishlist:", action.payload);
       });
   }});
 

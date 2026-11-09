@@ -1,0 +1,165 @@
+:root {
+  --management-bg: #fafaf9;
+  --management-surface: #ffffff;
+  --management-text: #171717;
+  --management-muted: #737373;
+  --management-secondary: #404040;
+  --management-border: #e5e5e5;
+  --management-neutral: #f5f5f4;
+  --management-success: #15803d;
+  --management-pending: #b45309;
+  --management-danger: #b91c1c;
+  --management-info: #526b84;
+}
+
+.management-frame {
+  min-height: 100vh;
+  background: var(--management-bg) !important;
+  color: var(--management-text) !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+}
+
+.management-frame > aside {
+  width: 238px !important;
+  background: var(--management-surface) !important;
+  border-color: var(--management-border) !important;
+}
+
+.management-frame > aside > div:first-child,
+.management-frame > aside > div:last-child {
+  background: var(--management-surface) !important;
+  border-color: var(--management-border) !important;
+}
+
+.management-frame .bg-slate-900,
+.management-frame .bg-slate-900\/60,
+.management-frame .bg-indigo-500\/10,
+.management-frame .bg-teal-500\/10,
+.management-frame .bg-indigo-600\/15,
+.management-frame .bg-teal-600\/15,
+.management-frame [class*="bg-blue-"],
+.management-frame [class*="bg-cyan-"],
+.management-frame [class*="bg-purple-"],
+.management-frame [class*="bg-violet-"],
+.management-frame .bg-slate-800 {
+  background: var(--management-surface) !important;
+}
+
+.management-frame .bg-slate-50 { background: var(--management-bg) !important; }
+.management-frame .bg-slate-100,
+.management-frame .bg-slate-800\/60,
+.management-frame .hover\:bg-slate-800:hover,
+.management-frame .hover\:bg-slate-800\/60:hover,
+.management-frame .hover\:bg-slate-100:hover { background: var(--management-neutral) !important; }
+.management-frame .bg-white { background: var(--management-surface) !important; }
+
+.management-frame .text-white,
+.management-frame .text-indigo-300,
+.management-frame .text-indigo-400,
+.management-frame .text-teal-300,
+.management-frame .text-teal-400,
+.management-frame [class*="text-purple-"],
+.management-frame [class*="text-violet-"] { color: var(--management-text) !important; }
+.management-frame [class*="text-blue-"],
+.management-frame [class*="text-cyan-"] { color: var(--management-info) !important; }
+.management-frame .text-slate-900,
+.management-frame .text-slate-800,
+.management-frame .text-slate-700,
+.management-frame .text-slate-200,
+.management-frame .text-slate-300 { color: var(--management-secondary) !important; }
+.management-frame .text-slate-600,
+.management-frame .text-slate-500,
+.management-frame .text-slate-400 { color: var(--management-muted) !important; }
+
+.management-frame .border-slate-200,
+.management-frame .border-slate-300,
+.management-frame .border-slate-700,
+.management-frame .border-slate-800,
+.management-frame .border-slate-800\/80,
+.management-frame .border-indigo-400\/20,
+.management-frame .border-indigo-500\/20,
+.management-frame .border-teal-400\/20,
+.management-frame .border-teal-500\/20,
+.management-frame [class*="border-indigo-"],
+.management-frame [class*="border-teal-"],
+.management-frame [class*="border-blue-"],
+.management-frame [class*="border-purple-"],
+.management-frame [class*="border-cyan-"] { border-color: var(--management-border) !important; }
+
+.management-frame a[class~="bg-indigo-600"],
+.management-frame a[class~="bg-teal-600"],
+.management-frame a[class~="bg-blue-600"],
+.management-frame a[class~="bg-slate-900"],
+.management-frame button[class~="bg-indigo-600"],
+.management-frame button[class~="bg-teal-600"],
+.management-frame button[class~="bg-blue-600"],
+.management-frame button[class~="bg-slate-900"],
+.management-frame [role="button"][class*="bg-indigo-600"],
+.management-frame [role="button"][class*="bg-teal-600"] {
+  background: var(--management-text) !important;
+  color: #fff !important;
+  border-color: var(--management-text) !important;
+}
+
+.management-frame .rounded-lg,
+.management-frame .rounded-xl,
+.management-frame .rounded-2xl,
+.management-frame .rounded-3xl { border-radius: 5px !important; }
+.management-frame .shadow,
+.management-frame .shadow-sm,
+.management-frame .shadow-md,
+.management-frame .shadow-lg,
+.management-frame .shadow-xl,
+.management-frame .shadow-xs { box-shadow: none !important; }
+.management-frame .animate-pulse { animation: none !important; }
+.management-frame main h1 { font-size: 22px; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; }
+.management-frame main [class~="space-y-8"] { row-gap: 20px; }
+.management-frame main [class~="py-10"] { padding-top: 24px; padding-bottom: 24px; }
+
+.management-frame main { min-width: 0; color: var(--management-text); }
+.management-frame .management-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--management-border);
+  border-radius: 4px;
+  background: #fff;
+}
+.management-frame .management-kpi {
+  min-width: 0;
+  padding: 12px 14px;
+  background: #fff !important;
+  border: 0 !important;
+  border-right: 1px solid var(--management-border) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.management-frame .management-kpi:last-child { border-right: 0 !important; }
+.management-frame table { border-color: var(--management-border); }
+.management-frame th { color: var(--management-secondary); font-weight: 600; }
+.management-frame td,
+.management-frame th { border-color: var(--management-border); }
+.management-frame input,
+.management-frame select,
+.management-frame textarea { border-color: var(--management-border); border-radius: 4px; }
+.management-frame :focus-visible { outline: 2px solid var(--management-info); outline-offset: 2px; }
+
+.management-loading {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--management-bg);
+  color: var(--management-muted);
+  font: 13px Arial, Helvetica, sans-serif;
+}
+
+@media (max-width: 1023px) {
+  .management-frame > aside { width: 238px !important; }
+}
+
+@media (max-width: 767px) {
+  .management-frame .management-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .management-frame .management-kpi:nth-child(2n) { border-right: 0 !important; }
+  .management-frame .management-kpi:nth-child(-n + 2) { border-bottom: 1px solid var(--management-border) !important; }
+}

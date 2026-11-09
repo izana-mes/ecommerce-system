@@ -417,7 +417,7 @@ public class MeetingService {
 
     private List<String> userRoles(String email) {
         return jdbcTemplate.query("""
-                SELECT r.name FROM users u
+                SELECT r.roles_name FROM users u
                 JOIN user_roles ur ON ur.users_id = u.users_id
                 JOIN roles r ON r.roles_id = ur.roles_id
                 WHERE lower(u.email) = lower(?)
@@ -490,7 +490,7 @@ public class MeetingService {
                 FROM users u
                 JOIN user_roles ur ON ur.users_id = u.users_id
                 JOIN roles r ON r.roles_id = ur.roles_id
-                WHERE r.name IN ('ROLE_ADMIN', 'ROLE_MANAGER')
+                WHERE r.roles_name IN ('ROLE_ADMIN', 'ROLE_MANAGER')
                 """, (rs, rowNum) -> rs.getString(1));
         for (String manager : managers) {
             createNotification(manager, "Scheduling conflict", String.join(" ", warnings), "MEETING", meetingId.toString());

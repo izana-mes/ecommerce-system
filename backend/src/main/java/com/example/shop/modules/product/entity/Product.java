@@ -51,6 +51,12 @@ public class Product {
     @Column(name = "category", nullable = false, length = 80)
     private String category;
 
+    @Column(name = "sku", length = 100)
+    private String sku;
+
+    @Column(name = "brand", length = 160)
+    private String brand;
+
     @Column(name = "sizes", columnDefinition = "TEXT")
     private String sizes;
 

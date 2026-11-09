@@ -1,6 +1,7 @@
 package com.example.shop.modules.product.service;
 
 import com.example.shop.modules.product.dto.ProductDto;
+import com.example.shop.modules.product.dto.ProductSuggestionDto;
 import com.example.shop.modules.product.dto.StockAdjustmentItemDto;
 
 import java.util.List;
@@ -16,7 +17,14 @@ public interface ProductService {
     /** Bounded catalog projection for trusted server-side integrations such as AI tools. */
     List<ProductDto> getActiveProducts(int limit);
 
-    List<String> searchSuggestions(String keyword, int limit);
+    /**
+     * Detail lookup with visibility enforcement:
+     * active products are visible to all; inactive products are only visible to Admin,
+     * Employee, or the owning Seller/Supplier.
+     */
+    ProductDto getProductForViewer(String productID, com.example.shop.modules.user.entity.User actor);
+
+    List<ProductSuggestionDto> searchSuggestions(String keyword, int limit);
 
     ProductDto createProduct(ProductDto productDto);
 

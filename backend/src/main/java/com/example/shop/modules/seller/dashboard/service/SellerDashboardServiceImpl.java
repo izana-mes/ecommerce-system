@@ -41,6 +41,14 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
 
         BigDecimal totalRevenue = querySellerRevenue(sellerUserId);
         long totalProducts = countSellerProducts(sellerUserId);
+        long activeListings = countActiveSellerListings(sellerUserId);
+        long inactiveListings = countInactiveSellerListings(sellerUserId);
+        long pendingListings = countPendingSellerListings(sellerUserId);
+        long totalAuthorizedProducts = countAuthorizedProducts(sellerUserId);
+        long totalAllocatedInventory = queryTotalAllocatedInventory(sellerUserId);
+        long remainingInventory = queryRemainingInventory(sellerUserId);
+        long outOfStockCount = countOutOfStock(sellerUserId);
+        long pendingRequestsCount = countPendingRequests(sellerUserId);
         long lowStockCount = countLowStockProducts(sellerUserId, safeThreshold);
 
         SellerBalance balance = sellerBalanceRepository.findBySellerUserId(sellerUserId).orElse(null);
@@ -56,6 +64,14 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
                 .cancelledOrders(cancelledOrders)
                 .cancelRate(cancelRate)
                 .totalProducts(totalProducts)
+                .activeListings(activeListings)
+                .pendingListings(pendingListings)
+                .inactiveListings(inactiveListings)
+                .totalAuthorizedProducts(totalAuthorizedProducts)
+                .totalAllocatedInventory(totalAllocatedInventory)
+                .remainingInventory(remainingInventory)
+                .outOfStockCount(outOfStockCount)
+                .pendingRequestsCount(pendingRequestsCount)
                 .lowStockCount(lowStockCount)
                 .availableBalance(availableBalance)
                 .pendingBalance(pendingBalance)
@@ -74,7 +90,7 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
                     FROM orders o
                     INNER JOIN order_items oi ON oi.order_id = o.id
                     INNER JOIN products p ON p.product_id = oi.product_id
-                    WHERE p.seller_user_id = ?
+                    WHERE COALESCE(oi.seller_user_id, p.seller_user_id) = ?
                     """,
                     Long.class, sellerUserId);
             return val == null ? 0L : val;
@@ -92,7 +108,7 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
                     FROM orders o
                     INNER JOIN order_items oi ON oi.order_id = o.id
                     INNER JOIN products p ON p.product_id = oi.product_id
-                    WHERE p.seller_user_id = ?
+                    WHERE COALESCE(oi.seller_user_id, p.seller_user_id) = ?
                       AND LOWER(o.order_status) = 'cancelled'
                     """,
                     Long.class, sellerUserId);
@@ -111,7 +127,7 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
                     FROM order_items oi
                     INNER JOIN orders o ON o.id = oi.order_id
                     INNER JOIN products p ON p.product_id = oi.product_id
-                    WHERE p.seller_user_id = ?
+                    WHERE COALESCE(oi.seller_user_id, p.seller_user_id) = ?
                       AND o.payment_status IN ('paid', 'authorized')
                     """,
                     BigDecimal.class, sellerUserId);
@@ -122,11 +138,120 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
         }
     }
 
+    private long countActiveSellerListings(UUID sellerUserId) {
+        try {
+            Long val = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM seller_product_listings WHERE seller_user_id = ? AND active = TRUE",
+                    Long.class, sellerUserId);
+            return val == null ? 0L : val;
+        } catch (DataAccessException e) {
+            log.warn("Seller dashboard: failed to count active listings for seller {}", sellerUserId, e);
+            return 0L;
+        }
+    }
+
+    private long countInactiveSellerListings(UUID sellerUserId) {
+        try {
+            Long val = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM seller_product_listings WHERE seller_user_id = ? AND (active = FALSE OR active IS NULL)",
+                    Long.class, sellerUserId);
+            return val == null ? 0L : val;
+        } catch (DataAccessException e) {
+            log.warn("Seller dashboard: failed to count inactive listings for seller {}", sellerUserId, e);
+            return 0L;
+        }
+    }
+
+    private long countPendingSellerListings(UUID sellerUserId) {
+        try {
+            Long unlistedAuths = jdbcTemplate.queryForObject(
+                    """
+                    SELECT COUNT(*) FROM seller_resale_authorizations a
+                    WHERE a.seller_user_id = ? AND a.is_active = TRUE
+                      AND NOT EXISTS (SELECT 1 FROM seller_product_listings l WHERE l.authorization_id = a.id)
+                    """,
+                    Long.class, sellerUserId);
+            Long pendingChanges = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM product_change_requests WHERE requested_by_user_id = ? AND status = 'PENDING'",
+                    Long.class, sellerUserId);
+            return (unlistedAuths == null ? 0L : unlistedAuths) + (pendingChanges == null ? 0L : pendingChanges);
+        } catch (DataAccessException e) {
+            log.warn("Seller dashboard: failed to count pending listings for seller {}", sellerUserId, e);
+            return 0L;
+        }
+    }
+
+    private long countAuthorizedProducts(UUID sellerUserId) {
+        try {
+            Long val = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM seller_resale_authorizations WHERE seller_user_id = ? AND is_active = TRUE",
+                    Long.class, sellerUserId);
+            return val == null ? 0L : val;
+        } catch (DataAccessException e) {
+            log.warn("Seller dashboard: failed to count authorized products for seller {}", sellerUserId, e);
+            return 0L;
+        }
+    }
+
+    private long queryTotalAllocatedInventory(UUID sellerUserId) {
+        try {
+            Long val = jdbcTemplate.queryForObject(
+                    "SELECT COALESCE(SUM(allocated_quantity), 0) FROM seller_product_allocations WHERE seller_user_id = ? AND status = 'ACTIVE'",
+                    Long.class, sellerUserId);
+            return val == null ? 0L : val;
+        } catch (DataAccessException e) {
+            log.warn("Seller dashboard: failed to query allocated inventory for seller {}", sellerUserId, e);
+            return 0L;
+        }
+    }
+
+    private long queryRemainingInventory(UUID sellerUserId) {
+        try {
+            Long resaleRemaining = jdbcTemplate.queryForObject(
+                    "SELECT COALESCE(SUM(GREATEST(0, allocated_quantity - sold_quantity - reserved_quantity)), 0) FROM seller_product_allocations WHERE seller_user_id = ? AND status = 'ACTIVE'",
+                    Long.class, sellerUserId);
+            Long ownedStock = jdbcTemplate.queryForObject(
+                    "SELECT COALESCE(SUM(GREATEST(0, stock_quantity)), 0) FROM products WHERE seller_user_id = ? AND active = TRUE",
+                    Long.class, sellerUserId);
+            return (resaleRemaining == null ? 0L : resaleRemaining) + (ownedStock == null ? 0L : ownedStock);
+        } catch (DataAccessException e) {
+            log.warn("Seller dashboard: failed to query remaining inventory for seller {}", sellerUserId, e);
+            return 0L;
+        }
+    }
+
+    private long countOutOfStock(UUID sellerUserId) {
+        try {
+            Long resaleOut = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM seller_product_allocations WHERE seller_user_id = ? AND status = 'ACTIVE' AND allocated_quantity - sold_quantity - reserved_quantity <= 0",
+                    Long.class, sellerUserId);
+            Long ownedOut = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM products WHERE seller_user_id = ? AND active = TRUE AND COALESCE(stock_quantity, 0) <= 0",
+                    Long.class, sellerUserId);
+            return (resaleOut == null ? 0L : resaleOut) + (ownedOut == null ? 0L : ownedOut);
+        } catch (DataAccessException e) {
+            log.warn("Seller dashboard: failed to count out of stock for seller {}", sellerUserId, e);
+            return 0L;
+        }
+    }
+
+    private long countPendingRequests(UUID sellerUserId) {
+        try {
+            Long val = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM seller_resale_requests WHERE seller_user_id = ? AND status = 'PENDING'",
+                    Long.class, sellerUserId);
+            return val == null ? 0L : val;
+        } catch (DataAccessException e) {
+            log.warn("Seller dashboard: failed to count pending requests for seller {}", sellerUserId, e);
+            return 0L;
+        }
+    }
+
     private long countSellerProducts(UUID sellerUserId) {
         try {
             Long val = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM products WHERE seller_user_id = ?",
-                    Long.class, sellerUserId);
+                    "SELECT (SELECT COUNT(*) FROM products WHERE seller_user_id = ?) + (SELECT COUNT(*) FROM seller_product_listings WHERE seller_user_id = ? AND active = TRUE)",
+                    Long.class, sellerUserId, sellerUserId);
             return val == null ? 0L : val;
         } catch (DataAccessException e) {
             log.warn("Seller dashboard: failed to count products for seller {}", sellerUserId, e);
@@ -162,7 +287,7 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
                     FROM order_items oi
                     INNER JOIN orders o ON o.id = oi.order_id
                     INNER JOIN products p ON p.product_id = oi.product_id
-                    WHERE p.seller_user_id = ?
+                    WHERE COALESCE(oi.seller_user_id, p.seller_user_id) = ?
                       AND o.payment_status IN ('paid', 'authorized')
                       AND DATE(o.created_at) >= CURRENT_DATE - (? - 1)
                     GROUP BY DATE(o.created_at)
@@ -193,7 +318,7 @@ public class SellerDashboardServiceImpl implements SellerDashboardService {
                     FROM order_items oi
                     INNER JOIN orders o ON o.id = oi.order_id
                     INNER JOIN products p ON p.product_id = oi.product_id
-                    WHERE p.seller_user_id = ?
+                    WHERE COALESCE(oi.seller_user_id, p.seller_user_id) = ?
                       AND LOWER(o.order_status) <> 'cancelled'
                     GROUP BY oi.product_id
                     ORDER BY sold_qty DESC, oi.product_id ASC

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { decodeCatalogId } from "@/lib/catalogId";
 
 const API_BASE_URL = backendApiBaseUrl().replace(/\/+$/, "");
 
@@ -23,7 +24,8 @@ async function proxyReviewMutation(
   method: "PUT" | "DELETE"
 ) {
   try {
-    const { productID, reviewID } = await context.params;
+    const { productID: rawProductID, reviewID } = await context.params;
+    const productID = decodeCatalogId(rawProductID);
         const cookieHeader = getCookieHeader(request);
 
     const requestInit: RequestInit = {

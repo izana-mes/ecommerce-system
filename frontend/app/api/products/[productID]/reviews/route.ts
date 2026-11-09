@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { decodeCatalogId } from "@/lib/catalogId";
 
 const API_BASE_URL = backendApiBaseUrl().replace(/\/+$/, "");
 
@@ -39,7 +40,8 @@ export async function GET(
   context: { params: Promise<{ productID: string }> }
 ) {
   try {
-    const { productID } = await context.params;
+    const { productID: rawProductID } = await context.params;
+    const productID = decodeCatalogId(rawProductID);
     const { searchParams } = new URL(request.url);
     const limit = (searchParams.get("limit") || "10").trim();
 
@@ -84,7 +86,8 @@ export async function POST(
   context: { params: Promise<{ productID: string }> }
 ) {
   try {
-    const { productID } = await context.params;
+    const { productID: rawProductID } = await context.params;
+    const productID = decodeCatalogId(rawProductID);
     const body = await request.json();
         const cookieHeader = getCookieHeader(request);
 

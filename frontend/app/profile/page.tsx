@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import "./profile.css";
@@ -9,9 +10,6 @@ import {getUser,
   refreshCurrentUserFromServer,
   subscribeToAuthChanges,
   User } from "@/lib/auth";
-import { useAppDispatch, useAppSelector } from "@/store";
-import { clearCart } from "@/store/cartSlice";
-import { clearWishList } from "@/store/wishListSlice";
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
 import { useLocale } from "@/components/providers/LocaleProvider";
@@ -27,6 +25,8 @@ type SupplierProductRequest = {
   createdAt?: string | null;
   reviewedAt?: string | null;
 };
+
+const ProfileWishlistSummary = dynamic(() => import("@/components/ProfileWishlistSummary"), { ssr: false });
 
 type AccessRequest = {
   id: string;
@@ -101,7 +101,6 @@ export default function ProfilePage() {
   const { t } = useLocale();
   const router = useRouter();
   const token = getUser();
-  const dispatch = useAppDispatch();
   const [user, setUser] = useState<User | null>(null);
   const [couponItems, setCouponItems] = useState<
     Array<{
@@ -146,26 +145,20 @@ export default function ProfilePage() {
   const [ordersLoading, setOrdersLoading] = useState(false);
 
   // Redux Wishlist
-  const wishListItems = useAppSelector((state) => Object.values(state.wishList.itemsById));
   
   useEffect(() => {
-    const syncUser = () => {
-      const currentUser = getUser();
+    const syncUser = async () => {
+      const currentUser = getUser() || await refreshCurrentUserFromServer();
       if (!currentUser) {
         setUser(null);
         router.replace("/login");
         return;
       }
       setUser(currentUser);
-      void refreshCurrentUserFromServer().then((refreshed) => {
-        if (refreshed) {
-          setUser(refreshed);
-        }
-      });
     };
 
-    syncUser();
-    return subscribeToAuthChanges(syncUser);
+    void syncUser();
+    return subscribeToAuthChanges(() => { void syncUser(); });
   }, [router]);
 
   const fetchCouponItems = useCallback(async () => {
@@ -375,10 +368,17 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!user) return;
-    void fetchCouponItems();
-    void fetchSupplierRequest();
-    void fetchSellerRequest();
-    void fetchRecentOrders();
+    if (user.role === "user") {
+      void fetchCouponItems();
+      void fetchSupplierRequest();
+      void fetchSellerRequest();
+      void fetchRecentOrders();
+    } else {
+      setCouponItems([]);
+      setSupplierRequest(null);
+      setSellerRequest(null);
+      setRecentOrders([]);
+    }
     if (user.role === "supplier") {
       void fetchSupplierProductRequests();
       setAdminProductRequests([]);
@@ -529,8 +529,6 @@ export default function ProfilePage() {
   };
 
   const handleLogout = async () => {
-    dispatch(clearCart());
-    dispatch(clearWishList());
     await logoutServerSession();
 
     toast.success(t("profile_logout_success"), {
@@ -560,6 +558,7 @@ export default function ProfilePage() {
   const isSeller = user.role === "seller";
   const isAdmin = user.role === "admin";
   const isShipper = user.role === "shipper";
+  const isCustomer = user.role === "user";
   const loyaltyPoints = Math.max(0, Number(user.loyaltyPoints ?? 0));
 
   return (
@@ -603,7 +602,7 @@ export default function ProfilePage() {
                 <Link href="/expenses">Expense management</Link>
               </span>
             </div>
-            {!isAdmin && !isSupplier && !isShipper ? (
+            {isCustomer ? (
               <div className="profileField">
                 <span className="profileLabel">Dashboard</span>
                 <span className="profileValue">
@@ -613,17 +612,25 @@ export default function ProfilePage() {
             ) : null}
             {isSupplier ? (
               <div className="profileField">
-                <span className="profileLabel">Supplier dashboard</span>
+                <span className="profileLabel">Supplier portal</span>
                 <span className="profileValue">
-                  <Link href="/supplier/dashboard">Open dashboard</Link>
+                  <Link href="/supplier">Open supplier portal</Link>
                 </span>
               </div>
             ) : null}
             {isSeller ? (
               <div className="profileField">
-                <span className="profileLabel">Seller dashboard</span>
+                <span className="profileLabel">Seller portal</span>
                 <span className="profileValue">
-                  <Link href="/seller/dashboard">Open dashboard</Link>
+                  <Link href="/seller">Open seller portal</Link>
+                </span>
+              </div>
+            ) : null}
+            {isAdmin ? (
+              <div className="profileField">
+                <span className="profileLabel">Admin console</span>
+                <span className="profileValue">
+                  <Link href="/admin">Open admin console</Link>
                 </span>
               </div>
             ) : null}
@@ -640,7 +647,7 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          {!isAdmin ? (
+          {isCustomer ? (
             <section className="profileCard profileHistoryCard profileHistoryCardCompact">
               <div className="profileHistoryHeader">
                 <div>
@@ -679,7 +686,7 @@ export default function ProfilePage() {
           ) : null}
         </div>
 
-        {!isAdmin && !isSupplier && !isShipper ? (
+        {isCustomer ? (
           <section className="profileCard profileDashboardMain">
             <div className="profileDashboardHeader">
               <h2>Welcome back, {user.firstName || 'User'}!</h2>
@@ -694,13 +701,7 @@ export default function ProfilePage() {
                   <span>Recent Orders</span>
                 </div>
               </div>
-              <div className="profileMetricCard">
-                <span className="profileMetricIcon">❤️</span>
-                <div>
-                  <strong>{wishListItems.length}</strong>
-                  <span>Wishlist Items</span>
-                </div>
-              </div>
+              <ProfileWishlistSummary />
               {supplierRequest ? (
                 <div className="profileMetricCard">
                   <span className="profileMetricIcon">📝</span>
@@ -724,30 +725,6 @@ export default function ProfilePage() {
                 </div>
               )}
             </div>
-
-            {wishListItems.length > 0 ? (
-              <div className="profileWishlistPreview">
-                <div className="profileWishlistHeader">
-                  <h3>Your Wishlist</h3>
-                  <Link href="/wishlist" className="profileLinkButton profileSecondaryButton">
-                    View all
-                  </Link>
-                </div>
-                <div className="profileWishlistGrid">
-                  {wishListItems.slice(0, 3).map((item) => (
-                    <article key={item.productID} className="profileWishlistItem">
-                      <div className="profileWishlistInfo">
-                        <h4>{item.productName}</h4>
-                        <p>{formatMoney(item.productPrice, "USD")}</p>
-                      </div>
-                      <Link href={`/shop/${item.productID}`} className="profilePrimaryButton profileSmallBtn">
-                        View Item
-                      </Link>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            ) : null}
 
             {supplierRequest || sellerRequest ? (
               <div className="profileSupplierNotice">
@@ -1064,7 +1041,7 @@ export default function ProfilePage() {
           </section>
         )}
 
-        <section className="profileCard profileCouponsCard">
+        {isCustomer ? <section className="profileCard profileCouponsCard">
           <div className="profileCouponsHeader">
             <div>
               <h2>Coupons & Vouchers</h2>
@@ -1139,7 +1116,7 @@ export default function ProfilePage() {
               </article>
             ))}
           </div>
-        </section>
+        </section> : null}
       </div>
     </div>
   );

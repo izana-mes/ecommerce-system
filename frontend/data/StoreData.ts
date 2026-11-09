@@ -33,6 +33,8 @@ export interface DataStore {
   sizes?: string[];
   stockQuantity?: number;
   active?: boolean;
+  sellerUserId?: string | null;
+  supplierUserId?: string | null;
 }
 
 const StoreData: DataStore[] = [

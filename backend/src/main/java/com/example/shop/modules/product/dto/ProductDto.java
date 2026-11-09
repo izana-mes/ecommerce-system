@@ -21,8 +21,11 @@ public class ProductDto implements Serializable {
     private Double oldPrice;
     private String productReviews;
     private String category;
+    private String sku;
+    private String brand;
     private List<String> sizes;
     private Integer stockQuantity;
     private Boolean active;
     private UUID supplierUserId;
+    private UUID sellerUserId;
 }

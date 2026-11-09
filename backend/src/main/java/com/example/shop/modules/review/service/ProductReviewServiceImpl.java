@@ -3,7 +3,9 @@ package com.example.shop.modules.review.service;
 import com.example.shop.common.exception.BusinessException;
 import com.example.shop.modules.messaging.review.ReviewSubmittedEvent;
 import com.example.shop.modules.messaging.review.ReviewSubmittedPublisher;
+import com.example.shop.modules.product.entity.Product;
 import com.example.shop.modules.product.repository.ProductRepository;
+import com.example.shop.modules.resale.service.SellerListingCatalog;
 import com.example.shop.modules.review.dto.AdminProductReviewItemDto;
 import com.example.shop.modules.review.dto.AdminProductReviewPageDto;
 import com.example.shop.modules.review.dto.ProductReviewDto;
@@ -20,6 +22,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
@@ -33,6 +36,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ProductReviewServiceImpl implements ProductReviewService {
 
     private static final int MAX_LIMIT = 50;
@@ -42,6 +46,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     private final ObjectMapper objectMapper;
     private final ProductRepository productRepository;
     private final ReviewSubmittedPublisher reviewSubmittedPublisher;
+    private final SellerListingCatalog sellerListingCatalog;
 
     @Value("${application.reviews.max-entries:200}")
     private int maxEntries;
@@ -109,9 +114,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         }
 
         // Resolve product name for the event (best-effort; does not affect the review write).
-        String productName = productRepository.findByProductID(normalizedProductID)
-                .map(p -> p.getProductName() != null ? p.getProductName() : normalizedProductID)
-                .orElse(normalizedProductID);
+        String productName = resolveReviewProductName(normalizedProductID);
         String customerEmail = resolveEmail(principal);
 
         reviewSubmittedPublisher.publish(ReviewSubmittedEvent.builder()
@@ -451,10 +454,36 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         }
 
         String normalizedProductID = productID.trim();
-        productRepository.findByProductID(normalizedProductID)
+        if (normalizedProductID.startsWith("LISTING:")) {
+            sellerListingCatalog.resolve(normalizedProductID);
+            return normalizedProductID;
+        }
+        if (normalizedProductID.startsWith("SUPPLIER:")) {
+            sellerListingCatalog.resolveDirectOffer(normalizedProductID);
+            return normalizedProductID;
+        }
+        Product product = productRepository.findByProductID(normalizedProductID)
                 .orElseThrow(() -> new BusinessException("Product not found", HttpStatus.NOT_FOUND));
+        if (Boolean.FALSE.equals(product.getActive())) {
+            throw new BusinessException("Product not found", HttpStatus.NOT_FOUND);
+        }
 
         return normalizedProductID;
+    }
+
+    private String resolveReviewProductName(String productID) {
+        if (productID.startsWith("LISTING:")) {
+            var listing = sellerListingCatalog.resolve(productID);
+            String title = listing.getCustomTitle();
+            return title == null || title.isBlank()
+                    ? listing.getSupplierOffer().getProduct().getProductName() : title;
+        }
+        if (productID.startsWith("SUPPLIER:")) {
+            return sellerListingCatalog.resolveDirectOffer(productID).getProduct().getProductName();
+        }
+        return productRepository.findByProductID(productID)
+                .map(product -> product.getProductName() != null ? product.getProductName() : productID)
+                .orElse(productID);
     }
 
     private String buildKey(String productID) {

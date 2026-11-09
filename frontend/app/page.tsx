@@ -8,6 +8,9 @@ import CampaignBanners from "@/components/Home/Campaign/CampaignBanners";
 import Trendy from "@/components/Home/Trendy/Trendy";
 import LimitedEdition from "@/components/Home/Limited/LimitedEdition";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { getUser, refreshCurrentUserFromServer } from "@/lib/auth";
 
 const HeroSection = dynamic(() => import("@/components/Home/Hero/HeroSection"), {
   ssr: false,
@@ -24,6 +27,18 @@ const Instagram = dynamic(() => import("@/components/Home/Instagram/Instagram"),
 
 export default function HomePage() {
   const { t } = useLocale();
+  const router = useRouter();
+  const [roleResolved, setRoleResolved] = useState(false);
+  useEffect(() => {
+    const redirect = (user: ReturnType<typeof getUser>) => {
+      if (!user || user.role === "user") return;
+      const destination = user.role === "admin" ? "/admin" : user.role === "seller" ? "/seller/dashboard" : user.role === "supplier" ? "/supplier/dashboard" : user.role === "shipper" ? "/shipper/dashboard" : "/staff";
+      router.replace(destination);
+    };
+    redirect(getUser());
+    void refreshCurrentUserFromServer().then((user) => { redirect(user); setRoleResolved(true); });
+  }, [router]);
+  if (!roleResolved || (getUser() && getUser()?.role !== "user")) return null;
   return (
     <div className="jp-seigaiha-bg">
       <Banner />

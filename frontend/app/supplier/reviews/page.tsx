@@ -142,7 +142,7 @@ export default function SupplierReviewsPage() {
                       <strong style={{ fontSize: 15 }}>{review.author}</strong>
                       <div style={{ color: "#f59e0b" }}>{"★".repeat(review.rating)}{"☆".repeat(5-review.rating)}</div>
                     </div>
-                    <div style={{ fontSize: 15, color: "#374151", marginBottom: 12 }}>{review.content}</div>
+                    <div style={{ fontSize: 15, color: "#404040", marginBottom: 12 }}>{review.content}</div>
                     <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 16 }}>
                       {new Date(review.createdAt).toLocaleString()}
                     </div>
@@ -190,18 +190,18 @@ export default function SupplierReviewsPage() {
 
 const containerStyle: CSSProperties = { padding: "40px", maxWidth: 1200, margin: "0 auto", animation: "pageIn 400ms ease" };
 const titleStyle: CSSProperties = { margin: "0 0 24px", fontSize: 28 };
-const selectStyle: CSSProperties = { width: "100%", maxWidth: 400, padding: "10px 14px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 15 };
+const selectStyle: CSSProperties = { width: "100%", maxWidth: 400, padding: "10px 14px", borderRadius: 5, border: "1px solid #d1d5db", fontSize: 15 };
 const contentGrid: CSSProperties = { display: "grid", gridTemplateColumns: "1fr", gap: 24 };
-const summaryCard: CSSProperties = { background: "#fff", padding: 24, borderRadius: 16, boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" };
+const summaryCard: CSSProperties = { background: "#fff", padding: 24, borderRadius: 5, boxShadow: "none" };
 const ratingLabel: CSSProperties = { color: "#6b7280", fontSize: 14, fontWeight: 500 };
 const ratingValue: CSSProperties = { color: "#111827", fontSize: 48, fontWeight: 700 };
 const mutedStyle: CSSProperties = { color: "#6b7280", fontSize: 14, marginTop: 4 };
-const listContainer: CSSProperties = { borderRadius: 16 };
-const reviewCard: CSSProperties = { background: "#fff", padding: 20, borderRadius: 12, border: "1px solid #e5e7eb" };
-const emptyState: CSSProperties = { padding: 40, textAlign: "center", background: "#fff", borderRadius: 12, border: "1px dashed #d1d5db", color: "#6b7280" };
+const listContainer: CSSProperties = { borderRadius: 5 };
+const reviewCard: CSSProperties = { background: "#fff", padding: 20, borderRadius: 5, border: "1px solid #e5e7eb" };
+const emptyState: CSSProperties = { padding: 40, textAlign: "center", background: "#fff", borderRadius: 5, border: "1px dashed #d1d5db", color: "#6b7280" };
 const replyBoxWrapper: CSSProperties = { borderLeft: "3px solid #d1d5db", paddingLeft: 16, marginTop: 12 };
-const replyBox: CSSProperties = { background: "#f3f4f6", padding: 12, borderRadius: 8, marginTop: 8 };
-const textareaStyle: CSSProperties = { width: "100%", padding: 12, borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, resize: "vertical" };
+const replyBox: CSSProperties = { background: "#f3f4f6", padding: 12, borderRadius: 5, marginTop: 8 };
+const textareaStyle: CSSProperties = { width: "100%", padding: 12, borderRadius: 5, border: "1px solid #d1d5db", fontSize: 14, resize: "vertical" };
 const buttonPrimary: CSSProperties = { background: "#101828", color: "#fff", padding: "8px 16px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500 };
-const buttonSecondary: CSSProperties = { background: "#f3f4f6", color: "#374151", padding: "8px 16px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500 };
+const buttonSecondary: CSSProperties = { background: "#f3f4f6", color: "#404040", padding: "8px 16px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500 };
 const buttonOutline: CSSProperties = { background: "transparent", color: "#101828", padding: "6px 12px", borderRadius: 6, border: "1px solid #d1d5db", cursor: "pointer", fontSize: 13, fontWeight: 500 };

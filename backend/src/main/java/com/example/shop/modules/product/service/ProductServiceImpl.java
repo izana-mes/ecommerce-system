@@ -8,16 +8,26 @@ import com.example.shop.modules.cart.repository.CartReservedStockProjection;
 import com.example.shop.modules.messaging.inventory.LowStockAlertEvent;
 import com.example.shop.modules.messaging.inventory.LowStockAlertPublisher;
 import com.example.shop.modules.product.dto.ProductDto;
+import com.example.shop.modules.product.dto.ProductSuggestionDto;
 import com.example.shop.modules.product.dto.StockAdjustmentItemDto;
 import com.example.shop.modules.product.entity.Product;
 import com.example.shop.modules.product.mapper.ProductMapper;
 import com.example.shop.modules.product.repository.ProductRepository;
+import com.example.shop.modules.user.entity.User;
+import com.example.shop.modules.user.entity.SupplierOperatingMode;
+import com.example.shop.modules.user.repository.UserRepository;
+import com.example.shop.modules.resale.entity.SupplierProduct;
+import com.example.shop.modules.resale.repository.SupplierProductRepository;
+import com.example.shop.modules.resale.repository.SellerProductListingRepository;
+import com.example.shop.modules.resale.service.SellerListingCatalog;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +48,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class ProductServiceImpl implements ProductService {
 
     private static final int DEFAULT_STOCK_QUANTITY = 25;
@@ -48,6 +59,11 @@ public class ProductServiceImpl implements ProductService {
     private final CartItemRepository cartItemRepository;
     private final CacheInvalidationEventPublisher cacheInvalidationEventPublisher;
     private final LowStockAlertPublisher lowStockAlertPublisher;
+    private final UserRepository userRepository;
+    private final SupplierProductRepository supplierProductRepository;
+    private final SellerProductListingRepository sellerProductListingRepository;
+    private final SellerListingCatalog sellerListingCatalog;
+    private final JdbcTemplate jdbcTemplate;
 
     @Value("${application.inventory.low-stock-threshold:5}")
     private int lowStockThreshold;
@@ -55,20 +71,32 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = RedisCacheConfig.PRODUCTS_ALL)
     public List<ProductDto> getAllProducts() {
-        return productRepository.findAllByOrderByIdAsc()
+        // Public catalog: only active (approved/published) products are visible.
+        List<ProductDto> result = productRepository.findAllByOrderByIdAsc()
                 .stream()
-                .map(productMapper::toDto)
-                .toList();
+                .filter(p -> Boolean.TRUE.equals(p.getActive()))
+                .filter(this::supplierMaySellDirectly)
+                .map(this::toRetailDto)
+                .collect(Collectors.toCollection(ArrayList::new));
+        sellerProductListingRepository.findByActiveTrueOrderByCreatedAtDesc().forEach(listing -> {
+            try {
+                String catalogId = "LISTING:" + listing.getId();
+                ProductDto dto = productMapper.toDto(sellerListingCatalog.retailProduct(sellerListingCatalog.resolve(catalogId), catalogId));
+                result.add(dto);
+            } catch (BusinessException ignored) { /* inactive authorization or unavailable Supplier offer */ }
+        });
+        supplierProductRepository.findEligibleDirectRetailOffers().stream()
+                .filter(offer -> offer.getSupplier().getSupplierOperatingMode() == SupplierOperatingMode.SUPPLY_AND_SELL)
+                .forEach(offer -> {
+                    String catalogId = "SUPPLIER:" + offer.getId();
+                    result.add(productMapper.toDto(sellerListingCatalog.directRetailProduct(offer, catalogId)));
+                });
+        return result;
     }
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(
-            cacheNames = RedisCacheConfig.PRODUCTS_SEARCH,
-            key = "(#keyword == null ? '' : #keyword.trim().toLowerCase())"
-    )
     public List<ProductDto> searchProducts(String keyword) {
         if (!StringUtils.hasText(keyword)) {
             return getAllProducts();
@@ -80,31 +108,91 @@ public class ProductServiceImpl implements ProductService {
             return getAllProducts();
         }
 
-        return productRepository.findAllByOrderByIdAsc()
-                .stream()
-                .filter(product -> matchesAllTokens(product, tokens))
-                .map(productMapper::toDto)
-                .toList();
+        Map<String, ProductDto> unique = new LinkedHashMap<>();
+        for (ProductDto product : getAllProducts()) {
+            if (Boolean.TRUE.equals(product.getActive()) && matchesAllTokens(product, tokens)) {
+                unique.putIfAbsent(product.getProductID(), product);
+            }
+        }
+        return new ArrayList<>(unique.values());
     }
+
+    private boolean supplierMaySellDirectly(Product product) {
+        // Supplier-owned items use a listing-specific SUPPLIER:<offer UUID> catalog key.
+        // This prevents a Global Product row from bypassing explicit offer-level retail settings.
+        return product.getSupplierUserId() == null;
+    }
+
+    private ProductDto toRetailDto(Product product) {
+        ProductDto dto = productMapper.toDto(product);
+        if (product.getSupplierUserId() != null) {
+            supplierProductRepository.findBySupplierIdAndProductProductID(product.getSupplierUserId(), product.getProductID())
+                    .filter(offer -> Boolean.TRUE.equals(offer.getDirectRetailEnabled()))
+                    .map(SupplierProduct::getDirectRetailPrice)
+                    .ifPresent(price -> dto.setProductPrice(price.doubleValue()));
+        }
+        return dto;
+    }
+
+    private static String safe(String value) { return value == null ? "" : value; }
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(
-            cacheNames = RedisCacheConfig.PRODUCTS_ACTIVE,
-            key = "T(java.lang.Math).max(1, T(java.lang.Math).min(#limit, 50))"
-    )
     public List<ProductDto> getActiveProducts(int limit) {
         return productRepository.findByActiveTrueOrderByIdAsc(PageRequest.of(0, Math.max(1, Math.min(limit, 50))))
-                .stream().map(productMapper::toDto).toList();
+                .stream().filter(this::supplierMaySellDirectly).map(this::toRetailDto).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(
-            cacheNames = RedisCacheConfig.PRODUCTS_SUGGEST,
-            key = "(#keyword == null ? '' : #keyword.trim().toLowerCase()) + '::' + T(java.lang.Math).max(1, T(java.lang.Math).min(#limit, 15))"
-    )
-    public List<String> searchSuggestions(String keyword, int limit) {
+    public ProductDto getProductForViewer(String productID, User actor) {
+        if (!StringUtils.hasText(productID)) {
+            throw new BusinessException("Product ID is required", HttpStatus.BAD_REQUEST);
+        }
+        if (productID.trim().startsWith("LISTING:")) {
+            String key = productID.trim();
+            return productMapper.toDto(sellerListingCatalog.retailProduct(sellerListingCatalog.resolve(key), key));
+        }
+        if (productID.trim().startsWith("SUPPLIER:")) {
+            String key = productID.trim();
+            return productMapper.toDto(sellerListingCatalog.directRetailProduct(sellerListingCatalog.resolveDirectOffer(key), key));
+        }
+        Product product = productRepository.findByProductID(productID.trim())
+                .orElseThrow(() -> new BusinessException("Product not found", HttpStatus.NOT_FOUND));
+
+        boolean isActive = Boolean.TRUE.equals(product.getActive());
+        boolean hasDirectRetailAccess = product.getSupplierUserId() == null || supplierMaySellDirectly(product)
+                || actor != null && actor.getId().equals(product.getSupplierUserId());
+        if (isActive && !hasDirectRetailAccess) {
+            throw new BusinessException("Product is supplied wholesale and is not directly available for retail", HttpStatus.NOT_FOUND);
+        }
+        if (!isActive) {
+            boolean isAuthorized = actor != null && (
+                    hasUserRole(actor, "ROLE_ADMIN")
+                    || hasUserRole(actor, "ROLE_EMPLOYEE")
+                    || (hasUserRole(actor, "ROLE_SELLER") && actor.getId().equals(product.getSellerUserId()))
+                    || (hasUserRole(actor, "ROLE_SUPPLIER") && actor.getId().equals(product.getSupplierUserId()))
+            );
+            if (!isAuthorized) {
+                throw new BusinessException("Product not found", HttpStatus.NOT_FOUND);
+            }
+        }
+
+        return toRetailDto(product);
+    }
+
+    private static boolean hasUserRole(User user, String roleName) {
+        if (user == null || user.getRoles() == null) {
+            return false;
+        }
+        return user.getRoles().stream()
+                .anyMatch(r -> roleName.equalsIgnoreCase(r.getName())
+                        || roleName.equalsIgnoreCase("ROLE_" + r.getName()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductSuggestionDto> searchSuggestions(String keyword, int limit) {
         if (!StringUtils.hasText(keyword)) {
             return List.of();
         }
@@ -116,27 +204,30 @@ public class ProductServiceImpl implements ProductService {
             return List.of();
         }
 
-        List<Product> matchedProducts = productRepository.findAllByOrderByIdAsc()
-                .stream()
-                .filter(product -> matchesAllTokens(product, tokens))
-                .toList();
-
         String loweredKeyword = normalized.toLowerCase();
-        Comparator<String> suggestionComparator = Comparator
-                .comparingInt((String value) -> scoreSuggestion(value, loweredKeyword))
-                .thenComparing(String::length)
-                .thenComparing(String.CASE_INSENSITIVE_ORDER);
-
-        Map<String, String> uniqueSuggestions = new LinkedHashMap<>();
-        for (Product product : matchedProducts) {
-            addSuggestion(uniqueSuggestions, product.getProductName());
-            addSuggestion(uniqueSuggestions, product.getProductID());
+        Map<String, ProductDto> uniqueProducts = new LinkedHashMap<>();
+        for (ProductDto product : getAllProducts()) {
+            if (Boolean.TRUE.equals(product.getActive()) && matchesAllTokens(product, tokens)) {
+                uniqueProducts.putIfAbsent(product.getProductID(), product);
+            }
         }
 
-        return uniqueSuggestions.values()
-                .stream()
+        Comparator<ProductDto> suggestionComparator = Comparator
+                .comparingInt((ProductDto value) -> scoreSuggestion(safe(value.getProductName()).toLowerCase(Locale.ROOT), loweredKeyword))
+                .thenComparing(value -> safe(value.getProductName()), String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(ProductDto::getProductID, Comparator.nullsLast(String::compareTo));
+
+        return uniqueProducts.values().stream()
                 .sorted(suggestionComparator)
                 .limit(normalizedLimit)
+                .map(product -> ProductSuggestionDto.builder()
+                        .productID(product.getProductID())
+                        .productName(product.getProductName())
+                        .frontImg(product.getFrontImg())
+                        .productPrice(product.getProductPrice())
+                        .sellerUserId(product.getSellerUserId())
+                        .supplierUserId(product.getSupplierUserId())
+                        .build())
                 .toList();
     }
 
@@ -223,6 +314,9 @@ public class ProductServiceImpl implements ProductService {
             @CacheEvict(cacheNames = RedisCacheConfig.ADMIN_DASHBOARD, allEntries = true)
     })
     public ProductDto updateProduct(String productID, ProductDto dto) {
+        if (productID != null && (productID.startsWith("LISTING:") || productID.startsWith("SUPPLIER:"))) {
+            throw new BusinessException("Catalog listing IDs must be updated through their owning Seller or Supplier endpoint", HttpStatus.BAD_REQUEST);
+        }
         Product existing = productRepository.findByProductID(productID)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productID));
 
@@ -322,10 +416,74 @@ public class ProductServiceImpl implements ProductService {
             @CacheEvict(cacheNames = RedisCacheConfig.ADMIN_DASHBOARD, allEntries = true)
     })
     public void deleteProduct(String productID) {
-        Product existing = productRepository.findByProductID(productID)
-                .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productID));
-        productRepository.delete(existing);
+        if (!StringUtils.hasText(productID)) {
+            return;
+        }
+        String normalizedId = productID.trim();
+        Product existing = productRepository.findByProductID(normalizedId).orElse(null);
+        if (existing == null) {
+            log.warn("Product with ID {} not found for deletion; treating as already deleted", normalizedId);
+            publishProductCacheInvalidation();
+            return;
+        }
+
+        int resaleAuthCount = queryCount(
+                "SELECT COUNT(*) FROM seller_resale_authorizations WHERE supplier_product_id = ?",
+                normalizedId
+        );
+        int listingCount = queryCount(
+                "SELECT COUNT(*) FROM seller_product_listings WHERE supplier_product_id = ?",
+                normalizedId
+        );
+        int supplierProductCount = queryCount(
+                "SELECT COUNT(*) FROM supplier_products WHERE product_id = ?",
+                normalizedId
+        );
+        int orderItemCount = queryCount(
+                "SELECT COUNT(*) FROM order_items WHERE product_id = ?",
+                normalizedId
+        );
+
+        boolean hasCommercialReferences = (resaleAuthCount + listingCount + supplierProductCount + orderItemCount) > 0;
+
+        if (hasCommercialReferences) {
+            existing.setActive(false);
+            productRepository.save(existing);
+
+            jdbcTemplate.update(
+                    "UPDATE seller_product_listings SET active = false, updated_at = CURRENT_TIMESTAMP WHERE supplier_product_id = ? AND active = true",
+                    normalizedId
+            );
+            jdbcTemplate.update(
+                    "UPDATE supplier_products SET available = false, approved = false, allow_resale = false, updated_at = CURRENT_TIMESTAMP WHERE product_id = ?",
+                    normalizedId
+            );
+            jdbcTemplate.update(
+                    "UPDATE seller_resale_authorizations SET is_active = false, revoked_at = CURRENT_TIMESTAMP, revoke_reason = 'Product removed from catalog', updated_at = CURRENT_TIMESTAMP WHERE supplier_product_id = ? AND is_active = true",
+                    normalizedId
+            );
+            jdbcTemplate.update(
+                    "UPDATE supplier_resale_catalog_flags SET resale_enabled = false, supplier_product_approved = false, updated_at = CURRENT_TIMESTAMP WHERE product_id = ?",
+                    normalizedId
+            );
+        } else {
+            jdbcTemplate.update("DELETE FROM cart_items WHERE product_id = ?", normalizedId);
+            jdbcTemplate.update("DELETE FROM wishlist_items WHERE product_id = ?", normalizedId);
+            jdbcTemplate.update("DELETE FROM supplier_resale_catalog_flags WHERE product_id = ?", normalizedId);
+            productRepository.delete(existing);
+        }
+
         publishProductCacheInvalidation();
+    }
+
+    private int queryCount(String sql, String param) {
+        try {
+            Integer count = jdbcTemplate.queryForObject(sql, Integer.class, param);
+            return count != null ? count : 0;
+        } catch (Exception ex) {
+            log.error("Failed to query reference count with sql: {}", sql, ex);
+            return 1;
+        }
     }
 
     @Override
@@ -546,10 +704,12 @@ public class ProductServiceImpl implements ProductService {
                 .toList();
     }
 
-    private boolean matchesAllTokens(Product product, List<String> tokens) {
+    private boolean matchesAllTokens(ProductDto product, List<String> tokens) {
         String searchable = normalizeForSearch(product.getProductName())
                 + " " + normalizeForSearch(product.getProductID())
-                + " " + normalizeForSearch(product.getCategory());
+                + " " + normalizeForSearch(product.getCategory())
+                + " " + normalizeForSearch(product.getSku())
+                + " " + normalizeForSearch(product.getBrand());
         for (String token : tokens) {
             if (!searchable.contains(token)) {
                 return false;

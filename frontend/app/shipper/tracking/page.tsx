@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MdRefresh, MdSend, MdMyLocation, MdSignalWifi4Bar } from "react-icons/md";
+import { RotateCw, Send, Crosshair, Wifi } from "lucide-react";
 import {getUser } from "@/lib/auth";
 import { publicBackendOriginUrl } from "@/lib/backendApiBase";
 import { Client, IMessage } from "@stomp/stompjs";
@@ -124,7 +124,7 @@ export default function ShipperTrackingPage() {
         body: JSON.stringify(body)});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed to update location");
-      toast.success("📍 Location updated");
+      toast.success("Location updated");
       if (data?.data) setLatestLocation(data.data);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
@@ -158,7 +158,6 @@ export default function ShipperTrackingPage() {
       <div className="sh-topbar">
         <div className="sh-topbar-title">
           <h1>Live Tracking</h1>
-          <p>Push your GPS coordinates and monitor the live feed</p>
         </div>
         <div className="sh-topbar-actions">
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -169,7 +168,7 @@ export default function ShipperTrackingPage() {
             </span>
           </div>
           <button className="sh-btn sh-btn-secondary sh-btn-sm" onClick={() => void fetchLatest()} disabled={fetchingLatest}>
-            <MdRefresh /> {fetchingLatest ? "Loading…" : "Refresh"}
+            <RotateCw size={14} strokeWidth={1.75} /> {fetchingLatest ? "Loading…" : "Refresh"}
           </button>
         </div>
       </div>
@@ -182,7 +181,6 @@ export default function ShipperTrackingPage() {
             <div className="sh-card-header">
               <div>
                 <h2 className="sh-card-title">Send Location Update</h2>
-                <p className="sh-card-subtitle">Push your current GPS coordinates to the server</p>
               </div>
             </div>
 
@@ -249,7 +247,7 @@ export default function ShipperTrackingPage() {
 
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <button className="sh-btn sh-btn-secondary sh-btn-sm" onClick={useCurrentGPS}>
-                  <MdMyLocation /> Use GPS
+                  <Crosshair size={14} strokeWidth={1.75} /> Use GPS
                 </button>
                 <button
                   className="sh-btn sh-btn-primary"
@@ -257,7 +255,7 @@ export default function ShipperTrackingPage() {
                   disabled={sending}
                   style={{ flex: 1 }}
                 >
-                  <MdSend /> {sending ? "Sending…" : "Send Location"}
+                  <Send size={14} strokeWidth={1.75} /> {sending ? "Sending…" : "Send Location"}
                 </button>
               </div>
             </div>
@@ -288,13 +286,13 @@ export default function ShipperTrackingPage() {
                       key={row.label}
                       style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: 10 }}
                     >
-                      <span style={{ fontSize: 13, color: "#64748b" }}>{row.label}</span>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: "#f1f5f9" }}>{String(row.value)}</span>
+                      <span style={{ fontSize: 13, color: "#737373" }}>{row.label}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "#f5f5f4" }}>{String(row.value)}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p style={{ color: "#475569", textAlign: "center", padding: "24px 0" }}>No location data yet</p>
+                <p style={{ color: "#737373", textAlign: "center", padding: "24px 0" }}>No location data yet</p>
               )}
             </div>
 
@@ -307,7 +305,6 @@ export default function ShipperTrackingPage() {
                       style={!wsConnected ? { width: 8, height: 8, borderRadius: "50%", background: "#ef4444", display: "inline-block" } : {}} />
                     WebSocket Feed
                   </h2>
-                  <p className="sh-card-subtitle">Live location broadcasts via STOMP</p>
                 </div>
                 <button
                   className="sh-btn sh-btn-secondary sh-btn-sm"
@@ -318,13 +315,13 @@ export default function ShipperTrackingPage() {
               </div>
               <div className="sh-log-feed" ref={logRef}>
                 {log.length === 0 ? (
-                  <span style={{ color: "#475569" }}>Waiting for location events…</span>
+                  <span style={{ color: "#737373" }}>Waiting for location events…</span>
                 ) : (
                   log.map((entry, i) => (
                     <div key={i} className="sh-log-entry">
                       <span className="sh-log-time">[{entry.time}]</span>
                       <span className="sh-log-msg">
-                        📍 {entry.lat}, {entry.lng}
+                        {entry.lat}, {entry.lng}
                         {entry.orderId ? ` · Order #${entry.orderId}` : ""}
                       </span>
                     </div>

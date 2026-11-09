@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { CSSProperties, useEffect, useState } from "react";
-import { getUser, isAuthenticated, subscribeToAuthChanges } from "@/lib/auth";
+import { getUser, isAuthenticated, refreshCurrentUserFromServer, subscribeToAuthChanges } from "@/lib/auth";
 
 const STAFF_NAV = [
   { name: "Dashboard", path: "/staff" },
@@ -32,6 +32,10 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
     const checkAuth = () => {
       const auth = isAuthenticated();
       const user = getUser();
+      if (user?.role === "shipper" && pathname !== "/staff/support-chat") {
+        router.replace("/shipper/dashboard");
+        return;
+      }
       if (!auth || !isStaffAreaRole(user?.role)) {
         router.push("/login?redirect=/staff");
         return;
@@ -39,9 +43,10 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
       setIsAuthLoading(false);
     };
 
-    checkAuth();
-    return subscribeToAuthChanges(checkAuth);
-  }, [router]);
+    const unsubscribe = subscribeToAuthChanges(checkAuth);
+    void refreshCurrentUserFromServer().then(checkAuth);
+    return unsubscribe;
+  }, [pathname, router]);
 
   if (isAuthLoading) return <div style={{ padding: 40, textAlign: "center" }}>Loading...</div>;
 

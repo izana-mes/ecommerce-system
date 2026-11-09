@@ -40,9 +40,16 @@ export async function PATCH(request: Request) {
     const action = String(body?.action || "").trim().toLowerCase();
     const note = typeof body?.note === "string" ? body.note : undefined;
 
-    if (!requestId || (action !== "approve" && action !== "reject")) {
+    if (!requestId || (action !== "approve" && action !== "reject" && action !== "request-changes")) {
       return NextResponse.json(
-        { error: "Missing required fields: requestId, action" },
+        { error: "Missing required fields: requestId, action (must be approve, reject, or request-changes)" },
+        { status: 400 }
+      );
+    }
+
+    if (action === "request-changes" && (!note || !note.trim())) {
+      return NextResponse.json(
+        { error: "A reviewer note explaining requested changes is required" },
         { status: 400 }
       );
     }

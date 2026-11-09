@@ -15,6 +15,14 @@ public class SupplierDashboardResponse {
     private long cancelledOrders;
     private double cancelRate;
     private long totalProducts;
+    private long activeProducts;
+    private long inactiveProducts;
+    private long pendingProductApprovals;
+    private long productsAvailableForResale;
+    private long totalAllocatedInventory;
+    private long remainingUnallocatedInventory;
+    private long activeSellerPartnerships;
+    private long pendingSellerRequests;
     private long lowStockCount;
     private long outOfStockCount;
     private double avgStockPerProduct;

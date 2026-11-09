@@ -86,6 +86,12 @@ public class User implements UserDetails,Principal {
     @Column(name = "provider_id", length = 255)
     private String providerId;
 
+    /** Suppliers opt in to direct retail explicitly; existing suppliers default to supply only. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "supplier_operating_mode", length = 24, nullable = false)
+    @Builder.Default
+    private SupplierOperatingMode supplierOperatingMode = SupplierOperatingMode.SUPPLY_ONLY;
+
     @Column(name = "loyalty_points", nullable = false)
     @Builder.Default
     private Long loyaltyPoints = 0L;

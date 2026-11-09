@@ -4,6 +4,9 @@ import com.example.shop.modules.messaging.review.ReviewSubmittedEvent;
 import com.example.shop.modules.messaging.review.ReviewSubmittedPublisher;
 import com.example.shop.modules.product.entity.Product;
 import com.example.shop.modules.product.repository.ProductRepository;
+import com.example.shop.modules.resale.service.SellerListingCatalog;
+import com.example.shop.modules.resale.entity.SellerProductListing;
+import com.example.shop.modules.resale.entity.SupplierProduct;
 import com.example.shop.modules.review.dto.ProductReviewRequest;
 import com.example.shop.modules.user.entity.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,6 +18,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -27,6 +31,7 @@ class ProductReviewServiceImplTest {
     private ObjectMapper objectMapper;
     private ProductRepository productRepository;
     private ReviewSubmittedPublisher reviewSubmittedPublisher;
+    private SellerListingCatalog sellerListingCatalog;
     private ProductReviewServiceImpl reviewService;
 
     @BeforeEach
@@ -37,6 +42,7 @@ class ProductReviewServiceImplTest {
         objectMapper = new ObjectMapper();
         productRepository = mock(ProductRepository.class);
         reviewSubmittedPublisher = mock(ReviewSubmittedPublisher.class);
+        sellerListingCatalog = mock(SellerListingCatalog.class);
 
         when(redisTemplate.opsForList()).thenReturn(listOperations);
 
@@ -44,7 +50,8 @@ class ProductReviewServiceImplTest {
                 redisTemplate,
                 objectMapper,
                 productRepository,
-                reviewSubmittedPublisher
+                reviewSubmittedPublisher,
+                sellerListingCatalog
         );
         ReflectionTestUtils.setField(reviewService, "maxEntries", 200);
         ReflectionTestUtils.setField(reviewService, "ttlDays", 180L);
@@ -81,5 +88,42 @@ class ProductReviewServiceImplTest {
         assertThat(event.getRating()).isEqualTo(5);
         assertThat(event.getComment()).isEqualTo("Excellent sound quality!");
         assertThat(event.getCustomerEmail()).isEqualTo("reviewer@example.com");
+    }
+
+    @Test
+    void listingReviewLookupResolvesCatalogIdWithoutQueryingGlobalProductRepository() {
+        String listingId = "LISTING:d39d8642-3fc0-4882-91cc-bc9070276d34";
+        when(listOperations.range(anyString(), anyLong(), anyLong())).thenReturn(List.of());
+
+        var summary = reviewService.getReviews(listingId, 10, null);
+
+        assertThat(summary.getProductID()).isEqualTo(listingId);
+        assertThat(summary.getReviewCount()).isZero();
+        verify(sellerListingCatalog).resolve(listingId);
+        verify(productRepository, never()).findByProductID(listingId);
+    }
+
+    @Test
+    void authenticatedReviewSubmissionKeepsSellerListingCatalogId() {
+        String listingId = "LISTING:d39d8642-3fc0-4882-91cc-bc9070276d34";
+        var sourceProduct = Product.builder().productName("Supplier Jacket").build();
+        var offer = SupplierProduct.builder().product(sourceProduct).build();
+        var listing = SellerProductListing.builder().customTitle("Cold Jacket").supplierOffer(offer).build();
+        when(sellerListingCatalog.resolve(listingId)).thenReturn(listing);
+        when(listOperations.range(anyString(), anyLong(), anyLong())).thenReturn(List.of());
+
+        User user = User.builder().email("reviewer@example.com").firstName("Jane").lastName("Doe").build();
+        ProductReviewRequest request = new ProductReviewRequest();
+        request.setRating(5);
+        request.setComment("Great jacket");
+
+        reviewService.addReview(listingId, request, user);
+
+        verify(listOperations).leftPush(eq("reviews:product:" + listingId), anyString());
+        verify(productRepository, never()).findByProductID(listingId);
+        ArgumentCaptor<ReviewSubmittedEvent> eventCaptor = ArgumentCaptor.forClass(ReviewSubmittedEvent.class);
+        verify(reviewSubmittedPublisher).publish(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().getProductId()).isEqualTo(listingId);
+        assertThat(eventCaptor.getValue().getProductName()).isEqualTo("Cold Jacket");
     }
 }

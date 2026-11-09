@@ -182,11 +182,10 @@ export default function AdminShiftsPage() {
   }
 
   return (
-    <main className="shift-admin jp-seigaiha-bg">
+    <main className="shift-admin">
       <section className="shift-toolbar">
         <div>
           <h1>Shift Management</h1>
-          <p>Schedule employees and shippers, validate imports, and monitor staffing warnings.</p>
         </div>
         <div className="shift-kpis">
           <span>{schedule?.shifts.length ?? 0} shifts</span>

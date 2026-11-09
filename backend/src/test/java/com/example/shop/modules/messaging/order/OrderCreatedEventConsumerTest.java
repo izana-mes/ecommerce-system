@@ -1,11 +1,15 @@
 package com.example.shop.modules.messaging.order;
 
+import com.example.shop.common.mail.EmailService;
+import com.example.shop.common.mail.EmailTemplateService;
+import com.example.shop.modules.notification.service.CustomerNotificationService;
 import com.example.shop.modules.notification.service.OrderCreatedNotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.Duration;
 
@@ -15,6 +19,10 @@ import static org.mockito.Mockito.*;
 class OrderCreatedEventConsumerTest {
 
     private OrderCreatedNotificationService notificationService;
+    private CustomerNotificationService customerNotificationService;
+    private EmailTemplateService emailTemplateService;
+    private EmailService emailService;
+    private JdbcTemplate jdbcTemplate;
     private StringRedisTemplate redisTemplate;
     private ValueOperations<String, String> valueOperations;
     private ObjectProvider<StringRedisTemplate> redisProvider;
@@ -24,6 +32,10 @@ class OrderCreatedEventConsumerTest {
     @SuppressWarnings("unchecked")
     void setUp() {
         notificationService = mock(OrderCreatedNotificationService.class);
+        customerNotificationService = mock(CustomerNotificationService.class);
+        emailTemplateService = mock(EmailTemplateService.class);
+        emailService = mock(EmailService.class);
+        jdbcTemplate = mock(JdbcTemplate.class);
         redisTemplate = mock(StringRedisTemplate.class);
         valueOperations = mock(ValueOperations.class);
         redisProvider = mock(ObjectProvider.class);
@@ -31,7 +43,14 @@ class OrderCreatedEventConsumerTest {
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(redisProvider.getIfAvailable()).thenReturn(redisTemplate);
 
-        consumer = new OrderCreatedEventConsumer(notificationService, redisProvider);
+        consumer = new OrderCreatedEventConsumer(
+                notificationService,
+                customerNotificationService,
+                emailTemplateService,
+                emailService,
+                jdbcTemplate,
+                redisProvider
+        );
     }
 
     @Test

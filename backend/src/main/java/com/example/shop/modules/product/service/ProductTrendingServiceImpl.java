@@ -77,7 +77,7 @@ public class ProductTrendingServiceImpl implements ProductTrendingService {
             Map<String, ProductDto> ordered = new LinkedHashMap<>();
             for (String productId : rankedProductIds) {
                 Product product = byProductId.get(productId);
-                if (product != null) {
+                if (product != null && Boolean.TRUE.equals(product.getActive())) {
                     ordered.put(productId, productMapper.toDto(product));
                 }
             }

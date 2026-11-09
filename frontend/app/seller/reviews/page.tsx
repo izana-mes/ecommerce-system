@@ -111,10 +111,10 @@ export default function SellerReviewsPage() {
   if (loadingProducts) {
     return (
       <div style={containerStyle}>
-        <div style={{ height: 52, background: "#e2e8f0", borderRadius: 12, marginBottom: 24 }} />
-        <div style={{ height: 56, background: "#e2e8f0", borderRadius: 10, marginBottom: 24 }} />
+        <div style={{ height: 52, background: "#e5e5e5", borderRadius: 5, marginBottom: 24 }} />
+        <div style={{ height: 56, background: "#e5e5e5", borderRadius: 5, marginBottom: 24 }} />
         <div style={{ display: "grid", gap: 16 }}>
-          {[1, 2, 3].map((i) => <div key={i} style={{ height: 140, background: "#e2e8f0", borderRadius: 12 }} />)}
+          {[1, 2, 3].map((i) => <div key={i} style={{ height: 140, background: "#e5e5e5", borderRadius: 5 }} />)}
         </div>
       </div>
     );
@@ -128,21 +128,19 @@ export default function SellerReviewsPage() {
       <div style={pageHeaderStyle}>
         <div>
           <h1 style={titleStyle}>Product Reviews</h1>
-          <p style={subtitleStyle}>Read customer feedback and respond to reviews</p>
         </div>
       </div>
 
       {/* Product selector */}
       {products.length === 0 ? (
         <div style={emptyBoxStyle}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
           <div style={{ fontWeight: 600, marginBottom: 4 }}>No products found</div>
-          <div style={{ color: "#94a3b8", fontSize: 14 }}>You have no products linked to your account yet.</div>
+          <div style={{ color: "#737373", fontSize: 14 }}>You have no products linked to your account yet.</div>
         </div>
       ) : (
         <>
           <div style={{ marginBottom: 24 }}>
-            <label style={{ display: "block", fontWeight: 600, color: "#374151", marginBottom: 8, fontSize: 14 }}>
+            <label style={{ display: "block", fontWeight: 600, color: "#404040", marginBottom: 8, fontSize: 14 }}>
               Select product
             </label>
             <select
@@ -162,18 +160,17 @@ export default function SellerReviewsPage() {
           {loadingReviews ? (
             <div style={{ display: "grid", gap: 16 }}>
               {[1, 2, 3].map((i) => (
-                <div key={i} style={{ height: 140, background: "#e2e8f0", borderRadius: 12, animation: "pulse 1.5s infinite" }} />
+                <div key={i} style={{ height: 140, background: "#e5e5e5", borderRadius: 5, animation: "pulse 1.5s infinite" }} />
               ))}
             </div>
           ) : reviewsError ? (
             <div style={{ ...emptyBoxStyle, border: "1px solid #fecaca", background: "#fff5f5" }}>
-              <div style={{ fontSize: 36, marginBottom: 10 }}>⚠️</div>
               <div style={{ fontWeight: 600, color: "#991b1b", marginBottom: 4 }}>Failed to load reviews</div>
               <div style={{ color: "#b91c1c", fontSize: 14, marginBottom: 16 }}>{reviewsError}</div>
               <button
                 type="button"
                 onClick={() => void loadReviews(selectedProductId)}
-                style={{ background: "#991b1b", color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", fontWeight: 600, cursor: "pointer" }}
+                style={{ background: "#991b1b", color: "#fff", border: "none", borderRadius: 5, padding: "8px 18px", fontWeight: 600, cursor: "pointer" }}
               >
                 Try Again
               </button>
@@ -183,13 +180,13 @@ export default function SellerReviewsPage() {
               {/* Rating summary card */}
               <div style={ratingCardStyle}>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 52, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.03em" }}>
+                  <div style={{ fontSize: 52, fontWeight: 800, color: "#171717", letterSpacing: "-0.03em" }}>
                     {summary.averageRating.toFixed(1)}
                   </div>
                   <div style={{ color: "#f59e0b", fontSize: 22, margin: "4px 0" }}>
                     {stars(summary.averageRating)}
                   </div>
-                  <div style={{ color: "#64748b", fontSize: 14 }}>
+                  <div style={{ color: "#737373", fontSize: 14 }}>
                     Based on {summary.reviewCount} review{summary.reviewCount !== 1 ? "s" : ""}
                   </div>
                 </div>
@@ -200,7 +197,7 @@ export default function SellerReviewsPage() {
                 <div style={emptyBoxStyle}>
                   <div style={{ fontSize: 40, marginBottom: 12 }}>💬</div>
                   <div style={{ fontWeight: 600 }}>No reviews yet</div>
-                  <div style={{ color: "#94a3b8", fontSize: 14, marginTop: 4 }}>
+                  <div style={{ color: "#737373", fontSize: 14, marginTop: 4 }}>
                     Customers haven&apos;t reviewed this product yet
                   </div>
                 </div>
@@ -211,8 +208,8 @@ export default function SellerReviewsPage() {
                       {/* Review header */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                         <div>
-                          <div style={{ fontWeight: 700, fontSize: 15, color: "#0f172a" }}>{review.author}</div>
-                          <div style={{ color: "#64748b", fontSize: 12, marginTop: 2 }}>
+                          <div style={{ fontWeight: 700, fontSize: 15, color: "#171717" }}>{review.author}</div>
+                          <div style={{ color: "#737373", fontSize: 12, marginTop: 2 }}>
                             {new Date(review.createdAt).toLocaleString()}
                           </div>
                         </div>
@@ -222,7 +219,7 @@ export default function SellerReviewsPage() {
                       </div>
 
                       {/* Review body */}
-                      <div style={{ fontSize: 15, color: "#374151", lineHeight: 1.6, marginBottom: 14 }}>
+                      <div style={{ fontSize: 15, color: "#404040", lineHeight: 1.6, marginBottom: 14 }}>
                         {review.content}
                       </div>
 
@@ -231,10 +228,10 @@ export default function SellerReviewsPage() {
                         <div style={replyThreadStyle}>
                           {review.replies.map((reply) => (
                             <div key={reply.id} style={replyBubbleStyle}>
-                              <div style={{ fontSize: 11, fontWeight: 700, color: "#6366f1", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: "#171717", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                                 🏪 Your Reply
                               </div>
-                              <div style={{ fontSize: 14, color: "#374151" }}>{reply.content}</div>
+                              <div style={{ fontSize: 14, color: "#404040" }}>{reply.content}</div>
                             </div>
                           ))}
                         </div>
@@ -255,14 +252,14 @@ export default function SellerReviewsPage() {
                               type="button"
                               onClick={() => void handleReply(review.id)}
                               disabled={submittingReply}
-                              style={{ background: "#6366f1", color: "#fff", padding: "8px 18px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 }}
+                              style={{ background: "#171717", color: "#fff", padding: "8px 18px", borderRadius: 5, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 }}
                             >
                               {submittingReply ? "Posting…" : "Submit Reply"}
                             </button>
                             <button
                               type="button"
                               onClick={() => { setReplyingTo(null); setReplyContent(""); }}
-                              style={{ background: "#f1f5f9", color: "#475569", padding: "8px 18px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 }}
+                              style={{ background: "#f5f5f4", color: "#737373", padding: "8px 18px", borderRadius: 5, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 }}
                             >
                               Cancel
                             </button>
@@ -272,7 +269,7 @@ export default function SellerReviewsPage() {
                         <button
                           type="button"
                           onClick={() => { setReplyingTo(review.id); setReplyContent(""); }}
-                          style={{ background: "transparent", color: "#6366f1", padding: "7px 14px", borderRadius: 8, border: "1px solid #c7d2fe", cursor: "pointer", fontSize: 13, fontWeight: 600, marginTop: 10 }}
+                          style={{ background: "transparent", color: "#171717", padding: "7px 14px", borderRadius: 5, border: "1px solid #e5e5e5", cursor: "pointer", fontSize: 13, fontWeight: 600, marginTop: 10 }}
                         >
                           {review.replies && review.replies.length > 0 ? "✎ Edit / Add Reply" : "↩ Reply to Customer"}
                         </button>
@@ -291,14 +288,13 @@ export default function SellerReviewsPage() {
   );
 }
 
-const containerStyle: CSSProperties = { padding: "36px 32px", maxWidth: 900, margin: "0 auto" };
-const pageHeaderStyle: CSSProperties = { marginBottom: 28 };
-const titleStyle: CSSProperties = { margin: 0, fontSize: 28, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.02em" };
-const subtitleStyle: CSSProperties = { margin: "6px 0 0", color: "#64748b", fontSize: 14 };
-const selectStyle: CSSProperties = { width: "100%", maxWidth: 440, padding: "11px 14px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 500, color: "#0f172a", background: "#fff" };
-const emptyBoxStyle: CSSProperties = { padding: "48px 24px", textAlign: "center", background: "#fff", borderRadius: 16, border: "1px dashed #e2e8f0", color: "#64748b" };
-const ratingCardStyle: CSSProperties = { background: "#fff", borderRadius: 16, padding: "28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", border: "1px solid #e2e8f0", marginBottom: 20 };
-const reviewCardStyle: CSSProperties = { background: "#fff", padding: "20px 24px", borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(15,23,42,0.04)" };
-const replyThreadStyle: CSSProperties = { borderLeft: "3px solid #c7d2fe", paddingLeft: 16, marginTop: 12 };
-const replyBubbleStyle: CSSProperties = { background: "#f5f3ff", padding: "12px 14px", borderRadius: 10, marginBottom: 8 };
-const textareaStyle: CSSProperties = { width: "100%", padding: "12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" };
+const containerStyle: CSSProperties = { padding: "24px", maxWidth: 900, margin: "0 auto" };
+const pageHeaderStyle: CSSProperties = { marginBottom: 18 };
+const titleStyle: CSSProperties = { margin: 0, fontSize: 22, fontWeight: 600, color: "#171717", letterSpacing: "-0.02em" };
+const selectStyle: CSSProperties = { width: "100%", maxWidth: 440, padding: "11px 14px", borderRadius: 5, border: "1px solid #e5e5e5", fontSize: 14, fontWeight: 500, color: "#171717", background: "#fff" };
+const emptyBoxStyle: CSSProperties = { padding: "24px", textAlign: "center", background: "#fff", borderRadius: 5, border: "1px dashed #e5e5e5", color: "#737373" };
+const ratingCardStyle: CSSProperties = { background: "#fff", borderRadius: 5, padding: "28px", boxShadow: "none", border: "1px solid #e5e5e5", marginBottom: 20 };
+const reviewCardStyle: CSSProperties = { background: "#fff", padding: "20px 24px", borderRadius: 5, border: "1px solid #e5e5e5", boxShadow: "none" };
+const replyThreadStyle: CSSProperties = { borderLeft: "3px solid #e5e5e5", paddingLeft: 16, marginTop: 12 };
+const replyBubbleStyle: CSSProperties = { background: "#f5f3ff", padding: "12px 14px", borderRadius: 5, marginBottom: 8 };
+const textareaStyle: CSSProperties = { width: "100%", padding: "12px", borderRadius: 5, border: "1px solid #e5e5e5", fontSize: 14, resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" };

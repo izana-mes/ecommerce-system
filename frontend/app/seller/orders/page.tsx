@@ -20,7 +20,7 @@ const ORDER_STATUSES = ["ALL", "PENDING", "PROCESSING", "SHIPPED", "OUT_FOR_DELI
 
 function StatusBadge({ status, palette }: { status: string; palette: "order" | "payment" }) {
   const s = (status || "").toUpperCase();
-  let bg = "#f3f4f6", color = "#374151";
+  let bg = "#f3f4f6", color = "#404040";
   if (palette === "order") {
     if (s === "DELIVERED" || s === "COMPLETED")    { bg = "#dcfce7"; color = "#166534"; }
     else if (s === "PROCESSING" || s === "PENDING") { bg = "#fef9c3"; color = "#854d0e"; }
@@ -124,7 +124,6 @@ export default function SellerOrdersPage() {
       <div style={pageHeaderStyle}>
         <div>
           <h1 style={titleStyle}>Orders</h1>
-          <p style={subtitleStyle}>Track all orders containing your products</p>
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <button type="button" onClick={exportCsv} style={outlineButtonStyle}>⬇ Export CSV</button>
@@ -135,8 +134,8 @@ export default function SellerOrdersPage() {
       {/* KPI cards */}
       <div style={summaryGridStyle}>
         {[
-          { label: "Total Orders", value: filtered.length, color: "#0f172a" },
-          { label: "Revenue", value: `$${totalRevenue.toFixed(2)}`, color: "#6366f1" },
+          { label: "Total Orders", value: filtered.length, color: "#171717" },
+          { label: "Revenue", value: `$${totalRevenue.toFixed(2)}`, color: "#171717" },
           { label: "Pending", value: pendingCount, color: "#f59e0b" },
           { label: "Delivered", value: deliveredCount, color: "#22c55e" },
         ].map(k => (
@@ -168,8 +167,8 @@ export default function SellerOrdersPage() {
                 padding: "7px 14px",
                 borderRadius: 999,
                 border: "none",
-                background: statusFilter === s ? "#0f172a" : "#f1f5f9",
-                color: statusFilter === s ? "#fff" : "#475569",
+                background: statusFilter === s ? "#171717" : "#f5f5f4",
+                color: statusFilter === s ? "#fff" : "#737373",
                 fontWeight: 600,
                 fontSize: 12,
                 cursor: "pointer",
@@ -198,34 +197,34 @@ export default function SellerOrdersPage() {
                   <td colSpan={7} style={emptyTdStyle}>
                     <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
                     <div style={{ fontWeight: 600, marginBottom: 4 }}>No orders found</div>
-                    <div style={{ color: "#94a3b8", fontSize: 14 }}>
+                    <div style={{ color: "#737373", fontSize: 14 }}>
                       {statusFilter !== "ALL" ? `No ${statusFilter.replace(/_/g, " ").toLowerCase()} orders` : "Orders for your products will appear here"}
                     </div>
                   </td>
                 </tr>
               ) : (
                 filtered.map((order, idx) => (
-                  <tr key={`${order.orderNumber}-${idx}`} style={{ background: idx % 2 === 0 ? "#fff" : "#f8fafc" }}>
+                  <tr key={`${order.orderNumber}-${idx}`} style={{ background: idx % 2 === 0 ? "#fff" : "#fafaf9" }}>
                     <td style={tdStyle}>
-                      <span style={{ fontWeight: 700, fontFamily: "monospace", color: "#6366f1", fontSize: 13 }}>
+                      <span style={{ fontWeight: 700, fontFamily: "monospace", color: "#171717", fontSize: 13 }}>
                         #{order.orderNumber}
                       </span>
                     </td>
                     <td style={tdStyle}>
-                      <div style={{ fontWeight: 600, color: "#0f172a" }}>{order.productName}</div>
-                      <div style={{ color: "#94a3b8", fontSize: 12, marginTop: 2 }}>{order.productId}</div>
+                      <div style={{ fontWeight: 600, color: "#171717" }}>{order.productName}</div>
+                      <div style={{ color: "#737373", fontSize: 12, marginTop: 2 }}>{order.productId}</div>
                     </td>
                     <td style={{ ...tdStyle, textAlign: "center" }}>
                       <span style={{ fontWeight: 600 }}>{order.quantity}</span>
                     </td>
                     <td style={tdStyle}>
-                      <span style={{ fontWeight: 700, color: "#0f172a" }}>
+                      <span style={{ fontWeight: 700, color: "#171717" }}>
                         ${(order.lineTotal || 0).toFixed(2)}
                       </span>
                     </td>
                     <td style={tdStyle}><StatusBadge status={order.orderStatus} palette="order" /></td>
                     <td style={tdStyle}><StatusBadge status={order.paymentStatus} palette="payment" /></td>
-                    <td style={{ ...tdStyle, color: "#64748b", fontSize: 13 }}>
+                    <td style={{ ...tdStyle, color: "#737373", fontSize: 13 }}>
                       {order.createdAt ? new Date(order.createdAt).toLocaleString() : "—"}
                     </td>
                   </tr>
@@ -239,22 +238,21 @@ export default function SellerOrdersPage() {
   );
 }
 
-const containerStyle: CSSProperties = { padding: "36px 32px", maxWidth: 1200, margin: "0 auto" };
-const pageHeaderStyle: CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16, marginBottom: 28 };
-const titleStyle: CSSProperties = { margin: 0, fontSize: 28, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.02em" };
-const subtitleStyle: CSSProperties = { margin: "6px 0 0", color: "#64748b", fontSize: 14 };
-const outlineButtonStyle: CSSProperties = { background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 18px", color: "#475569", fontWeight: 600, fontSize: 14, cursor: "pointer" };
+const containerStyle: CSSProperties = { padding: "24px", maxWidth: 1200, margin: "0 auto" };
+const pageHeaderStyle: CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16, marginBottom: 18 };
+const titleStyle: CSSProperties = { margin: 0, fontSize: 22, fontWeight: 600, color: "#171717", letterSpacing: "-0.02em" };
+const outlineButtonStyle: CSSProperties = { background: "#fff", border: "1px solid #e5e5e5", borderRadius: 5, padding: "10px 18px", color: "#737373", fontWeight: 600, fontSize: 14, cursor: "pointer" };
 const summaryGridStyle: CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 24 };
-const summaryCardStyle: CSSProperties = { background: "#fff", borderRadius: 14, padding: "20px 22px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", border: "1px solid #e2e8f0" };
-const summaryLabelStyle: CSSProperties = { color: "#64748b", fontSize: 13, fontWeight: 500, marginBottom: 8 };
-const summaryValueStyle: CSSProperties = { fontSize: 28, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.02em" };
-const searchInputStyle: CSSProperties = { padding: "9px 14px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 14, color: "#0f172a", background: "#fff", minWidth: 220 };
-const tableWrapperStyle: CSSProperties = { background: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)", overflow: "hidden", border: "1px solid #e2e8f0" };
+const summaryCardStyle: CSSProperties = { background: "#fff", borderRadius: 5, padding: "14px 16px", boxShadow: "none", border: "1px solid #e5e5e5" };
+const summaryLabelStyle: CSSProperties = { color: "#737373", fontSize: 13, fontWeight: 500, marginBottom: 8 };
+const summaryValueStyle: CSSProperties = { fontSize: 22, fontWeight: 600, color: "#171717", letterSpacing: "-0.02em" };
+const searchInputStyle: CSSProperties = { padding: "9px 14px", borderRadius: 5, border: "1px solid #e5e5e5", fontSize: 14, color: "#171717", background: "#fff", minWidth: 220 };
+const tableWrapperStyle: CSSProperties = { background: "#fff", borderRadius: 5, boxShadow: "none", overflow: "hidden", border: "1px solid #e5e5e5" };
 const tableStyle: CSSProperties = { width: "100%", borderCollapse: "collapse" };
-const thStyle: CSSProperties = { background: "#f8fafc", padding: "14px 20px", textAlign: "left", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b", borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap" };
-const tdStyle: CSSProperties = { padding: "14px 20px", borderBottom: "1px solid #f1f5f9", fontSize: 14, color: "#334155", verticalAlign: "middle" };
-const emptyTdStyle: CSSProperties = { ...tdStyle, textAlign: "center", padding: "60px 20px", color: "#64748b" };
+const thStyle: CSSProperties = { background: "#fafaf9", padding: "10px 12px", textAlign: "left", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#737373", borderBottom: "1px solid #e5e5e5", whiteSpace: "nowrap" };
+const tdStyle: CSSProperties = { padding: "10px 12px", borderBottom: "1px solid #f5f5f4", fontSize: 14, color: "#404040", verticalAlign: "middle" };
+const emptyTdStyle: CSSProperties = { ...tdStyle, textAlign: "center", padding: "24px 16px", color: "#737373" };
 const badgeBase: CSSProperties = { display: "inline-block", padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, textTransform: "capitalize", whiteSpace: "nowrap" };
-const skeletonHeaderStyle: CSSProperties = { height: 52, background: "#e2e8f0", borderRadius: 12, marginBottom: 24 };
-const skeletonCardStyle: CSSProperties = { height: 90, background: "#e2e8f0", borderRadius: 14 };
-const skeletonTableStyle: CSSProperties = { height: 360, background: "#e2e8f0", borderRadius: 16 };
+const skeletonHeaderStyle: CSSProperties = { height: 52, background: "#e5e5e5", borderRadius: 5, marginBottom: 24 };
+const skeletonCardStyle: CSSProperties = { height: 90, background: "#e5e5e5", borderRadius: 5 };
+const skeletonTableStyle: CSSProperties = { height: 360, background: "#e5e5e5", borderRadius: 5 };

@@ -12,6 +12,7 @@ import com.example.shop.modules.cart.repository.CartItemRepository;
 import com.example.shop.modules.product.entity.Product;
 import com.example.shop.modules.product.repository.ProductRepository;
 import com.example.shop.modules.user.entity.User;
+import com.example.shop.modules.resale.service.SellerListingCatalog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
@@ -35,6 +36,7 @@ public class CartServiceImpl implements CartService {
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
     private final CacheInvalidationEventPublisher cacheInvalidationEventPublisher;
+    private final SellerListingCatalog sellerListingCatalog;
 
     @Override
     @Transactional(readOnly = true)
@@ -175,6 +177,14 @@ public class CartServiceImpl implements CartService {
         if (!StringUtils.hasText(productID)) {
             throw new BusinessException("productID is required", HttpStatus.BAD_REQUEST);
         }
+        if (productID.startsWith("LISTING:")) {
+            var listing = sellerListingCatalog.resolve(productID);
+            return sellerListingCatalog.retailProduct(listing, productID);
+        }
+        if (productID.startsWith("SUPPLIER:")) {
+            var offer = sellerListingCatalog.resolveDirectOffer(productID);
+            return sellerListingCatalog.directRetailProduct(offer, productID);
+        }
         Product product = productRepository.findByProductID(productID)
                 .orElseThrow(() -> new BusinessException("Product not found", HttpStatus.NOT_FOUND));
         if (Boolean.FALSE.equals(product.getActive())) {
@@ -196,9 +206,17 @@ public class CartServiceImpl implements CartService {
         if (productIds.isEmpty()) {
             return Map.of();
         }
-        return productRepository.findByProductIDIn(productIds)
-                .stream()
-                .collect(Collectors.toMap(Product::getProductID, Function.identity()));
+        Map<String, Product> result = productRepository.findByProductIDIn(productIds)
+                .stream().collect(Collectors.toMap(Product::getProductID, Function.identity()));
+        for (String id : productIds) if (id.startsWith("LISTING:") || id.startsWith("SUPPLIER:")) {
+            try {
+                result.put(id, id.startsWith("LISTING:")
+                        ? sellerListingCatalog.retailProduct(sellerListingCatalog.resolve(id), id)
+                        : sellerListingCatalog.directRetailProduct(sellerListingCatalog.resolveDirectOffer(id), id));
+            }
+            catch (BusinessException ignored) { }
+        }
+        return result;
     }
 
     private CartCheckoutHealthItemDto buildCheckoutIssue(CartItem cartItem, Product product, int maxAllowedByStock) {
@@ -249,6 +267,13 @@ public class CartServiceImpl implements CartService {
                     .active(true)
                     .reason("INSUFFICIENT_STOCK")
                     .build();
+        }
+
+        int minOrderQuantity = sellerListingCatalog.minimumOrderQuantity(cartItem.getProductID());
+        if (requestedQty > 0 && requestedQty < minOrderQuantity) {
+            return CartCheckoutHealthItemDto.builder().productID(cartItem.getProductID()).productName(productName)
+                    .requestedQuantity(requestedQty).availableQuantity(maxAllowedByStock).active(true)
+                    .reason("BELOW_SUPPLIER_MINIMUM_ORDER_QUANTITY").build();
         }
 
         return null;

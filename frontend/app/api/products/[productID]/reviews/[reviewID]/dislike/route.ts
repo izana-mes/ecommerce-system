@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendApiBaseUrl } from "@/lib/backendApiBase";
+import { decodeCatalogId } from "@/lib/catalogId";
 
 const API_BASE_URL = backendApiBaseUrl().replace(/\/+$/, "");
 
@@ -22,7 +23,8 @@ export async function POST(
   context: { params: Promise<{ productID: string; reviewID: string }> }
 ) {
   try {
-    const { productID, reviewID } = await context.params;
+    const { productID: rawProductID, reviewID } = await context.params;
+    const productID = decodeCatalogId(rawProductID);
         const cookieHeader = getCookieHeader(request);
 
     const response = await fetch(`${API_BASE_URL}/products/${encodeURIComponent(productID)}/reviews/${encodeURIComponent(reviewID)}/dislike`, {

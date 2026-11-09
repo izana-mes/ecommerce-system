@@ -6,6 +6,27 @@ import { useRouter } from "next/navigation";
 import {getUser, subscribeToAuthChanges } from "@/lib/auth";
 import { invalidateProductsCache } from "@/hooks/useProducts";
 import toast from "react-hot-toast";
+import RoleAssistantLauncher from "@/components/management/RoleAssistantLauncher";
+import {
+  LayoutDashboard,
+  FileCheck,
+  Users,
+  ShoppingBag,
+  Boxes,
+  Package,
+  MessageSquare,
+  Clock,
+  ShieldCheck,
+  Cpu,
+  Download,
+  Activity,
+  StickyNote,
+  Settings,
+  RotateCw,
+  Calendar,
+  Video,
+  Handshake,
+} from "lucide-react";
 import "./admin.css";
 
 type AdminUser = {
@@ -37,7 +58,7 @@ type ProductChangeRequest = {
   actionType: "CREATE" | "UPDATE" | "DELETE" | "BULK_UPSERT";
   targetProductId?: string | null;
   requestPayload?: string | null;
-  status: "PENDING" | "APPROVED" | "REJECTED";
+  status: "PENDING" | "APPROVED" | "REJECTED" | "CHANGES_REQUESTED";
   requestedByUserId?: string | null;
   requestedByEmail?: string | null;
   reviewedByUserId?: string | null;
@@ -2136,11 +2157,26 @@ export default function AdminPage() {
 
   const handleReviewProductRequest = async (
     request: ProductChangeRequest,
-    action: "approve" | "reject"
+    action: "approve" | "reject" | "request-changes"
   ) => {
     if (!token) {
       router.replace("/login");
       return;
+    }
+
+    let note: string | undefined;
+    if (action === "request-changes") {
+      const promptNote = window.prompt("Enter requested changes feedback for the submitter (required):");
+      if (!promptNote || !promptNote.trim()) {
+        toast.error("Feedback note is required when requesting changes");
+        return;
+      }
+      note = promptNote.trim();
+    } else if (action === "reject") {
+      const promptNote = window.prompt("Enter rejection reason (optional):");
+      if (promptNote && promptNote.trim()) {
+        note = promptNote.trim();
+      }
     }
 
     setProductRequestProcessingId(request.id);
@@ -2150,7 +2186,7 @@ export default function AdminPage() {
         credentials: "include",
         headers: {
           "Content-Type": "application/json"},
-        body: JSON.stringify({ requestId: request.id, action })});
+        body: JSON.stringify({ requestId: request.id, action, note })});
 
       const data = await response.json();
       if (!response.ok) {
@@ -2161,7 +2197,9 @@ export default function AdminPage() {
       if (loadedTabs.products) {
         await fetchProducts(productSearchTerm);
       }
-      toast.success(`Product request ${action}d`, {
+      invalidateProductsCache();
+      const actionLabel = action === "request-changes" ? "Changes requested" : `${action}d`;
+      toast.success(`Product request: ${actionLabel}`, {
         duration: 2000,
         style: { backgroundColor: "#07bc0c", color: "#fff" }});
     } catch (err) {
@@ -3056,65 +3094,68 @@ export default function AdminPage() {
   }, [ratingAnalytics]);
 
   return (
-    <div className="adminPage jp-seigaiha-bg">
+    <div className="adminPage">
       <div className="adminContainer">
-        <div className="adminHeader">
-          <h1>
-            <span>ADMIN PANEL&nbsp;&nbsp;/&nbsp;&nbsp;管理パネル</span>
-            ダッシュボード — Dashboard
-          </h1>
-          <p>ユーザー・注文・商品・在庫・キャンペーンを管理します。&nbsp;&nbsp;Manage users, orders, products, inventory, and customer campaigns.</p>
-          <span className="admJpBadge">管理画面 · Admin System</span>
-        </div>
-
         <div className="adminTopBar">
           <div className="adminTopActions">
             <button className="pageButton" onClick={() => void handleRefreshActiveTab()}>
-              ↻&nbsp; Refresh / 更新
+              <RotateCw size={13} strokeWidth={1.75} />
+              <span>Refresh</span>
+            </button>
+            <button className="pageButton" onClick={() => router.push("/admin/partnerships")}>
+              <Handshake size={13} strokeWidth={1.75} />
+              <span>Partnership Center</span>
+            </button>
+            <button className="pageButton" onClick={() => router.push("/admin/supplier-products")}>
+              <Package size={13} strokeWidth={1.75} />
+              <span>Supplier Product Approval</span>
             </button>
             <button className="pageButton" onClick={() => router.push("/admin/shifts")}>
-              🗓&nbsp; Shifts / シフト
+              <Calendar size={13} strokeWidth={1.75} />
+              <span>Shifts</span>
             </button>
             <button className="pageButton" onClick={() => router.push("/workspace/meetings")}>
-              📅&nbsp; Meetings / 会議
+              <Video size={13} strokeWidth={1.75} />
+              <span>Meetings</span>
             </button>
           </div>
           <span className="syncText">
-            🕐&nbsp;最終同期 / Last sync:&nbsp;{lastUpdatedAt ? formatDateTime(lastUpdatedAt) : "—"}
+            <Clock size={12} strokeWidth={1.75} />
+            <span>Last sync:&nbsp;{lastUpdatedAt ? formatDateTime(lastUpdatedAt) : "—"}</span>
           </span>
         </div>
 
         <div className="adminTabs">
           {([
-            { id: "overview",   icon: "📊", label: "Overview",   jp: "概要" },
-            { id: "requests",   icon: "📋", label: "Requests",   jp: "リクエスト" },
-            { id: "users",      icon: "👥", label: "Users",      jp: "ユーザー" },
-            { id: "orders",     icon: "📦", label: "Orders",     jp: "注文" },
-            { id: "inventory",  icon: "🏪", label: "Inventory",  jp: "在庫" },
-            { id: "products",   icon: "🛍", label: "Products",   jp: "商品" },
-            { id: "comments",   icon: "💬", label: "Reviews",    jp: "レビュー" },
-            { id: "attendance", icon: "🕐", label: "Attendance",  jp: "出勤" },
-            { id: "audit",      icon: "📝", label: "Audit",      jp: "監査" },
-            { id: "queues",     icon: "⚙️", label: "Queues",     jp: "キュー" },
-            { id: "export",     icon: "📤", label: "Export",     jp: "出力" },
-            { id: "health",     icon: "💚", label: "Health",     jp: "健全性" },
-            { id: "notes",      icon: "🗒", label: "Notes",      jp: "メモ" },
-            { id: "settings",   icon: "⚙️", label: "Settings",   jp: "設定" },
-          ] as { id: AdminTab; icon: string; label: string; jp: string }[]).map((tab) => (
-            <button
-              key={tab.id}
-              className={`tabButton ${activeTab === tab.id ? "tabButtonActive" : ""}`}
-              onClick={() => setActiveTab(tab.id)}
-              title={`${tab.label} / ${tab.jp}`}
-            >
-              {tab.icon}&nbsp;{tab.label}
-              {activeTab === tab.id && (
-                <span style={{ display: "block", fontSize: "9px", opacity: 0.75, marginTop: "1px", letterSpacing: "0.05em", fontFamily: "'Noto Sans JP', sans-serif" }}>
-                  {tab.jp}
-                </span>
-              )}
-            </button>
-          ))}
+            { id: "overview",   icon: LayoutDashboard, label: "Overview" },
+            { id: "requests",   icon: FileCheck,       label: "Requests" },
+            { id: "users",      icon: Users,           label: "Users" },
+            { id: "orders",     icon: ShoppingBag,     label: "Orders" },
+            { id: "inventory",  icon: Boxes,           label: "Inventory" },
+            { id: "products",   icon: Package,         label: "Products" },
+            { id: "comments",   icon: MessageSquare,   label: "Reviews" },
+            { id: "attendance", icon: Clock,           label: "Attendance" },
+            { id: "audit",      icon: ShieldCheck,     label: "Audit" },
+            { id: "queues",     icon: Cpu,             label: "Queues" },
+            { id: "export",     icon: Download,        label: "Export" },
+            { id: "health",     icon: Activity,        label: "Health" },
+            { id: "notes",      icon: StickyNote,      label: "Notes" },
+            { id: "settings",   icon: Settings,        label: "Settings" },
+          ] as { id: AdminTab; icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>; label: string }[]).map((tab) => {
+            const Icon = tab.icon;
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                className={`tabButton ${active ? "tabButtonActive" : ""}`}
+                onClick={() => setActiveTab(tab.id)}
+                title={tab.label}
+              >
+                <Icon size={14} strokeWidth={1.75} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {activeTab === "overview" ? (
@@ -3216,11 +3257,15 @@ export default function AdminPage() {
 
                 <div className="overviewSections">
                   <div className="overviewSection">
-                    <h3>Coupons & Vouchers</h3>
-                    <p className="sectionHint">
-                      
-                    </p>
                     <div className="actionList">
+                      <button
+                        className="actionItem actionItem-info"
+                        onClick={() => router.push("/admin/partnerships")}
+                      >
+                        <strong>Open Partnership Center</strong>
+                        <span>Resale & Authorizations</span>
+                        <small>Monitor Supplier–Seller requests, audit decisions, and inspect authorizations.</small>
+                      </button>
                       <button
                         className="actionItem actionItem-info"
                         onClick={() => router.push("/admin/coupons")}
@@ -3670,14 +3715,13 @@ export default function AdminPage() {
               <>
                 <div style={{ marginBottom: 12 }}>
                   <h3 style={{ marginBottom: 6 }}>Product Submission Requests</h3>
-                  <p className="sectionHint"></p>
                 </div>
                 <div className="adminTableWrapper" style={{ marginBottom: 24 }}>
                   <table className="adminTable">
                     <thead>
                       <tr>
                         <th>Action</th>
-                        <th>Supplier</th>
+                        <th>Submitter</th>
                         <th>Product</th>
                         <th>Submitted</th>
                         <th>Details</th>
@@ -3723,6 +3767,15 @@ export default function AdminPage() {
                                   </button>
                                   <button
                                     className="adminActionButton"
+                                    style={{ background: "#ea580c", borderColor: "#c2410c", color: "#fff" }}
+                                    disabled={isProcessing}
+                                    onClick={() => void handleReviewProductRequest(request, "request-changes")}
+                                  >
+                                    Request Changes
+                                  </button>
+                                  <button
+                                    className="adminActionButton"
+                                    style={{ background: "#dc2626", borderColor: "#b91c1c", color: "#fff" }}
                                     disabled={isProcessing}
                                     onClick={() => void handleReviewProductRequest(request, "reject")}
                                   >
@@ -3740,7 +3793,6 @@ export default function AdminPage() {
 
                 <div style={{ marginBottom: 12 }}>
                   <h3 style={{ marginBottom: 6 }}>Supplier Access Requests</h3>
-                  <p className="sectionHint"></p>
                 </div>
                 <div className="adminTableWrapper">
                   <table className="adminTable">
@@ -3801,7 +3853,6 @@ export default function AdminPage() {
 
                 <div style={{ marginTop: 20, marginBottom: 12 }}>
                   <h3 style={{ marginBottom: 6 }}>Seller Access Requests</h3>
-                  <p className="sectionHint"></p>
                 </div>
                 <div className="adminTableWrapper">
                   <table className="adminTable">
@@ -5648,7 +5699,7 @@ export default function AdminPage() {
           <>
             <div className="exportGrid">
               <div className="exportCard">
-                <div className="exportCardIcon">📦</div>
+                <div className="exportCardIcon"><ShoppingBag size={24} strokeWidth={1.5} /></div>
                 <h4>Export Orders</h4>
                 <p>Download all orders as CSV with customer info, amounts, and statuses</p>
                 <button className="exportButton" disabled={exportingKey !== null} onClick={() => void handleExportOrders()}>
@@ -5656,7 +5707,7 @@ export default function AdminPage() {
                 </button>
               </div>
               <div className="exportCard">
-                <div className="exportCardIcon">👥</div>
+                <div className="exportCardIcon"><Users size={24} strokeWidth={1.5} /></div>
                 <h4>Export Users</h4>
                 <p>Download all user accounts with email, name, and status</p>
                 <button className="exportButton" disabled={exportingKey !== null} onClick={() => void handleExportUsers()}>
@@ -5664,7 +5715,7 @@ export default function AdminPage() {
                 </button>
               </div>
               <div className="exportCard">
-                <div className="exportCardIcon">🛍️</div>
+                <div className="exportCardIcon"><Package size={24} strokeWidth={1.5} /></div>
                 <h4>Export Products</h4>
                 <p>Download product catalog with prices, stock, and active status</p>
                 <button className="exportButton" disabled={exportingKey !== null} onClick={() => void handleExportProducts()}>
@@ -5672,7 +5723,7 @@ export default function AdminPage() {
                 </button>
               </div>
               <div className="exportCard">
-                <div className="exportCardIcon">⭐</div>
+                <div className="exportCardIcon"><MessageSquare size={24} strokeWidth={1.5} /></div>
                 <h4>Export Reviews</h4>
                 <p>Download all product reviews with ratings and comments</p>
                 <button className="exportButton" disabled={exportingKey !== null} onClick={() => void handleExportReviews()}>
@@ -5797,7 +5848,7 @@ export default function AdminPage() {
                     <div key={note.id} className={`noteCard ${note.is_pinned ? "noteCardPinned" : ""}`}>
                       <div className="noteCardHeader">
                         <h4>{note.title || "(Untitled)"}</h4>
-                        {note.is_pinned ? <span className="pinBadge">📌 Pinned</span> : null}
+                        {note.is_pinned ? <span className="pinBadge">Pinned</span> : null}
                       </div>
                       {note.content ? <div className="noteCardContent">{note.content}</div> : null}
                       <div className="noteCardMeta">
@@ -5916,6 +5967,7 @@ export default function AdminPage() {
           </>
         ) : null}
       </div>
+      <RoleAssistantLauncher role="admin" />
     </div>
   );
 }

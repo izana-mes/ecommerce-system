@@ -81,17 +81,14 @@ export default function SupplierBulkUploadPage() {
 
   return (
     <div style={containerStyle}>
-      <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 18 }}>
         <h1 style={titleStyle}>CSV Bulk Upload</h1>
-        <p style={subtitleStyle}>
-          Upload a CSV file to submit multiple product proposals at once. Each row becomes a BULK_UPSERT change request that goes through the standard admin approval workflow.
-        </p>
       </div>
 
       {/* How it works */}
       <div style={infoBoxStyle}>
-        <h2 style={{ margin: "0 0 14px", fontSize: 17, fontWeight: 700, color: "#0f172a" }}>📋 How it works</h2>
-        <ol style={{ margin: 0, paddingLeft: 20, color: "#475569", fontSize: 14, lineHeight: 2 }}>
+        <h2 style={{ margin: "0 0 14px", fontSize: 17, fontWeight: 700, color: "#171717" }}>How it works</h2>
+        <ol style={{ margin: 0, paddingLeft: 20, color: "#737373", fontSize: 14, lineHeight: 2 }}>
           <li>Download the CSV template below.</li>
           <li>Fill in your product data — one product per row.</li>
           <li>Upload the completed CSV using the form below.</li>
@@ -99,17 +96,17 @@ export default function SupplierBulkUploadPage() {
           <li>Track the outcome in your <strong>Catalog Management</strong> submission history.</li>
         </ol>
         <div style={csvSpecStyle}>
-          <strong style={{ display: "block", marginBottom: 8, color: "#0f172a" }}>Required columns:</strong>
-          <code style={{ display: "block", background: "#f1f5f9", padding: "10px 14px", borderRadius: 8, fontSize: 13, color: "#334155", lineHeight: 1.8 }}>
+          <strong style={{ display: "block", marginBottom: 8, color: "#171717" }}>Required columns:</strong>
+          <code style={{ display: "block", background: "#f5f5f4", padding: "10px 14px", borderRadius: 5, fontSize: 13, color: "#404040", lineHeight: 1.8 }}>
             productID, productName, productPrice
           </code>
-          <strong style={{ display: "block", margin: "12px 0 8px", color: "#0f172a" }}>Optional columns:</strong>
-          <code style={{ display: "block", background: "#f1f5f9", padding: "10px 14px", borderRadius: 8, fontSize: 13, color: "#334155", lineHeight: 1.8 }}>
+          <strong style={{ display: "block", margin: "12px 0 8px", color: "#171717" }}>Optional columns:</strong>
+          <code style={{ display: "block", background: "#f5f5f4", padding: "10px 14px", borderRadius: 5, fontSize: 13, color: "#404040", lineHeight: 1.8 }}>
             category, stockQuantity, sizes (pipe-separated: S|M|L|XL), active (true/false)
           </code>
         </div>
         <button type="button" onClick={() => void downloadTemplate()} style={templateButtonStyle}>
-          ⬇ Download CSV Template
+          Download CSV Template
         </button>
       </div>
 
@@ -117,7 +114,7 @@ export default function SupplierBulkUploadPage() {
       <div
         style={{
           ...dropZoneStyle,
-          borderColor: dragOver ? "#14b8a6" : selectedFile ? "#14b8a6" : "#e2e8f0",
+          borderColor: dragOver ? "#14b8a6" : selectedFile ? "#14b8a6" : "#e5e5e5",
           background: dragOver ? "#f0fdfa" : selectedFile ? "#f0fdfa" : "#fafafa"}}
         onDragOver={e => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
@@ -135,16 +132,15 @@ export default function SupplierBulkUploadPage() {
           style={{ display: "none" }}
           onChange={e => handleFileChange(e.target.files?.[0] ?? null)}
         />
-        <div style={{ fontSize: 40, marginBottom: 12 }}>{selectedFile ? "✅" : "📤"}</div>
         {selectedFile ? (
           <>
-            <div style={{ fontWeight: 700, fontSize: 16, color: "#0f172a", marginBottom: 4 }}>{selectedFile.name}</div>
-            <div style={{ color: "#64748b", fontSize: 14 }}>{(selectedFile.size / 1024).toFixed(1)} KB · Click to change</div>
+            <div style={{ fontWeight: 700, fontSize: 16, color: "#171717", marginBottom: 4 }}>{selectedFile.name}</div>
+            <div style={{ color: "#737373", fontSize: 14 }}>{(selectedFile.size / 1024).toFixed(1)} KB · Click to change</div>
           </>
         ) : (
           <>
-            <div style={{ fontWeight: 600, fontSize: 16, color: "#0f172a", marginBottom: 4 }}>Drag & drop your CSV here</div>
-            <div style={{ color: "#64748b", fontSize: 14 }}>or click to browse files</div>
+            <div style={{ fontWeight: 600, fontSize: 16, color: "#171717", marginBottom: 4 }}>Drag & drop your CSV here</div>
+            <div style={{ color: "#737373", fontSize: 14 }}>or click to browse files</div>
           </>
         )}
       </div>
@@ -178,7 +174,7 @@ export default function SupplierBulkUploadPage() {
         <div style={resultBoxStyle}>
           <div style={{ fontSize: 36, marginBottom: 10 }}>🎉</div>
           <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "#0f166e" }}>Upload Submitted!</h3>
-          <p style={{ color: "#475569", fontSize: 14, margin: "0 0 16px" }}>
+          <p style={{ color: "#737373", fontSize: 14, margin: "0 0 16px" }}>
             Your bulk product submission is now pending admin review.
           </p>
           <div style={resultGridStyle}>
@@ -189,14 +185,14 @@ export default function SupplierBulkUploadPage() {
               { label: "Submitted", value: result.createdAt ? new Date(result.createdAt).toLocaleString() : "—" },
             ].map(r => (
               <div key={r.label} style={resultRowStyle}>
-                <span style={{ color: "#64748b", fontSize: 13 }}>{r.label}</span>
-                <strong style={{ fontSize: 13, color: "#0f172a", fontFamily: r.label === "Request ID" ? "monospace" : "inherit" }}>
+                <span style={{ color: "#737373", fontSize: 13 }}>{r.label}</span>
+                <strong style={{ fontSize: 13, color: "#171717", fontFamily: r.label === "Request ID" ? "monospace" : "inherit" }}>
                   {r.value}
                 </strong>
               </div>
             ))}
           </div>
-          <p style={{ color: "#64748b", fontSize: 13, marginTop: 12, margin: "12px 0 0" }}>
+          <p style={{ color: "#737373", fontSize: 13, marginTop: 12, margin: "12px 0 0" }}>
             Track the outcome in <strong>Catalog Management → Submission history</strong>.
           </p>
         </div>
@@ -205,15 +201,14 @@ export default function SupplierBulkUploadPage() {
   );
 }
 
-const containerStyle: CSSProperties = { padding: "36px 32px", maxWidth: 840, margin: "0 auto" };
-const titleStyle: CSSProperties = { margin: 0, fontSize: 28, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.02em" };
-const subtitleStyle: CSSProperties = { margin: "10px 0 0", color: "#64748b", fontSize: 15, lineHeight: 1.6, maxWidth: 640 };
-const infoBoxStyle: CSSProperties = { background: "#fff", borderRadius: 16, border: "1px solid #e2e8f0", padding: "24px 28px", marginBottom: 24, boxShadow: "0 1px 4px rgba(15,23,42,0.05)" };
+const containerStyle: CSSProperties = { padding: "24px", maxWidth: 840, margin: "0 auto" };
+const titleStyle: CSSProperties = { margin: 0, fontSize: 22, fontWeight: 600, color: "#171717", letterSpacing: "-0.02em" };
+const infoBoxStyle: CSSProperties = { background: "#fff", borderRadius: 5, border: "1px solid #e5e5e5", padding: "24px 28px", marginBottom: 24, boxShadow: "none" };
 const csvSpecStyle: CSSProperties = { marginTop: 18 };
-const templateButtonStyle: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 8, marginTop: 18, padding: "10px 20px", borderRadius: 10, background: "#f0fdfa", color: "#0f766e", border: "1.5px solid #99f6e4", fontWeight: 700, fontSize: 14, cursor: "pointer" };
-const dropZoneStyle: CSSProperties = { border: "2px dashed #e2e8f0", borderRadius: 16, padding: "48px 32px", textAlign: "center", cursor: "pointer", transition: "all 0.2s", userSelect: "none" };
-const uploadButtonStyle: CSSProperties = { background: "#0f766e", color: "#fff", border: "none", borderRadius: 12, padding: "14px 28px", fontWeight: 700, fontSize: 15 };
-const clearButtonStyle: CSSProperties = { background: "#fff", color: "#64748b", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 20px", fontWeight: 600, fontSize: 14, cursor: "pointer" };
-const resultBoxStyle: CSSProperties = { marginTop: 28, background: "#f0fdf4", border: "1.5px solid #86efac", borderRadius: 16, padding: "28px 32px", textAlign: "center" };
-const resultGridStyle: CSSProperties = { display: "grid", gap: 10, textAlign: "left", background: "#fff", borderRadius: 12, padding: "16px 20px", border: "1px solid #e2e8f0" };
-const resultRowStyle: CSSProperties = { display: "flex", justifyContent: "space-between", gap: 20, borderBottom: "1px solid #f1f5f9", paddingBottom: 8 };
+const templateButtonStyle: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 8, marginTop: 18, padding: "10px 20px", borderRadius: 5, background: "#f5f5f4", color: "#404040", border: "1.5px solid #e5e5e5", fontWeight: 700, fontSize: 14, cursor: "pointer" };
+const dropZoneStyle: CSSProperties = { border: "2px dashed #e5e5e5", borderRadius: 5, padding: "48px 32px", textAlign: "center", cursor: "pointer", transition: "all 0.2s", userSelect: "none" };
+const uploadButtonStyle: CSSProperties = { background: "#171717", color: "#fff", border: "none", borderRadius: 5, padding: "14px 28px", fontWeight: 700, fontSize: 15 };
+const clearButtonStyle: CSSProperties = { background: "#fff", color: "#737373", border: "1px solid #e5e5e5", borderRadius: 5, padding: "10px 12px", fontWeight: 600, fontSize: 14, cursor: "pointer" };
+const resultBoxStyle: CSSProperties = { marginTop: 28, background: "#f0fdf4", border: "1.5px solid #86efac", borderRadius: 5, padding: "28px 32px", textAlign: "center" };
+const resultGridStyle: CSSProperties = { display: "grid", gap: 10, textAlign: "left", background: "#fff", borderRadius: 5, padding: "16px 20px", border: "1px solid #e5e5e5" };
+const resultRowStyle: CSSProperties = { display: "flex", justifyContent: "space-between", gap: 20, borderBottom: "1px solid #f5f5f4", paddingBottom: 8 };

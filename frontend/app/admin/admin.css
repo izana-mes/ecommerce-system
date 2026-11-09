@@ -1,77 +1,69 @@
-/* ═══════════════════════════════════════════════════════════
-   ADMIN DASHBOARD — 日本語スタイル PREMIUM DESIGN v2
-   Inspired by Mercari · Yahoo Japan · Rakuten · SmartHR
-   ═══════════════════════════════════════════════════════════ */
-
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-
 /* ── Design Tokens ───────────────────────────────────────── */
 :root {
-  /* Core palette — deep navy + crimson (JP premium) */
-  --adm-bg:          #f0f2f7;
+  --adm-bg:          #fafaf9;
   --adm-bg-pattern:  none;
   --adm-surface:     #ffffff;
-  --adm-surface-2:   #f7f8fc;
-  --adm-surface-3:   #edf0f8;
-  --adm-surface-glass: rgba(255,255,255,0.85);
-  --adm-border:      rgba(180, 195, 225, 0.7);
-  --adm-border-soft: rgba(180, 195, 225, 0.35);
-  --adm-border-strong: rgba(160, 180, 220, 0.9);
+  --adm-surface-2:   #fafaf9;
+  --adm-surface-3:   #f5f5f4;
+  --adm-surface-glass: #ffffff;
+  --adm-border:      #e5e5e5;
+  --adm-border-soft: #f0f0ef;
+  --adm-border-strong: #d4d4d4;
 
-  /* Primary: deep navy blue */
-  --adm-accent:      #1a2e6e;
-  --adm-accent-2:    #2545b8;
-  --adm-accent-3:    #3d63e8;
-  --adm-accent-soft: rgba(26, 46, 110, 0.07);
-  --adm-accent-glow: rgba(37, 69, 184, 0.22);
+  /* Primary accent: slate neutral */
+  --adm-accent:      #171717;
+  --adm-accent-2:    #404040;
+  --adm-accent-3:    #525252;
+  --adm-accent-soft: #f5f5f5;
+  --adm-accent-glow: transparent;
 
-  /* Crimson — Japanese red (vermillion / enamel) */
-  --adm-red:         #c0392b;
-  --adm-red-2:       #e74c3c;
-  --adm-red-soft:    rgba(192, 57, 43, 0.08);
-  --adm-red-glow:    rgba(192, 57, 43, 0.2);
+  /* Crimson / Red */
+  --adm-red:         #b91c1c;
+  --adm-red-2:       #991b1b;
+  --adm-red-soft:    #fef2f2;
+  --adm-red-glow:    transparent;
 
-  /* Mercari teal accent */
-  --adm-teal:        #009688;
-  --adm-teal-soft:   rgba(0, 150, 136, 0.08);
+  /* Subtle secondary accent */
+  --adm-teal:        #404040;
+  --adm-teal-soft:   #f5f5f5;
 
   /* Text */
-  --adm-text:        #0d1325;
-  --adm-text-2:      #2e3d5f;
-  --adm-text-3:      #6b7a99;
-  --adm-text-jp:     #4a5568;
+  --adm-text:        #171717;
+  --adm-text-2:      #404040;
+  --adm-text-3:      #737373;
+  --adm-text-jp:     #737373;
 
   /* Semantic */
-  --adm-success:     #00897b;
-  --adm-success-bg:  rgba(0,137,123,0.08);
-  --adm-warning:     #e65100;
-  --adm-warning-bg:  rgba(230,81,0,0.08);
-  --adm-danger:      #c0392b;
-  --adm-danger-bg:   rgba(192,57,43,0.08);
-  --adm-info:        #1565c0;
-  --adm-info-bg:     rgba(21,101,192,0.08);
+  --adm-success:     #15803d;
+  --adm-success-bg:  #f0fdf4;
+  --adm-warning:     #b45309;
+  --adm-warning-bg:  #fffbeb;
+  --adm-danger:      #b91c1c;
+  --adm-danger-bg:   #fef2f2;
+  --adm-info:        #526b84;
+  --adm-info-bg:     #f1f5f9;
 
   /* Structure */
-  --adm-radius:      12px;
-  --adm-radius-sm:   8px;
-  --adm-radius-xs:   5px;
+  --adm-radius:      5px;
+  --adm-radius-sm:   4px;
+  --adm-radius-xs:   3px;
   --adm-radius-pill: 999px;
 
   /* Shadows */
-  --adm-shadow:      0 2px 12px rgba(10, 20, 60, 0.08), 0 1px 3px rgba(10,20,60,0.05);
-  --adm-shadow-md:   0 4px 20px rgba(10, 20, 60, 0.1), 0 2px 6px rgba(10,20,60,0.06);
-  --adm-shadow-lg:   0 8px 32px rgba(10, 20, 60, 0.13), 0 4px 12px rgba(10,20,60,0.07);
-  --adm-shadow-card: 0 1px 4px rgba(10,20,60,0.06), 0 0 0 1px rgba(180,195,225,0.5);
+  --adm-shadow:      none;
+  --adm-shadow-md:   none;
+  --adm-shadow-lg:   none;
+  --adm-shadow-card: none;
 
   /* Transitions */
-  --adm-transition:  all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --adm-transition-spring: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --adm-transition:  all 0.15s ease;
+  --adm-transition-spring: all 0.2s ease;
 
   /* Sidebar-style left accent line */
-  --adm-stripe: linear-gradient(180deg, var(--adm-red) 0%, var(--adm-accent-2) 100%);
+  --adm-stripe: var(--adm-accent);
 
   /* Font */
-  --adm-font: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --adm-font: Arial, Helvetica, sans-serif;
 }
 
 /* ── Base / Reset ─────────────────────────────────────────── */
@@ -95,181 +87,76 @@
   gap: 0;
 }
 
-/* ── Dashboard Header ─────────────────────────────────────── */
-.adminHeader {
-  background: linear-gradient(135deg, var(--adm-accent) 0%, #1e3a9a 50%, var(--adm-accent-2) 100%);
-  border-radius: var(--adm-radius);
-  padding: 28px 36px;
-  margin-bottom: 14px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--adm-shadow-lg);
-  animation: admHeaderIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-/* Decorative geometric overlay */
-.adminHeader::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(circle at 85% 50%, rgba(255,255,255,0.08) 0%, transparent 60%),
-    radial-gradient(circle at 5% 80%, rgba(192,57,43,0.15) 0%, transparent 50%);
-  pointer-events: none;
-}
-
-/* Japanese grid lines decoration */
-.adminHeader::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 220px;
-  background-image:
-    repeating-linear-gradient(
-      90deg,
-      rgba(255,255,255,0.04) 0px,
-      rgba(255,255,255,0.04) 1px,
-      transparent 1px,
-      transparent 28px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      rgba(255,255,255,0.04) 0px,
-      rgba(255,255,255,0.04) 1px,
-      transparent 1px,
-      transparent 28px
-    );
-  pointer-events: none;
-}
-
-.adminHeader h1 {
-  margin: 0;
-  font-size: 30px;
-  font-weight: 900;
-  color: #fff;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-  position: relative;
-  z-index: 1;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-
-.adminHeader h1 span {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  color: rgba(255,255,255,0.6);
-  display: block;
-  text-transform: uppercase;
-  margin-bottom: 6px;
-  font-family: 'Noto Sans JP', sans-serif;
-}
-
-.adminHeader p {
-  margin: 8px 0 0;
-  font-size: 13px;
-  color: rgba(255,255,255,0.7);
-  line-height: 1.6;
-  position: relative;
-  z-index: 1;
-}
-
-/* JP watermark badge */
-.adminHeader .admJpBadge {
-  position: absolute;
-  right: 36px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  color: rgba(255,255,255,0.2);
-  text-transform: uppercase;
-  z-index: 1;
-  font-family: 'Noto Sans JP', sans-serif;
-  pointer-events: none;
-}
-
-@keyframes admHeaderIn {
-  0%  { opacity: 0; transform: translateY(-12px) scale(0.99); }
-  100%{ opacity: 1; transform: translateY(0) scale(1); }
-}
-
 /* ── Top Action Bar ──────────────────────────────────────── */
 .adminTopBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 10px;
-  padding: 12px 18px;
+  margin-bottom: 12px;
+  padding: 10px 16px;
   background: var(--adm-surface);
   border: 1px solid var(--adm-border);
   border-radius: var(--adm-radius-sm);
-  box-shadow: var(--adm-shadow-card);
-  animation: admFadeUp 0.45s ease both 0.08s;
+  box-shadow: none;
 }
 
 .adminTopActions {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .syncText {
   font-size: 11px;
   color: var(--adm-text-3);
-  font-weight: 600;
-  letter-spacing: 0.03em;
+  font-weight: 500;
   white-space: nowrap;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 /* ── Tab Navigation ──────────────────────────────────────── */
 .adminTabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
-  margin-bottom: 18px;
-  padding: 5px;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 4px;
   background: var(--adm-surface);
   border: 1px solid var(--adm-border);
   border-radius: var(--adm-radius-sm);
-  box-shadow: var(--adm-shadow-card);
-  animation: admFadeUp 0.45s ease both 0.12s;
+  box-shadow: none;
 }
 
 .tabButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 1px solid transparent;
   background: transparent;
   border-radius: 6px;
-  padding: 8px 14px;
+  padding: 6px 12px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--adm-text-3);
   cursor: pointer;
   transition: var(--adm-transition);
-  letter-spacing: 0.01em;
   white-space: nowrap;
   font-family: var(--adm-font);
 }
 
 .tabButton:hover {
-  background: var(--adm-accent-soft);
-  color: var(--adm-accent-2);
-  border-color: rgba(37,69,184,0.15);
+  background: var(--adm-surface-3);
+  color: var(--adm-text);
 }
 
 .tabButtonActive {
   background: var(--adm-accent) !important;
   color: #fff !important;
-  border-color: transparent !important;
-  box-shadow: 0 2px 8px var(--adm-accent-glow);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .tabButtonActive:hover {
@@ -338,28 +225,22 @@
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  background: linear-gradient(135deg, var(--adm-accent) 0%, var(--adm-accent-2) 100%);
+  background: var(--adm-accent);
   color: #fff;
   transition: var(--adm-transition);
   letter-spacing: 0.02em;
-  box-shadow: 0 2px 8px var(--adm-accent-glow);
+  box-shadow: none;
   font-family: var(--adm-font);
   position: relative;
   overflow: hidden;
 }
 
-.adminActionButton::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 50%);
-  pointer-events: none;
-}
+
 
 .adminActionButton:hover:not(:disabled) {
-  box-shadow: 0 4px 16px var(--adm-accent-glow);
-  transform: translateY(-1px);
-  background: linear-gradient(135deg, var(--adm-accent-2) 0%, var(--adm-accent-3) 100%);
+  box-shadow: none;
+  transform: none;
+  background: var(--adm-accent);
 }
 
 .adminActionButton:disabled {
@@ -374,10 +255,10 @@
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  background: linear-gradient(135deg, var(--adm-red) 0%, var(--adm-red-2) 100%);
+  background: var(--adm-danger);
   color: #fff;
   transition: var(--adm-transition);
-  box-shadow: 0 2px 8px var(--adm-red-glow);
+  box-shadow: none;
   font-family: var(--adm-font);
 }
 
@@ -387,8 +268,8 @@
 }
 
 .dangerButton:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px var(--adm-red-glow);
+  transform: none;
+  box-shadow: none;
   filter: brightness(1.08);
 }
 
@@ -397,7 +278,7 @@
   overflow-x: auto;
   border-radius: var(--adm-radius-sm);
   border: 1px solid var(--adm-border);
-  box-shadow: var(--adm-shadow);
+  box-shadow: none;
   background: var(--adm-surface);
 }
 
@@ -471,123 +352,64 @@
 /* ── Overview Cards Grid ─────────────────────────────────── */
 .overviewCards {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0;
+  margin-bottom: 20px;
+  overflow: hidden;
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-surface);
 }
 
 .overviewCard {
-  background: var(--adm-surface);
-  border: 1px solid var(--adm-border);
-  border-radius: var(--adm-radius);
-  padding: 16px 18px;
-  box-shadow: var(--adm-shadow-card);
-  transition: var(--adm-transition-spring);
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--adm-border);
+  border-bottom: 1px solid var(--adm-border-soft);
+  border-radius: 0;
+  padding: 12px 14px;
+  box-shadow: none;
+  transition: border-color 0.15s ease;
   position: relative;
-  overflow: hidden;
-  animation: admCardIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-/* Top accent stripe */
-.overviewCard::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--adm-accent) 0%, var(--adm-accent-3) 100%);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.3s ease;
-}
-
-/* Corner watermark */
-.overviewCard::after {
-  content: "";
-  position: absolute;
-  bottom: -12px;
-  right: -12px;
-  width: 60px;
-  height: 60px;
-  border: 2px solid rgba(26,46,110,0.06);
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.overviewCard:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--adm-shadow-md);
-  border-color: rgba(37,69,184,0.2);
-}
-
-.overviewCard:hover::before {
-  transform: scaleX(1);
-}
+.overviewCard:hover { background: var(--adm-surface-2); }
 
 .overviewCard p {
   margin: 0 0 6px;
   color: var(--adm-text-3);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .overviewCard h3 {
   margin: 0 0 4px;
-  font-size: 26px;
-  font-weight: 900;
+  font-size: 22px;
+  font-weight: 600;
   color: var(--adm-text);
-  letter-spacing: -0.03em;
-  line-height: 1;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 .overviewCard span {
   color: var(--adm-text-3);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.4;
 }
 
-.overviewCardRevenue {
-  background: linear-gradient(135deg, rgba(26,46,110,0.04) 0%, rgba(37,69,184,0.06) 100%);
-  border-color: rgba(37,69,184,0.2);
+.overviewCardRevenue h3 {
+  color: var(--adm-text);
 }
 
-.overviewCardRevenue::before {
-  transform: scaleX(1);
+.overviewCardWarning h3 {
+  color: var(--adm-warning);
 }
 
-.overviewCardRevenue h3 { color: var(--adm-accent-2); }
-
-.overviewCardWarning {
-  background: linear-gradient(135deg, rgba(230,81,0,0.04) 0%, rgba(245,127,23,0.06) 100%);
-  border-color: rgba(230,81,0,0.2);
-}
-
-.overviewCardWarning::before {
-  background: linear-gradient(90deg, var(--adm-warning) 0%, #f57c00 100%);
-  transform: scaleX(1);
-}
-
-.overviewCardWarning h3 { color: var(--adm-warning); }
-
-.overviewCardDanger {
-  background: linear-gradient(135deg, rgba(192,57,43,0.04) 0%, rgba(231,76,60,0.06) 100%);
-  border-color: rgba(192,57,43,0.2);
-}
-
-.overviewCardDanger::before {
-  background: linear-gradient(90deg, var(--adm-red) 0%, var(--adm-red-2) 100%);
-  transform: scaleX(1);
-}
-
-.overviewCardDanger h3 { color: var(--adm-red); }
-
-@keyframes admCardIn {
-  0%  { opacity: 0; transform: translateY(18px) scale(0.97); }
-  100%{ opacity: 1; transform: translateY(0) scale(1); }
+.overviewCardDanger h3 {
+  color: var(--adm-danger);
 }
 
 /* ── Overview Sections (charts/tables side-by-side) ─────── */
@@ -622,8 +444,8 @@
   border: 1px solid var(--adm-border);
   border-radius: var(--adm-radius);
   padding: 18px 20px;
-  box-shadow: var(--adm-shadow-card);
-  animation: admFadeUp 0.5s ease both;
+  box-shadow: none;
+  animation: none;
 }
 
 .overviewSection h3 {
@@ -669,7 +491,7 @@
 .actionItem:hover {
   transform: translateX(4px);
   border-color: var(--adm-accent-2);
-  box-shadow: var(--adm-shadow);
+  box-shadow: none;
   background: rgba(26,46,110,0.02);
 }
 
@@ -721,7 +543,7 @@
 .trendBarFill {
   width: 100%;
   border-radius: 4px 4px 2px 2px;
-  background: linear-gradient(180deg, var(--adm-accent-3) 0%, var(--adm-accent) 100%);
+  background: var(--adm-accent);
   transition: var(--adm-transition);
   cursor: pointer;
 }
@@ -732,7 +554,7 @@
 }
 
 .wishlistTrendFill {
-  background: linear-gradient(180deg, #26a69a 0%, var(--adm-success) 100%);
+  background: var(--adm-accent);
 }
 
 .trendBarItem label {
@@ -770,7 +592,7 @@
 
 .funnelBarFill {
   height: 100%;
-  background: linear-gradient(90deg, var(--adm-accent) 0%, var(--adm-accent-3) 100%);
+  background: var(--adm-accent);
   border-radius: inherit;
   transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -926,7 +748,7 @@
   border-radius: var(--adm-radius);
   padding: 20px;
   margin-bottom: 16px;
-  box-shadow: var(--adm-shadow-card);
+  box-shadow: none;
 }
 
 .ratingAnalyticsHeader {
@@ -1001,7 +823,7 @@
 
 .ratingBarFill {
   height: 100%;
-  background: linear-gradient(90deg, var(--adm-accent) 0%, var(--adm-accent-3) 100%);
+  background: var(--adm-accent);
   border-radius: inherit;
   transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -1027,7 +849,7 @@
   border-radius: var(--adm-radius);
   padding: 22px;
   margin-bottom: 16px;
-  box-shadow: var(--adm-shadow-card);
+  box-shadow: none;
 }
 
 .productForm h3 {
@@ -1072,7 +894,7 @@
 
 .productInput:focus {
   border-color: var(--adm-accent-2);
-  box-shadow: 0 0 0 3px rgba(37,69,184,0.12);
+  box-shadow: none;
 }
 
 .productInput:disabled {
@@ -1187,7 +1009,7 @@
 
 .statusSelect:focus {
   border-color: var(--adm-accent-2);
-  box-shadow: 0 0 0 3px rgba(37,69,184,0.12);
+  box-shadow: none;
 }
 
 /* ── Order Detail Row ────────────────────────────────────── */
@@ -1231,7 +1053,7 @@
   background: var(--adm-surface);
   padding: 15px 16px;
   transition: var(--adm-transition-spring);
-  box-shadow: var(--adm-shadow-card);
+  box-shadow: none;
   position: relative;
   overflow: hidden;
 }
@@ -1241,12 +1063,12 @@
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--adm-accent) 0%, var(--adm-accent-3) 100%);
+  background: var(--adm-accent);
 }
 
 .inventoryCard:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--adm-shadow-md);
+  transform: none;
+  box-shadow: none;
 }
 
 .inventoryCard p {
@@ -1270,14 +1092,14 @@
   border-color: rgba(230,81,0,0.25);
   background: rgba(230,81,0,0.03);
 }
-.inventoryCardWarning::before { background: linear-gradient(90deg, var(--adm-warning), #f57c00); }
+.inventoryCardWarning::before { background: var(--adm-warning); }
 .inventoryCardWarning h3 { color: var(--adm-warning); }
 
 .inventoryCardDanger {
   border-color: rgba(192,57,43,0.25);
   background: rgba(192,57,43,0.03);
 }
-.inventoryCardDanger::before { background: linear-gradient(90deg, var(--adm-red), var(--adm-red-2)); }
+.inventoryCardDanger::before { background: var(--adm-danger); }
 .inventoryCardDanger h3 { color: var(--adm-red); }
 
 .inventorySections {
@@ -1291,7 +1113,7 @@
   border: 1px solid var(--adm-border);
   border-radius: var(--adm-radius);
   padding: 16px 18px;
-  box-shadow: var(--adm-shadow-card);
+  box-shadow: none;
 }
 
 .inventorySection h3 {
@@ -1320,21 +1142,21 @@
   background: var(--adm-surface);
   padding: 16px 18px;
   margin-bottom: 16px;
-  box-shadow: var(--adm-shadow-card);
+  box-shadow: none;
 }
 
 .adminInsightPanel-critical {
   border-color: rgba(192,57,43,0.3);
-  background: linear-gradient(180deg, rgba(192,57,43,0.03), transparent);
+  background: var(--adm-accent);
 }
 .adminInsightPanel-attention,
 .adminInsightPanel-unavailable {
   border-color: rgba(230,81,0,0.3);
-  background: linear-gradient(180deg, rgba(230,81,0,0.03), transparent);
+  background: var(--adm-accent);
 }
 .adminInsightPanel-healthy {
   border-color: rgba(0,137,123,0.3);
-  background: linear-gradient(180deg, rgba(0,137,123,0.03), transparent);
+  background: var(--adm-accent);
 }
 
 .adminInsightHeader {
@@ -1509,7 +1331,7 @@
   border-radius: var(--adm-radius);
   background: var(--adm-surface);
   padding: 15px 16px;
-  box-shadow: var(--adm-shadow-card);
+  box-shadow: none;
   position: relative;
   overflow: hidden;
   transition: var(--adm-transition-spring);
@@ -1520,12 +1342,12 @@
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--adm-accent) 0%, var(--adm-accent-3) 100%);
+  background: var(--adm-accent);
 }
 
 .queueCard:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--adm-shadow-md);
+  transform: none;
+  box-shadow: none;
 }
 
 .queueCard p {
@@ -1545,15 +1367,15 @@
   letter-spacing: -0.03em;
 }
 
-.queueCardWarn::before   { background: linear-gradient(90deg, var(--adm-warning), #f57c00); }
+.queueCardWarn::before   { background: var(--adm-warning); }
 .queueCardWarn { border-color: rgba(230,81,0,0.25); background: rgba(230,81,0,0.03); }
 .queueCardWarn h3 { color: var(--adm-warning); }
 
-.queueCardDanger::before { background: linear-gradient(90deg, var(--adm-red), var(--adm-red-2)); }
+.queueCardDanger::before { background: var(--adm-danger); }
 .queueCardDanger { border-color: rgba(192,57,43,0.25); background: rgba(192,57,43,0.03); }
 .queueCardDanger h3 { color: var(--adm-red); }
 
-.queueCardOk::before { background: linear-gradient(90deg, var(--adm-teal), #26a69a); }
+.queueCardOk::before { background: var(--adm-success); }
 .queueCardOk { border-color: rgba(0,150,136,0.25); background: rgba(0,150,136,0.03); }
 .queueCardOk h3 { color: var(--adm-success); }
 
@@ -1594,7 +1416,7 @@
   gap: 10px;
   text-align: center;
   transition: var(--adm-transition-spring);
-  box-shadow: var(--adm-shadow-card);
+  box-shadow: none;
   cursor: default;
   position: relative;
   overflow: hidden;
@@ -1605,7 +1427,7 @@
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--adm-accent) 0%, var(--adm-accent-3) 100%);
+  background: var(--adm-accent);
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.3s ease;
@@ -1613,8 +1435,8 @@
 
 .exportCard:hover {
   border-color: rgba(37,69,184,0.25);
-  box-shadow: var(--adm-shadow-md);
-  transform: translateY(-4px);
+  box-shadow: none;
+  transform: none;
 }
 
 .exportCard:hover::before {
@@ -1648,17 +1470,17 @@
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  background: linear-gradient(135deg, var(--adm-accent), var(--adm-accent-2));
+  background: var(--adm-accent);
   color: #fff;
   transition: var(--adm-transition);
-  box-shadow: 0 2px 8px var(--adm-accent-glow);
+  box-shadow: none;
   font-family: var(--adm-font);
   letter-spacing: 0.02em;
 }
 
 .exportButton:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px var(--adm-accent-glow);
+  transform: none;
+  box-shadow: none;
   filter: brightness(1.08);
 }
 
@@ -1691,7 +1513,7 @@
   background: var(--adm-surface);
   padding: 16px 18px;
   position: relative;
-  box-shadow: var(--adm-shadow-card);
+  box-shadow: none;
   transition: var(--adm-transition-spring);
   overflow: hidden;
 }
@@ -1701,12 +1523,12 @@
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--adm-teal), #26a69a);
+  background: var(--adm-accent);
 }
 
 .healthCard:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--adm-shadow-md);
+  transform: none;
+  box-shadow: none;
 }
 
 .healthCard p {
@@ -1742,19 +1564,14 @@
 }
 
 .healthDotGreen {
-  background: #00897b;
-  box-shadow: 0 0 0 3px rgba(0,137,123,0.2);
-  animation: healthPulse 2.5s infinite;
+  background: #15803d;
+  box-shadow: none;
+  animation: none;
 }
 
 .healthDotRed {
-  background: #c0392b;
-  box-shadow: 0 0 0 3px rgba(192,57,43,0.2);
-}
-
-@keyframes healthPulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 3px rgba(0,137,123,0.2); }
-  50%       { opacity: 0.6; box-shadow: 0 0 0 6px rgba(0,137,123,0.1); }
+  background: #b91c1c;
+  box-shadow: none;
 }
 
 .healthSections {
@@ -1768,7 +1585,7 @@
   border: 1px solid var(--adm-border);
   border-radius: var(--adm-radius);
   padding: 16px 18px;
-  box-shadow: var(--adm-shadow-card);
+  box-shadow: none;
 }
 
 .healthSection h3 {
@@ -1822,7 +1639,7 @@
   border-radius: var(--adm-radius);
   padding: 20px 22px;
   margin-bottom: 16px;
-  box-shadow: var(--adm-shadow-card);
+  box-shadow: none;
 }
 
 .noteForm h3 {
@@ -1863,7 +1680,7 @@
 
 .noteTextarea:focus {
   border-color: var(--adm-accent-2);
-  box-shadow: 0 0 0 3px rgba(37,69,184,0.12);
+  box-shadow: none;
 }
 
 .noteFormRow {
@@ -1888,7 +1705,7 @@
   flex-direction: column;
   gap: 9px;
   transition: var(--adm-transition-spring);
-  box-shadow: var(--adm-shadow-card);
+  box-shadow: none;
   position: relative;
   overflow: hidden;
 }
@@ -1898,15 +1715,15 @@
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--adm-accent) 0%, var(--adm-accent-3) 100%);
+  background: var(--adm-accent);
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.3s ease;
 }
 
 .noteCard:hover {
-  box-shadow: var(--adm-shadow-md);
-  transform: translateY(-3px);
+  box-shadow: none;
+  transform: none;
 }
 
 .noteCard:hover::before {
@@ -1915,11 +1732,11 @@
 
 .noteCardPinned {
   border-color: rgba(230,81,0,0.3);
-  background: linear-gradient(135deg, rgba(230,81,0,0.03), transparent);
+  background: var(--adm-accent);
 }
 
 .noteCardPinned::before {
-  background: linear-gradient(90deg, var(--adm-warning), #f57c00);
+  background: var(--adm-accent);
   transform: scaleX(1);
 }
 
@@ -1980,7 +1797,7 @@
   padding: 22px;
   display: grid;
   gap: 22px;
-  box-shadow: var(--adm-shadow-card);
+  box-shadow: none;
 }
 
 .settingsSection { display: grid; gap: 12px; }
@@ -2068,7 +1885,7 @@
 
 .settingsInput:focus {
   border-color: var(--adm-accent-2);
-  box-shadow: 0 0 0 3px rgba(37,69,184,0.12);
+  box-shadow: none;
 }
 
 .settingsValueGroup { display: grid; gap: 7px; }
@@ -2145,18 +1962,18 @@
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  background: linear-gradient(135deg, var(--adm-accent), var(--adm-accent-2));
+  background: var(--adm-accent);
   color: #fff;
   white-space: nowrap;
   transition: var(--adm-transition);
-  box-shadow: 0 2px 8px var(--adm-accent-glow);
+  box-shadow: none;
   letter-spacing: 0.03em;
   font-family: var(--adm-font);
 }
 
 .settingsSaveBtn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px var(--adm-accent-glow);
+  transform: none;
+  box-shadow: none;
   filter: brightness(1.08);
 }
 
@@ -2165,25 +1982,7 @@
   cursor: not-allowed;
 }
 
-/* ── Shared Animations ───────────────────────────────────── */
-@keyframes admFadeIn {
-  0%  { opacity: 0; }
-  100%{ opacity: 1; }
-}
-
-@keyframes admFadeUp {
-  0%  { opacity: 0; transform: translateY(10px); }
-  100%{ opacity: 1; transform: translateY(0); }
-}
-
 /* ── Section Hints ───────────────────────────────────────── */
-.sectionHint {
-  font-size: 12px;
-  color: var(--adm-text-3);
-  margin: -8px 0 12px;
-  line-height: 1.5;
-}
-
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 1200px) {
   .overviewCards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -2201,9 +2000,6 @@
 
 @media (max-width: 768px) {
   .adminPage { padding: 12px 8px 48px; }
-
-  .adminHeader { padding: 20px 22px; }
-  .adminHeader h1 { font-size: 22px; }
 
   .adminTopBar { flex-direction: column; align-items: stretch; }
   .adminPagination { flex-direction: column; align-items: stretch; }
@@ -2241,7 +2037,6 @@
 
 @media (max-width: 450px) {
   .overviewCards { grid-template-columns: 1fr; }
-  .adminHeader h1 { font-size: 18px; }
 }
 
 /* ── Webkit Scrollbar & Modern Japanese SaaS Enhancements ── */
@@ -2284,7 +2079,7 @@
 .adminPage select:focus,
 .adminPage textarea:focus {
   border-color: var(--adm-accent-3) !important;
-  box-shadow: 0 0 0 3px var(--adm-accent-glow) !important;
+  box-shadow: none;
 }
 
 .tabButton {

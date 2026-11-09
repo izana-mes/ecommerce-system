@@ -94,11 +94,11 @@ export default function SellerFinancePage() {
   if (loading) {
     return (
       <div style={containerStyle}>
-        <div style={{ height: 52, background: "#e2e8f0", borderRadius: 12, marginBottom: 24 }} />
+        <div style={{ height: 52, background: "#e5e5e5", borderRadius: 5, marginBottom: 24 }} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 24 }}>
-          {[1, 2, 3].map((i) => <div key={i} style={{ height: 110, background: "#e2e8f0", borderRadius: 14 }} />)}
+          {[1, 2, 3].map((i) => <div key={i} style={{ height: 110, background: "#e5e5e5", borderRadius: 5 }} />)}
         </div>
-        <div style={{ height: 400, background: "#e2e8f0", borderRadius: 16 }} />
+        <div style={{ height: 400, background: "#e5e5e5", borderRadius: 5 }} />
       </div>
     );
   }
@@ -108,7 +108,6 @@ export default function SellerFinancePage() {
       <div style={pageHeaderStyle}>
         <div>
           <h1 style={titleStyle}>Finance</h1>
-          <p style={subtitleStyle}>Your balance and transaction history</p>
         </div>
         <button type="button" onClick={() => { setLoading(true); void loadData(); }} style={refreshBtnStyle}>
           ↻ Refresh
@@ -132,9 +131,9 @@ export default function SellerFinancePage() {
             </div>
             <div style={balanceNoteStyle}>Awaiting settlement</div>
           </div>
-          <div style={{ ...balanceCardStyle, borderTop: "3px solid #6366f1" }}>
+          <div style={{ ...balanceCardStyle, borderTop: "3px solid #171717" }}>
             <div style={balanceLabelStyle}>Total Earned (All Time)</div>
-            <div style={{ ...balanceValueStyle, color: "#6366f1" }}>
+            <div style={{ ...balanceValueStyle, color: "#171717" }}>
               {balance.currency} {balance.totalEarned.toFixed(2)}
             </div>
             <div style={balanceNoteStyle}>Lifetime earnings</div>
@@ -145,9 +144,9 @@ export default function SellerFinancePage() {
       {/* Transactions */}
       <div style={{ marginTop: 32 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0f172a" }}>Transaction History</h2>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#171717" }}>Transaction History</h2>
           {txPage && (
-            <span style={{ color: "#64748b", fontSize: 13 }}>
+            <span style={{ color: "#737373", fontSize: 13 }}>
               Showing {transactions.length} of {txPage.totalElements}
             </span>
           )}
@@ -166,7 +165,7 @@ export default function SellerFinancePage() {
               <tbody>
                 {transactions.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: "center", padding: "60px 20px", color: "#64748b" }}>
+                    <td colSpan={6} style={{ textAlign: "center", padding: "24px 16px", color: "#737373" }}>
                       <div style={{ fontSize: 40, marginBottom: 12 }}>💸</div>
                       <div style={{ fontWeight: 600 }}>No transactions yet</div>
                     </td>
@@ -175,7 +174,7 @@ export default function SellerFinancePage() {
                   transactions.map((tx) => (
                     <tr key={tx.id} style={{ background: "#fff" }}>
                       <td style={tdStyle}>
-                        <div style={{ color: "#0f172a", fontWeight: 500, fontSize: 13 }}>
+                        <div style={{ color: "#171717", fontWeight: 500, fontSize: 13 }}>
                           {new Date(tx.createdAt).toLocaleString()}
                         </div>
                       </td>
@@ -183,14 +182,14 @@ export default function SellerFinancePage() {
                         <span style={getTypeBadge(tx.type)}>{tx.type.replace(/_/g, " ")}</span>
                       </td>
                       <td style={tdStyle}>
-                        <div style={{ color: "#334155" }}>{tx.description}</div>
+                        <div style={{ color: "#404040" }}>{tx.description}</div>
                         {tx.orderNumber && (
-                          <div style={{ color: "#94a3b8", fontSize: 12, marginTop: 2 }}>
+                          <div style={{ color: "#737373", fontSize: 12, marginTop: 2 }}>
                             Order: {tx.orderNumber}
                           </div>
                         )}
                         {tx.productId && (
-                          <div style={{ color: "#94a3b8", fontSize: 12 }}>
+                          <div style={{ color: "#737373", fontSize: 12 }}>
                             Product: {tx.productId}
                           </div>
                         )}
@@ -208,12 +207,12 @@ export default function SellerFinancePage() {
           </div>
 
           {hasMore && (
-            <div style={{ padding: "16px 20px", borderTop: "1px solid #f1f5f9", textAlign: "center" }}>
+            <div style={{ padding: "16px 20px", borderTop: "1px solid #f5f5f4", textAlign: "center" }}>
               <button
                 type="button"
                 onClick={() => void handleLoadMore()}
                 disabled={loadingMore}
-                style={{ background: "#0f172a", color: "#fff", border: "none", borderRadius: 10, padding: "11px 28px", fontWeight: 600, fontSize: 14, cursor: "pointer" }}
+                style={{ background: "#171717", color: "#fff", border: "none", borderRadius: 5, padding: "11px 28px", fontWeight: 600, fontSize: 14, cursor: "pointer" }}
               >
                 {loadingMore ? "Loading…" : "Load More Transactions"}
               </button>
@@ -230,19 +229,18 @@ function getTypeBadge(type: string): CSSProperties {
   if (type === "ORDER_INCOME") return { ...base, background: "#dcfce7", color: "#166534" };
   if (type === "COMMISSION") return { ...base, background: "#fef9c3", color: "#854d0e" };
   if (type === "REFUND") return { ...base, background: "#fee2e2", color: "#991b1b" };
-  return { ...base, background: "#f1f5f9", color: "#374151" };
+  return { ...base, background: "#f5f5f4", color: "#404040" };
 }
 
-const containerStyle: CSSProperties = { padding: "36px 32px", maxWidth: 1200, margin: "0 auto" };
-const pageHeaderStyle: CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16, marginBottom: 28 };
-const titleStyle: CSSProperties = { margin: 0, fontSize: 28, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.02em" };
-const subtitleStyle: CSSProperties = { margin: "6px 0 0", color: "#64748b", fontSize: 14 };
-const refreshBtnStyle: CSSProperties = { background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 18px", color: "#475569", fontWeight: 600, fontSize: 14, cursor: "pointer" };
+const containerStyle: CSSProperties = { padding: "24px", maxWidth: 1200, margin: "0 auto" };
+const pageHeaderStyle: CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16, marginBottom: 18 };
+const titleStyle: CSSProperties = { margin: 0, fontSize: 22, fontWeight: 600, color: "#171717", letterSpacing: "-0.02em" };
+const refreshBtnStyle: CSSProperties = { background: "#fff", border: "1px solid #e5e5e5", borderRadius: 5, padding: "10px 18px", color: "#737373", fontWeight: 600, fontSize: 14, cursor: "pointer" };
 const balanceGridStyle: CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 };
-const balanceCardStyle: CSSProperties = { background: "#fff", borderRadius: 14, padding: "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", borderTop: "3px solid #e2e8f0" };
-const balanceLabelStyle: CSSProperties = { color: "#64748b", fontSize: 13, fontWeight: 500, marginBottom: 10 };
+const balanceCardStyle: CSSProperties = { background: "#fff", borderRadius: 5, padding: "24px", boxShadow: "none", borderTop: "3px solid #e5e5e5" };
+const balanceLabelStyle: CSSProperties = { color: "#737373", fontSize: 13, fontWeight: 500, marginBottom: 10 };
 const balanceValueStyle: CSSProperties = { fontSize: 32, fontWeight: 800, letterSpacing: "-0.02em", marginBottom: 6 };
-const balanceNoteStyle: CSSProperties = { color: "#94a3b8", fontSize: 12 };
-const tableWrapperStyle: CSSProperties = { background: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)", overflow: "hidden", border: "1px solid #e2e8f0" };
-const thStyle: CSSProperties = { background: "#f8fafc", padding: "14px 20px", textAlign: "left", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b", borderBottom: "1px solid #e2e8f0" };
-const tdStyle: CSSProperties = { padding: "14px 20px", borderBottom: "1px solid #f1f5f9", fontSize: 14, color: "#334155", verticalAlign: "middle" };
+const balanceNoteStyle: CSSProperties = { color: "#737373", fontSize: 12 };
+const tableWrapperStyle: CSSProperties = { background: "#fff", borderRadius: 5, boxShadow: "none", overflow: "hidden", border: "1px solid #e5e5e5" };
+const thStyle: CSSProperties = { background: "#fafaf9", padding: "10px 12px", textAlign: "left", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#737373", borderBottom: "1px solid #e5e5e5" };
+const tdStyle: CSSProperties = { padding: "10px 12px", borderBottom: "1px solid #f5f5f4", fontSize: 14, color: "#404040", verticalAlign: "middle" };

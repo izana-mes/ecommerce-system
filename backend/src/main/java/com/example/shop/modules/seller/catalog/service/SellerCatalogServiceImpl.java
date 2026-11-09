@@ -5,6 +5,7 @@ import com.example.shop.modules.product.dto.ProductDto;
 import com.example.shop.modules.product.entity.Product;
 import com.example.shop.modules.product.mapper.ProductMapper;
 import com.example.shop.modules.product.repository.ProductRepository;
+import com.example.shop.modules.product.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ public class SellerCatalogServiceImpl implements SellerCatalogService {
 
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
+    private final ProductService productService;
 
     @Override
     @Transactional(readOnly = true)
@@ -104,7 +106,7 @@ public class SellerCatalogServiceImpl implements SellerCatalogService {
         Product existing = productRepository.findByProductID(productId)
                 .orElseThrow(() -> new BusinessException("Product not found: " + productId, HttpStatus.NOT_FOUND));
         assertOwnsProduct(existing, sellerUserId);
-        productRepository.delete(existing);
+        productService.deleteProduct(productId);
     }
 
     private void requireSeller(UUID sellerUserId) {

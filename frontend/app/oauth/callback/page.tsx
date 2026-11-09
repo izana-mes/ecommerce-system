@@ -3,21 +3,20 @@
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
-import { setAuth, setUserFromCookieSession , getUser } from "@/lib/auth";
-import { useAppDispatch } from "@/store";
-import { fetchCartAsync } from "@/store/cartSlice";
-import { fetchWishlistAsync } from "@/store/wishListSlice";
+import { homePathForRole, setAuth, setUserFromCookieSession } from "@/lib/auth";
 
 function resolveRole(
   profile: { role?: string; roles?: string[] } | null | undefined
-): "user" | "admin" | "employee" | "supplier" | "shipper" {
+): "user" | "admin" | "employee" | "supplier" | "seller" | "shipper" {
   if (profile?.role === "admin") return "admin";
   if (profile?.role === "employee") return "employee";
   if (profile?.role === "supplier") return "supplier";
+  if (profile?.role === "seller") return "seller";
   if (profile?.role === "shipper") return "shipper";
   if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_ADMIN")) return "admin";
   if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_EMPLOYEE")) return "employee";
   if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_SUPPLIER")) return "supplier";
+  if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_SELLER")) return "seller";
   if (Array.isArray(profile?.roles) && profile.roles.includes("ROLE_SHIPPER")) return "shipper";
 
   return "user";
@@ -25,9 +24,7 @@ function resolveRole(
 
 function OAuthCallbackContent() {
   const router = useRouter();
-  const token = getUser();
   const searchParams = useSearchParams();
-  const dispatch = useAppDispatch();
 
   useEffect(() => {
     const syncOAuthLogin = async () => {
@@ -93,9 +90,6 @@ function OAuthCallbackContent() {
           );
         }
 
-        dispatch(fetchCartAsync());
-        dispatch(fetchWishlistAsync());
-
         const returnToParam = (searchParams.get("returnTo") || "").trim();
         const returnTo =
           returnToParam.startsWith("/") &&
@@ -106,7 +100,7 @@ function OAuthCallbackContent() {
             : "/";
 
         toast.success("Logged in with Google");
-        router.replace(returnTo);
+        router.replace(role === "user" && returnTo !== "/" ? returnTo : homePathForRole(role));
         router.refresh();
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "OAuth login sync failed");
@@ -115,7 +109,7 @@ function OAuthCallbackContent() {
     };
 
     syncOAuthLogin();
-  }, [dispatch, router, searchParams]);
+  }, [router, searchParams]);
 
   return (
     <div style={{ padding: "40px", textAlign: "center" }}>

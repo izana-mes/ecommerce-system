@@ -9,6 +9,8 @@ type ProductPayload = {
   frontImg?: string;
   backImg?: string;
   productName?: string;
+  sku?: string;
+  brand?: string;
   productPrice?: number | string;
   productReviews?: string;
   category?: string;
@@ -65,6 +67,8 @@ export async function POST(request: Request) {
         frontImg: body.frontImg,
         backImg: body.backImg,
         productName: body.productName,
+        sku: body.sku,
+        brand: body.brand,
         productPrice: Number(body.productPrice),
         productReviews: body.productReviews,
         category: body.category,
@@ -102,6 +106,8 @@ export async function PUT(request: Request) {
         frontImg: body.frontImg,
         backImg: body.backImg,
         productName: body.productName,
+        sku: body.sku,
+        brand: body.brand,
         productPrice: Number(body.productPrice),
         productReviews: body.productReviews,
         category: body.category,

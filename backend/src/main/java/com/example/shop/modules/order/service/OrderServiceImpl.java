@@ -15,7 +15,12 @@ import com.example.shop.modules.order.dto.OrderTrackingLineDto;
 import com.example.shop.modules.ordercheckouthistory.service.OrderCheckoutHistoryService;
 import com.example.shop.modules.product.entity.Product;
 import com.example.shop.modules.product.repository.ProductRepository;
+import com.example.shop.modules.resale.entity.SupplierProduct;
+import com.example.shop.modules.resale.repository.SupplierProductRepository;
+import com.example.shop.modules.resale.entity.SellerProductListing;
+import com.example.shop.modules.resale.service.SellerListingCatalog;
 import com.example.shop.modules.user.entity.User;
+import com.example.shop.modules.user.entity.SupplierOperatingMode;
 import com.example.shop.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +53,8 @@ import java.util.stream.Collectors;
 public class OrderServiceImpl implements OrderService {
 
     private final ProductRepository productRepository;
+    private final SupplierProductRepository supplierProductRepository;
+    private final SellerListingCatalog sellerListingCatalog;
     private final CartItemRepository cartItemRepository;
     private final UserRepository userRepository;
     private final JdbcTemplate jdbcTemplate;
@@ -81,24 +88,49 @@ public class OrderServiceImpl implements OrderService {
         }
         List<String> productIds = requestedQtyByProductId.keySet().stream().toList();
 
-        Map<String, Product> productsById = productRepository.findByProductIDIn(productIds)
+        List<String> globalProductIds = productIds.stream().filter(id -> !id.startsWith("LISTING:") && !id.startsWith("SUPPLIER:")).toList();
+        Map<String, Product> productsById = productRepository.findByProductIDIn(globalProductIds)
                 .stream()
                 .collect(Collectors.toMap(Product::getProductID, Function.identity()));
 
-        if (productsById.size() != productIds.size()) {
+        long catalogIds = productIds.stream().filter(id -> id.startsWith("LISTING:") || id.startsWith("SUPPLIER:")).count();
+        if (productsById.size() + catalogIds != productIds.size()) {
             throw new BusinessException("One or more products were not found", HttpStatus.NOT_FOUND);
         }
 
         List<OrderLine> orderLines = new ArrayList<>();
         BigDecimal subtotal = BigDecimal.ZERO;
         for (Map.Entry<String, Integer> entry : requestedQtyByProductId.entrySet()) {
-            Product product = productsById.get(entry.getKey());
+            String catalogItemId = entry.getKey();
+            SellerProductListing listing = catalogItemId.startsWith("LISTING:") ? sellerListingCatalog.resolve(catalogItemId) : null;
+            SupplierProduct directOffer = catalogItemId.startsWith("SUPPLIER:") ? sellerListingCatalog.resolveDirectOffer(catalogItemId) : null;
+            Product product = listing != null ? listing.getSupplierOffer().getProduct()
+                    : (directOffer != null ? directOffer.getProduct() : productsById.get(catalogItemId));
             if (product == null || Boolean.FALSE.equals(product.getActive())) {
                 throw new BusinessException("Product is unavailable: " + entry.getKey(), HttpStatus.CONFLICT);
             }
 
+            // Legacy global Supplier products can be ordered directly only when the Supplier opted in.
+            // A Seller-owned Product remains a Seller sale sourced from its Supplier.
+            User supplier = product.getSupplierUserId() == null ? null : userRepository.findById(product.getSupplierUserId()).orElse(null);
+            if (listing == null && directOffer == null && product.getSupplierUserId() != null && product.getSellerUserId() == null) {
+                if (supplier == null || supplier.getSupplierOperatingMode() != SupplierOperatingMode.SUPPLY_AND_SELL) {
+                    throw new BusinessException("Supplier product is wholesale only and cannot be purchased directly", HttpStatus.CONFLICT);
+                }
+            }
+
             int quantity = entry.getValue();
             int stock = product.getStockQuantity() == null ? 0 : product.getStockQuantity();
+            UUID sellerId = listing == null ? product.getSellerUserId() : listing.getSeller().getId();
+            UUID supplierId = listing != null ? listing.getSupplierUserId() : (directOffer != null ? directOffer.getSupplier().getId() : product.getSupplierUserId());
+            SupplierProduct offer = listing != null ? listing.getSupplierOffer()
+                    : (directOffer != null ? directOffer : (supplierId == null ? null : supplierProductRepository
+                    .findBySupplierIdAndProductProductID(supplierId, product.getProductID()).orElse(null)));
+            if (offer != null && (sellerId != null || directOffer != null || (supplier != null && supplier.getSupplierOperatingMode() == SupplierOperatingMode.SUPPLY_AND_SELL))) {
+                stock = listing != null ? sellerListingCatalog.availableQuantity(listing) : Math.max(0, offer.getStockQuantity() - offer.getReservedQuantity());
+                if (quantity < offer.getMinimumOrderQuantity()) throw new BusinessException("Order quantity is below Supplier MOQ", HttpStatus.CONFLICT);
+                if (!Boolean.TRUE.equals(offer.getApproved()) || !Boolean.TRUE.equals(offer.getAvailable())) throw new BusinessException("Supplier offer is unavailable", HttpStatus.CONFLICT);
+            }
             if (quantity > stock) {
                 throw new BusinessException(
                         "Insufficient stock for product " + product.getProductID() + " (available: " + stock + ")",
@@ -106,10 +138,16 @@ public class OrderServiceImpl implements OrderService {
                 );
             }
 
-            BigDecimal unitPrice = money(product.getProductPrice());
+            BigDecimal unitPrice;
+            if (listing != null) unitPrice = money(listing.getRetailPrice().doubleValue());
+            else if (sellerId == null && offer != null) {
+                if (!Boolean.TRUE.equals(offer.getDirectRetailEnabled()) || offer.getDirectRetailPrice() == null)
+                    throw new BusinessException("Supplier has not enabled direct retail for this offer", HttpStatus.CONFLICT);
+                unitPrice = money(offer.getDirectRetailPrice().doubleValue());
+            } else unitPrice = money(product.getProductPrice());
             BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(quantity)).setScale(2, RoundingMode.HALF_UP);
 
-            orderLines.add(new OrderLine(product, quantity, unitPrice, lineTotal));
+            orderLines.add(new OrderLine(product, quantity, unitPrice, lineTotal, sellerId, supplierId, offer, listing, catalogItemId));
             subtotal = subtotal.add(lineTotal);
         }
 
@@ -191,7 +229,7 @@ public class OrderServiceImpl implements OrderService {
                     .items(orderLines.stream()
                             .map(line -> OrderCreatedEvent.OrderItemSnapshot.builder()
                                     .productId(line.product().getProductID())
-                                    .productName(line.product().getProductName())
+                                    .productName(line.listing() != null && StringUtils.hasText(line.listing().getCustomTitle()) ? line.listing().getCustomTitle() : line.product().getProductName())
                                     .unitPrice(line.unitPrice())
                                     .quantity(line.quantity())
                                     .lineTotal(line.lineTotal())
@@ -515,6 +553,8 @@ public class OrderServiceImpl implements OrderService {
         reserveRequest.setItems(orderLines.stream().map(line -> {
             InventoryReservationDtos.Item item = new InventoryReservationDtos.Item();
             item.setProductId(line.product().getProductID());
+            item.setSupplierOfferId(line.supplierOffer() == null ? null : line.supplierOffer().getId());
+            item.setSellerListingId(line.listing() == null ? null : line.listing().getId());
             item.setQuantity(line.quantity());
             return item;
         }).toList());
@@ -730,9 +770,16 @@ public class OrderServiceImpl implements OrderService {
                     unit_price,
                     quantity,
                     line_total,
+                    seller_listing_id,
+                    seller_user_id,
+                    supplier_user_id,
+                    supplier_offer_id,
+                    sale_channel,
+                    supplier_unit_price,
+                    supplier_line_total,
                     created_at,
                     updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         jdbcTemplate.batchUpdate(
@@ -742,12 +789,21 @@ public class OrderServiceImpl implements OrderService {
                 (PreparedStatement ps, OrderLine line) -> {
                     ps.setLong(1, orderId);
                     ps.setString(2, line.product().getProductID());
-                    ps.setString(3, line.product().getProductName());
+                    ps.setString(3, line.listing() != null && StringUtils.hasText(line.listing().getCustomTitle()) ? line.listing().getCustomTitle() : line.product().getProductName());
                     ps.setBigDecimal(4, line.unitPrice());
                     ps.setInt(5, line.quantity());
                     ps.setBigDecimal(6, line.lineTotal());
-                    ps.setTimestamp(7, timestamp);
-                    ps.setTimestamp(8, timestamp);
+                    ps.setObject(7, line.listing() == null ? null : line.listing().getId());
+                    ps.setObject(8, line.sellerUserId());
+                    ps.setObject(9, line.supplierUserId());
+                    ps.setObject(10, line.supplierOffer() == null ? null : line.supplierOffer().getId());
+                    ps.setString(11, line.sellerUserId() == null ? (line.supplierUserId() == null ? "PLATFORM" : "SUPPLIER_DIRECT") : "SELLER_LISTING");
+                    BigDecimal supplierUnitPrice = line.supplierUserId() == null ? null
+                            : (line.sellerUserId() == null ? line.unitPrice() : line.supplierOffer() == null ? null : line.supplierOffer().getWholesalePrice());
+                    ps.setBigDecimal(12, supplierUnitPrice);
+                    ps.setBigDecimal(13, supplierUnitPrice == null ? null : supplierUnitPrice.multiply(BigDecimal.valueOf(line.quantity())).setScale(2, RoundingMode.HALF_UP));
+                    ps.setTimestamp(14, timestamp);
+                    ps.setTimestamp(15, timestamp);
                 }
         );
     }
@@ -794,7 +850,7 @@ public class OrderServiceImpl implements OrderService {
 
         try {
             Set<String> orderedProductIds = lines.stream()
-                    .map(line -> line.product().getProductID())
+                    .map(OrderLine::catalogItemId)
                     .collect(Collectors.toSet());
 
             List<CartItem> cartItems = cartItemRepository.findByUser(user);
@@ -1050,7 +1106,9 @@ public class OrderServiceImpl implements OrderService {
     private record InsertOrderResult(long id, String trackingSecret) {
     }
 
-    private record OrderLine(Product product, int quantity, BigDecimal unitPrice, BigDecimal lineTotal) {
+    private record OrderLine(Product product, int quantity, BigDecimal unitPrice, BigDecimal lineTotal,
+                             UUID sellerUserId, UUID supplierUserId, SupplierProduct supplierOffer,
+                             SellerProductListing listing, String catalogItemId) {
     }
 
     private record LoyaltyRedemption(int pointsRedeemed, BigDecimal discountAmount) {

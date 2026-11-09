@@ -12,5 +12,11 @@ public class InventoryItemDto {
     private Integer lowStockThreshold;
     private boolean lowStock;
     private boolean active;
+    private String sourceType;
+    private String supplierName;
+    private Integer allocatedQuantity;
+    private Integer soldQuantity;
+    private Integer reservedQuantity;
+    private Integer remainingQuantity;
 }
 

@@ -400,6 +400,47 @@ html[data-theme="dark"] .navJpDivider {
   padding-left: 16px;
 }
 
+.searchProductSuggestion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+}
+
+.searchProductSuggestion img,
+.searchSuggestionImageFallback {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  object-fit: cover;
+  border-radius: 3px;
+  background: var(--surface-2);
+}
+
+.searchSuggestionDetails {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.searchSuggestionDetails > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.searchSuggestionDetails small {
+  color: var(--foreground-2);
+  font-size: 10px;
+}
+
+.searchProductSuggestion > strong {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
 .iconContainer > span {
   color: var(--foreground-2);
   border-radius: 2px;

@@ -51,6 +51,7 @@ services:
       start_period: 60s
 
   backend:
+    image: fui08/ecommerce-backend:latest
     build: ./backend
     restart: unless-stopped
     # network_mode: host  # Removed to use bridge network for proper isolation
@@ -132,6 +133,7 @@ services:
         condition: service_healthy
 
   frontend:
+    image: fui08/ecommerce-frontend:latest
     build:
       context: ./frontend
       args:
@@ -185,6 +187,7 @@ services:
         condition: service_healthy
 
   mcp-server:
+    image: fui08/ecommerce-mcp-server:latest
     build: ./mcp-server
     restart: unless-stopped
     env_file:

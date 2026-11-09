@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MdWarning, MdSend, MdRefresh, MdHelpOutline } from "react-icons/md";
+import { AlertTriangle, Send, RotateCw, HelpCircle } from "lucide-react";
 import {getUser } from "@/lib/auth";
 import { publicBackendOriginUrl } from "@/lib/backendApiBase";
 import { Client, IMessage } from "@stomp/stompjs";
@@ -101,7 +101,7 @@ export default function ShipperIssuesPage() {
         body: JSON.stringify({ issueType, message: issueMessage })});
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed");
-      toast.success("⚠️ Issue reported successfully");
+      toast.success("Issue reported successfully");
       setIssueMessage("");
       if (issueQueryId === issueOrderId) void fetchIssues(issueOrderId);
     } catch (e) {
@@ -150,14 +150,14 @@ export default function ShipperIssuesPage() {
 
   const tabStyle = (tab: "issue" | "help") => ({
     padding: "10px 20px",
-    borderRadius: "10px 10px 0 0",
+    borderRadius: "4px 4px 0 0",
     border: "none",
     cursor: "pointer",
     fontSize: 14,
     fontWeight: 600,
-    background: activeTab === tab ? "rgba(59,130,246,0.15)" : "transparent",
-    color: activeTab === tab ? "#60a5fa" : "#64748b",
-    borderBottom: activeTab === tab ? "2px solid #3b82f6" : "2px solid transparent",
+    background: activeTab === tab ? "#f5f5f4" : "transparent",
+    color: activeTab === tab ? "#171717" : "#737373",
+    borderBottom: activeTab === tab ? "2px solid #404040" : "2px solid transparent",
     transition: "all 0.2s"});
 
   return (
@@ -165,7 +165,6 @@ export default function ShipperIssuesPage() {
       <div className="sh-topbar">
         <div className="sh-topbar-title">
           <h1>Issues & Help</h1>
-          <p>Report delivery issues and send help requests to admins</p>
         </div>
         <div className="sh-topbar-actions">
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -191,11 +190,11 @@ export default function ShipperIssuesPage() {
               {/* Tabs */}
               <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                 <button style={tabStyle("issue")} onClick={() => setActiveTab("issue")}>
-                  <MdWarning style={{ verticalAlign: "middle", marginRight: 6 }} />
+                  <AlertTriangle size={15} strokeWidth={1.75} style={{ verticalAlign: "middle", marginRight: 6 }} />
                   Report Issue
                 </button>
                 <button style={tabStyle("help")} onClick={() => setActiveTab("help")}>
-                  <MdHelpOutline style={{ verticalAlign: "middle", marginRight: 6 }} />
+                  <HelpCircle size={15} strokeWidth={1.75} style={{ verticalAlign: "middle", marginRight: 6 }} />
                   Request Help
                 </button>
               </div>
@@ -238,7 +237,7 @@ export default function ShipperIssuesPage() {
                     disabled={submittingIssue}
                     style={{ width: "100%" }}
                   >
-                    <MdSend /> {submittingIssue ? "Submitting…" : "Report Issue"}
+                    <Send size={14} strokeWidth={1.75} /> {submittingIssue ? "Submitting…" : "Report Issue"}
                   </button>
                 </div>
               ) : (
@@ -262,7 +261,7 @@ export default function ShipperIssuesPage() {
                       <option value="LOW">Low</option>
                       <option value="NORMAL">Normal</option>
                       <option value="HIGH">High</option>
-                      <option value="URGENT">Urgent 🚨</option>
+                      <option value="URGENT">Urgent</option>
                     </select>
                   </div>
                   <div className="sh-form-group">
@@ -278,9 +277,9 @@ export default function ShipperIssuesPage() {
                     className="sh-btn sh-btn-danger"
                     onClick={() => void submitHelpRequest()}
                     disabled={submittingHelp}
-                    style={{ width: "100%", background: "linear-gradient(135deg,#ef4444,#dc2626)", color: "#fff" }}
+                    style={{ width: "100%", background: "#dc2626", color: "#fff" }}
                   >
-                    <MdSend /> {submittingHelp ? "Sending…" : "Send Help Request"}
+                    <Send size={14} strokeWidth={1.75} /> {submittingHelp ? "Sending…" : "Send Help Request"}
                   </button>
                 </div>
               )}
@@ -309,14 +308,13 @@ export default function ShipperIssuesPage() {
             <div className="sh-card-header">
               <div>
                 <h2 className="sh-card-title">Issue Log</h2>
-                <p className="sh-card-subtitle">Search issues by order ID</p>
               </div>
               <button
                 className="sh-btn sh-btn-secondary sh-btn-sm"
                 onClick={() => void fetchIssues(issueQueryId)}
                 disabled={fetchingIssues || !issueQueryId}
               >
-                <MdRefresh />
+                <RotateCw size={14} strokeWidth={1.75} />
               </button>
             </div>
 

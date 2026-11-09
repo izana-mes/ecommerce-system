@@ -11,13 +11,14 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
-@RestController @RequestMapping("/api/ai") @RequiredArgsConstructor
+@RestController @RequestMapping("/api/ai") @RequiredArgsConstructor @Slf4j
 public class AiAssistantController {
  private final AiAssistantService assistant; private final AiRateLimitService rate; private final AiConversationService conversations;
- @PostMapping("/ask") public ResponseEntity<?> ask(@Valid @RequestBody AiChatRequest request,@AuthenticationPrincipal User user,HttpServletRequest http){String identity=user!=null?user.getId().toString():http.getRemoteAddr();if(!rate.allow(identity))return ResponseEntity.status(429).body(Map.of("error","Too many AI requests. Please try again shortly."));try{return ResponseEntity.ok(assistant.ask(request,user));}catch(AccessDeniedException e){return ResponseEntity.status(403).body(Map.of("error","You are not allowed to access that information."));}catch(IllegalArgumentException e){return ResponseEntity.badRequest().body(Map.of("error","Invalid AI request."));}catch(Exception e){return ResponseEntity.status(503).body(Map.of("error","The AI assistant is temporarily unavailable."));}}
+ @PostMapping("/ask") public ResponseEntity<?> ask(@Valid @RequestBody AiChatRequest request,@AuthenticationPrincipal User user,HttpServletRequest http){String identity=user!=null?user.getId().toString():http.getRemoteAddr();if(!rate.allow(identity))return ResponseEntity.status(429).body(Map.of("error","Too many AI requests. Please try again shortly."));try{return ResponseEntity.ok(assistant.ask(request,user));}catch(AccessDeniedException e){return ResponseEntity.status(403).body(Map.of("error","You are not allowed to access that information."));}catch(IllegalArgumentException e){return ResponseEntity.badRequest().body(Map.of("error","Invalid AI request."));}catch(Exception e){log.error("AI assistant request failed requestId={} role={}",http.getHeader("X-Request-Id"),AiAssistantService.roleFor(user),e);return ResponseEntity.status(503).body(Map.of("error","The AI assistant is temporarily unavailable."));}}
  @GetMapping("/conversations") public ResponseEntity<?> list(@AuthenticationPrincipal User user){try{return ResponseEntity.ok(conversations.list(user,audience(user)));}catch(AccessDeniedException e){return ResponseEntity.status(403).body(Map.of("error","Sign in is required."));}}
  @GetMapping("/conversations/{id}") public ResponseEntity<?> get(@PathVariable String id,@AuthenticationPrincipal User user){try{return ResponseEntity.ok(conversations.get(id,user,audience(user)));}catch(AccessDeniedException e){return ResponseEntity.status(404).body(Map.of("error","Conversation not found."));}}
  @DeleteMapping("/conversations/{id}") public ResponseEntity<?> delete(@PathVariable String id,@AuthenticationPrincipal User user){try{conversations.delete(id,user,audience(user));return ResponseEntity.noContent().build();}catch(AccessDeniedException e){return ResponseEntity.status(404).body(Map.of("error","Conversation not found."));}}
- private String audience(User user){return user!=null&&user.getAuthorities().stream().anyMatch(a->"ROLE_ADMIN".equals(a.getAuthority()))?"ADMIN":"CUSTOMER";}
+ private String audience(User user){String role=AiAssistantService.roleFor(user);return role==null||"USER".equals(role)?"CUSTOMER":role;}
 }

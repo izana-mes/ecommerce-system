@@ -24,7 +24,8 @@ import Badge from "@mui/material/Badge";
 import { Bell, Check, Circle, ExternalLink } from "lucide-react";
 import { createOrdersStompClient } from "@/lib/ordersSocket";
 
-type CenterItem = { id: string; kind: "order" | "payment" | "message" | "coupon"; title: string; message: string; createdAt: string; read: boolean; href: string; couponId?: number; couponStatus?: string; coupon?: { title: string; code: string; discountType: string; discountValue: number; minOrderAmount: number; startsAt: string | null; expiresAt: string | null; isActive: boolean } };
+type CenterItem = { id: string; kind: "order" | "payment" | "message" | "coupon" | "product" | "system"; title: string; message: string; createdAt: string; read: boolean; href: string; couponId?: number; couponStatus?: string; coupon?: { title: string; code: string; discountType: string; discountValue: number; minOrderAmount: number; startsAt: string | null; expiresAt: string | null; isActive: boolean } };
+type ProductSuggestion = { productID: string; productName: string; frontImg?: string | null; productPrice?: number | null; sellerUserId?: string | null; supplierUserId?: string | null };
 
 const BASE_LINKS = [
   { href: "/", key: "nav_home" as TranslationKey },
@@ -51,6 +52,8 @@ const JP_LABELS: Partial<Record<TranslationKey, string>> = {
   nav_fulfillment:"発送",
   nav_expenses:   "支出",
   nav_admin:      "管理",
+  nav_seller:     "販売",
+  nav_supplier:   "仕入",
   nav_shipper:    "配送",
 };
 
@@ -89,9 +92,10 @@ export default function Navbar() {
   const [isStaffUser, setIsStaffUser] = useState(false);
   const [isShipperUser, setIsShipperUser] = useState(false);
   const [isSupplierUser, setIsSupplierUser] = useState(false);
+  const [isSellerUser, setIsSellerUser] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
-  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  const [searchSuggestions, setSearchSuggestions] = useState<ProductSuggestion[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [showSearchPopup, setShowSearchPopup] = useState(false);
   const [searchPopupText, setSearchPopupText] = useState("");
@@ -107,7 +111,7 @@ export default function Navbar() {
   const navRef = useRef<HTMLElement | null>(null);
 
   const loadCenter = useCallback(async () => {
-    if (!getUser() || getUser()?.role !== "user") { setCenterItems([]); setCenterUnread(0); return; }
+    if (getUser()?.role !== "user") { setCenterItems([]); setCenterUnread(0); return; }
     try {
       const [noticeResponse, couponResponse] = await Promise.all([
         fetch("/api/notifications", { credentials: "include", cache: "no-store" }),
@@ -175,7 +179,7 @@ export default function Navbar() {
   };
 
   const fetchSearchHistory = useCallback(async () => {
-    if (!getUser()) {
+    if (getUser()?.role !== "user") {
       setSearchHistory([]);
       return;
     }
@@ -199,12 +203,12 @@ export default function Navbar() {
   useEffect(() => {
     const syncAuthState = () => {
       const user = getUser();
-      setHasUser(!!user);
+      setHasUser(user?.role === "user");
       setIsAdminUser(user?.role === "admin");
       setIsStaffUser(user?.role === "employee");
       setIsShipperUser(user?.role === "shipper");
       setIsSupplierUser(user?.role === "supplier");
-      void fetchSearchHistory();
+      setIsSellerUser(user?.role === "seller");
       void refreshCurrentUserFromServer().then((refreshed) => {
         if (!refreshed) {
           setHasUser(false);
@@ -212,14 +216,18 @@ export default function Navbar() {
           setIsStaffUser(false);
           setIsShipperUser(false);
           setIsSupplierUser(false);
+          setIsSellerUser(false);
+          setSearchHistory([]);
           return;
         }
-        setHasUser(true);
+        setHasUser(refreshed.role === "user");
         setIsAdminUser(refreshed.role === "admin");
         setIsStaffUser(refreshed.role === "employee");
         setIsShipperUser(refreshed.role === "shipper");
         setIsSupplierUser(refreshed.role === "supplier");
-        void fetchSearchHistory();
+        setIsSellerUser(refreshed.role === "seller");
+        if (refreshed.role === "user") void fetchSearchHistory();
+        else setSearchHistory([]);
       });
     };
 
@@ -282,7 +290,7 @@ export default function Navbar() {
           const data = await response.json();
           return Array.isArray(data) ? data : [];
         })
-        .then((data: string[]) => {
+        .then((data: ProductSuggestion[]) => {
           if (!isCancelled) {
             setSearchSuggestions(data);
           }
@@ -310,6 +318,11 @@ export default function Navbar() {
     }
     return searchSuggestions;
   }, [searchHistory, searchSuggestions, searchTerm, showHistory]);
+
+  const handleSelectProductSuggestion = (product: ProductSuggestion) => {
+    setShowHistory(false);
+    router.push(`/shop/${encodeURIComponent(product.productID)}`);
+  };
 
   const toggleMenuMobile = () => {
     setMenuMobileOpen((prev) => !prev);
@@ -430,18 +443,25 @@ export default function Navbar() {
     if (isSupplierUser) {
       return [
         ...BASE_LINKS,
-        { href: "/workspace", key: "nav_workspace" as TranslationKey },
+        { href: "/supplier", key: "nav_supplier" as TranslationKey },
+        ...CUSTOMER_LINKS,
+      ];
+    }
+    if (isSellerUser) {
+      return [
+        ...BASE_LINKS,
+        { href: "/seller", key: "nav_seller" as TranslationKey },
         ...CUSTOMER_LINKS,
       ];
     }
     const isRetailCustomer =
-      hasUser && !isAdminUser && !isStaffUser && !isShipperUser && !isSupplierUser;
+      hasUser && !isAdminUser && !isStaffUser && !isShipperUser && !isSupplierUser && !isSellerUser;
     return [
       ...BASE_LINKS,
       ...(isRetailCustomer ? [{ href: "/expenses", key: "nav_expenses" as TranslationKey }] : []),
       ...CUSTOMER_LINKS,
     ];
-  }, [hasUser, isAdminUser, isStaffUser, isShipperUser, isSupplierUser, isPureShipper]);
+  }, [hasUser, isAdminUser, isStaffUser, isShipperUser, isSupplierUser, isSellerUser, isPureShipper]);
 
   const isCurrentLink = useCallback(
     (href: string) => {
@@ -612,7 +632,7 @@ export default function Navbar() {
               </form>
               {dropdownSuggestions.length > 0 && (
                 <div className="searchHistoryDropdown">
-                  {dropdownSuggestions.map((item) => (
+                  {dropdownSuggestions.map((item) => typeof item === "string" ? (
                     <button
                       type="button"
                       key={item}
@@ -623,6 +643,23 @@ export default function Navbar() {
                       }}
                     >
                       {item}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      key={item.productID}
+                      className="searchHistoryItem searchProductSuggestion"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        handleSelectProductSuggestion(item);
+                      }}
+                    >
+                      {item.frontImg ? <img src={item.frontImg} alt="" /> : <span className="searchSuggestionImageFallback" />}
+                      <span className="searchSuggestionDetails">
+                        <span>{item.productName}</span>
+                        <small>{item.sellerUserId ? "Seller" : item.supplierUserId ? "Supplier" : "Shop"}</small>
+                      </span>
+                      {typeof item.productPrice === "number" && <strong>${item.productPrice.toFixed(2)}</strong>}
                     </button>
                   ))}
                 </div>
@@ -640,7 +677,7 @@ export default function Navbar() {
               <FaRegUser size={22} />
             </Link>
           </span>
-          {hasUser && !isAdminUser && !isStaffUser && !isShipperUser && !isSupplierUser ? (
+          {hasUser ? (
             <div className="notificationCenter">
               <button type="button" className="notificationBell" aria-label={`Notifications${centerUnread ? `, ${centerUnread} unread` : ""}`} aria-expanded={centerOpen} onClick={() => { setCenterOpen(value => !value); if (!centerOpen) void loadCenter(); }}>
                 <Badge badgeContent={centerUnread > 99 ? "99+" : centerUnread} color="error"><Bell size={21} /></Badge>
@@ -649,7 +686,7 @@ export default function Navbar() {
                 <button type="button" className="notificationDismiss" aria-label="Close notifications" onClick={() => setCenterOpen(false)} />
                 <section className="notificationPanel" aria-label="Notifications">
                   <header><div><strong>Notifications</strong><small>{centerUnread} unread</small></div><button type="button" onClick={async () => { await fetch("/api/notifications/read-all", { method: "POST", credentials: "include" }); await Promise.all(centerItems.filter(item => item.kind === "coupon" && !item.read && item.couponId).map(item => fetch("/api/coupons/notifications", { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ assignmentId: item.couponId }) }))); await loadCenter(); }}>Mark all read</button></header>
-                  <nav aria-label="Notification categories">{["all", "message", "coupon", "order", "payment"].map(category => <button type="button" key={category} aria-pressed={centerFilter === category} onClick={() => setCenterFilter(category)}>{category === "all" ? "All" : category === "message" ? "Messages" : category === "coupon" ? "Coupons" : category === "payment" ? "Payments" : "Orders"}</button>)}</nav>
+                  <nav aria-label="Notification categories">{["all", "product", "order", "payment", "message", "coupon"].map(category => <button type="button" key={category} aria-pressed={centerFilter === category} onClick={() => setCenterFilter(category)}>{category === "all" ? "All" : category === "product" ? "Product" : category === "order" ? "Orders" : category === "payment" ? "Payments" : category === "message" ? "Messages" : "Coupons"}</button>)}</nav>
                   <div className="notificationList">
                     {centerItems.filter(item => centerFilter === "all" || item.kind === centerFilter).map(item => {
                       const expired = item.coupon?.expiresAt ? Date.parse(item.coupon.expiresAt) < Date.now() : false;
@@ -667,7 +704,14 @@ export default function Navbar() {
                     })}
                     {!centerItems.some(item => centerFilter === "all" || item.kind === centerFilter) && <p className="notificationEmpty">You're all caught up.</p>}
                   </div>
-                  <Link href="/profile#coupons" onClick={() => setCenterOpen(false)}>View coupons and account activity</Link>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderTop: "1px solid #f1f5f9", fontSize: 13 }}>
+                    <Link href="/notifications" onClick={() => setCenterOpen(false)} style={{ color: "#2563eb", fontWeight: 600 }}>
+                      Open Notification Center →
+                    </Link>
+                    <Link href="/profile#coupons" onClick={() => setCenterOpen(false)} style={{ color: "#64748b" }}>
+                      Coupons
+                    </Link>
+                  </div>
                 </section>
               </> : null}
             </div>

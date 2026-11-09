@@ -22,15 +22,22 @@ public class SellerInventoryServiceImpl implements SellerInventoryService {
 
     private final ProductRepository productRepository;
     private final com.example.shop.modules.inventory.repository.InventoryRepository inventoryRepository;
+    private final com.example.shop.modules.resale.repository.SellerProductAllocationRepository allocationRepository;
 
     @Override
     @Transactional(readOnly = true)
     public List<InventoryItemDto> getInventory(UUID sellerUserId, int lowStockThreshold) {
         int safeThreshold = Math.max(1, lowStockThreshold);
-        return productRepository.findBySellerUserIdOrderByIdAsc(sellerUserId)
+        List<InventoryItemDto> owned = productRepository.findBySellerUserIdOrderByIdAsc(sellerUserId)
                 .stream()
                 .map(p -> toDto(p, safeThreshold))
                 .toList();
+        List<InventoryItemDto> resale = allocationRepository.findActiveForSeller(sellerUserId).stream().map(a -> InventoryItemDto.builder()
+                .productId("LISTING:" + a.getListing().getId()).productName(a.getListing().getCustomTitle() == null ? a.getSupplierOffer().getProduct().getProductName() : a.getListing().getCustomTitle())
+                .stockQuantity(a.remaining()).lowStockThreshold(safeThreshold).lowStock(a.remaining() <= safeThreshold).active(Boolean.TRUE.equals(a.getListing().getActive()))
+                .sourceType("SUPPLIER_RESALE").supplierName(a.getSupplierOffer().getSupplier().getName()).allocatedQuantity(a.getAllocatedQuantity())
+                .soldQuantity(a.getSoldQuantity()).reservedQuantity(a.getReservedQuantity()).remainingQuantity(a.remaining()).build()).toList();
+        return java.util.stream.Stream.concat(owned.stream(), resale.stream()).toList();
     }
 
     @Override
@@ -94,6 +101,11 @@ public class SellerInventoryServiceImpl implements SellerInventoryService {
                 .lowStockThreshold(lowStockThreshold)
                 .lowStock(stock <= lowStockThreshold)
                 .active(Boolean.TRUE.equals(product.getActive()))
+                .sourceType("SELLER_OWNED")
+                .allocatedQuantity(stock)
+                .soldQuantity(0)
+                .reservedQuantity(0)
+                .remainingQuantity(stock)
                 .build();
     }
 

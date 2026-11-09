@@ -8,6 +8,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 public final class InventoryReservationDtos {
 
@@ -31,6 +32,10 @@ public final class InventoryReservationDtos {
     public static class Item {
         @NotBlank
         private String productId;
+
+        private UUID supplierOfferId;
+
+        private UUID sellerListingId;
 
         @Min(1)
         private Integer quantity;

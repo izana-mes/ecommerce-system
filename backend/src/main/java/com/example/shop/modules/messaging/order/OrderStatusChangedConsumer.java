@@ -1,6 +1,7 @@
 package com.example.shop.modules.messaging.order;
 
 import com.example.shop.common.mail.EmailService;
+import com.example.shop.common.mail.EmailTemplateService;
 import com.example.shop.config.ConditionalOnRabbitEnabled;
 import com.example.shop.modules.order.service.FulfillmentNotificationService;
 import com.example.shop.modules.notification.service.CustomerNotificationService;
@@ -23,6 +24,7 @@ import java.util.Map;
 public class OrderStatusChangedConsumer {
 
     private final EmailService emailService;
+    private final EmailTemplateService emailTemplateService;
     private final FulfillmentNotificationService fulfillmentNotificationService;
     private final CustomerNotificationService customerNotificationService;
     private final ObjectProvider<StringRedisTemplate> redisTemplateProvider;
@@ -88,6 +90,21 @@ public class OrderStatusChangedConsumer {
         } else if ("failed".equals(newPaymentStatus) && !"failed".equals(safe(event.getOldPaymentStatus()).toLowerCase())) {
             customerNotificationService.createForEmail(event.getCustomerEmail(), "payment-failed:" + safe(event.getOrderNumber()),
                     "payment", "Payment failed", "Payment for order " + safe(event.getOrderNumber()) + " could not be completed.", "/orders");
+            try {
+                String customerName = safe(event.getCustomerName()).isBlank() ? "Customer" : event.getCustomerName();
+                String failEmail = emailTemplateService.generatePaymentResultEmail(
+                        customerName,
+                        event.getOrderNumber(),
+                        false,
+                        null,
+                        null,
+                        "Online payment",
+                        "The payment transaction was cancelled or declined by the provider."
+                );
+                emailService.sendEmail(event.getCustomerEmail(), "Payment Failed - Order " + safe(event.getOrderNumber()), failEmail);
+            } catch (Exception ex) {
+                log.warn("Failed to send payment failure email for order {}: {}", event.getOrderNumber(), ex.getMessage());
+            }
         }
         String label = STATUS_LABELS.getOrDefault(newStatus, capitalize(newStatus));
         String color = STATUS_COLORS.getOrDefault(newStatus, "#6b7280");

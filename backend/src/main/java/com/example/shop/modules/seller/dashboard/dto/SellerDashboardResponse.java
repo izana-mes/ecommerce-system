@@ -15,6 +15,14 @@ public class SellerDashboardResponse {
     private long cancelledOrders;
     private double cancelRate;
     private long totalProducts;
+    private long activeListings;
+    private long pendingListings;
+    private long inactiveListings;
+    private long totalAuthorizedProducts;
+    private long totalAllocatedInventory;
+    private long remainingInventory;
+    private long outOfStockCount;
+    private long pendingRequestsCount;
     private long lowStockCount;
     private BigDecimal availableBalance;
     private BigDecimal pendingBalance;

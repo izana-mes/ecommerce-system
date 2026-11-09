@@ -152,7 +152,7 @@ export default function AdminFraudPage() {
           <h1 style={{ margin: 0 }}>Fraud Assessments</h1>
           <p style={{ margin: "6px 0 0", color: "#555" }}>Review and triage high-risk orders.</p>
         </div>
-        <Link href="/admin" style={{ color: "#2563eb", textDecoration: "underline" }}>
+        <Link href="/admin" style={{ color: "#526b84", textDecoration: "underline" }}>
           Back to Admin
         </Link>
       </div>
@@ -190,7 +190,7 @@ export default function AdminFraudPage() {
         {loading ? "Loading..." : `Showing ${paginationLabel}`}
       </div>
 
-      <div style={{ overflowX: "auto", border: "1px solid #ddd", borderRadius: 8 }}>
+      <div style={{ overflowX: "auto", border: "1px solid #ddd", borderRadius: 5 }}>
         <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1150 }}>
           <thead>
             <tr style={{ background: "#f5f5f5" }}>

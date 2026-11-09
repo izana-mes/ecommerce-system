@@ -125,17 +125,17 @@ function getTypeStyle(type: string): CSSProperties {
   if (type === "ORDER_INCOME") return { ...base, background: "#dcfce7", color: "#166534" };
   if (type === "COMMISSION") return { ...base, background: "#fef9c3", color: "#854d0e" };
   if (type === "REFUND") return { ...base, background: "#fee2e2", color: "#991b1b" };
-  return { ...base, background: "#f3f4f6", color: "#374151" };
+  return { ...base, background: "#f3f4f6", color: "#404040" };
 }
 
 const containerStyle: CSSProperties = { padding: "40px", maxWidth: 1200, margin: "0 auto", animation: "pageIn 400ms ease" };
 const titleStyle: CSSProperties = { margin: "0 0 24px", fontSize: 28 };
 const sectionTitleStyle: CSSProperties = { margin: "0 0 16px", fontSize: 20 };
 const gridStyle: CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 };
-const cardStyle: CSSProperties = { background: "#fff", padding: 24, borderRadius: 16, boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" };
+const cardStyle: CSSProperties = { background: "#fff", padding: 24, borderRadius: 5, boxShadow: "none" };
 const cardLabel: CSSProperties = { color: "#6b7280", fontSize: 14, fontWeight: 500 };
 const cardValue: CSSProperties = { color: "#111827", fontSize: 36, fontWeight: 700, marginTop: 8 };
-const tableContainer: CSSProperties = { background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" };
+const tableContainer: CSSProperties = { background: "#fff", borderRadius: 5, overflow: "hidden", boxShadow: "none" };
 const tableStyle: CSSProperties = { width: "100%", borderCollapse: "collapse" };
 const thStyle: CSSProperties = { background: "#f9fafb", padding: "12px 24px", textAlign: "left", fontSize: 13, textTransform: "uppercase", color: "#6b7280", borderBottom: "1px solid #e5e7eb" };
 const tdStyle: CSSProperties = { padding: "16px 24px", borderBottom: "1px solid #e5e7eb", fontSize: 14 };

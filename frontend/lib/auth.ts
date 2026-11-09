@@ -13,6 +13,8 @@ export interface User {
 const AUTH_STATE_EVENT = "auth-state-changed";
 let cachedUser: User | null = null;
 let logoutInProgress = false;
+let authGeneration = 0;
+let refreshInFlight: Promise<User | null> | null = null;
 
 function notifyAuthStateChanged(): void {
   if (typeof window === "undefined") return;
@@ -42,6 +44,17 @@ export function accountPathForUser(user: User | null): "/profile" | "/login" {
   return user ? "/profile" : "/login";
 }
 
+export function homePathForRole(role: User["role"]): string {
+  switch (role) {
+    case "admin": return "/admin";
+    case "seller": return "/seller/dashboard";
+    case "supplier": return "/supplier/dashboard";
+    case "shipper": return "/shipper/dashboard";
+    case "employee": return "/staff";
+    default: return "/";
+  }
+}
+
 async function resolveMe(): Promise<User | null> {
   const res = await fetch("/api/auth/me", { credentials: "include", cache: "no-store" });
   if (!res.ok) return null;
@@ -61,20 +74,29 @@ async function resolveMe(): Promise<User | null> {
 export async function refreshCurrentUserFromServer(): Promise<User | null> {
   if (typeof window === "undefined") return null;
   if (logoutInProgress) return null;
+  if (refreshInFlight) return refreshInFlight;
+
+  const generation = authGeneration;
   const previous = cachedUser;
+  const request = (async () => {
+    try {
+      const user = await resolveMe();
+      if (generation !== authGeneration || logoutInProgress) return cachedUser;
+      cachedUser = user;
+      if (!usersShallowEqual(previous, user)) notifyAuthStateChanged();
+      return user;
+    } catch {
+      if (generation !== authGeneration || logoutInProgress) return cachedUser;
+      cachedUser = null;
+      if (previous !== null) notifyAuthStateChanged();
+      return null;
+    }
+  })();
+  refreshInFlight = request;
   try {
-    const user = await resolveMe();
-    cachedUser = user;
-    if (!usersShallowEqual(previous, user)) {
-      notifyAuthStateChanged();
-    }
-    return user;
-  } catch {
-    cachedUser = null;
-    if (previous !== null) {
-      notifyAuthStateChanged();
-    }
-    return null;
+    return await request;
+  } finally {
+    if (refreshInFlight === request) refreshInFlight = null;
   }
 }
 
@@ -89,6 +111,8 @@ export function isAdmin(): boolean {
 
 /** Clear local session immediately (UI); prefer logoutServerSession for full sign-out. */
 export function logout(): void {
+  authGeneration += 1;
+  refreshInFlight = null;
   cachedUser = null;
   logoutInProgress = false;
   clearCsrfTokenCache();
@@ -98,6 +122,8 @@ export function logout(): void {
 /** End server session and clear auth cookies via BFF, then reset local state. */
 export async function logoutServerSession(): Promise<boolean> {
   if (typeof window === "undefined") return false;
+  authGeneration += 1;
+  refreshInFlight = null;
   logoutInProgress = true;
   try {
     await ensureCsrfToken();
@@ -114,6 +140,8 @@ export async function logoutServerSession(): Promise<boolean> {
   } catch {
     return false;
   } finally {
+    authGeneration += 1;
+    refreshInFlight = null;
     cachedUser = null;
     clearCsrfTokenCache();
     logoutInProgress = false;
@@ -122,12 +150,16 @@ export async function logoutServerSession(): Promise<boolean> {
 }
 
 export function setAuth(_token: string, user: User, _remember: boolean = false): void {
+  authGeneration += 1;
+  refreshInFlight = null;
   logoutInProgress = false;
   cachedUser = user;
   notifyAuthStateChanged();
 }
 
 export function setUserFromCookieSession(user: User, _remember: boolean = false): void {
+  authGeneration += 1;
+  refreshInFlight = null;
   logoutInProgress = false;
   cachedUser = user;
   notifyAuthStateChanged();

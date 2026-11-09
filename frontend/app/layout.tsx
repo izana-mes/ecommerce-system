@@ -1,13 +1,14 @@
 import "./globals.css";
-import ReduxProvider from "@/store/provider";
 import LayoutWrapper from "@/components/LayoutWrapper";
 import Script from "next/script";
 import LocaleProvider from "@/components/providers/LocaleProvider";
+import { headers } from "next/headers";
 
-export default function RootLayout({
+export default async function RootLayout({
   children}: {
   children: React.ReactNode;
 }) {
+  const role = (await headers()).get("x-app-role") || "";
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -40,11 +41,9 @@ export default function RootLayout({
         `}</Script>
       </head>
       <body className="antialiased">
-        <ReduxProvider>
-          <LocaleProvider>
-            <LayoutWrapper>{children}</LayoutWrapper>
-          </LocaleProvider>
-        </ReduxProvider>
+        <LocaleProvider>
+          <LayoutWrapper initialRole={role}>{children}</LayoutWrapper>
+        </LocaleProvider>
       </body>
     </html>
   );

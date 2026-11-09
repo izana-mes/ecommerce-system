@@ -2,11 +2,15 @@
 
 import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
-import Navbar from "@/components/Header/Navbar";
-import Footer from "@/components/Footer/Footer";
-import GlobalScrollReveal from "@/components/GlobalScrollReveal";
-import PageTransition from "@/components/PageTransition";
-import { Toaster } from "react-hot-toast";
+import { getUser, refreshCurrentUserFromServer, subscribeToAuthChanges } from "@/lib/auth";
+import { useEffect, useState } from "react";
+
+const CustomerRuntimeProvider = dynamic(() => import("@/store/provider"));
+const Navbar = dynamic(() => import("@/components/Header/Navbar"));
+const Footer = dynamic(() => import("@/components/Footer/Footer"));
+const GlobalScrollReveal = dynamic(() => import("@/components/GlobalScrollReveal"));
+const PageTransition = dynamic(() => import("@/components/PageTransition"));
+const Toaster = dynamic(() => import("react-hot-toast").then((module) => module.Toaster));
 
 const FloatingChatButtons = dynamic(
   () => import("@/components/Common/FloatingChatButtons"),
@@ -23,12 +27,35 @@ const GlobalFloatingBanners = dynamic(
   { ssr: false }
 );
 
-export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
+const MANAGEMENT_ROLES = ["admin", "seller", "supplier", "shipper", "employee"];
+
+export default function LayoutWrapper({ children, initialRole = "" }: { children: React.ReactNode; initialRole?: string }) {
   const pathname = usePathname();
+  const [role, setRole] = useState<string | null>(initialRole || null);
+  const [roleResolved, setRoleResolved] = useState(Boolean(initialRole));
+  useEffect(() => {
+    const sync = () => {
+      setRole(getUser()?.role || null);
+      setRoleResolved(true);
+    };
+    sync();
+    void refreshCurrentUserFromServer().then((user) => {
+      setRole(user?.role || null);
+      setRoleResolved(true);
+    });
+    return subscribeToAuthChanges(sync);
+  }, []);
+  const isManagementRoute = ["/admin", "/seller", "/supplier", "/shipper", "/staff"].some(
+    (prefix) => pathname === prefix || pathname?.startsWith(`${prefix}/`)
+  );
+  // Management accounts keep their own chrome even on shared work tools such as
+  // messaging and workspace; customer navigation is never mounted for them.
+  const isManagement = isManagementRoute || (roleResolved && MANAGEMENT_ROLES.includes(role || ""));
   const isLanding = pathname === "/landing" || pathname === "/experience";
   const isMessaging = pathname === "/messages" || pathname?.startsWith("/messages/");
 
-  if (isLanding) {
+  // Management routes own their complete shell. Never mount customer shopping chrome here.
+  if (isLanding || isManagement) {
     return (
       <main id="page-content" style={{ overflowX: "hidden" }}>
         {children}
@@ -36,18 +63,22 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     );
   }
 
+  if (["/profile", "/notifications"].includes(pathname || "") && !roleResolved) return <main id="page-content">{children}</main>;
+
   return (
-    <>
-      <GlobalScrollReveal />
-      <GlobalFloatingBanners />
-      <Navbar />
-      <main id="page-content" className={`jp-seigaiha-bg${isMessaging ? " chatPageShell" : ""}`}>
-        <PageTransition>{children}</PageTransition>
-      </main>
-      {!isMessaging ? <FloatingChatButtons /> : null}
-      <ChatbotWidget />
-      {!isMessaging ? <Footer /> : null}
-      <Toaster />
-    </>
+    <CustomerRuntimeProvider>
+      <>
+        <GlobalScrollReveal />
+        <GlobalFloatingBanners />
+        <Navbar />
+        <main id="page-content" className={`jp-seigaiha-bg${isMessaging ? " chatPageShell" : ""}`}>
+          <PageTransition>{children}</PageTransition>
+        </main>
+        {!isMessaging ? <FloatingChatButtons /> : null}
+        <ChatbotWidget />
+        {!isMessaging ? <Footer /> : null}
+        <Toaster />
+      </>
+    </CustomerRuntimeProvider>
   );
 }
